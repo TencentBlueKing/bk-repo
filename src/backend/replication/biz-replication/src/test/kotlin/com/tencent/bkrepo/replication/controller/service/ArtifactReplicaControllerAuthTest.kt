@@ -181,7 +181,7 @@ class ArtifactReplicaControllerAuthTest {
     // ==================== replicaPermissionRequest ====================
 
     @Test
-    fun `replicaPermissionRequest UPSERT - permission not exists should create`() {
+    fun `replicaPermissionRequest UPSERT - should call upsertPermissionForFederation`() {
         val request = PermissionReplicaRequest(
             action = ReplicaAction.UPSERT,
             resourceType = "PROJECT",
@@ -189,18 +189,17 @@ class ArtifactReplicaControllerAuthTest {
             permName = "new-perm",
             actions = listOf("READ")
         )
-        every { localPermissionClient.listPermission("proj-1", null, "PROJECT") } returns ok(emptyList())
-        every { localPermissionClient.createPermission(any()) } returns ok(true)
+        every { localPermissionClient.upsertPermissionForFederation(any()) } returns ok(true)
 
         controller.replicaPermissionRequest(request)
 
-        verify(exactly = 1) { localPermissionClient.createPermission(any()) }
+        verify(exactly = 1) { localPermissionClient.upsertPermissionForFederation(any()) }
         verify(exactly = 0) { localPermissionClient.deletePermission(any()) }
+        verify(exactly = 0) { localPermissionClient.createPermission(any()) }
     }
 
     @Test
-    fun `replicaPermissionRequest UPSERT - permission exists should delete then recreate`() {
-        val existing = buildPermission("exist-perm", "proj-1", "PROJECT", id = "perm-id-123")
+    fun `replicaPermissionRequest UPSERT - permission exists should atomically upsert without delete`() {
         val request = PermissionReplicaRequest(
             action = ReplicaAction.UPSERT,
             resourceType = "PROJECT",
@@ -209,14 +208,12 @@ class ArtifactReplicaControllerAuthTest {
             users = listOf("alice", "bob"),
             actions = listOf("READ", "WRITE")
         )
-        every { localPermissionClient.listPermission("proj-1", null, "PROJECT") } returns ok(listOf(existing))
-        every { localPermissionClient.deletePermission("perm-id-123") } returns ok(true)
-        every { localPermissionClient.createPermission(any()) } returns ok(true)
+        every { localPermissionClient.upsertPermissionForFederation(any()) } returns ok(true)
 
         controller.replicaPermissionRequest(request)
 
-        verify(exactly = 1) { localPermissionClient.deletePermission("perm-id-123") }
-        verify(exactly = 1) { localPermissionClient.createPermission(any()) }
+        verify(exactly = 1) { localPermissionClient.upsertPermissionForFederation(any()) }
+        verify(exactly = 0) { localPermissionClient.deletePermission(any()) }
     }
 
     @Test
@@ -253,7 +250,7 @@ class ArtifactReplicaControllerAuthTest {
     }
 
     @Test
-    fun `replicaPermissionRequest - null projectId UPSERT should call getPermissionByName and createPermission`() {
+    fun `replicaPermissionRequest - null projectId UPSERT should call upsertPermissionForFederation`() {
         val request = PermissionReplicaRequest(
             action = ReplicaAction.UPSERT,
             resourceType = "SYSTEM",
@@ -261,13 +258,12 @@ class ArtifactReplicaControllerAuthTest {
             permName = "sys-perm",
             actions = listOf("READ")
         )
-        every { localPermissionClient.getPermissionByName(null, "SYSTEM", "sys-perm") } returns ok(null)
-        every { localPermissionClient.createPermission(any()) } returns ok(true)
+        every { localPermissionClient.upsertPermissionForFederation(any()) } returns ok(true)
 
         controller.replicaPermissionRequest(request)
 
         verify(exactly = 0) { localPermissionClient.listPermission(any(), any(), any()) }
-        verify(exactly = 1) { localPermissionClient.createPermission(any()) }
+        verify(exactly = 1) { localPermissionClient.upsertPermissionForFederation(any()) }
     }
 
     @Test
@@ -312,8 +308,7 @@ class ArtifactReplicaControllerAuthTest {
             projectId = "p",
             permName = "n"
         )
-        every { localPermissionClient.listPermission(any(), any(), any()) } returns ok(emptyList())
-        every { localPermissionClient.createPermission(any()) } returns ok(true)
+        every { localPermissionClient.upsertPermissionForFederation(any()) } returns ok(true)
 
         controller.replicaPermissionRequest(request)
 
@@ -321,21 +316,19 @@ class ArtifactReplicaControllerAuthTest {
     }
 
     @Test
-    fun `replicaPermissionRequest UPSERT - permission with null id should skip delete`() {
-        val existing = buildPermission("no-id-perm", "proj-1", "REPO", id = null)
+    fun `replicaPermissionRequest UPSERT - permission with null id should use atomic upsert`() {
         val request = PermissionReplicaRequest(
             action = ReplicaAction.UPSERT,
             resourceType = "REPO",
             projectId = "proj-1",
             permName = "no-id-perm"
         )
-        every { localPermissionClient.listPermission("proj-1", null, "REPO") } returns ok(listOf(existing))
-        every { localPermissionClient.createPermission(any()) } returns ok(true)
+        every { localPermissionClient.upsertPermissionForFederation(any()) } returns ok(true)
 
         controller.replicaPermissionRequest(request)
 
         verify(exactly = 0) { localPermissionClient.deletePermission(any()) }
-        verify(exactly = 1) { localPermissionClient.createPermission(any()) }
+        verify(exactly = 1) { localPermissionClient.upsertPermissionForFederation(any()) }
     }
 
     // ==================== helper builders ====================

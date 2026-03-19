@@ -168,6 +168,11 @@ open class PermissionServiceImpl constructor(
         return false
     }
 
+    override fun upsertPermissionForFederation(request: CreatePermissionRequest): Boolean {
+        permissionDao.upsertForFederation(PermRequestUtil.convToTPermission(request))
+        return true
+    }
+
     override fun updateRepoPermission(request: UpdatePermissionRepoRequest): Boolean {
         logger.info("update repo permission request : [$request]")
         with(request) {

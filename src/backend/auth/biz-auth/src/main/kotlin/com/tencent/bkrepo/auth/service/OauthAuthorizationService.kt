@@ -89,9 +89,9 @@ interface OauthAuthorizationService {
     fun getTokenInfo(accessToken: String): OauthTokenInfo?
 
     /**
-     * 列举所有oauth token（用于联邦同步）
+     * 分页列举oauth token（用于联邦同步）
      */
-    fun listActiveTokens(): List<OauthTokenInfo>
+    fun listActiveTokens(pageNumber: Int, pageSize: Int): List<OauthTokenInfo>
 
     /**
      * 直接保存oauth token（用于联邦同步接收端）

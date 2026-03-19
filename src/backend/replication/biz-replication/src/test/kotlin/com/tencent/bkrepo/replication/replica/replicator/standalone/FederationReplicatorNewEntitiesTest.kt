@@ -380,7 +380,7 @@ class FederationReplicatorNewEntitiesTest {
             buildOauthTokenInfo("access-tok-1", "app-1", "alice"),
             buildOauthTokenInfo("access-tok-2", "app-2", "bob")
         )
-        every { localOauthTokenClient.listActiveTokens() } returns ok(tokens)
+        every { localOauthTokenClient.listActiveTokens(any(), any()) } returns ok(tokens)
         every { artifactReplicaClient.replicaOauthTokenRequest(any()) } returns ok()
 
         buildReplicator().replicaOauthTokens(context)
@@ -391,7 +391,7 @@ class FederationReplicatorNewEntitiesTest {
     @Test
     fun `replicaOauthTokens - should push correct token fields`() {
         val token = buildOauthTokenInfo("access-tok-abc", "my-app", "carol")
-        every { localOauthTokenClient.listActiveTokens() } returns ok(listOf(token))
+        every { localOauthTokenClient.listActiveTokens(any(), any()) } returns ok(listOf(token))
         val slot = slot<OauthTokenReplicaRequest>()
         every { artifactReplicaClient.replicaOauthTokenRequest(capture(slot)) } returns ok()
 
@@ -405,7 +405,7 @@ class FederationReplicatorNewEntitiesTest {
 
     @Test
     fun `replicaOauthTokens - exception should be swallowed`() {
-        every { localOauthTokenClient.listActiveTokens() } throws RuntimeException("oauth error")
+        every { localOauthTokenClient.listActiveTokens(any(), any()) } throws RuntimeException("oauth error")
 
         buildReplicator().replicaOauthTokens(context)
 
@@ -414,7 +414,7 @@ class FederationReplicatorNewEntitiesTest {
 
     @Test
     fun `replicaOauthTokens - empty list should not push`() {
-        every { localOauthTokenClient.listActiveTokens() } returns ok(emptyList())
+        every { localOauthTokenClient.listActiveTokens(any(), any()) } returns ok(emptyList())
 
         buildReplicator().replicaOauthTokens(context)
 
@@ -427,7 +427,7 @@ class FederationReplicatorNewEntitiesTest {
             buildOauthTokenInfo("tok-ok", "app-1", "alice"),
             buildOauthTokenInfo("tok-fail", "app-2", "bob")
         )
-        every { localOauthTokenClient.listActiveTokens() } returns ok(tokens)
+        every { localOauthTokenClient.listActiveTokens(any(), any()) } returns ok(tokens)
         every { artifactReplicaClient.replicaOauthTokenRequest(match { it.accessToken == "tok-fail" }) } throws
             RuntimeException("push failed")
         every { artifactReplicaClient.replicaOauthTokenRequest(match { it.accessToken == "tok-ok" }) } returns ok()
@@ -1185,23 +1185,29 @@ class FederationReplicatorNewEntitiesTestHelper(
     }
 
     fun replicaOauthTokens(context: ReplicaContext) = safe {
-        val tokens = localOauthTokenClient.listActiveTokens().data ?: return@safe
-        tokens.forEach { token ->
-            try {
-                context.artifactReplicaClient!!.replicaOauthTokenRequest(
-                    OauthTokenReplicaRequest(
-                        accessToken = token.accessToken,
-                        refreshToken = token.refreshToken,
-                        expireSeconds = token.expireSeconds,
-                        type = token.type,
-                        accountId = token.accountId,
-                        userId = token.userId,
-                        scope = token.scope,
-                        issuedAt = token.issuedAt
+        var page = 0
+        while (true) {
+            val tokens = localOauthTokenClient.listActiveTokens(page, PAGE_SIZE).data ?: break
+            if (tokens.isEmpty()) break
+            tokens.forEach { token ->
+                try {
+                    context.artifactReplicaClient!!.replicaOauthTokenRequest(
+                        OauthTokenReplicaRequest(
+                            accessToken = token.accessToken,
+                            refreshToken = token.refreshToken,
+                            expireSeconds = token.expireSeconds,
+                            type = token.type,
+                            accountId = token.accountId,
+                            userId = token.userId,
+                            scope = token.scope,
+                            issuedAt = token.issuedAt
+                        )
                     )
-                )
-            } catch (_: Exception) {
+                } catch (_: Exception) {
+                }
             }
+            if (tokens.size < PAGE_SIZE) break
+            page++
         }
     }
 
@@ -1355,5 +1361,9 @@ class FederationReplicatorNewEntitiesTestHelper(
             block()
         } catch (_: Exception) {
         }
+    }
+
+    companion object {
+        private const val PAGE_SIZE = 500
     }
 }

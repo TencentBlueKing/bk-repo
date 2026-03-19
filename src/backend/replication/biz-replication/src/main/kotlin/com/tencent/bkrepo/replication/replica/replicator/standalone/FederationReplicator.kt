@@ -419,33 +419,41 @@ class FederationReplicator(
 
     fun replicaOauthTokensTo(client: ArtifactReplicaClient, clusterName: String) {
         // OAuth token 不含 projectId，需全局同步；只在全量同步时触发，增量事件不处理
-        val tokens = try {
-            localOauthAuthorizationClient.listActiveTokens().data ?: return
-        } catch (e: Exception) {
-            logger.warn("Failed to list oauth tokens for federation sync: ${e.message}")
-            return
-        }
-        tokens.forEach { token ->
-            try {
-                client.replicaOauthTokenRequest(
-                    OauthTokenReplicaRequest(
-                        accessToken = token.accessToken,
-                        refreshToken = token.refreshToken,
-                        expireSeconds = token.expireSeconds,
-                        type = token.type,
-                        accountId = token.accountId,
-                        userId = token.userId,
-                        scope = token.scope,
-                        issuedAt = token.issuedAt
-                    )
-                )
+        var page = 0
+        var totalSynced = 0
+        while (true) {
+            val tokens = try {
+                localOauthAuthorizationClient.listActiveTokens(page, OAUTH_TOKEN_PAGE_SIZE).data ?: break
             } catch (e: Exception) {
-                logger.warn(
-                    "Failed to sync oauth token for user [${token.userId}] to federation cluster: ${e.message}"
-                )
+                logger.warn("Failed to list oauth tokens for federation sync: ${e.message}")
+                break
             }
+            if (tokens.isEmpty()) break
+            tokens.forEach { token ->
+                try {
+                    client.replicaOauthTokenRequest(
+                        OauthTokenReplicaRequest(
+                            accessToken = token.accessToken,
+                            refreshToken = token.refreshToken,
+                            expireSeconds = token.expireSeconds,
+                            type = token.type,
+                            accountId = token.accountId,
+                            userId = token.userId,
+                            scope = token.scope,
+                            issuedAt = token.issuedAt
+                        )
+                    )
+                } catch (e: Exception) {
+                    logger.warn(
+                        "Failed to sync oauth token for user [${token.userId}] to federation cluster: ${e.message}"
+                    )
+                }
+            }
+            totalSynced += tokens.size
+            if (tokens.size < OAUTH_TOKEN_PAGE_SIZE) break
+            page++
         }
-        logger.info("Synced ${tokens.size} oauth tokens to federated cluster [$clusterName]")
+        logger.info("Synced $totalSynced oauth tokens to federated cluster [$clusterName]")
     }
 
     fun replicaPersonalPaths(context: ReplicaContext) {
@@ -647,7 +655,8 @@ class FederationReplicator(
                     )
                 )
             }
-            logger.info("Incremental userToken[$tokenName] of user[$userId] (deleted=$deleted) synced to cluster[$clusterName]")
+            logger.info("Incremental userToken[$tokenName] of user[$userId]" +
+                            " (deleted=$deleted) synced to cluster[$clusterName]")
         } catch (e: Exception) {
             logger.warn("Failed to sync userToken[$tokenName] of user[$userId] to cluster[$clusterName]: ${e.message}")
         }
@@ -1736,6 +1745,7 @@ class FederationReplicator(
 
         private val logger = LoggerFactory.getLogger(FederationReplicator::class.java)
         private const val PAGE_SIZE = 500
+        private const val OAUTH_TOKEN_PAGE_SIZE = 500
 
         fun buildRemoteRepoCacheKey(clusterInfo: ClusterInfo, projectId: String, repoName: String): String {
             return "$projectId/$repoName/${clusterInfo.hashCode()}"

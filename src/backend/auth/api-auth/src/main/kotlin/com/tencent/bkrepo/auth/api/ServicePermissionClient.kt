@@ -118,6 +118,10 @@ interface ServicePermissionClient {
     @PostMapping("/create")
     fun createPermission(@RequestBody request: CreatePermissionRequest): Response<Boolean>
 
+    @Operation(summary = "原子 upsert 权限（联邦同步），避免 delete-then-create 间的鉴权空窗期")
+    @PostMapping("/upsertForFederation")
+    fun upsertPermissionForFederation(@RequestBody request: CreatePermissionRequest): Response<Boolean>
+
     @Operation(summary = "删除权限（用于联邦同步）")
     @DeleteMapping("/delete/{id}")
     fun deletePermission(@PathVariable id: String): Response<Boolean>

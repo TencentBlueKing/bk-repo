@@ -397,19 +397,20 @@ class OauthAuthorizationServiceImpl(
         )
     }
 
-    override fun listActiveTokens(): List<OauthTokenInfo> {
-        return oauthTokenRepository.findAll().map { token ->
-            OauthTokenInfo(
-                accessToken = token.accessToken,
-                refreshToken = token.refreshToken,
-                expireSeconds = token.expireSeconds,
-                type = token.type,
-                accountId = token.accountId,
-                userId = token.userId,
-                scope = token.scope?.map { it.name }?.toSet(),
-                issuedAt = token.issuedAt.epochSecond
-            )
-        }
+    override fun listActiveTokens(pageNumber: Int, pageSize: Int): List<OauthTokenInfo> {
+        return oauthTokenRepository.findAll(org.springframework.data.domain.PageRequest.of(pageNumber, pageSize))
+            .content.map { token ->
+                OauthTokenInfo(
+                    accessToken = token.accessToken,
+                    refreshToken = token.refreshToken,
+                    expireSeconds = token.expireSeconds,
+                    type = token.type,
+                    accountId = token.accountId,
+                    userId = token.userId,
+                    scope = token.scope?.map { it.name }?.toSet(),
+                    issuedAt = token.issuedAt.epochSecond
+                )
+            }
     }
 
     override fun saveFederationToken(tokenInfo: OauthTokenInfo) {

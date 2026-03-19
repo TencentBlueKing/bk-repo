@@ -49,8 +49,8 @@ class ServiceOauthAuthorizationController @Autowired constructor(
         return ResponseBuilder.success(oauthAuthorizationService.validateToken(accessToken))
     }
 
-    override fun listActiveTokens(): Response<List<OauthTokenInfo>> {
-        return ResponseBuilder.success(oauthAuthorizationService.listActiveTokens())
+    override fun listActiveTokens(pageNumber: Int, pageSize: Int): Response<List<OauthTokenInfo>> {
+        return ResponseBuilder.success(oauthAuthorizationService.listActiveTokens(pageNumber, pageSize))
     }
 
     override fun getTokenInfo(accessToken: String): Response<OauthTokenInfo?> {

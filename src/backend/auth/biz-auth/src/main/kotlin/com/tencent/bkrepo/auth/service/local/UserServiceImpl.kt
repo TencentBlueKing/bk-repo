@@ -318,7 +318,14 @@ class UserServiceImpl constructor(
             val tokens = userInfo!!.tokens
             tokens.forEach {
                 if (it.name == name) {
-                    publishEvent(EventType.USER_TOKEN_CREATED, name, data = mapOf("userId" to userId, "hashedTokenId" to sm3Id, "createdAt" to createdTime.toString(), "expiredAt" to (expiredTime?.toString() ?: "")))
+                    publishEvent(
+                        EventType.USER_TOKEN_CREATED, name,
+                        data = mapOf(
+                            "userId" to userId, "hashedTokenId" to sm3Id,
+                            "createdAt" to createdTime.toString(), "expiredAt" to (expiredTime?.toString()
+                            ?: "")
+                        )
+                    )
                     return userToken
                 }
             }
@@ -460,7 +467,12 @@ class UserServiceImpl constructor(
         return userDao.findAllAdminUsers().map { it.userId }
     }
 
-    private fun publishEvent(type: EventType, resourceKey: String, projectId: String = "", data: Map<String, Any> = emptyMap()) {
+    private fun publishEvent(
+        type: EventType,
+        resourceKey: String,
+        projectId: String = "",
+        data: Map<String, Any> = emptyMap()
+    ) {
         if (!authProperties.eventEnabled || FederationWriteContext.isFederationWrite()) return
         val event = ArtifactEvent(
             type = type,
@@ -486,14 +498,16 @@ class UserServiceImpl constructor(
             } catch (ignore: DuplicateKeyException) {
             }
         } else {
-            userDao.updateUserById(request.userId, UpdateUserRequest(
+            userDao.updateUserById(
+                request.userId, UpdateUserRequest(
                 name = request.name.takeIf { it.isNotBlank() },
                 admin = request.admin,
                 asstUsers = request.asstUsers,
                 email = request.email,
                 phone = request.phone,
                 tenantId = tenantId,
-            ))
+            )
+            )
             if (hashedPwd != null) {
                 userDao.updatePasswordByUserId(request.userId, hashedPwd)
             }

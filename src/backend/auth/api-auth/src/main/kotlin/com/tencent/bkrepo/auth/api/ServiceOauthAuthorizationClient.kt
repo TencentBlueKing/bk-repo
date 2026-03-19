@@ -63,7 +63,10 @@ interface ServiceOauthAuthorizationClient {
 
     @Operation(summary = "查询所有oauth token（联邦同步）")
     @GetMapping("/federation/tokens")
-    fun listActiveTokens(): Response<List<OauthTokenInfo>>
+    fun listActiveTokens(
+        @RequestParam(defaultValue = "0") pageNumber: Int,
+        @RequestParam(defaultValue = "500") pageSize: Int
+    ): Response<List<OauthTokenInfo>>
 
     @Operation(summary = "按accessToken查询OauthTokenInfo（联邦同步）")
     @GetMapping("/federation/token/info")

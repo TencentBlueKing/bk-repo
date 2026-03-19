@@ -83,6 +83,8 @@ interface PermissionService {
 
     fun createPermission(request: CreatePermissionRequest): Boolean
 
+    fun upsertPermissionForFederation(request: CreatePermissionRequest): Boolean
+
     fun listPermission(projectId: String, repoName: String?, resourceType: String): List<Permission>
 
     fun listAllPermissionByProject(projectId: String): List<Permission>

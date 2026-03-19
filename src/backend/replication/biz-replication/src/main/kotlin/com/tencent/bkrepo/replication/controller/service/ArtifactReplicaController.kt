@@ -807,16 +807,13 @@ class ArtifactReplicaController(
     override fun replicaPermissionRequest(request: PermissionReplicaRequest): Response<Void> {
         FederationReplicaContext.markAsFederationWrite()
         try {
-            val existing = findExistingPermission(request)
             when (request.action) {
                 ReplicaAction.UPSERT -> {
-                    // 先删旧权限（若存在），再创建，实现全量 upsert 语义
-                    existing?.id?.let { localPermissionClient.deletePermission(it) }
-                    localPermissionClient.createPermission(buildCreatePermissionRequest(request))
+                    localPermissionClient.upsertPermissionForFederation(buildCreatePermissionRequest(request))
                 }
 
                 ReplicaAction.DELETE -> {
-                    existing?.id?.let { localPermissionClient.deletePermission(it) }
+                    findExistingPermission(request)?.id?.let { localPermissionClient.deletePermission(it) }
                 }
             }
         } finally {

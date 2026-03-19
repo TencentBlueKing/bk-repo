@@ -85,6 +85,21 @@ class FederationPermissionEventConsumerTest {
         unmockkObject(FederationDataBuilder)
     }
 
+    // ==================== resolveTargetClusterIds - cache behavior ====================
+
+    @Test
+    fun `federation group cache - multiple events should only call listAll once within TTL`() {
+        val group = buildFederationGroup(currentClusterId = "local", clusterIds = listOf("local", "remote-1"))
+        every { federationGroupService.listAll() } returns listOf(group)
+        every { clusterNodeService.getByClusterId(any()) } returns null
+
+        consumer.action(buildMessage(EventType.USER_CREATED, "user-a", "proj"))
+        consumer.action(buildMessage(EventType.USER_UPDATED, "user-b", "proj"))
+
+        // listAll should only be called once due to caching
+        verify(exactly = 1) { federationGroupService.listAll() }
+    }
+
     // ==================== resolveTargetClusterIds - GLOBAL_TYPES ====================
 
     @Test
@@ -130,7 +145,8 @@ class FederationPermissionEventConsumerTest {
     @Test
     fun `PROJECT event - should collect federated cluster IDs for the project`() {
         val group = buildFederationGroup(
-            currentClusterId = "local", clusterIds = listOf("local", "cluster-a", "cluster-b"))
+            currentClusterId = "local", clusterIds = listOf("local", "cluster-a", "cluster-b")
+        )
         every { federationGroupService.listAll() } returns listOf(group)
         val repo = buildFederatedRepository("proj-1", listOf("cluster-a", "cluster-b"))
         every { federatedRepositoryDao.findByProjectId("proj-1") } returns listOf(repo)
@@ -165,9 +181,11 @@ class FederationPermissionEventConsumerTest {
 
         consumer.action(buildMessage(EventType.USER_CREATED, "user-a", "proj"))
 
-        verify(exactly = 1) { federationReplicator.replicaUserChangeTo(
-            any(), "user-a", false, "cluster-valid-cluster"
-        ) }
+        verify(exactly = 1) {
+            federationReplicator.replicaUserChangeTo(
+                any(), "user-a", false, "cluster-valid-cluster"
+            )
+        }
     }
 
     @Test
@@ -342,27 +360,27 @@ class FederationPermissionEventConsumerTest {
     }
 
     @Test
-    fun `TEMP_TOKEN_CREATED should call replicaTemporaryTokensTo for the full project`() {
+    fun `TEMP_TOKEN_CREATED should call replicaTemporaryTokenChangeTo with deleted=false`() {
         setupProjectCluster("proj-1", "remote-node")
-        every { federationReplicator.replicaTemporaryTokensTo(any(), any(), any()) } returns Unit
+        every { federationReplicator.replicaTemporaryTokenChangeTo(any(), any(), any(), any()) } returns Unit
 
         consumer.action(buildMessage(EventType.TEMP_TOKEN_CREATED, "tok-xyz", "proj-1"))
 
-        verify { federationReplicator.replicaTemporaryTokensTo(mockReplicaClient, "proj-1", "remote-node") }
+        verify {
+            federationReplicator.replicaTemporaryTokenChangeTo(
+                mockReplicaClient, "tok-xyz", false, "remote-node"
+            )
+        }
     }
 
     @Test
-    fun `TEMP_TOKEN_DELETED should send DELETE request directly via client`() {
+    fun `TEMP_TOKEN_DELETED should call replicaTemporaryTokenChangeTo with deleted=true`() {
         setupProjectCluster("proj-1", "remote-node")
-        every { mockReplicaClient.replicaTemporaryTokenRequest(any()) } returns mockk(relaxed = true)
+        every { federationReplicator.replicaTemporaryTokenChangeTo(any(), any(), any(), any()) } returns Unit
 
         consumer.action(buildMessage(EventType.TEMP_TOKEN_DELETED, "tok-xyz", "proj-1"))
 
-        verify {
-            mockReplicaClient.replicaTemporaryTokenRequest(match {
-                it.token == "tok-xyz"
-            })
-        }
+        verify { federationReplicator.replicaTemporaryTokenChangeTo(mockReplicaClient, "tok-xyz", true, "remote-node") }
     }
 
     @Test

@@ -119,6 +119,10 @@ class ServicePermissionController @Autowired constructor(
         return ResponseBuilder.success(permissionService.createPermission(request))
     }
 
+    override fun upsertPermissionForFederation(request: CreatePermissionRequest): Response<Boolean> {
+        return ResponseBuilder.success(permissionService.upsertPermissionForFederation(request))
+    }
+
     @DeleteMapping("/delete/{id}")
     override fun deletePermission(id: String): Response<Boolean> {
         return ResponseBuilder.success(permissionService.deletePermission(id))

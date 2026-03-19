@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.dao.FederatedRepositoryDao
+import com.tencent.bkrepo.replication.model.TFederationGroup
 import com.tencent.bkrepo.replication.replica.executor.FederationThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.replicator.standalone.FederationReplicator
 import com.tencent.bkrepo.replication.replica.type.event.EventConsumer
@@ -59,6 +60,11 @@ class FederationPermissionEventConsumer(
 ) : EventConsumer() {
 
     private val executor = FederationThreadPoolExecutor.instance
+
+    /** 联邦组列表缓存，避免每次事件都查库；TTL 2 分钟 */
+    @Volatile private var groupCache: List<TFederationGroup> = emptyList()
+    @Volatile private var groupCacheExpiry: Long = 0L
+    private val groupCacheLock = Any()
 
     override fun getAcceptTypes(): Set<EventType> = GLOBAL_TYPES + PROJECT_TYPES
 
@@ -90,13 +96,13 @@ class FederationPermissionEventConsumer(
         // projectId 为空字符串时（旧逻辑 null ?: "" 兜底）视为全局事件，同步到所有联邦集群
         return if (event.type in GLOBAL_TYPES || event.projectId.isNullOrEmpty()) {
             // 全局事件：遍历所有联邦组，收集各组中不是当前节点的远端 clusterId
-            federationGroupService.listAll()
+            listAllGroupsCached()
                 .flatMap { group -> group.clusterIds.filter { it != group.currentClusterId } }
                 .toSet()
         } else {
             // 项目级事件：只有 projectId 在联邦组 projectScope 允许范围内才同步
             // projectScope 为 null 表示不限项目
-            val allowedGroups = federationGroupService.listAll()
+            val allowedGroups = listAllGroupsCached()
                 .filter { group -> group.projectScope == null || event.projectId in group.projectScope }
             if (allowedGroups.isEmpty()) return emptySet()
             val allowedClusterIds = allowedGroups
@@ -107,6 +113,17 @@ class FederationPermissionEventConsumer(
                 .flatMap { repo -> repo.federatedClusters.map { it.clusterId } }
                 .filter { it in allowedClusterIds }
                 .toSet()
+        }
+    }
+
+    private fun listAllGroupsCached(): List<TFederationGroup> {
+        val now = System.currentTimeMillis()
+        if (now < groupCacheExpiry) return groupCache
+        synchronized(groupCacheLock) {
+            if (now < groupCacheExpiry) return groupCache
+            groupCache = federationGroupService.listAll()
+            groupCacheExpiry = System.currentTimeMillis() + GROUP_CACHE_TTL_MS
+            return groupCache
         }
     }
 
@@ -182,6 +199,8 @@ class FederationPermissionEventConsumer(
 
     companion object {
         private val logger = LoggerFactory.getLogger(FederationPermissionEventConsumer::class.java)
+
+        private const val GROUP_CACHE_TTL_MS = 2 * 60 * 1000L
 
         /** 全局范围事件：与 projectId 无关，同步到所有联邦集群 */
         val GLOBAL_TYPES: Set<EventType> = setOf(
