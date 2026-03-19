@@ -33,6 +33,7 @@ import com.tencent.bkrepo.fs.server.response.drive.toDriveNode
 import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper
 import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper.ROOT_INO
 import com.tencent.bkrepo.fs.server.utils.DriveServiceUtils
+import com.tencent.bkrepo.fs.server.utils.ExceptionUtils
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
@@ -259,7 +260,7 @@ class DriveNodeService(
                         ino = it.node.ino,
                         nodeId = it.node.nodeId,
                         code = code,
-                        message = e.message
+                        message = ExceptionUtils.getMsg(e)
                     )
                 }
             }
