@@ -53,7 +53,6 @@ data class DriveNodeBatchItem(
     val ctime: Long? = null,
     val atime: Long? = null,
     val ifMatch: LocalDateTime? = null,
-    val force: Boolean = false,
 )
 
 fun DriveNodeBatchItem.toCreateRequest(projectId: String, repoName: String): DriveNodeCreateRequest {
@@ -98,7 +97,6 @@ fun DriveNodeBatchItem.toUpdateRequest(projectId: String, repoName: String): Dri
         ctime = ctime,
         atime = atime,
         ifMatch = ifMatch,
-        force = force,
     )
 }
 
@@ -108,6 +106,5 @@ fun DriveNodeBatchItem.toDeleteRequest(projectId: String, repoName: String): Dri
         repoName = repoName,
         ino = requireNotNull(ino) { "ino required" },
         ifMatch = ifMatch,
-        force = force,
     )
 }

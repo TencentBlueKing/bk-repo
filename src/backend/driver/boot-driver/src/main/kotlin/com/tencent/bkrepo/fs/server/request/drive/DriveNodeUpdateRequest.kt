@@ -21,7 +21,6 @@ data class DriveNodeUpdateRequest(
     val ctime: Long? = null,
     val atime: Long? = null,
     val ifMatch: LocalDateTime? = null,
-    val force: Boolean = false,
 ) : DriveNodeBaseRequest(
     projectId = projectId,
     repoName = repoName,

@@ -207,7 +207,7 @@ class DriveNodeService(
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, ino)
             checkIfMatch(ifMatch, srcNode)
             val currentSnapSeq = resolveSnapSeq(projectId, repoName, snapSeq)
-            doDelete(srcNode, currentSnapSeq, if (force) null else ifMatch)
+            doDelete(srcNode, currentSnapSeq, ifMatch)
             logger.info(
                 "Delete drive node[$projectId/$repoName/$ino] " +
                         "at[${srcNode.parent}/${srcNode.name}] success."
@@ -348,7 +348,7 @@ class DriveNodeService(
             srcNode.repoName,
             srcNode.id!!,
             currentSnapSeq,
-            if (updateRequest.force) null else updateRequest.ifMatch
+            updateRequest.ifMatch
         )
         checkUpdateResult(deleteResult.modifiedCount, srcNode.name)
         return doCreate(DriveNodeQueryHelper.buildCowNode(updatedNode, currentSnapSeq, operator, now))
@@ -364,7 +364,7 @@ class DriveNodeService(
                 srcNode.projectId,
                 srcNode.repoName,
                 srcNode.id!!,
-                if (updateRequest.force) null else updateRequest.ifMatch,
+                updateRequest.ifMatch,
                 updatedNode
             )
         } catch (_: DuplicateKeyException) {

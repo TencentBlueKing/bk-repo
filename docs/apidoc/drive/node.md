@@ -74,8 +74,7 @@
   | mtime         | long    | 否    | 无     | 修改时间（纳秒时间戳），create 时不传则使用当前时间                                     | modify time (nanos)    |
   | ctime         | long    | 否    | 无     | 属性变更时间（纳秒时间戳），create 时不传则使用当前时间                                   | change time (nanos)    |
   | atime         | long    | 否    | 无     | 访问时间（纳秒时间戳），create 时不传则使用当前时间                                     | access time (nanos)    |
-  | ifMatch       | string  | 否    | 无     | 前置条件检查，服务端的 lastModifiedDate 与该值不匹配时返回 PRECONDITION_FAILED，用于并发控制 | precondition check     |
-  | force         | boolean | 否    | false | 是否强制忽略 ifMatch 检查                                                 | force update/delete    |
+  | ifMatch       | string  | 否    | 无     | 前置条件检查，服务端的 lastModifiedDate 与该值不匹配时返回 PRECONDITION_FAILED，用于并发控制；不传则跳过检查 | precondition check     |
 
 - 响应体
   ```json
@@ -193,7 +192,7 @@
   | ------ | ------------------- | ------ | ------------------------------------------------------- |
   | 251010 | NODE_NOT_FOUND      | 节点不存在  | 指定的 ino 对应的节点不存在                                        |
   | 251012 | NODE_EXISTED        | 节点已存在  | 更新 parent 或 name 后，目标位置已存在同名节点                          |
-  | 250112 | PRECONDITION_FAILED | 前置条件失败 | ifMatch 与服务端 lastModifiedDate 不一致（可通过 force=true 跳过此检查） |
+  | 250112 | PRECONDITION_FAILED | 前置条件失败 | 传入了 ifMatch 且与服务端 lastModifiedDate 不一致 |
 
   **delete 操作**
 
@@ -202,7 +201,7 @@
   | 250111 | METHOD_NOT_ALLOWED  | 操作不允许  | 尝试删除根节点                                                 |
   | 251001 | DIRECTORY_NOT_EMPTY | 目录非空   | 尝试删除的目录下仍存在子节点                                          |
   | 251010 | NODE_NOT_FOUND      | 节点不存在  | 指定的 ino 对应的节点不存在                                        |
-  | 250112 | PRECONDITION_FAILED | 前置条件失败 | ifMatch 与服务端 lastModifiedDate 不一致（可通过 force=true 跳过此检查） |
+  | 250112 | PRECONDITION_FAILED | 前置条件失败 | 传入了 ifMatch 且与服务端 lastModifiedDate 不一致 |
 
 
 ## 分页查询目录下节点

@@ -7,5 +7,4 @@ data class DriveNodeDeleteRequest(
     val repoName: String,
     val ino: Long,
     val ifMatch: LocalDateTime? = null,
-    val force: Boolean = false,
 )
