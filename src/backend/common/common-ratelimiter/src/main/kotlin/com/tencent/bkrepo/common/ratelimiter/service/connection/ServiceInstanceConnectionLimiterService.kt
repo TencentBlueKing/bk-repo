@@ -1,7 +1,9 @@
 package com.tencent.bkrepo.common.ratelimiter.service.connection
 
+import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
+import com.tencent.bkrepo.common.ratelimiter.enums.Algorithms
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
@@ -9,6 +11,7 @@ import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.connection.ServiceInstanceConnectionRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.ConcurrencyLimitService
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.beans.factory.annotation.Value
@@ -32,7 +35,7 @@ class ServiceInstanceConnectionLimiterService(
     rateLimiterMetrics,
     redisTemplate,
     rateLimiterConfigService
-) {
+), ConcurrencyLimitService {
 
     @Value("\${spring.application.name}")
     private val serviceName: String = ""
@@ -40,18 +43,19 @@ class ServiceInstanceConnectionLimiterService(
     @Value("\${spring.cloud.client.ip-address}")
     private val host: String = "127.0.0.1"
 
-    @Value("\${server.port:8080}")
-    private val serverPort: Int = 8080
-
     // 本地计数器，用于监控指标
     private val localConnectionCount = AtomicInteger(0)
 
     private val instanceId: String by lazy {
-        "$serviceName:$host:$serverPort"
+        "$serviceName:$host"
+    }
+
+    override fun getAlgorithmOfRateLimiter(resource: String, resourceLimit: ResourceLimit): RateLimiter {
+        return super.getAlgorithmOfRateLimiter(resource, resourceLimit.copy(algo = Algorithms.SEMAPHORE.name))
     }
 
     override fun buildResource(request: HttpServletRequest): String {
-        return "/instance/$instanceId"
+        return instanceId
     }
 
     override fun buildExtraResource(request: HttpServletRequest): List<String> {
@@ -75,9 +79,14 @@ class ServiceInstanceConnectionLimiterService(
     }
 
     override fun limit(request: HttpServletRequest, applyPermits: Long?) {
+        if (!rateLimiterProperties.enabled) return
+        if (rateLimitRule == null || rateLimitRule!!.isEmpty()) return
         try {
             localConnectionCount.incrementAndGet()
-            super.limit(request, applyPermits)
+            request.setAttribute(ACTIVE_ATTR, true)
+            request.setAttribute(START_TIME_ATTR, System.nanoTime())
+            limitAndGetAcquiredLimiter(request, applyPermits)
+                ?.let { request.setAttribute(ACQUIRED_LIMITER_ATTR, it) }
             rateLimiterMetrics.recordConnectionAccepted()
         } catch (e: Exception) {
             localConnectionCount.decrementAndGet()
@@ -86,33 +95,29 @@ class ServiceInstanceConnectionLimiterService(
         }
     }
 
-    fun finish(request: HttpServletRequest, exception: Exception?, startTimeNanos: Long?) {
+    override fun finish(request: HttpServletRequest) {
+        if (request.getAttribute(ACTIVE_ATTR) == null) return
         localConnectionCount.decrementAndGet()
+        (request.getAttribute(ACQUIRED_LIMITER_ATTR) as? RateLimiter)?.release()
+        val startTimeNanos = request.getAttribute(START_TIME_ATTR) as? Long
+        request.removeAttribute(ACTIVE_ATTR)
+        request.removeAttribute(ACQUIRED_LIMITER_ATTR)
+        request.removeAttribute(START_TIME_ATTR)
         startTimeNanos?.let { rateLimiterMetrics.recordConnectionDuration(it) }
     }
 
-    /**
-     * 获取当前连接数（用于监控指标）
-     */
     fun getCurrentConnections(): Int {
         return localConnectionCount.get()
     }
 
-    /**
-     * 获取最大连接数配置
-     */
     fun getMaxConnectionsConfig(): Int {
-        val resource = "/instance/$instanceId"
-        val resInfo = ResInfo(resource, emptyList())
+        val resInfo = ResInfo(instanceId, emptyList())
         val resourceLimit = (rateLimitRule as? ServiceInstanceConnectionRateLimitRule)
             ?.getRateLimitRule(resInfo)
             ?.resourceLimit
         return resourceLimit?.limit?.toInt() ?: Int.MAX_VALUE
     }
 
-    /**
-     * 获取连接使用率
-     */
     fun getConnectionUsageRate(): Double {
         val current = getCurrentConnections()
         val max = getMaxConnectionsConfig()
@@ -120,6 +125,12 @@ class ServiceInstanceConnectionLimiterService(
             return 0.0
         }
         return current.toDouble() / max
+    }
+
+    companion object {
+        const val ACQUIRED_LIMITER_ATTR = "RATE_LIMIT_INSTANCE_LIMITER"
+        const val ACTIVE_ATTR = "RATE_LIMIT_INSTANCE_ACTIVE"
+        const val START_TIME_ATTR = "RATE_LIMIT_INSTANCE_START_TIME"
     }
 }
 

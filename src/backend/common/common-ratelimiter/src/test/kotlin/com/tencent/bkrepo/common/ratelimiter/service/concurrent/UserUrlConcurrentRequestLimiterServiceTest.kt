@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.ratelimiter.enums.WorkScope
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.concurrent.UserUrlConcurrentRequestRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.algorithm.SemaphoreRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterServiceTest
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
@@ -49,8 +50,9 @@ import java.time.Duration
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class UserUrlConcurrentRequestLimiterServiceTest : AbstractRateLimiterServiceTest() {
 
+    // resource 格式为 userId:urlPath，* 为通配用户（StringPool.POUND），/ 匹配所有路径
     val l1 = ResourceLimit(
-        algo = Algorithms.FIXED_WINDOW.name, resource = "/user/*/",
+        algo = Algorithms.FIXED_WINDOW.name, resource = "*:/",
         limitDimension = LimitDimension.USER_URL_CONCURRENT_REQUEST.name, limit = 2,
         duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
@@ -86,8 +88,20 @@ class UserUrlConcurrentRequestLimiterServiceTest : AbstractRateLimiterServiceTes
     }
 
     @Test
+    override fun refreshRateLimitRuleChangeTest() {
+        super.refreshRateLimitRuleChangeTest()
+    }
+
+    @Test
     override fun getAlgorithmOfRateLimiterTest() {
-        super.getAlgorithmOfRateLimiterTest()
+        val resource = (rateLimiterService as UserUrlConcurrentRequestLimiterService).buildResource(request)
+        val resInfo = ResInfo(resource = resource, extraResource = emptyList())
+        val resourceLimit = (rateLimiterService as UserUrlConcurrentRequestLimiterService)
+            .rateLimitRule?.getRateLimitRule(resInfo)
+        Assertions.assertNotNull(resourceLimit)
+        val rateLimiter = (rateLimiterService as UserUrlConcurrentRequestLimiterService)
+            .getAlgorithmOfRateLimiter(resource, resourceLimit!!.resourceLimit)
+        Assertions.assertInstanceOf(SemaphoreRateLimiter::class.java, rateLimiter)
     }
 
     @Test
@@ -108,7 +122,7 @@ class UserUrlConcurrentRequestLimiterServiceTest : AbstractRateLimiterServiceTes
     @Test
     fun buildResourceTest() {
         Assertions.assertEquals(
-            "/user/admin/blueking/generic-local/test.txt",
+            "admin:/blueking/generic-local/test.txt",
             (rateLimiterService as UserUrlConcurrentRequestLimiterService).buildResource(request)
         )
     }
@@ -153,7 +167,7 @@ class UserUrlConcurrentRequestLimiterServiceTest : AbstractRateLimiterServiceTes
             .rateLimitRule?.getRateLimitRule(resInfo)
         Assertions.assertNotNull(resourceLimit)
         Assertions.assertEquals(
-            KEY_PREFIX + "UserUrlConcurrentRequest:" + "/user/admin/blueking/generic-local/test.txt",
+            KEY_PREFIX + "UserUrlConcurrentRequest:" + "admin:/blueking/generic-local/test.txt",
             (rateLimiterService as UserUrlConcurrentRequestLimiterService)
                 .generateKey(resourceLimit!!.resource, resourceLimit.resourceLimit)
         )

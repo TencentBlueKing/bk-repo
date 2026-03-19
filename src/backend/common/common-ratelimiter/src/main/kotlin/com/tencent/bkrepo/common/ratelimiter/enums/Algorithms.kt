@@ -34,5 +34,6 @@ enum class Algorithms {
     FIXED_WINDOW,
     SLIDING_WINDOW,
     LEAKY_BUCKET,
-    TOKEN_BUCKET;
+    TOKEN_BUCKET,
+    SEMAPHORE;
 }

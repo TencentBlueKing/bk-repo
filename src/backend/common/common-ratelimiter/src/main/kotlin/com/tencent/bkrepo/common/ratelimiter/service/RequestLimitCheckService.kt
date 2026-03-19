@@ -35,8 +35,6 @@ import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.UrlUploadBandwidt
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.UrlDownloadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.user.UserDownloadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.user.UserUploadBandwidthRateLimiterService
-import com.tencent.bkrepo.common.ratelimiter.service.evict.DownloadEvictRateLimiterService
-import com.tencent.bkrepo.common.ratelimiter.service.evict.UploadEvictRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.ip.IpRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRepoRateLimiterService
@@ -47,16 +45,11 @@ import com.tencent.bkrepo.common.ratelimiter.service.usage.UploadUsageRateLimite
 import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserUploadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
-import com.tencent.bkrepo.common.ratelimiter.stream.EvictContext
-import com.tencent.bkrepo.common.ratelimiter.stream.EvictableInputStream
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.util.unit.DataSize
-import org.springframework.web.servlet.HandlerMapping
-import java.io.IOException
 import java.io.InputStream
 
 class RequestLimitCheckService(
@@ -120,14 +113,6 @@ class RequestLimitCheckService(
     private lateinit var urlDownloadBandwidthRateLimiterService: UrlDownloadBandwidthRateLimiterService
 
     @Autowired(required = false)
-    @Qualifier(RateLimiterAutoConfiguration.DOWNLOAD_EVICT_RATELIMITER_SERVICE)
-    private var downloadEvictRateLimiterService: DownloadEvictRateLimiterService? = null
-
-    @Autowired(required = false)
-    @Qualifier(RateLimiterAutoConfiguration.UPLOAD_EVICT_RATELIMITER_SERVICE)
-    private var uploadEvictRateLimiterService: UploadEvictRateLimiterService? = null
-
-    @Autowired(required = false)
     @Qualifier(RateLimiterAutoConfiguration.IP_RATELIMITER_SERVICE)
     private var ipRateLimiterService: IpRateLimiterService? = null
 
@@ -166,6 +151,14 @@ class RequestLimitCheckService(
 
     }
 
+    /**
+     * 下载带宽检查：
+     * 1. 遍历所有下载带宽服务，收集各服务匹配到的规则优先级
+     * 2. 选取优先级最高的服务（同优先级时 URL > 项目 > 用户，与列表顺序一致）
+     * 3. 将选中的服务写入 request attribute 供 bandwidthFinish 使用
+     *
+     * 这同时修复了：first-match 静默失效、下载路径混入上传服务、check/finish 服务不一致
+     */
     fun bandwidthCheck(
         inputStream: InputStream,
         circuitBreakerPerSecond: DataSize,
@@ -175,119 +168,99 @@ class RequestLimitCheckService(
             return null
         }
         val request = getRequest() ?: return null
-        if (!urlDownloadBandwidthRateLimiterService.ignoreRequest(request)) {
-            return urlDownloadBandwidthRateLimiterService.bandwidthRateStart(
-                request, inputStream, circuitBreakerPerSecond, rangeLength
-            )
-        }
-        if (!downloadBandwidthRateLimiterService.ignoreRequest(request)) {
-            return downloadBandwidthRateLimiterService.bandwidthRateStart(
-                request, inputStream, circuitBreakerPerSecond, rangeLength
-            )
-        }
-        if (!userDownloadBandwidthRateLimiterService.ignoreRequest(request)) {
-            return userDownloadBandwidthRateLimiterService.bandwidthRateStart(
-                request, inputStream, circuitBreakerPerSecond, rangeLength
-            )
-        }
-        if (!uploadBandwidthRateLimiterService.ignoreRequest(request)) {
-            return uploadBandwidthRateLimiterService.bandwidthRateStart(
-                request, inputStream, circuitBreakerPerSecond, rangeLength
-            )
-        }
-        if (!userUploadBandwidthRateLimiterService.ignoreRequest(request)) {
-            return userUploadBandwidthRateLimiterService.bandwidthRateStart(
-                request, inputStream, circuitBreakerPerSecond, rangeLength
-            )
-        }
-        return null
+        val candidates = listOf(
+            BANDWIDTH_URL_DOWNLOAD to urlDownloadBandwidthRateLimiterService,
+            BANDWIDTH_PROJECT_DOWNLOAD to downloadBandwidthRateLimiterService,
+            BANDWIDTH_USER_DOWNLOAD to userDownloadBandwidthRateLimiterService,
+        )
+        // 找出所有有匹配规则的服务，按 priority 降序排，同 priority 保持原列表顺序（stable sort）
+        val best = candidates
+            .mapNotNull { (name, svc) ->
+                val result = svc.getMatchedRuleResult(request) ?: return@mapNotNull null
+                Triple(name, svc, result)
+            }
+            .maxByOrNull { (_, _, result) -> result.first.resourceLimit.priority }
+            ?: return null
+
+        val (name, service, ruleResult) = best
+        val stream = service.bandwidthRateStartWithResult(
+            request, inputStream, circuitBreakerPerSecond,
+            ruleResult.first, ruleResult.second, rangeLength
+        ) ?: return null
+        request.setAttribute(SELECTED_DOWNLOAD_BANDWIDTH_SERVICE, name)
+        return stream
     }
 
+    /**
+     * 下载带宽收尾：从 request attribute 读取 check 时选中的服务，保证 finish 与 check 一致。
+     */
     fun bandwidthFinish(exception: Exception? = null) {
         if (!rateLimiterProperties.enabled) {
             return
         }
         val request = getRequest() ?: return
-        if (!urlDownloadBandwidthRateLimiterService.ignoreRequest(request)) {
-            return urlDownloadBandwidthRateLimiterService.bandwidthRateLimitFinish(
-                request, exception
-            )
+        when (request.getAttribute(SELECTED_DOWNLOAD_BANDWIDTH_SERVICE) as? String) {
+            BANDWIDTH_URL_DOWNLOAD ->
+                urlDownloadBandwidthRateLimiterService.bandwidthRateLimitFinish(request, exception)
+            BANDWIDTH_PROJECT_DOWNLOAD ->
+                downloadBandwidthRateLimiterService.bandwidthRateLimitFinish(request, exception)
+            BANDWIDTH_USER_DOWNLOAD ->
+                userDownloadBandwidthRateLimiterService.bandwidthRateLimitFinish(request, exception)
         }
-        if (!downloadBandwidthRateLimiterService.ignoreRequest(request)) {
-            return downloadBandwidthRateLimiterService.bandwidthRateLimitFinish(
-                request, exception
-            )
-        }
-        if (!userDownloadBandwidthRateLimiterService.ignoreRequest(request)) {
-            return userDownloadBandwidthRateLimiterService.bandwidthRateLimitFinish(
-                request, exception
-            )
-        }
-        if (!uploadBandwidthRateLimiterService.ignoreRequest(request)) {
-            return uploadBandwidthRateLimiterService.bandwidthRateLimitFinish(
-                request, exception
-            )
-        }
-        if (!userUploadBandwidthRateLimiterService.ignoreRequest(request)) {
-            return userUploadBandwidthRateLimiterService.bandwidthRateLimitFinish(
-                request, exception
-            )
-        }
+        request.removeAttribute(SELECTED_DOWNLOAD_BANDWIDTH_SERVICE)
     }
 
     /**
-     * 对下载流包装驱逐检查，在每次 read 时通过 [DownloadEvictRateLimiterService] 动态查找规则
-     * 规则由框架定时刷新机制维护，支持热更新，无需重启
-     * 驱逐时抛出 IOException，Tomcat 关闭连接后 afterCompletion 自动归还计数器
+     * 上传流带宽检查（如 ArtifactDataReceiver 读请求体）：与 [bandwidthCheck] 对称，
+     * 仅在 URL/项目/用户三类上传带宽服务间按规则 priority 选最高者，避免下载限流误用。
      */
-    fun evictCheck(inputStream: InputStream): EvictableInputStream? {
-        val evictService = downloadEvictRateLimiterService ?: return null
-        if (!rateLimiterProperties.enabled) return null
-        if (evictService.rateLimitRule == null || evictService.rateLimitRule!!.isEmpty()) return null
+    fun uploadBandwidthStreamCheck(
+        inputStream: InputStream,
+        circuitBreakerPerSecond: DataSize,
+        rangeLength: Long? = null,
+    ): CommonRateLimitInputStream? {
+        if (!rateLimiterProperties.enabled) {
+            return null
+        }
         val request = getRequest() ?: return null
-        val userId = try { SecurityUtils.getUserId() } catch (e: Exception) { "unknown" }
-        val clientIp = try { HttpContextHolder.getClientAddressFromAttribute() } catch (e: Exception) { "unknown" }
-        val (projectId, repoName) = try {
-            val vars = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as? Map<*, *>
-            Pair(vars?.get("projectId") as? String, vars?.get("repoName") as? String)
-        } catch (e: Exception) { Pair(null, null) }
-        return EvictableInputStream(
-            inputStream,
-            EvictContext(userId = userId, clientIp = clientIp, projectId = projectId, repoName = repoName),
-            evictService,
+        val candidates = listOf(
+            BANDWIDTH_URL_UPLOAD to urlUploadBandwidthRateLimiterService,
+            BANDWIDTH_PROJECT_UPLOAD to uploadBandwidthRateLimiterService,
+            BANDWIDTH_USER_UPLOAD to userUploadBandwidthRateLimiterService,
         )
+        val best = candidates
+            .mapNotNull { (name, svc) ->
+                val result = svc.getMatchedRuleResult(request) ?: return@mapNotNull null
+                Triple(name, svc, result)
+            }
+            .maxByOrNull { (_, _, result) -> result.first.resourceLimit.priority }
+            ?: return null
+
+        val (name, service, ruleResult) = best
+        val stream = service.bandwidthRateStartWithResult(
+            request, inputStream, circuitBreakerPerSecond,
+            ruleResult.first, ruleResult.second, rangeLength
+        ) ?: return null
+        request.setAttribute(SELECTED_UPLOAD_BANDWIDTH_SERVICE, name)
+        return stream
     }
 
-    /**
-     * 上传驱逐检查，在每次写入数据块时调用，超时则抛出 IOException 中断上传
-     * @param uploadStartTime 上传开始时间（System.nanoTime()），用于计算已存活秒数
-     */
-    fun uploadEvictCheck(uploadStartTime: Long) {
-        val evictService = uploadEvictRateLimiterService ?: return
-        if (!rateLimiterProperties.enabled) return
-        if (evictService.rateLimitRule == null || evictService.rateLimitRule!!.isEmpty()) return
-        val request = getRequest() ?: return
-        val userId = try { SecurityUtils.getUserId() } catch (e: Exception) { "unknown" }
-        val clientIp = try { HttpContextHolder.getClientAddressFromAttribute() } catch (e: Exception) { "unknown" }
-        val (projectId, repoName) = try {
-            val vars = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as? Map<*, *>
-            Pair(vars?.get("projectId") as? String, vars?.get("repoName") as? String)
-        } catch (e: Exception) { Pair(null, null) }
-        val resLimitInfo = evictService.findEvictRule(
-            userId = userId,
-            clientIp = clientIp,
-            projectId = projectId,
-            repoName = repoName,
-        ) ?: return
-        // startTime 是 nanoTime，转换为毫秒再计算秒数
-        val aliveSeconds = (System.nanoTime() - uploadStartTime) / 1_000_000_000L
-        val minGuaranteeSeconds = resLimitInfo.resourceLimit.capacity ?: 0L
-        if (aliveSeconds <= minGuaranteeSeconds) return
-        if (aliveSeconds > resLimitInfo.resourceLimit.limit) {
-            val msg = "timeout(${aliveSeconds}s > ${resLimitInfo.resourceLimit.limit}s)"
-            throw IOException("Upload evicted: user=$userId, ip=$clientIp, project=$projectId, repo=$repoName, $msg")
+    fun uploadBandwidthStreamFinish(exception: Exception? = null) {
+        if (!rateLimiterProperties.enabled) {
+            return
         }
+        val request = getRequest() ?: return
+        when (request.getAttribute(SELECTED_UPLOAD_BANDWIDTH_SERVICE) as? String) {
+            BANDWIDTH_URL_UPLOAD ->
+                urlUploadBandwidthRateLimiterService.bandwidthRateLimitFinish(request, exception)
+            BANDWIDTH_PROJECT_UPLOAD ->
+                uploadBandwidthRateLimiterService.bandwidthRateLimitFinish(request, exception)
+            BANDWIDTH_USER_UPLOAD ->
+                userUploadBandwidthRateLimiterService.bandwidthRateLimitFinish(request, exception)
+        }
+        request.removeAttribute(SELECTED_UPLOAD_BANDWIDTH_SERVICE)
     }
+
 
     fun uploadBandwidthCheck(
         applyPermits: Long,
@@ -297,15 +270,37 @@ class RequestLimitCheckService(
             return
         }
         val request = getRequest() ?: return
-        urlUploadBandwidthRateLimiterService.bandwidthRateLimit(
-            request, applyPermits, circuitBreakerPerSecond
-        )
-        uploadBandwidthRateLimiterService.bandwidthRateLimit(
-            request, applyPermits, circuitBreakerPerSecond
-        )
-        userUploadBandwidthRateLimiterService.bandwidthRateLimit(
-            request, applyPermits, circuitBreakerPerSecond
-        )
+        // 同一请求的后续 chunk 直接复用首次选定的服务，避免每块都做 3 服务规则查询
+        val service: AbstractBandwidthRateLimiterService = when (
+            request.getAttribute(CACHED_UPLOAD_BANDWIDTH_CHECK_SERVICE) as? String
+        ) {
+            BANDWIDTH_URL_UPLOAD -> urlUploadBandwidthRateLimiterService
+            BANDWIDTH_PROJECT_UPLOAD -> uploadBandwidthRateLimiterService
+            BANDWIDTH_USER_UPLOAD -> userUploadBandwidthRateLimiterService
+            BANDWIDTH_NONE -> return  // 已确认无规则，直接跳过
+            else -> {
+                // 首个 chunk：选出最高优先级服务并缓存到 request attribute
+                val candidates = listOf(
+                    BANDWIDTH_URL_UPLOAD to urlUploadBandwidthRateLimiterService,
+                    BANDWIDTH_PROJECT_UPLOAD to uploadBandwidthRateLimiterService,
+                    BANDWIDTH_USER_UPLOAD to userUploadBandwidthRateLimiterService,
+                )
+                val best = candidates
+                    .mapNotNull { (name, svc) ->
+                        val p = svc.getMatchedRulePriority(request) ?: return@mapNotNull null
+                        Triple(name, svc, p)
+                    }
+                    .maxByOrNull { (_, _, p) -> p }
+                if (best != null) {
+                    request.setAttribute(CACHED_UPLOAD_BANDWIDTH_CHECK_SERVICE, best.first)
+                    best.second
+                } else {
+                    request.setAttribute(CACHED_UPLOAD_BANDWIDTH_CHECK_SERVICE, BANDWIDTH_NONE)
+                    return
+                }
+            }
+        }
+        service.bandwidthRateLimit(request, applyPermits, circuitBreakerPerSecond)
     }
 
     private fun getRequest(): HttpServletRequest? {
@@ -314,5 +309,21 @@ class RequestLimitCheckService(
         } catch (e: IllegalArgumentException) {
             return null
         }
+    }
+
+    companion object {
+        /** request attribute key：记录 bandwidthCheck 选中的下载带宽服务，供 bandwidthFinish 使用 */
+        internal const val SELECTED_DOWNLOAD_BANDWIDTH_SERVICE = "SELECTED_DOWNLOAD_BANDWIDTH_SERVICE"
+        internal const val SELECTED_UPLOAD_BANDWIDTH_SERVICE = "SELECTED_UPLOAD_BANDWIDTH_SERVICE"
+        /** request attribute key：缓存 uploadBandwidthCheck 首次选定的服务，供后续 chunk 复用 */
+        private const val CACHED_UPLOAD_BANDWIDTH_CHECK_SERVICE = "CACHED_UPLOAD_BANDWIDTH_CHECK_SERVICE"
+        /** 标记首次查询后确认无规则，后续 chunk 直接跳过 */
+        private const val BANDWIDTH_NONE = "none"
+        private const val BANDWIDTH_URL_DOWNLOAD = "urlDownload"
+        private const val BANDWIDTH_PROJECT_DOWNLOAD = "projectDownload"
+        private const val BANDWIDTH_USER_DOWNLOAD = "userDownload"
+        private const val BANDWIDTH_URL_UPLOAD = "urlUpload"
+        private const val BANDWIDTH_PROJECT_UPLOAD = "projectUpload"
+        private const val BANDWIDTH_USER_UPLOAD = "userUpload"
     }
 }

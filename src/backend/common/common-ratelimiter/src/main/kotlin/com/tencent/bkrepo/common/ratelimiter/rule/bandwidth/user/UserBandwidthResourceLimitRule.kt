@@ -26,7 +26,7 @@ class UserBandwidthResourceLimitRule {
     fun addUserBandwidthResourceLimit(resourceLimit: ResourceLimit) {
         val (userId, path) = ResourcePathUtils.getUserAndPath(resourceLimit.resource)
         if (path.isEmpty()) {
-            userLimitRules[userId] = resourceLimit
+            userLimitRules[userId] = resourceLimit.copy(resource = path)
         } else {
             val pathRule = userBandwidthLimitRules.getOrDefault(
                 userId,

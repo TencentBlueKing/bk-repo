@@ -88,6 +88,11 @@ class IpRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
     }
 
     @Test
+    override fun refreshRateLimitRuleChangeTest() {
+        super.refreshRateLimitRuleChangeTest()
+    }
+
+    @Test
     override fun getAlgorithmOfRateLimiterTest() {
         super.getAlgorithmOfRateLimiterTest()
     }

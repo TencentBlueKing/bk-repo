@@ -18,7 +18,8 @@ class UserConcurrentConnectionRateLimitRule(
     override fun isEmpty(): Boolean = userLimitRules.isEmpty()
 
     override fun getRateLimitRule(resInfo: ResInfo): ResLimitInfo? {
-        val resourceLimit = userLimitRules[resInfo.resource] ?: return null
+        // First try exact per-user rule, then fall back to global "/" rule
+        val resourceLimit = userLimitRules[resInfo.resource] ?: userLimitRules["/"] ?: return null
         return ResLimitInfo(resInfo.resource, resourceLimit)
     }
 

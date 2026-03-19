@@ -47,10 +47,7 @@ enum class LimitDimension {
     URL_DOWNLOAD_BANDWIDTH, // 针对特定URL下载请求的带宽进行限流
     SERVICE_INSTANCE_CONNECTION, // 针对服务实例的并发连接数进行限流
     USER_CONCURRENT_CONNECTION, // 针对单个用户的并发连接数进行限流
-    IP_CONCURRENT_CONNECTION, // 针对单个IP的并发连接数进行限流
     IP, // 针对IP地址进行限流（防止单个IP恶意请求）
     URL_CONCURRENT_REQUEST, // 针对特定URL的并发请求数进行限流（防止数据库高负载）
     USER_URL_CONCURRENT_REQUEST, // 针对用户+URL的并发请求数进行限流
-    DOWNLOAD_EVICT, // 针对下载连接的主动驱逐，支持按 ip/user/project/repo 维度配置
-    UPLOAD_EVICT, // 针对上传连接的主动驱逐，支持按 ip/user/project/repo 维度配置
 }

@@ -28,9 +28,7 @@
 package com.tencent.bkrepo.common.ratelimiter
 
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
-import com.tencent.bkrepo.common.ratelimiter.interceptor.ConcurrentConnectionLimitInterceptor
-import com.tencent.bkrepo.common.ratelimiter.interceptor.ConcurrentRequestLimitInterceptor
-import com.tencent.bkrepo.common.ratelimiter.interceptor.ConnectionLimitInterceptor
+import com.tencent.bkrepo.common.ratelimiter.interceptor.ConcurrencyLimitInterceptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.NonUserRateLimitHandlerInterceptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.UserRateLimitHandlerInterceptor
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
@@ -42,13 +40,10 @@ import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.UrlUploadBandwidt
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.UrlDownloadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.user.UserDownloadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.user.UserUploadBandwidthRateLimiterService
-import com.tencent.bkrepo.common.ratelimiter.service.connection.IpConcurrentConnectionLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.connection.ServiceInstanceConnectionLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.connection.UserConcurrentConnectionLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.concurrent.UrlConcurrentRequestLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.concurrent.UserUrlConcurrentRequestLimiterService
-import com.tencent.bkrepo.common.ratelimiter.service.evict.DownloadEvictRateLimiterService
-import com.tencent.bkrepo.common.ratelimiter.service.evict.UploadEvictRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.ip.IpRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRepoRateLimiterService
@@ -311,31 +306,6 @@ class RateLimiterAutoConfiguration {
         )
     }
 
-    @Bean(DOWNLOAD_EVICT_RATELIMITER_SERVICE)
-    fun downloadEvictRateLimiterService(
-        taskScheduler: ThreadPoolTaskScheduler,
-        rateLimiterProperties: RateLimiterProperties,
-        rateLimiterMetrics: RateLimiterMetrics,
-        redisTemplate: RedisTemplate<String, String>,
-        rateLimiterConfigService: RateLimiterConfigService
-    ): DownloadEvictRateLimiterService {
-        return DownloadEvictRateLimiterService(
-            taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService
-        )
-    }
-
-    @Bean(UPLOAD_EVICT_RATELIMITER_SERVICE)
-    fun uploadEvictRateLimiterService(
-        taskScheduler: ThreadPoolTaskScheduler,
-        rateLimiterProperties: RateLimiterProperties,
-        rateLimiterMetrics: RateLimiterMetrics,
-        redisTemplate: RedisTemplate<String, String>,
-        rateLimiterConfigService: RateLimiterConfigService
-    ): UploadEvictRateLimiterService {
-        return UploadEvictRateLimiterService(
-            taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService
-        )
-    }
 
     @Bean
     fun requestLimitCheckService(
@@ -370,23 +340,6 @@ class RateLimiterAutoConfiguration {
         rateLimiterConfigService: RateLimiterConfigService
     ): UserConcurrentConnectionLimiterService {
         return UserConcurrentConnectionLimiterService(
-            taskScheduler,
-            rateLimiterProperties,
-            rateLimiterMetrics,
-            redisTemplate,
-            rateLimiterConfigService
-        )
-    }
-
-    @Bean(IP_CONCURRENT_CONNECTION_RATELIMITER_SERVICE)
-    fun ipConcurrentConnectionLimiterService(
-        taskScheduler: ThreadPoolTaskScheduler,
-        rateLimiterProperties: RateLimiterProperties,
-        rateLimiterMetrics: RateLimiterMetrics,
-        redisTemplate: RedisTemplate<String, String>,
-        rateLimiterConfigService: RateLimiterConfigService
-    ): IpConcurrentConnectionLimiterService {
-        return IpConcurrentConnectionLimiterService(
             taskScheduler,
             rateLimiterProperties,
             rateLimiterMetrics,
@@ -435,38 +388,21 @@ class RateLimiterAutoConfiguration {
         requestLimitCheckService: RequestLimitCheckService,
         connectionLimiterService: ServiceInstanceConnectionLimiterService,
         userConnectionLimiterService: ObjectProvider<UserConcurrentConnectionLimiterService>,
-        ipConnectionLimiterService: ObjectProvider<IpConcurrentConnectionLimiterService>,
         urlConcurrentRequestLimiterService: ObjectProvider<UrlConcurrentRequestLimiterService>,
         userUrlConcurrentRequestLimiterService: ObjectProvider<UserUrlConcurrentRequestLimiterService>
     ): WebMvcConfigurer {
         return object : WebMvcConfigurer {
             override fun addInterceptors(registry: InterceptorRegistry) {
-                // 服务实例连接数限流拦截器，优先级最高
-                registry.addInterceptor(ConnectionLimitInterceptor(connectionLimiterService))
-                    .excludePathPatterns("/service/**", "/replica/**", "/actuator/**")
-                    .order(Ordered.HIGHEST_PRECEDENCE - 1)
-
-                // 用户和IP并发连接数限流拦截器
-                registry.addInterceptor(
-                    ConcurrentConnectionLimitInterceptor(
-                        userConnectionLimiterService.getIfAvailable(),
-                        ipConnectionLimiterService.getIfAvailable()
-                    )
-                )
+                // 不依赖用户身份的并发限流：在 HttpAuthInterceptor 之前执行，实现早期保护
+                val nonUserConcurrencyServices = buildList {
+                    add(connectionLimiterService)
+                    urlConcurrentRequestLimiterService.getIfAvailable()?.let { add(it) }
+                }
+                registry.addInterceptor(ConcurrencyLimitInterceptor(nonUserConcurrencyServices))
                     .excludePathPatterns("/service/**", "/replica/**", "/actuator/**")
                     .order(Ordered.HIGHEST_PRECEDENCE)
 
-                // URL并发请求限流拦截器（防止数据库高负载）
-                registry.addInterceptor(
-                    ConcurrentRequestLimitInterceptor(
-                        urlConcurrentRequestLimiterService.getIfAvailable(),
-                        userUrlConcurrentRequestLimiterService.getIfAvailable()
-                    )
-                )
-                    .excludePathPatterns("/service/**", "/replica/**", "/actuator/**")
-                    .order(Ordered.HIGHEST_PRECEDENCE)
-
-                // 不需要用户校验的限流拦截器，应在HttpAuthInterceptor之前执行
+                // 不需要用户校验的带宽/速率限流拦截器，应在HttpAuthInterceptor之前执行
                 registry.addInterceptor(
                     NonUserRateLimitHandlerInterceptor(
                         requestLimitCheckService = requestLimitCheckService
@@ -484,6 +420,17 @@ class RateLimiterAutoConfiguration {
                 )
                     .excludePathPatterns("/service/**", "/replica/**")
                     .order(1)
+
+                // 依赖用户身份的并发限流：在 HttpAuthInterceptor(0) 和 UserRateLimitHandlerInterceptor(1) 之后执行
+                val userConcurrencyServices = buildList {
+                    userConnectionLimiterService.getIfAvailable()?.let { add(it) }
+                    userUrlConcurrentRequestLimiterService.getIfAvailable()?.let { add(it) }
+                }
+                if (userConcurrencyServices.isNotEmpty()) {
+                    registry.addInterceptor(ConcurrencyLimitInterceptor(userConcurrencyServices))
+                        .excludePathPatterns("/service/**", "/replica/**", "/actuator/**")
+                        .order(2)
+                }
 
                 super.addInterceptors(registry)
             }
@@ -507,11 +454,8 @@ class RateLimiterAutoConfiguration {
         const val USER_URL_REPO_RATELIMITER_SERVICE = "userUrlRepoRateLimiterService"
         const val SERVICE_INSTANCE_CONNECTION_RATELIMITER_SERVICE = "serviceInstanceConnectionLimiterService"
         const val USER_CONCURRENT_CONNECTION_RATELIMITER_SERVICE = "userConcurrentConnectionLimiterService"
-        const val IP_CONCURRENT_CONNECTION_RATELIMITER_SERVICE = "ipConcurrentConnectionLimiterService"
         const val URL_UPLOAD_BANDWIDTH_RATELIMITER_SERVICE = "urlUploadBandwidthRateLimiterService"
         const val URL_DOWNLOAD_BANDWIDTH_RATELIMITER_SERVICE = "urlDownloadBandwidthRateLimiterService"
-        const val DOWNLOAD_EVICT_RATELIMITER_SERVICE = "downloadEvictRateLimiterService"
-        const val UPLOAD_EVICT_RATELIMITER_SERVICE = "uploadEvictRateLimiterService"
         const val URL_CONCURRENT_REQUEST_RATELIMITER_SERVICE = "urlConcurrentRequestLimiterService"
         const val USER_URL_CONCURRENT_REQUEST_RATELIMITER_SERVICE = "userUrlConcurrentRequestLimiterService"
     }

@@ -21,7 +21,11 @@ class ServiceInstanceConnectionRateLimitRule(
     }
 
     override fun getRateLimitRule(resInfo: ResInfo): ResLimitInfo? {
-        val resourceLimit = instanceLimitRules[resInfo.resource] ?: return null
+        // resInfo.resource = "$serviceName:$host:$port"
+        // 优先匹配精确实例规则，回退到服务级规则（resource = serviceName）
+        val resourceLimit = instanceLimitRules[resInfo.resource]
+            ?: instanceLimitRules[resInfo.resource.substringBefore(':')]
+            ?: return null
         return ResLimitInfo(resInfo.resource, resourceLimit)
     }
 

@@ -89,6 +89,11 @@ class DownloadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest()
     }
 
     @Test
+    override fun refreshRateLimitRuleChangeTest() {
+        super.refreshRateLimitRuleChangeTest()
+    }
+
+    @Test
     override fun getAlgorithmOfRateLimiterTest() {
         super.getAlgorithmOfRateLimiterTest()
     }
@@ -295,5 +300,28 @@ class DownloadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest()
             true,
             (rateLimiterService as DownloadBandwidthRateLimiterService).bandwidthLimitHandler(rateLimiter, 100)
         )
+    }
+
+    /**
+     * 验证 bandwidthLimitHandler 在超时后不死循环，直接返回 true 放通。
+     * 使用 timeout=0 + 永远返回 false 的 mock 限流器来触发超时分支。
+     */
+    @Test
+    fun bandwidthLimitHandlerTimeoutBypassTest() {
+        val alwaysFalseLimiter = org.mockito.Mockito.mock(
+            com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter::class.java
+        )
+        org.mockito.Mockito.`when`(alwaysFalseLimiter.tryAcquire(org.mockito.ArgumentMatchers.anyLong()))
+            .thenReturn(false)
+
+        rateLimiterProperties.bandwidthProperties.timeout = 0
+
+        val result = (rateLimiterService as DownloadBandwidthRateLimiterService)
+            .bandwidthLimitHandler(alwaysFalseLimiter, 1L)
+
+        Assertions.assertTrue(result, "超时后应放通返回 true，而非阻塞")
+
+        // 恢复默认值
+        rateLimiterProperties.bandwidthProperties.timeout = 1000
     }
 }

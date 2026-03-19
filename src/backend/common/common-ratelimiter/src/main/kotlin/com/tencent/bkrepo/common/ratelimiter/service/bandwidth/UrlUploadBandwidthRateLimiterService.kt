@@ -1,17 +1,21 @@
 package com.tencent.bkrepo.common.ratelimiter.service.bandwidth
 
+import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.UrlUploadBandwidthRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
+import com.tencent.bkrepo.common.ratelimiter.utils.RateLimiterBuilder
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * URL上传带宽限流服务
@@ -53,4 +57,24 @@ class UrlUploadBandwidthRateLimiterService(
     }
 
     override fun ignoreRequest(request: HttpServletRequest): Boolean = false
+
+    override fun initCompanionRateLimitRule() {
+        Companion.rateLimiterCache = rateLimiterCache
+        Companion.rateLimitRule = rateLimitRule!!
+    }
+
+    companion object {
+        lateinit var rateLimiterCache: ConcurrentHashMap<String, RateLimiter>
+        lateinit var rateLimitRule: RateLimitRule
+
+        fun getAlgorithmOfRateLimiter(
+            limitKey: String,
+            resourceLimit: ResourceLimit,
+            redInfo: ResInfo? = null
+        ): RateLimiter {
+            return RateLimiterBuilder.getAlgorithmOfRateLimiter(
+                limitKey, resourceLimit, redisTemplate, rateLimiterCache, redInfo, rateLimitRule
+            )
+        }
+    }
 }

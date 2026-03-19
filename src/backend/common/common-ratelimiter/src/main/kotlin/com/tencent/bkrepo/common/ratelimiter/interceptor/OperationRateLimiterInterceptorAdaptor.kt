@@ -23,14 +23,16 @@ class OperationRateLimiterInterceptorAdaptor(
         result: Boolean,
         e: Exception?
     ) {
+        // 无论 resourceLimit 是否为 null，都必须清理 ThreadLocal 防止泄漏
+        val startTime = checkStartTime.get()
+        checkStartTime.remove()
+
         if (resourceLimit == null) return
 
         // 记录响应时间
-        val startTime = checkStartTime.get()
         if (startTime != null) {
             val duration = System.nanoTime() - startTime
             rateLimiterMetrics.recordLimiterResponseTime(resourceLimit.limitDimension, duration)
-            checkStartTime.remove()
         }
 
         // 记录通过或拒绝的许可数（默认为1）

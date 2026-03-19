@@ -31,6 +31,9 @@ interface RateLimiter {
 
     fun tryAcquire(permits: Long): Boolean
 
+    /** 释放已占用的并发槽位，仅 SEMAPHORE 算法有效，其他算法默认空实现 */
+    fun release(permits: Long = 1L) {}
+
     fun removeCacheLimit(key: String)
 
     fun getLimitPerSecond(): Long

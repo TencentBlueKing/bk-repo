@@ -200,7 +200,6 @@ class ArtifactDataReceiver(
                 length.toLong(),
                 receiveProperties.circuitBreakerThreshold
             )
-            requestLimitCheckService?.uploadEvictCheck(startTime)
             writeData(chunk, offset, length)
         } catch (exception: IOException) {
             handleIOException(exception)
@@ -222,7 +221,6 @@ class ArtifactDataReceiver(
             requestLimitCheckService?.uploadBandwidthCheck(
                 1, receiveProperties.circuitBreakerThreshold
             )
-            requestLimitCheckService?.uploadEvictCheck(startTime)
             checkFallback()
             outputStream.write(b)
             listener.data(b)
@@ -248,15 +246,15 @@ class ArtifactDataReceiver(
             var rateLimitFlag = false
             var exp: Exception? = null
             try {
-                val input = requestLimitCheckService?.bandwidthCheck(
+                val bandwidthInput = requestLimitCheckService?.uploadBandwidthStreamCheck(
                     source, receiveProperties.circuitBreakerThreshold, contentLength
                 ) ?: source.rateLimit(receiveProperties.rateLimit.toBytes())
-                rateLimitFlag = input is CommonRateLimitInputStream
+                rateLimitFlag = bandwidthInput is CommonRateLimitInputStream
+                val input = bandwidthInput
                 val buffer = ByteArray(bufferSize)
                 input.use {
                     var bytes = input.read(buffer)
                     while (bytes >= 0) {
-                        requestLimitCheckService?.uploadEvictCheck(startTime)
                         writeData(buffer, 0, bytes)
                         bytes = input.read(buffer)
                     }
@@ -269,7 +267,7 @@ class ArtifactDataReceiver(
                 handleOverloadException(overloadEx)
             } finally {
                 if (rateLimitFlag) {
-                    requestLimitCheckService?.bandwidthFinish(exp)
+                    requestLimitCheckService?.uploadBandwidthStreamFinish(exp)
                 }
             }
         }

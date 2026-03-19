@@ -29,11 +29,13 @@ package com.tencent.bkrepo.common.ratelimiter.utils
 
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedFixedWindowRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedLeakyRateLimiter
+import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedSemaphoreRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedSlidingWindowRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedTokenBucketRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.FixedWindowRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.LeakyRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
+import com.tencent.bkrepo.common.ratelimiter.algorithm.SemaphoreRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.SlidingWindowRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.TokenBucketRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.enums.Algorithms
@@ -95,6 +97,10 @@ object RateLimiterBuilder {
 
             Algorithms.LEAKY_BUCKET.name -> {
                 buildLeakyRateLimiter(resource, resourceLimit, redisTemplate)
+            }
+
+            Algorithms.SEMAPHORE.name -> {
+                buildSemaphoreRateLimiter(resource, resourceLimit, redisTemplate)
             }
 
             else -> {
@@ -165,6 +171,21 @@ object RateLimiterBuilder {
         } else {
             DistributedLeakyRateLimiter(
                 resource, rate, resourceLimit.capacity!!, redisTemplate!!, resourceLimit.keepConnection
+            )
+        }
+    }
+
+    private fun buildSemaphoreRateLimiter(
+        resource: String,
+        resourceLimit: ResourceLimit,
+        redisTemplate: RedisTemplate<String, String>? = null
+    ): RateLimiter {
+        // limit = 最大并发数；duration = safety TTL（防止 Pod 崩溃后计数泄漏）
+        return if (resourceLimit.scope == WorkScope.LOCAL.name) {
+            SemaphoreRateLimiter(resourceLimit.limit, resourceLimit.keepConnection)
+        } else {
+            DistributedSemaphoreRateLimiter(
+                resource, resourceLimit.limit, resourceLimit.duration, redisTemplate!!, resourceLimit.keepConnection
             )
         }
     }

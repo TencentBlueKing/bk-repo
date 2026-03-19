@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.ratelimiter.service.concurrent
 
 import com.tencent.bkrepo.common.api.exception.OverloadException
+import com.tencent.bkrepo.common.ratelimiter.algorithm.SemaphoreRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
 import com.tencent.bkrepo.common.ratelimiter.enums.Algorithms
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
@@ -81,8 +82,20 @@ class UrlConcurrentRequestLimiterServiceTest : AbstractRateLimiterServiceTest() 
     }
 
     @Test
+    override fun refreshRateLimitRuleChangeTest() {
+        super.refreshRateLimitRuleChangeTest()
+    }
+
+    @Test
     override fun getAlgorithmOfRateLimiterTest() {
-        super.getAlgorithmOfRateLimiterTest()
+        val resource = (rateLimiterService as UrlConcurrentRequestLimiterService).buildResource(request)
+        val resInfo = ResInfo(resource = resource, extraResource = emptyList())
+        val resourceLimit = (rateLimiterService as UrlConcurrentRequestLimiterService)
+            .rateLimitRule?.getRateLimitRule(resInfo)
+        Assertions.assertNotNull(resourceLimit)
+        val rateLimiter = (rateLimiterService as UrlConcurrentRequestLimiterService)
+            .getAlgorithmOfRateLimiter(resource, resourceLimit!!.resourceLimit)
+        Assertions.assertInstanceOf(SemaphoreRateLimiter::class.java, rateLimiter)
     }
 
     @Test

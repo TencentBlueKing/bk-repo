@@ -37,26 +37,19 @@ class MonitorRateLimiterInterceptorAdaptor(
     private val rateLimiterMetrics: RateLimiterMetrics
 ) : RateLimiterInterceptorAdapter() {
 
-    private val permitsThreadLocal = ThreadLocal<Long>()
-
-    override fun beforeLimitCheck(resource: String, resourceLimit: ResourceLimit) {
-        // 可以记录请求的permits（如果需要）
-        permitsThreadLocal.set(1L)
-    }
+    override fun beforeLimitCheck(resource: String, resourceLimit: ResourceLimit) = Unit
 
     override fun afterLimitCheck(
         resource: String, resourceLimit: ResourceLimit?,
         result: Boolean, e: Exception?
     ) {
         if (resourceLimit == null) return
-        val permits = permitsThreadLocal.get() ?: 1L
         rateLimiterMetrics.collectMetrics(
-            resource = resource, 
-            result = result, 
+            resource = resource,
+            result = result,
             e = e,
             dimension = resourceLimit.limitDimension,
-            permits = permits
+            permits = 1L
         )
-        permitsThreadLocal.remove()
     }
 }

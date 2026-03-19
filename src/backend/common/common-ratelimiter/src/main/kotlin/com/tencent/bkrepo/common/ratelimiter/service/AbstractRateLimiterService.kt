@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
+import com.tencent.bkrepo.common.ratelimiter.enums.Algorithms
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.interceptor.MonitorRateLimiterInterceptorAdaptor
@@ -57,10 +58,7 @@ import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.user.UserDownloadBan
 import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.user.UserUploadBandwidthRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.concurrent.UrlConcurrentRequestRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.concurrent.UserUrlConcurrentRequestRateLimitRule
-import com.tencent.bkrepo.common.ratelimiter.rule.connection.IpConcurrentConnectionRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.connection.UserConcurrentConnectionRateLimitRule
-import com.tencent.bkrepo.common.ratelimiter.rule.evict.DownloadEvictRateLimitRule
-import com.tencent.bkrepo.common.ratelimiter.rule.evict.UploadEvictRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResLimitInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
@@ -344,7 +342,8 @@ abstract class AbstractRateLimiterService(
                 duration = tRateLimit.duration,
                 capacity = tRateLimit.capacity,
                 scope = tRateLimit.scope,
-                targets = tRateLimit.targets
+                targets = tRateLimit.targets,
+                priority = tRateLimit.priority,
             )
         })
         // 配置规则变更后需要清理缓存的限流算法实现
@@ -385,12 +384,9 @@ abstract class AbstractRateLimiterService(
             UserDownloadBandwidthRateLimitRule::class.java -> UserDownloadBandwidthRateLimitRule()
             IpRateLimitRule::class.java -> IpRateLimitRule()
             ServiceInstanceConnectionRateLimitRule::class.java -> ServiceInstanceConnectionRateLimitRule()
-            IpConcurrentConnectionRateLimitRule::class.java -> IpConcurrentConnectionRateLimitRule()
             UserConcurrentConnectionRateLimitRule::class.java -> UserConcurrentConnectionRateLimitRule()
             UrlConcurrentRequestRateLimitRule::class.java -> UrlConcurrentRequestRateLimitRule()
             UserUrlConcurrentRequestRateLimitRule::class.java -> UserUrlConcurrentRequestRateLimitRule()
-            DownloadEvictRateLimitRule::class.java -> DownloadEvictRateLimitRule()
-            UploadEvictRateLimitRule::class.java -> UploadEvictRateLimitRule()
             else -> null
         }
     }
@@ -489,15 +485,42 @@ abstract class AbstractRateLimiterService(
     }
 
     /**
-     * 获取对应限流算法实现
+     * 获取对应限流算法实现，子类可覆盖以强制指定算法（如并发类限流强制使用 SEMAPHORE）
      */
-    fun getAlgorithmOfRateLimiter(
+    open fun getAlgorithmOfRateLimiter(
         resource: String, resourceLimit: ResourceLimit,
     ): RateLimiter {
         val limitKey = generateKey(resource, resourceLimit)
+        // 信号量模式下，duration 没有"时间窗口"语义；崩溃恢复 TTL 统一由全局配置控制，
+        // 避免用户配置较短的 duration 导致槽位提前过期、破坏并发语义。
+        val effectiveLimit = if (resourceLimit.algo == Algorithms.SEMAPHORE.name) {
+            resourceLimit.copy(duration = rateLimiterProperties.semaphoreSafetyTtl)
+        } else {
+            resourceLimit
+        }
         return RateLimiterBuilder.getAlgorithmOfRateLimiter(
-            limitKey, resourceLimit, redisTemplate, rateLimiterCache
+            limitKey, effectiveLimit, redisTemplate, rateLimiterCache
         )
+    }
+
+    /**
+     * 执行限流检查并返回成功 acquire 的 RateLimiter 实例。
+     * 仅供需要在请求结束时调用 release() 的并发类子服务使用，避免 ThreadLocal。
+     * 返回 null 表示无规则命中或检查失败（允许通过）。
+     */
+    protected fun limitAndGetAcquiredLimiter(request: HttpServletRequest, applyPermits: Long?): RateLimiter? {
+        if (!rateLimiterProperties.enabled) return null
+        whiteListCheck(request)
+        if (ignoreRequest(request)) return null
+        if (rateLimitRule == null || rateLimitRule!!.isEmpty()) return null
+        val resLimitInfo = getResLimitInfoAndResInfo(request).first ?: return null
+        var acquiredLimiter: RateLimiter? = null
+        rateLimitCatch(request, resLimitInfo, applyPermits) { rateLimiter, permits ->
+            val passed = rateLimiter.tryAcquire(permits)
+            if (passed) acquiredLimiter = rateLimiter
+            passed
+        }
+        return acquiredLimiter
     }
 
     /**

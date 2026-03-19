@@ -143,36 +143,36 @@ const val RATE_LIMITER_DEGRADED_COUNT_DESC = "限流降级次数"
 /**
  * 连接被拒绝次数
  */
-const val CONNECTION_REJECTED_COUNT = "service.instance.connections.rejected.count"
+const val CONNECTION_REJECTED_COUNT = "rate.limiter.connection.rejected.count"
 const val CONNECTION_REJECTED_COUNT_DESC = "连接被拒绝次数"
 
 /**
  * 连接被接受次数
  */
-const val CONNECTION_ACCEPTED_COUNT = "service.instance.connections.accepted.count"
+const val CONNECTION_ACCEPTED_COUNT = "rate.limiter.connection.accepted.count"
 const val CONNECTION_ACCEPTED_COUNT_DESC = "连接被接受次数"
 
 /**
  * 连接处理时长
  */
-const val CONNECTION_DURATION = "service.instance.connections.duration"
+const val CONNECTION_DURATION = "rate.limiter.connection.duration"
 const val CONNECTION_DURATION_DESC = "连接处理时长"
 
 /**
  * 当前活跃连接数
  */
-const val CONNECTION_ACTIVE = "service.instance.connections.active"
+const val CONNECTION_ACTIVE = "rate.limiter.connection.active"
 const val CONNECTION_ACTIVE_DESC = "当前活跃连接数"
 
 /**
  * 最大连接数配置
  */
-const val CONNECTION_MAX = "service.instance.connections.max"
+const val CONNECTION_MAX = "rate.limiter.connection.max"
 const val CONNECTION_MAX_DESC = "最大连接数配置"
 
 /**
  * 连接使用率
  */
-const val CONNECTION_USAGE = "service.instance.connections.usage"
+const val CONNECTION_USAGE = "rate.limiter.connection.usage"
 const val CONNECTION_USAGE_DESC = "连接使用率"
 
