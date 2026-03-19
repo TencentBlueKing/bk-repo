@@ -33,7 +33,6 @@ class StreamManger(
         if (streams.putIfAbsent(id, stream) != null) {
             throw IllegalStateException("Stream $id existed")
         }
-        syncActiveStream(id) { it.saveActiveStream(id) }
         logger.info("Add stream $id")
         return stream
     }
