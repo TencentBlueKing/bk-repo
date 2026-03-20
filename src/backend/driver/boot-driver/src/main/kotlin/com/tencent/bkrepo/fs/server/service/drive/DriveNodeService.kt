@@ -142,7 +142,8 @@ class DriveNodeService(
             // 目标路径已存在文件，需要判断是否覆盖
             val targetNode = driveNodeDao.findCurrentNode(projectId, repoName, destParent, destName)
             if (targetNode != null) {
-                if (!overwrite || srcNode.type != targetNode.type) {
+                val directoryOverwrite = srcNode.type == TYPE_DIRECTORY || targetNode.type == TYPE_DIRECTORY
+                if (!overwrite || srcNode.type != targetNode.type && directoryOverwrite) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, destName)
                 }
                 if (targetNode.realIno() == srcNode.realIno()) {
