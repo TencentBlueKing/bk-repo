@@ -1057,6 +1057,7 @@
                 const transPath = encodeURIComponent(row.fullPath)
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
                 fetch(window.BK_SUBPATH + 'web' + url, {
+                    credentials: 'include',
                     headers: { Range: 'bytes=0-1' } // 限制范围
                 }).then(async response => {
                     if (response.ok) {
@@ -1122,6 +1123,7 @@
                 this.timer = setInterval(async () => {
                     try {
                         const response = await fetch(window.BK_SUBPATH + 'web' + url, {
+                            credentials: 'include',
                             headers: { Range: 'bytes=0-1' } // 限制范围
                         })
                         if (!response.ok) {
