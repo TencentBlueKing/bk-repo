@@ -113,10 +113,13 @@ class ProjectMetricsReport2BkbaseJob(
         val customCapSize = filterByRepoName(current, CUSTOM)
         val helmRepoCapSize = filterByRepoType(current, RepositoryType.HELM.name)
         val dockerRepoCapSize = filterByRepoType(current, RepositoryType.DOCKER.name)
+        val excludedRepos = current.repoMetrics.filter { it.repoName in properties.excludeRepoNames }
+        val excludedSize = excludedRepos.sumOf { it.size }
+        val excludedNum = excludedRepos.sumOf { it.num }
         return ProjectMetrics(
             projectId = current.projectId,
-            nodeNum = current.nodeNum,
-            capSize = current.capSize,
+            nodeNum = maxOf(0L, current.nodeNum - excludedNum),
+            capSize = maxOf(0L, current.capSize - excludedSize),
             createdDate = statTime,
             pipelineCapSize = pipelineCapSize,
             customCapSize = customCapSize,
