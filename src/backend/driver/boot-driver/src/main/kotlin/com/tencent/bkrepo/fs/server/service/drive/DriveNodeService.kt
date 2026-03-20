@@ -5,7 +5,6 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.metadata.constant.ID
 import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.fs.server.config.properties.drive.DriveProperties
 import com.tencent.bkrepo.fs.server.message.DriveMessageCode
@@ -35,9 +34,7 @@ import com.tencent.bkrepo.fs.server.utils.ExceptionUtils
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
-import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
@@ -166,21 +163,12 @@ class DriveNodeService(
                     ctime = moveRequest.ctime ?: srcNode.ctime
                     atime = moveRequest.atime ?: srcNode.atime
                 }
-                val createdNode = doCreate(copiedNode)
                 // COW操作仅标记旧node为已删除，不需要清理drive-node-block
                 driveNodeDao.markNodeDeleted(srcNode.projectId, srcNode.repoName, srcNode.id!!, currentSnapSeq)
+                val createdNode = doCreate(copiedNode)
                 createdNode
             } else {
-                val update = Update()
-                    .set(TDriveNode::parent.name, destParent)
-                    .set(TDriveNode::name.name, destName)
-                    .set(TDriveNode::lastModifiedBy.name, operator)
-                    .set(TDriveNode::lastModifiedDate.name, now)
-                moveRequest.mtime?.let { update.set(TDriveNode::mtime.name, it) }
-                moveRequest.ctime?.let { update.set(TDriveNode::ctime.name, it) }
-                moveRequest.atime?.let { update.set(TDriveNode::atime.name, it) }
-                driveNodeDao.updateFirst(Query(Criteria.where(ID).isEqualTo(srcNode.id)), update)
-                srcNode.copy(
+                val updatedNode = srcNode.copy(
                     parent = destParent,
                     name = destName,
                     mtime = moveRequest.mtime ?: srcNode.mtime,
@@ -189,6 +177,8 @@ class DriveNodeService(
                     lastModifiedBy = operator,
                     lastModifiedDate = now
                 )
+                driveNodeDao.updateByNodeId(projectId, repoName, srcNode.id!!, ifMatch, updatedNode)
+                updatedNode
             }
             logger.info(
                 "Move drive node[$projectId/$repoName/${srcNode.realIno()}] from[${srcNode.parent}/${srcNode.name}] " +
