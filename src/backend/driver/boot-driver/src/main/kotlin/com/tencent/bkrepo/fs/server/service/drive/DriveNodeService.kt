@@ -22,6 +22,7 @@ import com.tencent.bkrepo.fs.server.request.drive.normalizedSymlinkTarget
 import com.tencent.bkrepo.fs.server.request.drive.toCreateRequest
 import com.tencent.bkrepo.fs.server.request.drive.toDeleteRequest
 import com.tencent.bkrepo.fs.server.request.drive.toDriveNode
+import com.tencent.bkrepo.fs.server.request.drive.toMoveRequest
 import com.tencent.bkrepo.fs.server.request.drive.toUpdateRequest
 import com.tencent.bkrepo.fs.server.response.drive.DriveNode
 import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResponse
@@ -128,7 +129,9 @@ class DriveNodeService(
     suspend fun moveNode(moveRequest: DriveNodeMoveRequest): DriveNode {
         with(moveRequest) {
             driveNodeRequestValidator.validateMoveRequest(moveRequest)
-            val srcNode = getRequiredSource(projectId, repoName, srcNodeId, srcParent, srcName)
+            val srcNode = driveNodeDao.findByProjectIdAndRepoNameAndIno(projectId, repoName, ino)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, ino)
+            checkIfMatch(ifMatch, srcNode)
             if (srcNode.parent == destParent && srcNode.name == destName) {
                 throw ErrorCodeException(
                     CommonMessageCode.PARAMETER_INVALID,
@@ -159,6 +162,9 @@ class DriveNodeService(
                 val copiedNode = DriveNodeQueryHelper.buildCowNode(srcNode, currentSnapSeq, operator, now).apply {
                     parent = destParent
                     name = destName
+                    mtime = moveRequest.mtime ?: srcNode.mtime
+                    ctime = moveRequest.ctime ?: srcNode.ctime
+                    atime = moveRequest.atime ?: srcNode.atime
                 }
                 val createdNode = doCreate(copiedNode)
                 // COW操作仅标记旧node为已删除，不需要清理drive-node-block
@@ -170,8 +176,19 @@ class DriveNodeService(
                     .set(TDriveNode::name.name, destName)
                     .set(TDriveNode::lastModifiedBy.name, operator)
                     .set(TDriveNode::lastModifiedDate.name, now)
+                moveRequest.mtime?.let { update.set(TDriveNode::mtime.name, it) }
+                moveRequest.ctime?.let { update.set(TDriveNode::ctime.name, it) }
+                moveRequest.atime?.let { update.set(TDriveNode::atime.name, it) }
                 driveNodeDao.updateFirst(Query(Criteria.where(ID).isEqualTo(srcNode.id)), update)
-                srcNode.copy(parent = destParent, name = destName, lastModifiedBy = operator, lastModifiedDate = now)
+                srcNode.copy(
+                    parent = destParent,
+                    name = destName,
+                    mtime = moveRequest.mtime ?: srcNode.mtime,
+                    ctime = moveRequest.ctime ?: srcNode.ctime,
+                    atime = moveRequest.atime ?: srcNode.atime,
+                    lastModifiedBy = operator,
+                    lastModifiedDate = now
+                )
             }
             logger.info(
                 "Move drive node[$projectId/$repoName/${srcNode.realIno()}] from[${srcNode.parent}/${srcNode.name}] " +
@@ -232,6 +249,7 @@ class DriveNodeService(
 
                         DriveNodeBatchOp.UPDATE -> update(it.node.toUpdateRequest(projectId, repoName), currentSnapSeq)
                         DriveNodeBatchOp.DELETE -> delete(it.node.toDeleteRequest(projectId, repoName), currentSnapSeq)
+                        DriveNodeBatchOp.RENAME -> moveNode(it.node.toMoveRequest(projectId, repoName))
                     }
                     successCount++
 
@@ -295,21 +313,6 @@ class DriveNodeService(
 
     private suspend fun resolveSnapSeq(projectId: String, repoName: String, snapSeq: Long?): Long {
         return snapSeq ?: driveSnapSeqService.getLatestSnapSeq(projectId, repoName)
-    }
-
-    private suspend fun getRequiredSource(
-        projectId: String,
-        repoName: String,
-        nodeId: String?,
-        parent: Long?,
-        name: String?,
-    ): TDriveNode {
-        if (!nodeId.isNullOrBlank()) {
-            return driveNodeDao.findByProjectIdAndRepoNameAndId(projectId, repoName, nodeId)
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, nodeId)
-        }
-        return driveNodeDao.findCurrentNode(projectId, repoName, parent!!, name!!)
-            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, name)
     }
 
     private suspend fun doCreate(driveNode: TDriveNode): TDriveNode {

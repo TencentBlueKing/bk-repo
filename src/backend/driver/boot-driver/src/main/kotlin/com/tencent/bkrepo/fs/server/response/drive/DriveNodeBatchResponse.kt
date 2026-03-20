@@ -9,7 +9,7 @@ data class DriveNodeBatchResult(
     val ino: Long? = null,
     val nodeId: String? = null,
     /**
-     * 仅创建和更新操作存在该字段
+     * 仅非删除操作存在该字段
      */
     val node: DriveNode? = null,
     val code: Int,

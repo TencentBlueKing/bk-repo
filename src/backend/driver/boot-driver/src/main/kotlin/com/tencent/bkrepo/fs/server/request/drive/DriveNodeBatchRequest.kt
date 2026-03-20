@@ -32,6 +32,9 @@ enum class DriveNodeBatchOp {
 
     @JsonProperty("update")
     UPDATE,
+
+    @JsonProperty("rename")
+    RENAME,
 }
 
 data class DriveNodeBatchItem(
@@ -105,6 +108,20 @@ fun DriveNodeBatchItem.toDeleteRequest(projectId: String, repoName: String): Dri
         projectId = projectId,
         repoName = repoName,
         ino = requireNotNull(ino) { "ino required" },
+        ifMatch = ifMatch,
+    )
+}
+
+fun DriveNodeBatchItem.toMoveRequest(projectId: String, repoName: String): DriveNodeMoveRequest {
+    return DriveNodeMoveRequest(
+        projectId = projectId,
+        repoName = repoName,
+        ino = requireNotNull(ino) { "ino required" },
+        destParent = requireNotNull(parent) { "parent required" },
+        destName = requireNotNull(name) { "name required" },
+        mtime = mtime,
+        ctime = ctime,
+        atime = atime,
         ifMatch = ifMatch,
     )
 }

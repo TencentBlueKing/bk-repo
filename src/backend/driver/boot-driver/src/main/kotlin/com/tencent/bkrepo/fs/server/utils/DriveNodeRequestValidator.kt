@@ -43,14 +43,13 @@ class DriveNodeRequestValidator(
 
     suspend fun validateMoveRequest(moveRequest: DriveNodeMoveRequest) {
         with(moveRequest) {
+            Preconditions.checkArgument(ino >= DriveNodeQueryHelper.ROOT_INO, DriveNodeMoveRequest::ino.name)
             DriveServiceUtils.validateProjectRepoAndParent(projectId, repoName, destParent)
             PathUtils.validateFileName(destName)
+            mtime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::mtime.name) }
+            ctime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::ctime.name) }
+            atime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::atime.name) }
             checkParent(destParent, projectId, repoName)
-            if (srcNodeId.isNullOrBlank()) {
-                DriveServiceUtils.validateProjectRepoAndParent(projectId, repoName, srcParent)
-                PathUtils.validateFileName(srcName.orEmpty())
-                checkParent(srcParent!!, projectId, repoName)
-            }
         }
     }
 

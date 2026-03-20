@@ -7,8 +7,8 @@
 - API: POST /drive/node/batch/{projectId}/{repoName}
 - API 名称: drive_node_batch
 - 功能说明:
-  - 中文: 批量执行节点创建、更新、删除、创建硬链接
-  - English: batch create/update/delete/hard-link nodes
+  - 中文: 批量执行节点创建、更新、删除、重命名、创建硬链接
+  - English: batch create/update/delete/rename/hard-link nodes
 - 请求体
   ```json
   [
@@ -42,6 +42,18 @@
         "ino": 1002,
         "ifMatch": "2026-03-12T09:10:00"
       }
+    },
+    {
+      "op": "rename",
+      "node": {
+        "ino": 1003,
+        "parent": 1,
+        "name": "c-renamed.txt",
+        "mtime": 1741771200000000000,
+        "ctime": 1741771200000000000,
+        "atime": 1741771200000000000,
+        "ifMatch": "2026-03-12T09:10:00"
+      }
     }
   ]
   ```
@@ -51,17 +63,17 @@
   | --------- | ------ | ---- | --- | --------------------------------------------------- | -------------- |
   | projectId | string | 是    | 无   | 项目名称                                                | project name   |
   | repoName  | string | 是    | 无   | 仓库名称                                                | repo name      |
-  | op        | string | 是    | 无   | 操作类型: `create`/`update`/`delete` | operation type |
+  | op        | string | 是    | 无   | 操作类型: `create`/`update`/`delete`/`rename` | operation type |
   | node      | object | 是    | 无   | 操作对象                                                | operation node |
 
 - `node` 字段说明
 
   | 字段            | 类型      | 是否必须 | 默认值   | 说明                                                                | Description            |
   | ------------- | ------- | ---- | ----- | ----------------------------------------------------------------- | ---------------------- |
-  | ino           | long    | 否    | 无     | inode（create/update/delete 必填）                   | inode                  |
+  | ino           | long    | 否    | 无     | inode（create/update/delete/rename 必填）                   | inode                  |
   | targetIno     | long    | 否    | 无     | 硬链接目标 inode                                                       | hard-link target inode |
-  | parent        | long    | 否    | 无     | 父目录 inode（create 常用）                                              | parent inode           |
-  | name          | string  | 否    | 无     | 文件名                                                               | node name              |
+  | parent        | long    | 否    | 无     | 父目录 inode（create 常用，rename 时表示目标父目录）                                              | parent inode           |
+  | name          | string  | 否    | 无     | 文件名（rename 时表示目标名称）                                                               | node name              |
   | size          | long    | 否    | 无     | 文件大小                                                              | file size              |
   | mode          | int     | 否    | 无     | 文件模式                                                              | file mode              |
   | type          | int     | 否    | 无     | 文件类型: 1 文件, 2 目录, 3 软链接                                           | file type              |
@@ -153,6 +165,38 @@
         "node": null,
         "code": 0,
         "message": null
+      },
+      {
+        "op": "rename",
+        "ino": 1003,
+        "nodeId": "67d074a13d19772f4b813f93",
+        "node": {
+          "id": "67d074a13d19772f4b813f93",
+          "createdBy": "admin",
+          "createdDate": "2026-03-12T08:00:00",
+          "lastModifiedBy": "admin",
+          "lastModifiedDate": "2026-03-12T09:20:00",
+          "mtime": 1741770000000000000,
+          "ctime": 1741770000000000000,
+          "atime": 1741770000000000000,
+          "projectId": "demo",
+          "repoName": "drive-local",
+          "ino": 1003,
+          "parent": 1,
+          "name": "c-renamed.txt",
+          "size": 12,
+          "mode": 33188,
+          "type": 1,
+          "nlink": 1,
+          "uid": 0,
+          "gid": 0,
+          "rdev": 0,
+          "flags": 0,
+          "symlinkTarget": null,
+          "deleted": null
+        },
+        "code": 0,
+        "message": null
       }
     ],
     "traceId": null
@@ -162,10 +206,10 @@
 
   | 字段      | 类型     | 说明                                                  | Description                                    |
   | ------- | ------ | --------------------------------------------------- | ---------------------------------------------- |
-  | op      | string | 操作类型: `create`/`update`/`delete` | operation type                                 |
+  | op      | string | 操作类型: `create`/`update`/`delete`/`rename` | operation type                                 |
   | ino     | long   | 本次操作节点的 ino（操作失败时可能为空）                              | node ino                                       |
   | nodeId  | string | 本次操作节点 ID（操作失败时可能为空）                                | node id                                        |
-  | node    | object | 节点详细信息，仅创建和更新操作存在该字段，删除操作为 null，字段同 DriveNode       | node detail, only exists for create/update ops |
+  | node    | object | 节点详细信息，仅非删除操作存在该字段，删除操作为 null，字段同 DriveNode       | node detail, only exists for non-delete ops |
   | code    | int    | 操作结果码，0 表示成功                                        | result code                                    |
   | message | string | 失败消息                                                | failure message                                |
 
@@ -202,6 +246,15 @@
   | 251001 | DIRECTORY_NOT_EMPTY | 目录非空   | 尝试删除的目录下仍存在子节点                                          |
   | 251010 | NODE_NOT_FOUND      | 节点不存在  | 指定的 ino 对应的节点不存在                                        |
   | 250112 | PRECONDITION_FAILED | 前置条件失败 | 传入了 ifMatch 且与服务端 lastModifiedDate 不一致 |
+
+  **rename 操作**
+
+  | code   | 错误码枚举          | 说明     | 触发场景                     |
+  | ------ | ------------------ | -------- | ---------------------------- |
+  | 251010 | NODE_NOT_FOUND     | 节点不存在 | 指定的 ino 或目标父目录不存在 |
+  | 251012 | NODE_EXISTED       | 节点已存在 | 目标位置已存在同名节点        |
+  | 250112 | PRECONDITION_FAILED | 前置条件失败 | 传入了 ifMatch 且与服务端 lastModifiedDate 不一致 |
+  | 250104 | PARAMETER_INVALID  | 参数非法   | 目标名称非法或源目标相同      |
 
 
 ## 分页查询目录下节点
