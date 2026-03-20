@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.mongo
 
+import com.mongodb.MongoClientSettings
 import com.tencent.bkrepo.common.mongo.actuate.MongoHealthIndicator
 import com.tencent.bkrepo.common.mongo.api.properties.MongoConnectionPoolProperties
 import com.tencent.bkrepo.common.mongo.api.properties.MongoSslProperties
@@ -117,8 +118,19 @@ class MongoAutoConfiguration {
         mongoSslProperties: MongoSslProperties,
         mongoConnectionPoolProperties: MongoConnectionPoolProperties
     ): MongoClientSettingsBuilderCustomizer {
-        logger.info("Init MongoSSLConfiguration")
-        return MongoClientSettingsBuilderCustomizer { clientSettingsBuilder ->
+        return MongoClientCustomizer(mongoSslProperties, mongoConnectionPoolProperties)
+    }
+
+    @Bean
+    fun mongoHealthIndicator(mongoTemplate: MongoTemplate): HealthIndicator {
+        return MongoHealthIndicator(mongoTemplate)
+    }
+
+    class MongoClientCustomizer(
+        private val mongoSslProperties: MongoSslProperties,
+        private val mongoConnectionPoolProperties: MongoConnectionPoolProperties,
+    ) : MongoClientSettingsBuilderCustomizer {
+        override fun customize(clientSettingsBuilder: MongoClientSettings.Builder) {
             // 根据配置文件判断是否开启ssl
             if (mongoSslProperties.enabled) {
                 clientSettingsBuilder.applyToSslSettings { ssl ->
@@ -155,11 +167,7 @@ class MongoAutoConfiguration {
                 }
             }
         }
-    }
 
-    @Bean
-    fun mongoHealthIndicator(mongoTemplate: MongoTemplate): HealthIndicator {
-        return MongoHealthIndicator(mongoTemplate)
     }
 
     companion object {

@@ -103,14 +103,6 @@ class DriveMongoReactiveConfiguration {
         mongoMetricsCommandListener: ObjectProvider<MongoMetricsCommandListener>,
     ): MongoClient {
         val settingsBuilder = MongoClientSettings.builder()
-        // metrics
-        mongoMetricsConnectionPoolListener.ifAvailable?.let { listener ->
-            settingsBuilder.applyToConnectionPoolSettings { it.addConnectionPoolListener(listener) }
-        }
-        mongoMetricsCommandListener.ifAvailable?.let { listener ->
-            settingsBuilder.addCommandListener(listener)
-        }
-
         // standard
         StandardMongoClientSettingsBuilderCustomizer(
             PropertiesMongoConnectionDetails(properties).getConnectionString(),
@@ -127,6 +119,14 @@ class DriveMongoReactiveConfiguration {
         driveMongoEventLoopGroup = NioEventLoopGroup()
         val transportSettings = TransportSettings.nettyBuilder().eventLoopGroup(driveMongoEventLoopGroup!!).build()
         settingsBuilder.transportSettings(transportSettings)
+
+        // metrics
+        mongoMetricsConnectionPoolListener.ifAvailable?.let { listener ->
+            settingsBuilder.applyToConnectionPoolSettings { it.addConnectionPoolListener(listener) }
+        }
+        mongoMetricsCommandListener.ifAvailable?.let { listener ->
+            settingsBuilder.addCommandListener(listener)
+        }
 
         // create client
         return ReactiveMongoClientFactory(emptyList()).createMongoClient(settingsBuilder.build())
