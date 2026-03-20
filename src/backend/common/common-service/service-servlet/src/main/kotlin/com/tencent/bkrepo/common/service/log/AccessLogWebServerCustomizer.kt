@@ -45,7 +45,7 @@ import org.springframework.boot.web.server.WebServerFactoryCustomizer
 class AccessLogWebServerCustomizer : WebServerFactoryCustomizer<UndertowServletWebServerFactory> {
 
     override fun customize(factory: UndertowServletWebServerFactory) {
-        val pattern = "%h %l %u %t \"%r\" %s %b \"%{i,Referer}\" \"%{i,User-Agent}\" %D ms"
+        val pattern = "%h %l %u %t \"%r\" %s %b \"%{i,Referer}\" \"%{i,User-Agent}\" %D ms %{o,X-BKREPO-RID}"
 
         if (logRequestProcessingTiming(pattern)) {
             factory.addBuilderCustomizers(
