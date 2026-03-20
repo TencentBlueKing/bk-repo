@@ -52,7 +52,8 @@
         "mtime": 1741771200000000000,
         "ctime": 1741771200000000000,
         "atime": 1741771200000000000,
-        "ifMatch": "2026-03-12T09:10:00"
+        "ifMatch": "2026-03-12T09:10:00",
+        "overwrite": true
       }
     }
   ]
@@ -87,6 +88,7 @@
   | ctime         | long    | 否    | 无     | 属性变更时间（纳秒时间戳），create 时不传则使用当前时间                                   | change time (nanos)    |
   | atime         | long    | 否    | 无     | 访问时间（纳秒时间戳），create 时不传则使用当前时间                                     | access time (nanos)    |
   | ifMatch       | string  | 否    | 无     | 前置条件检查，服务端的 lastModifiedDate 与该值不匹配时返回 PRECONDITION_FAILED，用于并发控制；不传则跳过检查 | precondition check     |
+  | overwrite     | boolean | 否    | false  | 覆盖同名目标（仅 rename 生效）；为 true 时允许覆盖目标位置同名节点                       | overwrite destination (rename only) |
 
 - 响应体
   ```json

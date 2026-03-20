@@ -56,6 +56,7 @@ data class DriveNodeBatchItem(
     val ctime: Long? = null,
     val atime: Long? = null,
     val ifMatch: LocalDateTime? = null,
+    val overwrite: Boolean = false,
 )
 
 fun DriveNodeBatchItem.toCreateRequest(projectId: String, repoName: String): DriveNodeCreateRequest {
@@ -123,5 +124,6 @@ fun DriveNodeBatchItem.toMoveRequest(projectId: String, repoName: String): Drive
         ctime = ctime,
         atime = atime,
         ifMatch = ifMatch,
+        overwrite = overwrite,
     )
 }
