@@ -162,10 +162,12 @@ class StreamService(
             val artifactFile = ArtifactFileFactory.buildChunked(credentials)
             val clientMouseArtifactFile = ArtifactFileFactory.buildChunked(credentials)
             val hostAudioArtifactFile = ArtifactFileFactory.buildChunked(credentials)
+            val syncMetadataArtifactFile = ArtifactFileFactory.buildChunked(credentials)
             ArtifactFileRecordingListener(
                 artifactFile = artifactFile,
                 clientMouseArtifactFile = clientMouseArtifactFile,
                 hostAudioArtifactFile = hostAudioArtifactFile,
+                syncMetadataArtifactFile = syncMetadataArtifactFile,
                 fileConsumer = fileConsumer,
                 scheduler = scheduler,
                 uploadId = uploadId,
@@ -227,8 +229,8 @@ class StreamService(
         fileConsumer.completeBlockNode(videoArtifactInfo, uploadId)
         logger.info("MergeExpiredBlocks: video merged for uploadId=$uploadId")
 
-        // 合并额外文件（鼠标轨迹、音频）的分块
-        val extraFileSpecs = listOf("CM" to MediaType.JSON, "AU" to MediaType.AAC)
+        // 合并额外文件（鼠标轨迹、音频、同步元数据）的分块
+        val extraFileSpecs = listOf("CM" to MediaType.JSON, "AU" to MediaType.AAC, "AV" to MediaType.JSON)
         val extraArtifactInfos = mergeExtraFileBlocks(
             projectId, repoName, uploadId, extraFileSpecs, fileConsumer
         )
