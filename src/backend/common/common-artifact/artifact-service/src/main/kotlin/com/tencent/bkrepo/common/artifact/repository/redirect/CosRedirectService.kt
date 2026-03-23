@@ -64,7 +64,7 @@ class CosRedirectService(
     private val storageProperties: StorageProperties,
     private val storageService: StorageService,
 ) : DownloadRedirectService {
-    override fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
+    override fun doShouldRedirect(context: ArtifactDownloadContext): Boolean {
         if (!storageProperties.redirect.enabled) {
             return false
         }

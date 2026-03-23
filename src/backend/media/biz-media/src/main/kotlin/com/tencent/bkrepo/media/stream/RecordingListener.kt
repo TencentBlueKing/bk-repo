@@ -22,6 +22,15 @@ interface RecordingListener : StreamListener {
     fun stop(endTime: Long)
 
     /**
+     * 停止录制
+     * @param endTime 结束时间
+     * @param isComplete 是否正常完成（true=正常结束需合并分块，false=异常断开仅存分块）
+     */
+    fun stop(endTime: Long, isComplete: Boolean) {
+        stop(endTime)
+    }
+
+    /**
      * 是否正在录制
      * */
     fun isRecording(): Boolean

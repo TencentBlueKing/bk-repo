@@ -59,7 +59,8 @@ class FavoriteServiceImpl(
             projectId = request.projectId,
             userId = request.userId,
             createdDate = request.createdDate,
-            type = request.type
+            type = request.type,
+            name = request.name
         )
         try {
             favoriteDao.insert(favorite)
@@ -84,7 +85,9 @@ class FavoriteServiceImpl(
                 )
             }
             val records =
-                favoriteDao.find(query).map { FavoriteResult(it.id, it.projectId, it.repoName, it.path, it.type) }
+                favoriteDao.find(query).map {
+                    FavoriteResult(it.id, it.projectId, it.repoName, it.path, it.type, it.name)
+                }
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
             val totalRecords = favoriteDao.count(query)
             return Pages.ofResponse(pageRequest, totalRecords, records)

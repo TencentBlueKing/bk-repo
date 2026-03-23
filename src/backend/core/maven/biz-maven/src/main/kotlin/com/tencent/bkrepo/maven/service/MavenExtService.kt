@@ -3,13 +3,17 @@ package com.tencent.bkrepo.maven.service
 import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.maven.pojo.request.MavenArtifactSearchRequest
 import com.tencent.bkrepo.maven.pojo.request.MavenGroupSearchRequest
+import com.tencent.bkrepo.maven.pojo.request.MavenVersionSearchRequest
 import com.tencent.bkrepo.maven.pojo.response.MavenGAVCResponse
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -18,6 +22,7 @@ import org.springframework.stereotype.Service
 class MavenExtService(
     private val nodeSearchService: NodeSearchService,
     private val mavenMetadataService: MavenMetadataService,
+    private val permissionManager: PermissionManager,
 ) {
 
     @Value("\${maven.domain:http://127.0.0.1:25803}")
@@ -99,21 +104,17 @@ class MavenExtService(
 
 
     fun searchGroup(request: MavenGroupSearchRequest): Page<String> {
-        with(request) {
-            val field = when {
-                groupId.isNullOrEmpty() && artifactId.isNullOrEmpty() && version.isNullOrEmpty() -> "groupId"
-                !groupId.isNullOrEmpty() && artifactId.isNullOrEmpty() -> "artifactId"
-                !groupId.isNullOrEmpty() && !artifactId.isNullOrEmpty() -> "version"
-                else -> "groupId"
-            }
-            val result = mavenMetadataService.getByPage(request, field)
-            return Page(
-                pageNumber = pageNumber,
-                pageSize = pageSize,
-                totalRecords = result.totalRecords,
-                totalPages = result.totalPages,
-                records = result.records
-            )
-        }
+        permissionManager.checkRepoPermission(PermissionAction.READ, request.projectId, request.repoName)
+        return mavenMetadataService.getGroupByPage(request)
+    }
+
+    fun searchArtifact(request: MavenArtifactSearchRequest): Page<String> {
+        permissionManager.checkRepoPermission(PermissionAction.READ, request.projectId, request.repoName)
+        return mavenMetadataService.getArtifactByPage(request)
+    }
+
+    fun searchVersion(request: MavenVersionSearchRequest): Page<String> {
+        permissionManager.checkRepoPermission(PermissionAction.READ, request.projectId, request.repoName)
+        return mavenMetadataService.getVersionByPage(request)
     }
 }

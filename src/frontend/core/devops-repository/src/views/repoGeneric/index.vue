@@ -235,7 +235,6 @@
         <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>
         <generic-tree-dialog ref="genericTreeDialog" @update="updateGenericTreeNode" @refresh="refreshNodeChange"></generic-tree-dialog>
         <preview-basic-file-dialog ref="previewBasicFileDialog"></preview-basic-file-dialog>
-        <preview-office-file-dialog ref="previewOfficeFileDialog"></preview-office-file-dialog>
         <generic-forbid-dialog ref="genericForbidDialog" @refresh="refreshNodeChange"></generic-forbid-dialog>
         <compressed-file-table ref="compressedFileTable" :data="compressedData" @show-preview="handleShowPreview"></compressed-file-table>
         <loading ref="loading" @closeLoading="closeLoading"></loading>
@@ -264,7 +263,6 @@
     import { mapActions, mapMutations, mapState } from 'vuex'
     import compressedFileTable from './compressedFileTable'
     import previewBasicFileDialog from './previewBasicFileDialog'
-    import previewOfficeFileDialog from '@repository/views/repoGeneric/previewOfficeFileDialog'
     import { Base64 } from 'js-base64'
     import { isOutDisplayType, isText } from '@repository/utils/file'
 
@@ -286,7 +284,6 @@
             compressedFileTable,
             iamDenyDialog,
             genericCleanDialog,
-            previewOfficeFileDialog,
             genericForbidDialog
         },
         data () {
@@ -405,7 +402,11 @@
         },
         created () {
             this.getRepoListAll({ projectId: this.projectId }).then(_ => {
-                this.pathChange()
+                if (!this.repoListAll.find(repo => repo.name === this.repoName)) {
+                    this.$router.replace({ name: 'repositories', params: { projectId: this.projectId } })
+                } else {
+                    this.pathChange()
+                }
             })
             this.initTree()
             this.debounceClickTreeNode = debounce(this.clickTreeNodeHandler, 100)
@@ -1056,6 +1057,7 @@
                 const transPath = encodeURIComponent(row.fullPath)
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
                 fetch(window.BK_SUBPATH + 'web' + url, {
+                    credentials: 'include',
                     headers: { Range: 'bytes=0-1' } // 限制范围
                 }).then(async response => {
                     if (response.ok) {
@@ -1121,6 +1123,7 @@
                 this.timer = setInterval(async () => {
                     try {
                         const response = await fetch(window.BK_SUBPATH + 'web' + url, {
+                            credentials: 'include',
                             headers: { Range: 'bytes=0-1' } // 限制范围
                         })
                         if (!response.ok) {

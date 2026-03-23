@@ -292,7 +292,8 @@ object ObjectBuilderUtil {
                 createdBy = createdBy,
                 createdDate = createdDate,
                 lastModifiedBy = lastModifiedBy,
-                lastModifiedDate = lastModifiedDate
+                lastModifiedDate = lastModifiedDate,
+                federatedSource = packageVersion.federatedSource,
             )
         }
     }

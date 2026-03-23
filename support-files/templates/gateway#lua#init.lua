@@ -73,7 +73,8 @@ config = {
   service_with_bandwidth_check = "__BK_REPO_SERVICE_WITH_BANDWIDTH_CHECK__",
   container_url = "__BK_REPO_URL_CONTAINER__",
   enable_multi_tenant_mode = "__BK_REPO_ENABLE_MULTI_TENANT_MODE__",
-  op_tenant_id = "__BK_REPO_OP_TENANT_ID__"
+  op_tenant_id = "__BK_REPO_OP_TENANT_ID__",
+  bkapigw_public_key = "__BK_REPO_BKAPIGW_PUBLIC_KEY__"
 }
   
 require("init_common")

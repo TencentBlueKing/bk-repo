@@ -8,7 +8,7 @@
     "public": "webpack --mode production",
     "public:dev": "cross-env NODE_ENV=dev  yarn public --",
     "public:test": "cross-env NODE_ENV=test  yarn public --",
-    "public:master": "cross-env NODE_ENV=master  yarn public --",
+    "public:master": "cross-env NODE_ENV=master  yarn public -- && node rename-after-build.js",
     "public:external": "cross-env NODE_ENV=external yarn public --"
   },
   "dependencies": {
@@ -19,12 +19,11 @@
     "@vue-office/excel": "^1.7.11",
     "@vue-office/pdf": "^2.0.2",
     "@vue/composition-api": "^1.7.2",
-    "@wolf-table/table": "^0.0.1",
     "axios": "^1.12.0",
+    "bk-magic-vue": "^2.5.10-beta.17",
     "js-base64": "^3.7.7",
     "js-cookie": "^2.2.1",
     "marked": "^4.3.0",
-    "papaparse": "^5.5.1",
     "pdfjs-dist": "^2.16.105",
     "qrcode": "^1.5.0",
     "viewerjs": "^1.11.7",

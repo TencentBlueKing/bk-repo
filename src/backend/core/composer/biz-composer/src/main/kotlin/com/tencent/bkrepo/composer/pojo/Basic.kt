@@ -44,5 +44,6 @@ data class Basic(
     val sha256: String?,
     val md5: String?,
     val stageTag: List<String>?,
-    val description: String?
+    val description: String?,
+    val federatedSource: String?,
 )

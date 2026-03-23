@@ -39,7 +39,7 @@ spec:
           - path: /
           {{- end }}
             {{- if eq "true" (include "common.ingress.supportsPathType" .) }}
-            pathType: Prefix
+            pathType: ImplementationSpecific
             {{- end }}
             backend: {{- include "common.ingress.backend" (dict "serviceName" (printf "%s-gateway"  (include "common.names.fullname" .)) "servicePort" 80 "context" $) | nindent 14 }}
 {{- end }}

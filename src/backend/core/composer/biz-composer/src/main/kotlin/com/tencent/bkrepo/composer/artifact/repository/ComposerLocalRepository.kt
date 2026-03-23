@@ -519,16 +519,20 @@ class ComposerLocalRepository(private val stageService: StageService) : LocalRep
             )
             val count = packageVersion?.downloads ?: 0
             val composerArtifactBasic = Basic(
-                name,
-                version,
-                jarNode.size, jarNode.fullPath,
-                jarNode.createdBy, jarNode.createdDate,
-                jarNode.lastModifiedBy, jarNode.lastModifiedDate,
-                count,
-                jarNode.sha256,
-                jarNode.md5,
-                stageTag,
-                null
+                name = name,
+                version = version,
+                size = jarNode.size,
+                fullPath = jarNode.fullPath,
+                createdBy = jarNode.createdBy,
+                createdDate = jarNode.createdDate,
+                lastModifiedBy = jarNode.lastModifiedBy,
+                lastModifiedDate = jarNode.lastModifiedDate,
+                downloadCount = count,
+                sha256 = jarNode.sha256,
+                md5 = jarNode.md5,
+                stageTag = stageTag,
+                description = null,
+                federatedSource = packageVersion?.federatedSource,
             )
             return ArtifactVersionDetail(composerArtifactBasic, packageVersion?.packageMetadata)
         }

@@ -85,6 +85,7 @@ import { searchProjects } from '@/api/project'
 import { listRepositories } from '@/api/repository'
 import { formatNormalDate } from '@/utils/date'
 import moment from 'moment'
+import { ROUTER_NAME_FILE_SYSTEM_RECORD } from '@/router'
 
 export default {
   name: 'FileSystemRecord',
@@ -114,7 +115,7 @@ export default {
     const query = {
       startTime: moment(new Date()).format('yyyy-MM-DD')
     }
-    this.$router.push({ path: '/nodes/FileSystemRecord', query: query })
+    this.$router.push({ name: ROUTER_NAME_FILE_SYSTEM_RECORD, query: query })
   },
   mounted() {
     this.onRouteUpdate(this.$route)

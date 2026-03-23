@@ -32,9 +32,16 @@ import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.pojo.federation.FederatedRepositoryInfo
+import com.tencent.bkrepo.replication.pojo.federation.FederationDiffStats
+import com.tencent.bkrepo.replication.pojo.federation.FederationNodeCount
+import com.tencent.bkrepo.replication.pojo.federation.FederationPathDiff
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryCreateRequest
+import com.tencent.bkrepo.replication.pojo.federation.request.FederationDiffStatsRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryDeleteRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryUpdateRequest
+import com.tencent.bkrepo.replication.pojo.federation.request.FederationDiffRequest
+import com.tencent.bkrepo.replication.pojo.federation.request.FederationPathDiffRequest
+import com.tencent.bkrepo.replication.pojo.federation.request.FederationSmartDiffRequest
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -132,5 +139,57 @@ class UserFederationRepositoryController(
     ): Response<Void> {
         federationRepositoryService.updateFullSyncEnd(projectId, repoName, federationId)
         return ResponseBuilder.success()
+    }
+
+    // ===================== 联邦仓库差异对比接口（分层目录对比） =====================
+    // 推荐使用流程：
+    // 1. 先调用 /diff/count 快速检查总数是否一致
+    //    - 对于 generic 仓库：对比节点数量
+    //    - 对于非 generic 仓库（maven、npm、docker 等）：对比 package 数量
+    // 2. 如不一致，调用 /diff/path 从根目录 "/" 开始逐层对比
+    //    - 对于 generic 仓库：对比节点层级
+    //    - 对于非 generic 仓库：对比 package → version 层级
+    // 3. 找到不一致的目录后，将 path 改为该目录继续对比
+    // 4. 最终定位到具体不一致的文件或 version
+
+    @Operation(summary = "对比联邦仓库制品数量（最轻量级）", description = "对于 generic 仓库对比节点数量，对于非 generic 仓库对比 package 数量")
+    @PostMapping("/diff/count")
+    fun compareFederationNodeCount(
+        @RequestBody request: FederationDiffRequest,
+    ): Response<List<FederationNodeCount>> {
+        return ResponseBuilder.success(federationRepositoryService.compareFederationNodeCount(request))
+    }
+
+    @Operation(summary = "分层差异对比", description = "对于 generic 仓库按目录层级对比，对于非 generic 仓库按 package/version 层级对比")
+        @PostMapping("/diff/path")
+    fun compareFederationPathDiff(
+        @RequestBody request: FederationPathDiffRequest,
+    ): Response<FederationPathDiff> {
+        return ResponseBuilder.success(federationRepositoryService.compareFederationPathDiff(request))
+    }
+
+    @Operation(summary = "多层目录聚合差异对比（推荐，一次请求获取多层统计，支持1-3层深度）")
+    @PostMapping("/diff/stats")
+    fun compareFederationDiffStats(
+        @RequestBody request: FederationDiffStatsRequest,
+    ): Response<FederationDiffStats> {
+        return ResponseBuilder.success(federationRepositoryService.compareFederationDiffStats(request))
+    }
+
+    @Operation(summary = "智能差异对比（最推荐，自动定位不一致路径）")
+    @PostMapping("/diff/smart")
+    fun smartCompareFederationDiff(
+        @RequestBody request: FederationSmartDiffRequest,
+    ): Response<List<String>> {
+        return ResponseBuilder.success(
+            federationRepositoryService.smartCompareFederationDiff(
+                projectId = request.projectId,
+                repoName = request.repoName,
+                federationId = request.federationId,
+                targetClusterId = request.targetClusterId,
+                rootPath = request.rootPath,
+                maxDepth = request.maxDepth
+            )
+        )
     }
 }

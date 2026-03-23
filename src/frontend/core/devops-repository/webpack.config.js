@@ -21,7 +21,7 @@ module.exports = (env, argv) => {
     config.plugins = [
         ...config.plugins,
         new HtmlWebpackPlugin({
-            filename: isProd ? `${dist}/frontend#ui#index.html` : `${dist}/index.html`,
+            filename: isProd ? `${dist}/frontend_ui_index.html` : `${dist}/index.html`,
             template: 'index.html',
             inject: true,
             title: '制品库 | 腾讯蓝鲸智云'
@@ -34,11 +34,6 @@ module.exports = (env, argv) => {
             ]
         })
     ]
-
-    console.log('\n=== 启动信息 ===')
-    console.log('📡 访问地址: http://localhost:8086/bkrepo/ui/')
-    console.log('📁 输出目录:', dist)
-    console.log('🔗 资源路径:', config.output.publicPath)
 
     config.devServer.historyApiFallback = {
         rewrites: [
