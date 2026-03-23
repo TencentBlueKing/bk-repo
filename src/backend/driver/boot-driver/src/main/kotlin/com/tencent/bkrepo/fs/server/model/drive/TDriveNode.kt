@@ -9,6 +9,8 @@ import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PARENT_NAME
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PARENT_NAME_IDX_DEF
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PARENT_SNAP_IDX
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PARENT_SNAP_IDX_DEF
+import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_DELETED_IDX
+import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_DELETED_IDX_DEF
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_IDX
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_IDX_DEF
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_MODIFIED_IDX
@@ -36,6 +38,7 @@ import java.time.LocalDateTime
     CompoundIndex(name = PARENT_SNAP_IDX, def = PARENT_SNAP_IDX_DEF, background = true),
     CompoundIndex(name = PROJECT_REPO_IDX, def = PROJECT_REPO_IDX_DEF, background = true),
     CompoundIndex(name = PROJECT_REPO_MODIFIED_IDX, def = PROJECT_REPO_MODIFIED_IDX_DEF, background = true),
+    CompoundIndex(name = PROJECT_REPO_DELETED_IDX, def = PROJECT_REPO_DELETED_IDX_DEF, background = true),
 )
 @ShardingKeys(columns = [PROJECT_ID, REPO_NAME], count = SHARDING_COUNT)
 data class TDriveNode(
@@ -165,7 +168,17 @@ data class TDriveNode(
         const val PARENT_SNAP_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'parent': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
         const val PROJECT_REPO_IDX = "project_repo_idx"
         const val PROJECT_REPO_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
+
+        /**
+         * 用于获取指定时间段有变更的drive-node给客户端
+         */
         const val PROJECT_REPO_MODIFIED_IDX = "project_repo_modified_idx"
         const val PROJECT_REPO_MODIFIED_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'lastModifiedDate': 1}"
+
+        /**
+         * 用于删除仓库时遍历该仓库未删除的drive-node
+         */
+        const val PROJECT_REPO_DELETED_IDX = "project_repo_deleted_idx"
+        const val PROJECT_REPO_DELETED_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'deleted': 1}"
     }
 }

@@ -67,7 +67,16 @@ class DeletedRepositoryCleanupJob(
         val projectId: String,
         val name: String,
         val deleted: LocalDateTime?
-    )
+    ) {
+        companion object {
+            fun from(row: Map<String, Any?>) = Repository(
+                id = row[ID].toString(),
+                projectId = row[PROJECT].toString(),
+                name = row[Repository::name.name].toString(),
+                deleted = TimeUtils.parseMongoDateTimeStr(row[DELETED_DATE].toString()),
+            )
+        }
+    }
 
 
 
@@ -101,14 +110,7 @@ class DeletedRepositoryCleanupJob(
         return Repository::class
     }
 
-    override fun mapToEntity(row: Map<String, Any?>): Repository {
-        return Repository(
-            id = row[ID].toString(),
-            projectId = row[PROJECT].toString(),
-            name = row[Repository::name.name].toString(),
-            deleted = TimeUtils.parseMongoDateTimeStr(row[DELETED_DATE].toString()),
-        )
-    }
+    override fun mapToEntity(row: Map<String, Any?>) = Repository.from(row)
 
     /**
      * 再次刪除非deleted的节点
