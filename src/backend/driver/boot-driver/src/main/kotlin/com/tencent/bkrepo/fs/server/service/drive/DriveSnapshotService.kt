@@ -129,13 +129,12 @@ class DriveSnapshotService(
     suspend fun deleteSnapshot(projectId: String, repoName: String, snapshotId: String) {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
         Preconditions.checkArgument(snapshotId.isNotBlank(), "snapshotId")
-        val updateResult = driveSnapshotDao.delete(
+        val deleteResult = driveSnapshotDao.delete(
             projectId = projectId,
             repoName = repoName,
             id = snapshotId,
-            operator = DriveServiceUtils.getUserOrSystem(),
         )
-        if (updateResult.modifiedCount != 1L) {
+        if (deleteResult.deletedCount != 1L) {
             throw ErrorCodeException(RESOURCE_NOT_FOUND, "drive snapshot[$projectId/$repoName/$snapshotId]")
         }
         logger.info("Delete drive snapshot[$projectId/$repoName/$snapshotId] success.")

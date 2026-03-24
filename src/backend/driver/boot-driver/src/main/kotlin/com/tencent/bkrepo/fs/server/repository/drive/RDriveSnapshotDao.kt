@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.fs.server.repository.drive
 
+import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.fs.server.model.drive.TDriveSnapshot
@@ -41,15 +42,9 @@ class RDriveSnapshotDao : DriveSimpleMongoReactiveDao<TDriveSnapshot>() {
         projectId: String,
         repoName: String,
         id: String,
-        operator: String,
-    ): UpdateResult {
-        val now = LocalDateTime.now()
+    ): DeleteResult {
         val criteria = prjRepoCriteria(projectId, repoName).and(ID).isEqualTo(id)
-        val update = Update()
-            .set(TDriveSnapshot::lastModifiedBy.name, operator)
-            .set(TDriveSnapshot::lastModifiedDate.name, now)
-            .set(TDriveSnapshot::deleted.name, now)
-        return updateFirst(Query(criteria), update)
+        return remove(Query(criteria))
     }
 
     suspend fun updateNameAndDescription(
@@ -72,6 +67,5 @@ class RDriveSnapshotDao : DriveSimpleMongoReactiveDao<TDriveSnapshot>() {
     private fun prjRepoCriteria(projectId: String, repoName: String): Criteria {
         return where(TDriveSnapshot::projectId).isEqualTo(projectId)
             .and(TDriveSnapshot::repoName.name).isEqualTo(repoName)
-            .and(TDriveSnapshot::deleted.name).isEqualTo(null)
     }
 }

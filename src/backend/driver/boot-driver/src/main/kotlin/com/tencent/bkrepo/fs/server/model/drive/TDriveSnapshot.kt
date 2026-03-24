@@ -37,11 +37,6 @@ data class TDriveSnapshot(
      * 快照对应的快照序列号
      */
     var snapSeq: Long,
-
-    /**
-     * 删除时间
-     */
-    var deleted: LocalDateTime? = null,
 ) {
     companion object {
         const val SNAP_SEQ_IDX = "repo_name_idx"
