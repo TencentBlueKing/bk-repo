@@ -118,7 +118,7 @@ class DriveNodeService(
             )
             checkConflict(driveNode)
             val createdNode = doCreate(driveNode)
-            logger.info("Create drive node[$projectId/$repoName/${createdNode.realIno()}/${createdNode.name}] success.")
+            logger.info("Create drive node[$projectId/$repoName/${createdNode.realIno}/${createdNode.name}] success.")
             return createdNode.toDriveNode()
         }
     }
@@ -146,7 +146,7 @@ class DriveNodeService(
                 if (!overwrite || srcNode.type != targetNode.type && directoryOverwrite) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, destName)
                 }
-                if (targetNode.realIno() == srcNode.realIno()) {
+                if (targetNode.realIno == srcNode.realIno) {
                     throw ErrorCodeException(
                         CommonMessageCode.PARAMETER_INVALID,
                         "${srcNode.name} and ${targetNode.name} are the same file"
@@ -182,7 +182,7 @@ class DriveNodeService(
                 updatedNode
             }
             logger.info(
-                "Move drive node[$projectId/$repoName/${srcNode.realIno()}] from[${srcNode.parent}/${srcNode.name}] " +
+                "Move drive node[$projectId/$repoName/${srcNode.realIno}] from[${srcNode.parent}/${srcNode.name}] " +
                         "to[$destParent/$destName] success."
             )
             return movedNode.toDriveNode()

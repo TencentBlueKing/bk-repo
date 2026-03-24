@@ -15,8 +15,6 @@ import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REP
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_IDX_DEF
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_MODIFIED_IDX
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_MODIFIED_IDX_DEF
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TARGET_INO_IDX
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TARGET_INO_IDX_DEF
 import com.tencent.bkrepo.repository.constant.PROJECT_ID
 import com.tencent.bkrepo.repository.constant.REPO_NAME
 import org.springframework.data.mongodb.core.index.CompoundIndex
@@ -33,7 +31,6 @@ import java.time.LocalDateTime
 @ShardingDocument("drive_node")
 @CompoundIndexes(
     CompoundIndex(name = INO_IDX, def = INO_IDX_DEF, unique = true, background = true),
-    CompoundIndex(name = TARGET_INO_IDX, def = TARGET_INO_IDX_DEF, background = true),
     CompoundIndex(name = PARENT_NAME_IDX, def = PARENT_NAME_IDX_DEF, unique = true, background = true),
     CompoundIndex(name = PARENT_SNAP_IDX, def = PARENT_SNAP_IDX_DEF, background = true),
     CompoundIndex(name = PROJECT_REPO_IDX, def = PROJECT_REPO_IDX_DEF, background = true),
@@ -75,6 +72,12 @@ data class TDriveNode(
      * 硬链接指向的目标Ino，仅后端使用，该字段存在时替代ino返回给客户端
      */
     var targetIno: Long? = null,
+
+    /**
+     * 实际Ino，由于ino必须设置唯一索引避免重复导致block数据混乱，但是硬链接与普通node的ino不能重复，因此硬链接的ino为占位无实际作用，
+     * 需要使用targetIno访问
+     */
+    var realIno: Long = targetIno ?: ino,
 
     /**
      * 父目录 inode 号，根节点该字段值为null
@@ -147,12 +150,6 @@ data class TDriveNode(
     var deleteSnapSeq: Long = Long.MAX_VALUE,
 ) {
 
-    /**
-     * 获取实际Ino，由于ino必须设置唯一索引避免重复导致block数据混乱，但是硬链接与普通node的ino不能重复，因此硬链接的ino为占位无实际作用，
-     * 需要使用targetIno访问
-     */
-    fun realIno() = targetIno ?: ino
-
     companion object {
         const val TYPE_FILE = 1
         const val TYPE_DIRECTORY = 2
@@ -160,8 +157,6 @@ data class TDriveNode(
         val ALLOWED_TYPES = setOf(TYPE_FILE, TYPE_DIRECTORY, TYPE_SYMLINK)
         const val INO_IDX = "ino_idx"
         const val INO_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'ino': 1, 'deleted': 1}"
-        const val TARGET_INO_IDX = "target_ino_idx"
-        const val TARGET_INO_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'targetIno': 1}"
         const val PARENT_NAME_IDX = "parent_name_idx"
         const val PARENT_NAME_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'parent': 1, 'name': 1, 'deleted': 1}"
         const val PARENT_SNAP_IDX = "parent_snap_idx"

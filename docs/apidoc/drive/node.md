@@ -112,6 +112,8 @@
           "projectId": "demo",
           "repoName": "drive-local",
           "ino": 1001,
+          "targetIno": null,
+          "realIno": 1001,
           "parent": 2,
           "name": "a.txt",
           "size": 12,
@@ -144,6 +146,8 @@
           "projectId": "demo",
           "repoName": "drive-local",
           "ino": 1002,
+          "targetIno": null,
+          "realIno": 1002,
           "parent": 1,
           "name": "b.txt",
           "size": 1024,
@@ -184,6 +188,8 @@
           "projectId": "demo",
           "repoName": "drive-local",
           "ino": 1003,
+          "targetIno": null,
+          "realIno": 1003,
           "parent": 1,
           "name": "c-renamed.txt",
           "size": 12,
@@ -303,6 +309,8 @@
           "projectId": "demo",
           "repoName": "drive-local",
           "ino": 1001,
+          "targetIno": null,
+          "realIno": 1001,
           "parent": 1,
           "name": "a.txt",
           "size": 1024,
@@ -343,6 +351,14 @@
 
 - 响应体
 与“分页查询目录下节点”一致
+
+## DriveNode 返回字段说明
+
+| 字段        | 类型   | 说明                                                                 | Description                          |
+|-----------|------|--------------------------------------------------------------------|--------------------------------------|
+| ino       | long | 节点 inode；硬链接场景下可能为占位 inode                                         | node inode (may be placeholder for hard-link) |
+| targetIno | long | 硬链接目标 inode；非硬链接节点为 null                                           | hard-link target inode, null for non hard-link |
+| realIno   | long | 实际用于访问内容的 inode；普通节点等于 ino，硬链接节点等于 targetIno                        | effective inode for data access      |
 
 ## DriveNode 文件类型枚举
 
