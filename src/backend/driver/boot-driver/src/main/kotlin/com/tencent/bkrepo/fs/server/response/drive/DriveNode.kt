@@ -1,13 +1,21 @@
 package com.tencent.bkrepo.fs.server.response.drive
 
+import com.fasterxml.jackson.annotation.JsonFormat
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
 import java.time.LocalDateTime
+
+/**
+ * mongo存储的时间精度到小数点后3位
+ */
+private const val DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS"
 
 data class DriveNode(
     val id: String,
     val createdBy: String,
+    @get:JsonFormat(pattern = DATE_TIME_FORMAT)
     val createdDate: LocalDateTime,
     val lastModifiedBy: String,
+    @get:JsonFormat(pattern = DATE_TIME_FORMAT)
     val lastModifiedDate: LocalDateTime,
     val mtime: Long,
     val ctime: Long,
@@ -28,6 +36,7 @@ data class DriveNode(
     val rdev: Int,
     val flags: Int,
     val symlinkTarget: String? = null,
+    @get:JsonFormat(pattern = DATE_TIME_FORMAT)
     val deleted: LocalDateTime? = null,
 )
 
