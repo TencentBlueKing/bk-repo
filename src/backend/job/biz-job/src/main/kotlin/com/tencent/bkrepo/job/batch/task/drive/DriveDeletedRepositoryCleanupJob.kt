@@ -51,6 +51,10 @@ class DriveDeletedRepositoryCleanupJob(
     }
 
     override fun run(row: Repository, collectionName: String, context: JobContext) {
+        // 删除所有快照
+        deleteSnapshots(row.projectId, row.name)
+
+        // 删除所有drive-node
         val driveNodeCollectionName = resolveDriveNodeCollectionName(row.projectId, row.name)
         if (hasUndeletedDriveNode(row.projectId, row.name, driveNodeCollectionName)) {
             val currentSnapSeq = resolveCurrentSnapSeq(row.projectId, row.name)
@@ -61,6 +65,7 @@ class DriveDeletedRepositoryCleanupJob(
             markAllDriveNodesDeleted(row.projectId, row.name, currentSnapSeq, driveNodeCollectionName)
         }
 
+        // 检查所有drive-node已物理删除
         val remainDriveNode = hasDriveNode(row.projectId, row.name, driveNodeCollectionName)
         if (remainDriveNode) {
             logger.info(
@@ -69,9 +74,10 @@ class DriveDeletedRepositoryCleanupJob(
             return
         }
 
-        deleteSnapshots(row.projectId, row.name)
+        // 删除快照序列号
         deleteSnapSeq(row.projectId, row.name)
 
+        // 删除仓库
         val repoQuery = Query.query(Criteria.where(ID).isEqualTo(row.id))
         mongoTemplate.remove(repoQuery, collectionName)
         logger.info("Clean up deleted drive repository[${row.projectId}/${row.name}] success.")
