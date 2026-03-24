@@ -1,6 +1,8 @@
 package com.tencent.bkrepo.media.service
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.databind.node.ArrayNode
+import com.fasterxml.jackson.databind.node.ObjectNode
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
@@ -195,6 +197,7 @@ class StreamService(
         repoName: String,
         uploadId: String,
         transcodeExtraParams: String? = null,
+        syncCollectorState: String? = null,
     ) {
         val repo = repositoryService.getRepoDetail(projectId, repoName)
             ?: run {
@@ -229,11 +232,19 @@ class StreamService(
         fileConsumer.completeBlockNode(videoArtifactInfo, uploadId)
         logger.info("MergeExpiredBlocks: video merged for uploadId=$uploadId")
 
-        // 合并额外文件（鼠标轨迹、音频、同步元数据）的分块
-        val extraFileSpecs = listOf("CM" to MediaType.JSON, "AU" to MediaType.AAC, "AV" to MediaType.JSON)
+        // 合并额外文件（鼠标轨迹、音频）的分块（不含 AV 同步元数据）
+        val extraFileSpecs = listOf("CM" to MediaType.JSON, "AU" to MediaType.AAC)
         val extraArtifactInfos = mergeExtraFileBlocks(
             projectId, repoName, uploadId, extraFileSpecs, fileConsumer
+        ).toMutableList()
+
+        // 处理同步元数据：优先从 AV 分块合并，若无分块则从 syncCollectorState 构造
+        val avArtifactInfo = handleSyncMetadata(
+            projectId, repoName, uploadId, fileConsumer, syncCollectorState
         )
+        if (avArtifactInfo != null) {
+            extraArtifactInfos.add(avArtifactInfo)
+        }
 
         // 合并完成后触发转码
         if (transcodeConfig != null) {
@@ -311,6 +322,116 @@ class StreamService(
             } else {
                 null
             }
+        }
+    }
+
+    /**
+     * 处理同步元数据文件
+     * 优先合并已有的 AV 分块（正常关闭路径会产生）；若无分块，从 syncCollectorState 构造 AV 文件
+     * @return 成功创建的 AV 文件 ArtifactInfo，或 null
+     */
+    private fun handleSyncMetadata(
+        projectId: String,
+        repoName: String,
+        uploadId: String,
+        fileConsumer: MediaArtifactFileConsumer,
+        syncCollectorState: String?
+    ): ArtifactInfo? {
+        val avArtifactInfo = buildArtifactInfo(projectId, repoName, uploadId, MediaType.JSON, "AV")
+        val avUploadId = "${uploadId}_AV_$uploadId"
+        val avBlocks = blockNodeService.listBlocksInUploadId(
+            projectId, repoName, avArtifactInfo.getArtifactFullPath(), avUploadId
+        )
+
+        // 优先从已有分块合并（正常关闭时 dispatch 产生的完整 AV JSON）
+        if (avBlocks.isNotEmpty()) {
+            fileConsumer.completeBlockNode(avArtifactInfo, avUploadId)
+            logger.info("handleSyncMetadata: AV file merged from blocks for uploadId=$uploadId")
+            return avArtifactInfo
+        }
+
+        // 无 AV 分块：从 syncCollectorState 构造 AV 文件
+        if (!syncCollectorState.isNullOrEmpty()) {
+            val metadataJson = convertSyncStateToMetadataJson(syncCollectorState)
+            if (metadataJson != null) {
+                val repo = repositoryService.getRepoDetail(projectId, repoName) ?: return null
+                val credentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
+                val artifactFile = ArtifactFileFactory.build(metadataJson.toByteArray().inputStream())
+                storageManager.storeArtifactFile(
+                    NodeCreateRequest(
+                        projectId = projectId,
+                        repoName = repoName,
+                        fullPath = avArtifactInfo.getArtifactFullPath(),
+                        folder = false,
+                        overwrite = true,
+                        size = metadataJson.length.toLong(),
+                    ),
+                    artifactFile,
+                    credentials
+                )
+                logger.info(
+                    "handleSyncMetadata: AV file created from syncCollectorState " +
+                        "for uploadId=$uploadId (${metadataJson.length} bytes)"
+                )
+                return avArtifactInfo
+            }
+        }
+
+        logger.info("handleSyncMetadata: no AV data available for uploadId=$uploadId")
+        return null
+    }
+
+    /**
+     * 将 SyncCollectorState JSON 转换为 SyncMetadata JSON（输出格式）
+     * 纯 Jackson 树操作，无跨模块依赖
+     */
+    private fun convertSyncStateToMetadataJson(stateJson: String): String? {
+        return try {
+            val mapper = com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
+            val state = mapper.readTree(stateJson)
+
+            val metadata = mapper.createObjectNode()
+            metadata.put("version", 1)
+
+            // video info
+            val video = mapper.createObjectNode()
+            video.put("codecType", state.path("videoCodecType").asText("UNKNOWN"))
+            video.put("width", state.path("videoWidth").asInt(0))
+            video.put("height", state.path("videoHeight").asInt(0))
+            metadata.set<ObjectNode>("video", video)
+
+            // audio info (nullable)
+            val audioCodec = state.path("audioCodec").asInt(-1)
+            if (audioCodec >= 0) {
+                val audio = mapper.createObjectNode()
+                audio.put("codec", audioCodec)
+                audio.put("sampleRate", state.path("audioSampleRate").asLong(0))
+                audio.put("channels", state.path("audioChannels").asInt(0))
+                metadata.set<ObjectNode>("audio", audio)
+            } else {
+                metadata.putNull("audio")
+            }
+
+            // syncPoints — pass through directly
+            val syncPoints = state.path("syncPoints")
+            if (syncPoints.isArray) {
+                metadata.set<ArrayNode>("syncPoints", syncPoints as ArrayNode)
+            } else {
+                metadata.set<ArrayNode>("syncPoints", mapper.createArrayNode())
+            }
+
+            // segments — pass through directly
+            val segments = state.path("segments")
+            if (segments.isArray) {
+                metadata.set<ArrayNode>("segments", segments as ArrayNode)
+            } else {
+                metadata.set<ArrayNode>("segments", mapper.createArrayNode())
+            }
+
+            mapper.writeValueAsString(metadata)
+        } catch (e: Exception) {
+            logger.error("Failed to convert syncCollectorState to metadata JSON", e)
+            null
         }
     }
 
