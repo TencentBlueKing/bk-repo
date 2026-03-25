@@ -3,11 +3,16 @@ package com.tencent.bkrepo.job.batch.task.drive
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
+import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.job.COUNT
+import com.tencent.bkrepo.job.CREDENTIALS
 import com.tencent.bkrepo.job.DELETED_DATE
+import com.tencent.bkrepo.job.NAME
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
+import com.tencent.bkrepo.job.SHA256
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
@@ -25,11 +30,12 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.reflect.KClass
 
 /**
- * 清理已软删除的 drive node
+ * 清理已软删除的 drive node，并在安全前提下物理删除其 block
  */
 @Component
 class DeletedDriveNodeCleanupJob(
@@ -61,10 +67,16 @@ class DeletedDriveNodeCleanupJob(
         }
         val siblings = findSiblingNodes(row, collectionName)
         if (allSiblingsCanBeCleanedUp(siblings)) {
-            softDeleteDriveBlocks(row)
+            if (!cleanupDriveBlocks(row)) {
+                logger.warn(
+                    "Skip deleting drive node[{}], failed to cleanup drive blocks or references.",
+                    "${row.projectId}/${row.repoName}/${row.id}",
+                )
+                return
+            }
         } else {
             logger.info(
-                "Skip soft deleting drive blocks for node[{}], same realIno[{}] still referenced by other drive nodes.",
+                "Skip deleting drive blocks for node[{}], same realIno[{}] still referenced by other drive nodes.",
                 "${row.projectId}/${row.repoName}/${row.id}",
                 row.realIno
             )
@@ -153,32 +165,97 @@ class DeletedDriveNodeCleanupJob(
         }
     }
 
-    private fun softDeleteDriveBlocks(node: DriveNode) {
-        val now = LocalDateTime.now()
+    private fun cleanupDriveBlocks(node: DriveNode): Boolean {
         val blockCollectionName = resolveDriveBlockCollectionName(node.projectId, node.repoName, node.realIno)
         val criteria = Criteria.where(PROJECT).isEqualTo(node.projectId)
             .and(REPO).isEqualTo(node.repoName)
             .and(DriveNode::ino.name).isEqualTo(node.realIno)
-            .and(DELETED_DATE).isEqualTo(null)
-            .and(DELETE_SNAP_SEQ).isEqualTo(Long.MAX_VALUE)
         val query = Query.query(criteria)
-        val update = Update()
-            .set(DELETED_DATE, now)
-            .set(DELETE_SNAP_SEQ, node.deleteSnapSeq)
-        val result = driveMongoTemplate.updateMulti(query, update, blockCollectionName)
+        query.fields().include(ID).include(SHA256)
+        val blocks = driveMongoTemplate.find(query, Document::class.java, blockCollectionName)
+        if (blocks.isEmpty()) {
+            return true
+        }
+        val credentialsKey = getCredentialsKey(node.projectId, node.repoName)
+        blocks.forEach {
+            val sha256 = it[SHA256]!!.toString()
+            if (!decrementFileReferences(sha256, credentialsKey)) {
+                return false
+            }
+        }
+        val deleteQuery = Query.query(Criteria.where(ID).`in`(blocks.map { it[ID]!! }))
+        val result = driveMongoTemplate.remove(deleteQuery, blockCollectionName)
         logger.info(
-            "Soft delete drive blocks in collection[{}], repo[{}/{}], realIno[{}], modifiedCount[{}].",
+            "delete drive blocks in collection[{}], repo[{}/{}], realIno[{}], deletedCount[{}].",
             blockCollectionName,
             node.projectId,
             node.repoName,
             node.realIno,
-            result.modifiedCount
+            result.deletedCount
         )
+        return result.deletedCount == blocks.size.toLong()
     }
 
     private fun deleteDriveNode(node: DriveNode, collectionName: String) {
         val query = Query.query(Criteria.where(ID).isEqualTo(node.id))
         driveMongoTemplate.remove(query, collectionName)
+    }
+
+    private fun decrementFileReferences(sha256: String, credentialsKey: String?): Boolean {
+        val collectionName =
+            COLLECTION_DRIVE_FILE_REFERENCE + HashShardingUtils.shardingSequenceFor(sha256, SHARDING_COUNT)
+        val criteria = buildReferenceCriteria(sha256, credentialsKey).and(COUNT).gt(0)
+        val query = Query(criteria)
+        val update = Update().inc(COUNT, -1)
+        val result = driveMongoTemplate.updateFirst(query, update, collectionName)
+        if (result.modifiedCount == 1L) {
+            logger.info("Decrement references of drive file [{}] on credentialsKey [{}].", sha256, credentialsKey)
+            return true
+        }
+
+        val referenceQuery = Query(buildReferenceCriteria(sha256, credentialsKey))
+        val reference = driveMongoTemplate.findOne(referenceQuery, Document::class.java, collectionName)
+        if (reference == null) {
+            logger.error(
+                "Failed to decrement reference of drive file [{}] on credentialsKey [{}].", sha256, credentialsKey
+            )
+            driveMongoTemplate.upsert(referenceQuery, Update().inc(COUNT, 0), collectionName)
+            logger.info(
+                "Compensate create drive file reference [{}] on credentialsKey [{}] with count [0].",
+                sha256,
+                credentialsKey
+            )
+            return true
+        }
+        logger.error(
+            "Failed to decrement reference of drive file [{}] on credentialsKey [{}]: reference count is 0.",
+            sha256,
+            credentialsKey
+        )
+        return false
+    }
+
+    private fun buildReferenceCriteria(sha256: String, credentialsKey: String?): Criteria {
+        return Criteria.where(SHA256).`is`(sha256).and(CREDENTIALS).`is`(credentialsKey)
+    }
+
+    private fun getCredentialsKey(projectId: String, repoName: String): String? {
+        return credentialsKeyCache.get(RepositoryId(projectId, repoName)).orElse(null)
+    }
+
+    private val credentialsKeyCache: LoadingCache<RepositoryId, Optional<String>> = CacheBuilder.newBuilder()
+        .maximumSize(10000)
+        .expireAfterWrite(30, TimeUnit.MINUTES)
+        .build(CacheLoader.from { key -> Optional.ofNullable(loadCredentialsKey(key!!)) })
+
+    private fun loadCredentialsKey(repositoryId: RepositoryId): String? {
+        val criteria = Criteria.where(PROJECT).isEqualTo(repositoryId.projectId)
+            .and(NAME).isEqualTo(repositoryId.repoName)
+        val query = Query.query(criteria)
+        query.fields().include(CREDENTIALS)
+        val repository = mongoTemplate.findOne(query, Document::class.java, COLLECTION_REPOSITORY)
+            ?: throw RepoNotFoundException("${repositoryId.projectId}/${repositoryId.repoName}")
+        return repository[CREDENTIALS] as String?
     }
 
     private fun resolveDriveBlockCollectionName(projectId: String, repoName: String, ino: Long): String {
@@ -204,8 +281,9 @@ class DeletedDriveNodeCleanupJob(
         private val logger = LoggerFactory.getLogger(DeletedDriveNodeCleanupJob::class.java)
         private const val COLLECTION_DRIVE_NODE_PREFIX = "drive_node_"
         private const val COLLECTION_DRIVE_BLOCK_NODE_PREFIX = "drive_block_node"
+        private const val COLLECTION_DRIVE_FILE_REFERENCE = "drive_file_reference_"
+        private const val COLLECTION_REPOSITORY = "repository"
         private const val COLLECTION_DRIVE_SNAPSHOT = "drive_snapshot"
         private const val SNAPSHOT_SEQ = "snapSeq"
-        private const val DELETE_SNAP_SEQ = "deleteSnapSeq"
     }
 }

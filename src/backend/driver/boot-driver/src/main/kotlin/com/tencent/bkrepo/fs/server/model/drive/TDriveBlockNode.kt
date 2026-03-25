@@ -38,23 +38,16 @@ data class TDriveBlockNode(
     var crc64ecma: String? = null,
     val size: Long,
     val endPos: Long = startPos + size - 1,
-    var deleted: LocalDateTime? = null,
-
     /**
      * 记录创建时的快照序列号
      */
     var snapSeq: Long = 0,
-
-    /**
-     * 块删除时的快照序列号，Long.MAX_VALUE 表示未删除
-     */
-    var deleteSnapSeq: Long = Long.MAX_VALUE,
 ) {
     companion object {
         const val INO = "ino"
         const val BLOCK_IDX = "node_start_pos_idx"
         const val BLOCK_IDX_DEF =
-            "{'projectId': 1, 'repoName': 1, 'ino': 1, 'startPos': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
+            "{'projectId': 1, 'repoName': 1, 'ino': 1, 'startPos': 1, 'snapSeq': 1}"
         const val SHA256_IDX = "sha256_idx"
         const val SHA256_IDX_DEF = "{'sha256': 1}"
     }
