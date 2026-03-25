@@ -47,47 +47,46 @@ class StorageHealthChecker(dir: Path, private val dataSize: DataSize) : Closeabl
 
     private val checked: AtomicBoolean = AtomicBoolean(false)
 
-    private val outputStream: OutputStream
-
-    init {
-        Files.createFile(tempPath)
-        outputStream = Files.newOutputStream(tempPath)
-    }
+    private var outputStream: OutputStream? = null
 
     /**
      * 检查
      */
-    fun check() {
+    fun check(): Boolean {
         if (closed.get()) {
             throw RuntimeException("Checker is already closed")
         }
+
+        // 只允许检查执行一次，用于限制outputStream只会创建一次，保证其他线程可正常关闭流
         if (!checked.compareAndSet(false, true)) {
             throw RuntimeException("Checker is already checked")
         }
 
         try {
-            ZeroInputStream(dataSize.toBytes()).copyTo(outputStream)
+            Files.createFile(tempPath)
+            outputStream = Files.newOutputStream(tempPath)
+            ZeroInputStream(dataSize.toBytes()).copyTo(outputStream!!)
         } finally {
-            clean()
+            close()
         }
+        return true
     }
 
     override fun close() {
-        if (!closed.compareAndSet(false, true)) {
-            return
-        }
+        closed.set(true)
         try {
-            outputStream.close()
+            outputStream?.close()
         } catch (e: Exception) {
             logger.warn("Close checker failed", e)
         }
+
+        clean()
     }
 
     /**
      * 清理
      */
     private fun clean() {
-        close()
         try {
             Files.deleteIfExists(tempPath)
         } catch (exception: Exception) {

@@ -45,12 +45,14 @@ import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecordLog
 import com.tencent.bkrepo.common.artifact.metrics.ChunkArtifactTransferMetrics
 import com.tencent.bkrepo.common.artifact.metrics.InfluxMetricsExporter
+import com.tencent.bkrepo.common.artifact.metrics.export.ArtifactBandwidthExporter
 import com.tencent.bkrepo.common.artifact.metrics.export.ArtifactMetricsExporter
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.TransferUserAgentUtil
 import com.tencent.bkrepo.common.metadata.service.project.ProjectUsageStatisticsService
+import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager.Companion.METADATA_PIPELINE_ID
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
 import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
@@ -79,6 +81,7 @@ class ArtifactTransferListener(
     private val projectUsageStatisticsService: ProjectUsageStatisticsService,
     private val artifactCacheMetrics: ArtifactCacheMetrics,
     private val prometheusMetricsExporter: ObjectProvider<ArtifactMetricsExporter>,
+    private val bandwidthExporter: ObjectProvider<ArtifactBandwidthExporter>,
 ) {
 
     private var queue = LinkedBlockingQueue<ArtifactTransferRecord>(QUEUE_LIMIT)
@@ -91,9 +94,11 @@ class ArtifactTransferListener(
             val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull()
             val clientIp: String = HttpContextHolder.getClientAddress()
             val projectId = repositoryDetail?.projectId ?: UNKNOWN
+            val (fullPath, pipelineId) = getNodePropertyFromUpload()
             val record = ArtifactTransferRecord(
                 time = Instant.now(),
                 type = ArtifactTransferRecord.RECEIVE,
+                transferMode = determineTransferMode(),
                 elapsed = throughput.time,
                 bytes = throughput.bytes,
                 average = throughput.average(),
@@ -102,7 +107,7 @@ class ArtifactTransferListener(
                 project = projectId,
                 repoName = repositoryDetail?.name ?: UNKNOWN,
                 clientIp = clientIp,
-                fullPath = ArtifactContextHolder.getArtifactInfo()?.getArtifactFullPath() ?: UNKNOWN,
+                fullPath = fullPath,
                 agent = TransferUserAgentUtil.getUserAgent(
                     webPlatformId = artifactMetricsProperties.webPlatformId,
                     host = artifactMetricsProperties.host,
@@ -111,7 +116,8 @@ class ArtifactTransferListener(
                 ).name,
                 userId = SecurityUtils.getUserId().md5(),
                 serverIp = commonTagProvider.ifAvailable?.provide().orEmpty()["host"] ?: UNKNOWN,
-                traceId = TraceHeaderUtils.buildB3Header()
+                traceId = TraceHeaderUtils.buildB3Header(),
+                pipelineId = pipelineId,
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, receivedBytes = throughput.bytes)
@@ -139,9 +145,11 @@ class ArtifactTransferListener(
             val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull()
             val clientIp: String = HttpContextHolder.getClientAddress()
             val projectId = repositoryDetail?.projectId ?: UNKNOWN
+            val (fullPath, pipelineId) = getNodePropertyFromDownload()
             val record = ArtifactTransferRecord(
                 time = Instant.now(),
                 type = ArtifactTransferRecord.RESPONSE,
+                transferMode = determineResponseTransferMode(artifactResource),
                 elapsed = throughput.time,
                 bytes = throughput.bytes,
                 average = throughput.average(),
@@ -150,7 +158,7 @@ class ArtifactTransferListener(
                 project = projectId,
                 repoName = repositoryDetail?.name ?: UNKNOWN,
                 clientIp = clientIp,
-                fullPath = getFullPath(),
+                fullPath = fullPath,
                 agent = TransferUserAgentUtil.getUserAgent(
                     webPlatformId = artifactMetricsProperties.webPlatformId,
                     host = artifactMetricsProperties.host,
@@ -159,7 +167,8 @@ class ArtifactTransferListener(
                 ).name,
                 userId = SecurityUtils.getUserId().md5(),
                 serverIp = commonTagProvider.ifAvailable?.provide().orEmpty()["host"] ?: UNKNOWN,
-                traceId = TraceHeaderUtils.buildB3Header()
+                traceId = TraceHeaderUtils.buildB3Header(),
+                pipelineId = pipelineId,
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, responseBytes = throughput.bytes)
@@ -181,14 +190,86 @@ class ArtifactTransferListener(
         }
     }
 
-    private fun getFullPath(): String {
-        val artifactInfo = ArtifactContextHolder.getArtifactInfo()
-        return if (artifactInfo != null) {
-            ArtifactContextHolder.getNodeDetail(artifactInfo)?.fullPath ?: UNKNOWN
-        } else {
+    private fun getNodePropertyFromUpload(): Pair<String, String> {
+        val fullPath = ArtifactContextHolder.getArtifactInfo()?.getArtifactFullPath() ?: UNKNOWN
+        val pipelineId = try {
+            HttpContextHolder.getRequestOrNull()?.getAttribute(METADATA_PIPELINE_ID)?.toString() ?: UNKNOWN
+        } catch (e: Exception) {
             UNKNOWN
         }
+        return Pair(fullPath, pipelineId)
     }
+
+    /**
+     * 根据请求头判断传输模式
+     * 参考 GenericLocalRepository#onUpload 的判断逻辑
+     */
+    private fun determineTransferMode(): String {
+        val request = HttpContextHolder.getRequestOrNull() ?: return ArtifactTransferRecord.MODE_NORMAL
+        val uploadType = request.getHeader(HEADER_UPLOAD_TYPE)
+        val uploadId = request.getHeader(HEADER_UPLOAD_ID)
+        val sequence = request.getHeader(HEADER_SEQUENCE)
+
+        return when {
+            isSeparateUpload(uploadType) -> ArtifactTransferRecord.MODE_CHUNK
+            isBlockUpload(uploadId, sequence) -> ArtifactTransferRecord.MODE_CHUNK
+            isChunkedUpload(uploadType) -> ArtifactTransferRecord.MODE_CHUNK
+            else -> ArtifactTransferRecord.MODE_NORMAL
+        }
+    }
+
+    /**
+     * 判断是否为分块上传（需要 uploadId 和 sequence 同时存在）
+     */
+    private fun isBlockUpload(uploadId: String?, sequence: String?): Boolean {
+        return !uploadId.isNullOrBlank() && !sequence.isNullOrBlank()
+    }
+
+    /**
+     * 是否使用分块追加上传
+     */
+    private fun isChunkedUpload(uploadType: String?): Boolean {
+        return uploadType == CHUNKED_UPLOAD
+    }
+
+    /**
+     * 是否为分离上传
+     */
+    private fun isSeparateUpload(uploadType: String?): Boolean {
+        return uploadType == SEPARATE_UPLOAD
+    }
+
+    /**
+     * 根据 ArtifactResource 判断响应传输模式
+     * 如果是 range 请求（部分内容），则为 CHUNK 模式
+     */
+    private fun determineResponseTransferMode(artifactResource: ArtifactResource): String {
+        return if (isRangeRequest(artifactResource)) {
+            ArtifactTransferRecord.MODE_CHUNK
+        } else {
+            ArtifactTransferRecord.MODE_NORMAL
+        }
+    }
+
+    /**
+     * 判断是否为 range 请求
+     * 单个构件且为部分内容时认为是 range 请求
+     */
+    private fun isRangeRequest(artifactResource: ArtifactResource): Boolean {
+        if (artifactResource.containsMultiArtifact()) {
+            return false
+        }
+        return artifactResource.getSingleStream().range.isPartialContent()
+    }
+
+    private fun getNodePropertyFromDownload(): Pair<String, String> {
+        val artifactInfo = ArtifactContextHolder.getArtifactInfo() ?: return Pair(UNKNOWN, UNKNOWN)
+        val nodeDetail = ArtifactContextHolder.getNodeDetail(artifactInfo) ?: return Pair(UNKNOWN, UNKNOWN)
+        val fullPath = nodeDetail.fullPath
+        val pipelineId = nodeDetail.metadata["pipelineId"]?.toString() ?: UNKNOWN
+        return Pair(fullPath, pipelineId)
+    }
+
 
     @EventListener(ChunkArtifactTransferEvent::class)
     fun listen(event: ChunkArtifactTransferEvent) {
@@ -201,6 +282,7 @@ class ArtifactTransferListener(
             val record = ArtifactTransferRecord(
                 time = Instant.now(),
                 type = recordType,
+                transferMode = ArtifactTransferRecord.MODE_NORMAL,
                 elapsed = costTime,
                 bytes = fileSize,
                 average = average,
@@ -218,7 +300,12 @@ class ArtifactTransferListener(
                 ).name,
                 userId = SecurityUtils.getUserId().md5(),
                 serverIp = commonTagProvider.ifAvailable?.provide().orEmpty()["host"] ?: UNKNOWN,
-                traceId = TraceHeaderUtils.buildB3Header()
+                traceId = TraceHeaderUtils.buildB3Header(),
+                pipelineId = if (pipelineId.isNotEmpty()) {
+                    pipelineId
+                } else {
+                    UNKNOWN
+                }
             )
             if (artifactMetricsProperties.collectByLog) {
                 logger.info(
@@ -273,6 +360,10 @@ class ArtifactTransferListener(
         } else {
             prometheusMetricsExporter.ifAvailable?.export(current)
         }
+        // 导出流量聚合数据
+        if (artifactMetricsProperties.enableBandwidthAggregation) {
+            bandwidthExporter.ifAvailable?.export()
+        }
     }
 
     companion object {
@@ -289,5 +380,22 @@ class ArtifactTransferListener(
         private const val FIXED_DELAY = 30 * 1000L
 
         private const val MILLIS_OF_DAY = 24 * 3600 * 1000L
+
+        /**
+         * 上传类型请求头
+         */
+        private const val HEADER_UPLOAD_TYPE = "UPLOAD-TYPE"
+        private const val HEADER_UPLOAD_ID = "X-BKREPO-UPLOAD-ID"
+        private const val HEADER_SEQUENCE = "X-BKREPO-SEQUENCE"
+
+        /**
+         * 分块上传标识
+         */
+        private const val CHUNKED_UPLOAD = "CHUNKED-UPLOAD"
+
+        /**
+         * 分离上传标识
+         */
+        private const val SEPARATE_UPLOAD = "SEPARATE-UPLOAD"
     }
 }

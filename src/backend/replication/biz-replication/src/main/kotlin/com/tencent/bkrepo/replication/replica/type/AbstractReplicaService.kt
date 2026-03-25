@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.metrics.ReplicationRecord
@@ -56,6 +57,8 @@ import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.convertT
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.toJson
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
@@ -374,6 +377,46 @@ abstract class AbstractReplicaService(
     }
 
     /**
+     * 同步包版本更新元数据
+     */
+    protected fun replicaBySavePackageMetadata(
+        replicaContext: ReplicaContext,
+        packageMetadataSaveRequest: PackageMetadataSaveRequest,
+    ) {
+        with(replicaContext) {
+            try {
+                replicaSavedPackageMetadata(this, packageMetadataSaveRequest)
+            } catch (throwable: Throwable) {
+                logger.error(
+                    "replicaBySavePackageMetadata for ${packageMetadataSaveRequest.packageKey}-" +
+                            "${packageMetadataSaveRequest.version} failed, error is ${throwable.message}"
+                )
+                throw throwable
+            }
+        }
+    }
+
+    /**
+     * 同步包版本删除元数据
+     */
+    protected fun replicaByDeletePackageMetadata(
+        replicaContext: ReplicaContext,
+        packageMetadataDeleteRequest: PackageMetadataDeleteRequest,
+    ) {
+        with(replicaContext) {
+            try {
+                replicaDeletedPackageMetadata(this, packageMetadataDeleteRequest)
+            } catch (throwable: Throwable) {
+                logger.error(
+                    "replicaByDeletePackageMetadata for ${packageMetadataDeleteRequest.packageKey}-" +
+                            "${packageMetadataDeleteRequest.version} failed, error is ${throwable.message}"
+                )
+                throw throwable
+            }
+        }
+    }
+
+    /**
      * 同步路径
      * 采用广度优先遍历
      */
@@ -685,6 +728,52 @@ abstract class AbstractReplicaService(
         }
     }
 
+    /**
+     * 同步更新包版本元数据
+     */
+    private fun replicaSavedPackageMetadata(
+        replicaContext: ReplicaContext,
+        packageMetadataSaveRequest: PackageMetadataSaveRequest,
+    ) {
+        with(replicaContext) {
+            val packageName = PackageKeys.resolveName(packageMetadataSaveRequest.packageKey)
+            val record = ReplicationRecord(
+                packageName = packageName,
+                version = packageMetadataSaveRequest.version,
+            )
+            val replicaExecutionContext = initialExecutionContext(
+                context = replicaContext,
+                artifactName = packageName,
+            )
+            runActionAndPrintLog(replicaExecutionContext, record) {
+                replicator.replicaPackageMetadataSave(replicaContext, packageMetadataSaveRequest)
+            }
+        }
+    }
+
+    /**
+     * 同步删除包版本元数据
+     */
+    private fun replicaDeletedPackageMetadata(
+        replicaContext: ReplicaContext,
+        packageMetadataDeleteRequest: PackageMetadataDeleteRequest,
+    ) {
+        with(replicaContext) {
+            val packageName = PackageKeys.resolveName(packageMetadataDeleteRequest.packageKey)
+            val record = ReplicationRecord(
+                packageName = packageName,
+                version = packageMetadataDeleteRequest.version,
+            )
+            val replicaExecutionContext = initialExecutionContext(
+                context = replicaContext,
+                artifactName = packageName,
+            )
+            runActionAndPrintLog(replicaExecutionContext, record) {
+                replicator.replicaPackageMetadataDelete(replicaContext, packageMetadataDeleteRequest)
+            }
+        }
+    }
+
     private fun runActionAndPrintLog(
         context: ReplicaExecutionContext,
         record: ReplicationRecord,
@@ -694,7 +783,7 @@ abstract class AbstractReplicaService(
         val startTime = LocalDateTime.now().toString()
         var status: ExecutionStatus = ExecutionStatus.SUCCESS
         var errorReason: String? = null
-        
+
         try {
             status = executeActionIfNeeded(context, checkConflictStrategy, record, action)
         } catch (throwable: Throwable) {
@@ -745,7 +834,7 @@ abstract class AbstractReplicaService(
         if (!checkConflictStrategy) {
             return true
         }
-        
+
         return when (context.detail.conflictStrategy) {
             ConflictStrategy.SKIP -> {
                 context.replicaContext.replicaProgress.skip++
@@ -771,6 +860,8 @@ abstract class AbstractReplicaService(
             ExecutionStatus.SUCCESS
         } else {
             context.replicaContext.replicaProgress.failed++
+            context.status = ExecutionStatus.FAILED
+            context.replicaContext.status = ExecutionStatus.FAILED
             ExecutionStatus.FAILED
         }
     }
@@ -793,7 +884,7 @@ abstract class AbstractReplicaService(
         if (willThrow) {
             throw throwable
         }
-        
+
         // 记录分发失败
         recordFailureToDatabase(context, throwable, record)
     }

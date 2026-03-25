@@ -513,6 +513,7 @@ class ArtifactDataReceiver(
         trafficHandler = TrafficHandler(
             ArtifactMetrics.getUploadingCounters(this),
             ArtifactMetrics.getUploadingTimer(this),
+            TrafficHandler.TransferType.UPLOAD,
         )
     }
 

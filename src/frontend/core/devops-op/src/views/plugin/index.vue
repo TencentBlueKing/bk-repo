@@ -58,6 +58,7 @@ import PluginCreateDialog from '@/views/plugin/components/PluginCreateDialog'
 import PluginDetailDialog from '@/views/plugin/components/PluginDetailDialog'
 import PluginDeleteDialog from '@/views/plugin/components/PluginDeleteDialog'
 import PluginStatusDialog from '@/views/plugin/components/PluginStatusDialog'
+import { ROUTER_NAME_PLUGIN } from '@/router'
 
 export default {
   name: 'Plugin',
@@ -95,7 +96,7 @@ export default {
       this.$refs['form'].clearValidate()
     },
     changeRouteQueryParams() {
-      this.$router.push({ path: '/plugin', query: this.pluginQuery })
+      this.$router.push({ name: ROUTER_NAME_PLUGIN, query: this.pluginQuery })
     },
     onRouteUpdate(route) {
       this.pluginQuery.scope = route.query.scope

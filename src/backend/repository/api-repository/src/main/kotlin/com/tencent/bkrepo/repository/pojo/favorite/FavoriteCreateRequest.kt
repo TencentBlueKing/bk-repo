@@ -47,5 +47,7 @@ data class FavoriteCreateRequest(
     @get:Schema(title = "收藏时间")
     val createdDate: LocalDateTime,
     @get:Schema(title = "类型")
-    val type: FavoriteType
+    val type: FavoriteType,
+    @get:Schema(title = "收藏名称")
+    val name: String?
 )

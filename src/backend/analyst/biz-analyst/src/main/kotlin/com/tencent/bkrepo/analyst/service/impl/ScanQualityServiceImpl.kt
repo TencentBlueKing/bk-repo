@@ -44,6 +44,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
@@ -114,13 +115,15 @@ class ScanQualityServiceImpl(
         val planSubtasks = planArtifactLatestSubScanTaskDao
             .findAll(projectId, repoName, fullPath)
             .associateBy { it.planId }
+        var shouldUnforbid = true
         plans.forEach { plan ->
             val result = shouldForbid(projectId, repoName, fullPath, sha256, plan, planSubtasks[plan.id])
             if (result.shouldForbid) {
                 return result
             }
+            shouldUnforbid = shouldUnforbid && result.shouldUnforbid
         }
-        return CheckForbidResult()
+        return CheckForbidResult(shouldUnforbid = shouldUnforbid)
     }
 
     override fun shouldForbidBeforeScanned(
@@ -212,22 +215,32 @@ class ScanQualityServiceImpl(
                 CheckForbidResult(true, ForbidType.NOT_SCANNED.name, ScanPlanConverter.convert(plan))
             } else {
                 // 未扫描过，且未同时满足以上条件时不禁用
-                CheckForbidResult()
+                CheckForbidResult(shouldUnforbid = true)
             }
         }
 
         // 扫描过时判断是否通过质量规则
-        val scanner = scannerService.get(plan.scanner)
-        val scanResultOverview = planSubtask?.scanResultOverview ?: emptyMap()
         val forbidQualityUnPass = plan.scanQuality[ScanQuality::forbidQualityUnPass.name] == true
-        val scanQuality = plan.scanQuality
-        val shouldForbid = forbidQualityUnPass && !checkScanQualityRedLine(scanQuality, scanResultOverview, scanner)
+        if (!forbidQualityUnPass) {
+            return CheckForbidResult(shouldUnforbid = true)
+        }
+
+        if (planSubtask.status != SubScanTaskStatus.SUCCESS.name) {
+            // 扫描失败时不禁用也不解禁
+            return CheckForbidResult()
+        }
+
+        val scanner = scannerService.get(plan.scanner)
+        val scanResultOverview = planSubtask.scanResultOverview ?: emptyMap()
+        val shouldForbid = !checkScanQualityRedLine(plan.scanQuality, scanResultOverview, scanner)
         var type = ForbidType.NONE
         if (shouldForbid) {
             type = ForbidType.QUALITY_UNPASS
             logger.info("forbid [$projectId/$repoName$fullPath][$sha256][${plan.id}], reason: exceed red line")
         }
-        return CheckForbidResult(shouldForbid, type.name, ScanPlanConverter.convert(plan))
+        return CheckForbidResult(
+            shouldForbid, type.name, ScanPlanConverter.convert(plan), !shouldForbid
+        )
     }
 
     companion object {

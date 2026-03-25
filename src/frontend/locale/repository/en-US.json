@@ -713,7 +713,7 @@
         "NPM": "Npm Artifact Analysis"
     },
     "createPlan": "Create plan",
-    "resetUserMsg": "Are you sure to reset the password for account {0} to default?",
+    "resetUserMsg": "Are you sure to reset the password for account {0} to default(password)?",
     "editPlan": "Edit plan",
     "planDetail":"Plan detail",
     "scanReport":"Scan detail",

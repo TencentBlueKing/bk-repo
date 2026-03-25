@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
+import com.tencent.bkrepo.common.metadata.service.metadata.PackageMetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
@@ -52,8 +53,15 @@ import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.enums.FederatedNodeAction
 import com.tencent.bkrepo.replication.pojo.request.BlockNodeCreateFinishRequest
 import com.tencent.bkrepo.replication.pojo.request.CheckPermissionRequest
+import com.tencent.bkrepo.replication.pojo.request.DirectChildrenPage
+import com.tencent.bkrepo.replication.pojo.request.DirectChildrenRequest
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
+import com.tencent.bkrepo.replication.pojo.request.NodeCountRequest
+import com.tencent.bkrepo.replication.pojo.request.NodeCountResult
 import com.tencent.bkrepo.replication.pojo.request.PackageDeleteRequest
+import com.tencent.bkrepo.replication.pojo.request.PathCountRequest
+import com.tencent.bkrepo.replication.pojo.request.PathStatsRequest
+import com.tencent.bkrepo.replication.pojo.request.PathStatsResult
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.repository.pojo.blocknode.BlockNodeDetail
@@ -61,6 +69,8 @@ import com.tencent.bkrepo.repository.pojo.blocknode.service.BlockNodeCreateReque
 import com.tencent.bkrepo.repository.pojo.metadata.DeletedNodeMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.DeletedNodeReplicationRequest
@@ -81,6 +91,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import com.tencent.bkrepo.replication.manager.LocalDataManager
 
 /**
  * 集群间数据同步接口
@@ -92,9 +103,11 @@ class ArtifactReplicaController(
     private val nodeService: NodeService,
     private val packageService: PackageService,
     private val metadataService: MetadataService,
+    private val packageMetadataService: PackageMetadataService,
     private val userResource: ServiceUserClient,
     private val permissionManager: PermissionManager,
     private val blockNodeService: BlockNodeService,
+    private val localDataManager: LocalDataManager,
 ) : ArtifactReplicaClient {
 
     @Value("\${spring.application.version:$DEFAULT_VERSION}")
@@ -281,7 +294,7 @@ class ArtifactReplicaController(
     }
 
     @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
-    override fun replicaProjectCreateRequest(request: ProjectCreateRequest): Response<ProjectInfo> {
+    override fun replicaProjectCreateRequest(request: ProjectCreateRequest, tenantId: String?): Response<ProjectInfo> {
         return projectService.getProjectInfo(request.name)?.let { ResponseBuilder.success(it) }
             ?: ResponseBuilder.success(projectService.createProject(request))
     }
@@ -301,6 +314,18 @@ class ArtifactReplicaController(
     @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaMetadataDeleteRequest(request: MetadataDeleteRequest): Response<Void> {
         metadataService.deleteMetadata(request)
+        return ResponseBuilder.success()
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
+    override fun replicaPackageMetadataSaveRequest(request: PackageMetadataSaveRequest): Response<Void> {
+        packageMetadataService.saveMetadata(request)
+        return ResponseBuilder.success()
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
+    override fun replicaPackageMetadataDeleteRequest(request: PackageMetadataDeleteRequest): Response<Void> {
+        packageMetadataService.deleteMetadata(request)
         return ResponseBuilder.success()
     }
 
@@ -389,6 +414,62 @@ class ArtifactReplicaController(
             )
             return ResponseBuilder.success()
         }
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
+    override fun countNodes(request: NodeCountRequest): Response<NodeCountResult> {
+        val count = nodeService.countFileNode(
+            ArtifactInfo(request.projectId, request.repoName, request.rootPath)
+        )
+        return ResponseBuilder.success(NodeCountResult(fileCount = count))
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
+    override fun countPackages(projectId: String, repoName: String): Response<Long> {
+        val count = localDataManager.countPackages(projectId, repoName)
+        return ResponseBuilder.success(count)
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
+    override fun listPackages(
+        projectId: String, repoName: String,
+        pageNumber: Int, pageSize: Int
+    ): Response<List<Any>> {
+        val packages = localDataManager.listPackagesForDiff(projectId, repoName, pageNumber, pageSize)
+        return ResponseBuilder.success(packages)
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
+    override fun listDirectChildren(request: DirectChildrenRequest): Response<DirectChildrenPage> {
+        val page = localDataManager.listDirectChildren(
+            projectId = request.projectId,
+            repoName = request.repoName,
+            parentPath = request.parentPath,
+            pageNumber = request.pageNumber,
+            pageSize = request.pageSize
+        )
+        return ResponseBuilder.success(page)
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
+    override fun countFilesUnderPath(request: PathCountRequest): Response<Long> {
+        val count = localDataManager.countFilesUnderPath(
+            projectId = request.projectId,
+            repoName = request.repoName,
+            path = request.path
+        )
+        return ResponseBuilder.success(count)
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
+    override fun getPathStats(request: PathStatsRequest): Response<PathStatsResult> {
+        val stats = localDataManager.getPathStats(
+            projectId = request.projectId,
+            repoName = request.repoName,
+            rootPath = request.path,
+            depth = request.depth
+        )
+        return ResponseBuilder.success(stats)
     }
 
     private fun buildTBlockNode(request: BlockNodeCreateRequest): TBlockNode {

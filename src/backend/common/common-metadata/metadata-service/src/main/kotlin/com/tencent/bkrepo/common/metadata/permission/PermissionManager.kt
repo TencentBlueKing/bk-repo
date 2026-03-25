@@ -497,7 +497,12 @@ open class PermissionManager(
         val nodeDetailList = mutableListOf<NodeDetail>()
         do {
             val option = NodeListOption(
-                pageNumber = pageNumber, pageSize = 1000, includeFolder = true, includeMetadata = true, deep = true
+                pageNumber = pageNumber,
+                pageSize = 1000,
+                includeFolder = true,
+                includeMetadata = true,
+                deep = true,
+                includeTotalRecords = false
             )
             val records = nodeService.listNodePage(ArtifactInfo(projectId, repoName, prefix), option).records
             if (records.isEmpty()) {
@@ -598,6 +603,19 @@ open class PermissionManager(
                 userResource.userInfoById(userId).data?.admin == true
             }
         }
+    }
+
+    /**
+     * 判断用户是否为项目管理员
+     */
+    open fun isProjectAdmin(userId: String, projectId: String): Boolean {
+        val checkRequest = CheckPermissionRequest(
+            uid = userId,
+            resourceType = ResourceType.PROJECT.toString(),
+            action = PermissionAction.MANAGE.toString(),
+            projectId = projectId,
+        )
+        return checkPermissionFromAuthService(checkRequest) == true
     }
 
 

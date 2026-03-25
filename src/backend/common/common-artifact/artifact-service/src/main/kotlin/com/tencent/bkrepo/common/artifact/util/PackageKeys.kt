@@ -335,4 +335,6 @@ object PackageKeys {
         RepositoryType.MAVEN -> PackageType.MAVEN.schema
         else -> repositoryType.name.lowercase(Locale.getDefault())
     }
+
+    fun resolveName(key: String) = key.substringAfter(PACKAGE_KEY_SEPARATOR)
 }

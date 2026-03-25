@@ -89,4 +89,10 @@ interface MavenService {
      * 根据文件生成对应的hashtype元数据
      */
     fun createNodeMetaData(artifactFile: ArtifactFile): List<MetadataModel>
+
+    /**
+     * 修复maven-metadata.xml文件
+     * version为空时修复package级别，version不为空时修复snapshot版本级别
+     */
+    fun repairPackageMetadata(projectId: String, repoName: String, packageKey: String, version: String?): Boolean
 }

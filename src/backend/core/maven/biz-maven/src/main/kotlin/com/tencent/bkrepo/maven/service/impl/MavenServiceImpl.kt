@@ -49,6 +49,7 @@ import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.view.ViewModelService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
@@ -110,6 +111,7 @@ import java.util.regex.PatternSyntaxException
 class MavenServiceImpl(
     private val nodeService: NodeService,
     private val packageService: PackageService,
+    private val repositoryService: RepositoryService,
     private val viewModelService: ViewModelService,
     private val mavenMetadataService: MavenMetadataService,
     private val mavenProperties: MavenProperties,
@@ -418,7 +420,13 @@ class MavenServiceImpl(
      */
     private fun folderRemoveHandler(context: ArtifactRemoveContext, node: NodeDetail, remote: Boolean = false) {
         logger.info("Will try to delete folder ${node.fullPath} in repo ${context.artifactInfo.getRepoIdentify()}")
-        val option = NodeListOption(pageNumber = 0, pageSize = 10, includeFolder = true, sort = true)
+        val option = NodeListOption(
+            pageNumber = 0,
+            pageSize = 10,
+            includeFolder = true,
+            sort = true,
+            includeTotalRecords = false
+        )
         val nodes = nodeService.listNodePage(ArtifactInfo(context.projectId, context.repoName, node.fullPath), option)
         if (nodes.records.isEmpty()) {
             // 如果目录下没有任何节点，则删除当前目录并返回
@@ -632,9 +640,24 @@ class MavenServiceImpl(
         mavenMetadata: org.apache.maven.artifact.repository.metadata.Metadata,
         node: NodeDetail,
     ) {
-        ByteArrayOutputStream().use { metadata ->
-            MetadataXpp3Writer().write(metadata, mavenMetadata)
-            val artifactFile = ArtifactFileFactory.build(metadata.toByteArray().inputStream())
+        storeMetadataXmlToPath("${node.path}/$MAVEN_METADATA_FILE_NAME", mavenMetadata)
+    }
+
+    /**
+     * 将maven-metadata.xml及其md5/sha1写入指定路径，storageCredentials为null时从ArtifactUploadContext获取
+     * repair模式（projectId/repoName不为null）额外生成sha256/sha512
+     */
+    private fun storeMetadataXmlToPath(
+        metadataFullPath: String,
+        mavenMetadata: org.apache.maven.artifact.repository.metadata.Metadata,
+        projectId: String? = null,
+        repoName: String? = null,
+        storageCredentials: StorageCredentials? = null,
+    ) {
+        ByteArrayOutputStream().use { bos ->
+            MetadataXpp3Writer().write(bos, mavenMetadata)
+            val bytes = bos.toByteArray()
+            val artifactFile = ArtifactFileFactory.build(bytes.inputStream())
             val resultXmlMd5 = artifactFile.getFileMd5()
             val resultXmlSha1 = artifactFile.getFileSha1()
             val metadataArtifactMd5 = ByteArrayInputStream(resultXmlMd5.toByteArray()).use {
@@ -643,13 +666,67 @@ class MavenServiceImpl(
             val metadataArtifactSha1 = ByteArrayInputStream(resultXmlSha1.toByteArray()).use {
                 ArtifactFileFactory.build(it)
             }
-            updateMetadata("${node.path}/$MAVEN_METADATA_FILE_NAME", artifactFile)
-            artifactFile.delete()
-            updateMetadata("${node.path}/$MAVEN_METADATA_FILE_NAME.${HashType.MD5.ext}", metadataArtifactMd5)
-            metadataArtifactMd5.delete()
-            updateMetadata("${node.path}/$MAVEN_METADATA_FILE_NAME.${HashType.SHA1.ext}", metadataArtifactSha1)
-            metadataArtifactSha1.delete()
+            if (projectId != null && repoName != null) {
+                // repair 模式额外生成 sha256/sha512，需在 artifactFile.delete() 前计算
+                val resultXmlSha256 = artifactFile.getFileSha256()
+                val resultXmlSha512 = DigestUtils.sha512(bytes, 0, bytes.size)
+                storeFileDirectly(projectId, repoName, metadataFullPath, artifactFile, storageCredentials)
+                artifactFile.delete()
+                storeFileDirectly(
+                    projectId, repoName,
+                    "$metadataFullPath.${HashType.MD5.ext}", metadataArtifactMd5, storageCredentials
+                )
+                metadataArtifactMd5.delete()
+                storeFileDirectly(
+                    projectId, repoName,
+                    "$metadataFullPath.${HashType.SHA1.ext}", metadataArtifactSha1, storageCredentials
+                )
+                metadataArtifactSha1.delete()
+                ByteArrayInputStream(resultXmlSha256.toByteArray()).use { ArtifactFileFactory.build(it) }.also {
+                    storeFileDirectly(
+                        projectId, repoName,
+                        "$metadataFullPath.${HashType.SHA256.ext}", it, storageCredentials
+                    )
+                    it.delete()
+                }
+                ByteArrayInputStream(resultXmlSha512.toByteArray()).use { ArtifactFileFactory.build(it) }.also {
+                    storeFileDirectly(
+                        projectId, repoName,
+                        "$metadataFullPath.${HashType.SHA512.ext}", it, storageCredentials
+                    )
+                    it.delete()
+                }
+            } else {
+                updateMetadata(metadataFullPath, artifactFile)
+                artifactFile.delete()
+                updateMetadata("$metadataFullPath.${HashType.MD5.ext}", metadataArtifactMd5)
+                metadataArtifactMd5.delete()
+                updateMetadata("$metadataFullPath.${HashType.SHA1.ext}", metadataArtifactSha1)
+                metadataArtifactSha1.delete()
+            }
         }
+    }
+
+    private fun storeFileDirectly(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        artifactFile: ArtifactFile,
+        storageCredentials: StorageCredentials?,
+    ) {
+        val request = NodeCreateRequest(
+            projectId = projectId,
+            repoName = repoName,
+            folder = false,
+            fullPath = fullPath,
+            size = artifactFile.getSize(),
+            sha256 = artifactFile.getFileSha256(),
+            md5 = artifactFile.getFileMd5(),
+            operator = SecurityUtils.getUserId(),
+            overwrite = true
+        )
+        storageManager.storeArtifactFile(request, artifactFile, storageCredentials)
+        logger.info("Success to save $fullPath, size: ${artifactFile.getSize()}")
     }
 
 
@@ -813,6 +890,84 @@ class MavenServiceImpl(
         } finally {
             artifactFile.delete()
         }
+    }
+
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    override fun repairPackageMetadata(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String?,
+    ): Boolean {
+        val repoDetail = repositoryService.getRepoDetail(projectId, repoName)
+        return if (version.isNullOrBlank()) {
+            repairPackageLevelMetadata(projectId, repoName, packageKey, repoDetail)
+        } else {
+            repairSnapshotVersionMetadata(projectId, repoName, packageKey, version, repoDetail)
+        }
+    }
+
+    /**
+     * 修复package级别的maven-metadata.xml（/groupId/artifactId/maven-metadata.xml）
+     * 数据来源：packageService版本列表
+     */
+    private fun repairPackageLevelMetadata(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        repoDetail: com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail?,
+    ): Boolean {
+        val (artifactId, groupId) = MavenUtil.extractGroupIdAndArtifactId(packageKey)
+        val versions = packageService.listAllVersion(projectId, repoName, packageKey, VersionListOption())
+            ?.map { it.name }.orEmpty()
+        if (versions.isEmpty()) {
+            logger.warn("No versions found for $packageKey in $projectId/$repoName, skip repair")
+            return false
+        }
+        val metadataPath = MavenUtil.extractPath(packageKey) + "/$MAVEN_METADATA_FILE_NAME"
+        val mavenMetadata = org.apache.maven.artifact.repository.metadata.Metadata().apply {
+            modelVersion = "1.1.0"
+            this.groupId = groupId
+            this.artifactId = artifactId
+            versioning = org.apache.maven.artifact.repository.metadata.Versioning().apply {
+                this.versions = versions.toMutableList()
+                latest = versions.first()
+                release = versions.firstOrNull { !it.endsWith(SNAPSHOT_SUFFIX) }
+                lastUpdated = ZonedDateTime.now(ZoneId.of("UTC"))
+                    .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+            }
+        }
+        logger.info("Repairing package-level maven-metadata.xml for $packageKey in $projectId/$repoName")
+        storeMetadataXmlToPath(metadataPath, mavenMetadata, projectId, repoName, repoDetail?.storageCredentials)
+        return true
+    }
+
+    /**
+     * 修复snapshot版本级别的maven-metadata.xml（/groupId/artifactId/version-SNAPSHOT/maven-metadata.xml）
+     * 数据来源：MongoDB中的TMavenMetadataRecord记录
+     */
+    private fun repairSnapshotVersionMetadata(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String,
+        repoDetail: com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail?,
+    ): Boolean {
+        val (artifactId, groupId) = MavenUtil.extractGroupIdAndArtifactId(packageKey)
+        val mavenGavc = MavenGAVC(groupId, artifactId, version, null)
+        val versionPath = MavenUtil.extractPath(packageKey) + "/$version"
+        val records = mavenMetadataService.search(ArtifactInfo(projectId, repoName, versionPath), mavenGavc)
+        if (records.isEmpty()) {
+            logger.warn("No metadata records found for $packageKey:$version in $projectId/$repoName, skip repair")
+            return false
+        }
+        val repoConf = repoDetail?.configuration?.toMavenRepoConf()
+        val mavenMetadata = generateMetadata(repoConf?.mavenSnapshotVersionBehavior, mavenGavc, records)
+            ?: return false
+        val metadataPath = "$versionPath/$MAVEN_METADATA_FILE_NAME"
+        logger.info("Repairing snapshot-level maven-metadata.xml for $packageKey:$version in $projectId/$repoName")
+        storeMetadataXmlToPath(metadataPath, mavenMetadata, projectId, repoName, repoDetail?.storageCredentials)
+        return true
     }
 
     companion object {
