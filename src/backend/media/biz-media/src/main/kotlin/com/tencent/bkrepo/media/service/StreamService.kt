@@ -46,7 +46,6 @@ import org.springframework.stereotype.Service
 import java.net.InetAddress
 import java.util.Base64
 
-
 @Service
 class StreamService(
     private val mediaProperties: MediaProperties,
@@ -62,7 +61,6 @@ class StreamService(
     private val blockNodeService: BlockNodeService,
     private val mediaActiveStreamDao: MediaActiveStreamDao,
 ) : ArtifactService() {
-
 
     /**
      * 创建推流地址
@@ -338,7 +336,6 @@ class StreamService(
         return "${mediaProperties.repoHost}/rtc/v1/whep/?app=live&stream=${streamId}&token=$token"
     }
 
-
     private fun generateToken(streamPattern: String?, expireAt: Long): String {
         val payload = "$streamPattern|$expireAt"
         val signature = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmacHex(payload)
@@ -349,34 +346,25 @@ class StreamService(
         if (token.isNullOrBlank()) {
             return false
         }
-        try {
+        return try {
             val decoded = String(Base64.getUrlDecoder().decode(token))
             val parts = decoded.split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-            if (parts.size != 2) {
-                return false
+            val payload = parts.getOrNull(0)
+            val signature = parts.getOrNull(1)
+            if (payload == null || signature == null || parts.size != 2) {
+                false
+            } else {
+                val expected = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmacHex(payload)
+                val fields = payload.split("\\|".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                val streamPattern = fields[0]
+                val expireAt = fields[1].toLong()
+                expected == signature
+                    && System.currentTimeMillis() <= expireAt
+                    && requestedStream == streamPattern
             }
-            val payload = parts[0]
-            val signature = parts[1]
-
-            val expected: String = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmacHex(payload)
-            if (expected != signature) {
-                return false
-            }
-
-            val fields = payload.split("\\|".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-            val streamPattern = fields[0]
-            val expireAt = fields[1].toLong()
-            if (System.currentTimeMillis() > expireAt) {
-                return false
-            }
-            // 检查流名是否匹配（token 只允许拉对应项目的流）
-            if (requestedStream != streamPattern) {
-                return false
-            }
-            return true
         } catch (e: Exception) {
             logger.error("verifyToken error $token|$requestedStream", e)
-            return false
+            false
         }
     }
 
