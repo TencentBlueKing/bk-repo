@@ -388,7 +388,8 @@ class StreamService(
             clientIp = clientIp,
         )
         logger.info(
-            "Saved active stream: streamId=$normalizedStreamId, machine=$resolvedMachine, serverId=$serverId, app=$app, vhost=$vhost"
+            "Saved active stream: streamId=$normalizedStreamId, machine=$resolvedMachine, " +
+                    "serverId=$serverId, app=$app, vhost=$vhost"
         )
     }
 
@@ -439,7 +440,8 @@ class StreamService(
             .build()
         val response = httpClient.newCall(getKeyRequest).execute()
         if (response.code != 200) {
-            logger.error("checkUserWorkspaceLivePerm request[$requestUrl]resp[${response.code}]: ${response.body?.string()}")
+            logger.error("checkUserWorkspaceLivePerm " +
+                    "request[$requestUrl]resp[${response.code}]: ${response.body?.string()}")
             return false
         }
         val resp = response.body!!.string().readJsonString<DevopsResult<WeSecProjectWorkspace>>().data
