@@ -74,7 +74,7 @@ export const constantRoutes = [
 
   {
     path: '/',
-    redirect: process.env.VUE_APP_RELEASE_MODE === 'community' ? '/nodes' : '/services',
+    redirect: window.RELEASE_MODE === 'community' ? '/nodes' : '/services',
     meta: { title: TITLE_HOME, icon: 'bk' }
   },
 
@@ -143,7 +143,7 @@ export const asyncRoutes = [
     alwaysShow: true,
     meta: { title: '服务管理', icon: 'service' },
     redirect: '/services/services',
-    hidden: process.env.VUE_APP_RELEASE_MODE === 'community',
+    hidden: window.RELEASE_MODE === 'community',
     children: [
       {
         path: 'services',
@@ -272,7 +272,7 @@ export const asyncRoutes = [
   // 制品分析
   {
     path: '/scan',
-    hidden: process.env.VUE_APP_RELEASE_MODE === 'community',
+    hidden: window.RELEASE_MODE === 'community',
     alwaysShow: true,
     redirect: '/scan/scanners',
     component: Layout,
@@ -381,7 +381,7 @@ export const asyncRoutes = [
     path: '/webhook',
     component: Layout,
     alwaysShow: true,
-    hidden: process.env.VUE_APP_RELEASE_MODE === 'community',
+    hidden: window.RELEASE_MODE === 'community',
     redirect: '/webhook/list',
     meta: { title: 'WebHook管理', icon: 'webhook' },
     children: [
@@ -405,7 +405,7 @@ export const asyncRoutes = [
 
 const createRouter = () => new Router({
   mode: 'history', // require service support
-  base: `/${process.env.VUE_APP_BASE_DIR}`,
+  base: `/${import.meta.env.VITE_APP_BASE_DIR}`,
   scrollBehavior: () => ({ y: 0 }),
   routes: constantRoutes
 })
