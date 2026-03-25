@@ -63,15 +63,15 @@ class DriveOperationHandler(
         val blockRequest = DriveBlockWriteRequest(request)
 
         // 检查node是否已经被变更
-        val lastModifiedDate = request.headers().firstHeader(HEADER_IF_MATCH)
-            ?: throw ErrorCodeException(CommonMessageCode.HEADER_MISSING, HEADER_IF_MATCH)
-        val node = driveNodeService.getNodeByIno(blockRequest.projectId, blockRequest.repoName, blockRequest.ino)
-        if (node.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME) != lastModifiedDate) {
-            throw ErrorCodeException(
-                status = HttpStatus.PRECONDITION_FAILED,
-                messageCode = CommonMessageCode.PRECONDITION_FAILED,
-                params = arrayOf(HEADER_IF_MATCH),
-            )
+        request.headers().firstHeader(HEADER_IF_MATCH)?.let { lastModifiedDate ->
+            val node = driveNodeService.getNodeByIno(blockRequest.projectId, blockRequest.repoName, blockRequest.ino)
+            if (node.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME) != lastModifiedDate) {
+                throw ErrorCodeException(
+                    status = HttpStatus.PRECONDITION_FAILED,
+                    messageCode = CommonMessageCode.PRECONDITION_FAILED,
+                    params = arrayOf(HEADER_IF_MATCH),
+                )
+            }
         }
 
         // 写入数据
