@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.auth.service.bkiamv3
 
+import com.tencent.bkrepo.auth.constant.CREATIVE
 import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.LOG
 import com.tencent.bkrepo.auth.constant.PIPELINE
@@ -197,7 +198,7 @@ open class BkIamV3PermissionServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(BkIamV3PermissionServiceImpl::class.java)
-        private val defaultRepoList = listOf(CUSTOM, PIPELINE, LOG, REPORT)
+        private val defaultRepoList = listOf(CUSTOM, PIPELINE, LOG, REPORT, CREATIVE)
     }
 }
 

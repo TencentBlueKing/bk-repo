@@ -59,6 +59,8 @@ import com.tencent.bkrepo.repository.pojo.metadata.DeletedNodeMetadataSaveReques
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.DeletedNodeReplicationRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -334,7 +336,7 @@ class FederationReplicator(
                     pushFileToFederatedCluster(context, node)
                     // 记录文件传输完成标识
                     recordFileTransferComplete(context, node)
-                    
+
                     // 记录文件传输指标
                     val duration = System.currentTimeMillis() - startTime
                     metricsCollector?.recordFileTransfer(
@@ -348,7 +350,7 @@ class FederationReplicator(
                 } catch (throwable: Throwable) {
                     handleFileTransferError(context, node, throwable)
                     result.set(false)
-                    
+
                     // 记录文件传输失败指标
                     val duration = System.currentTimeMillis() - startTime
                     metricsCollector?.recordFileTransfer(
@@ -378,7 +380,7 @@ class FederationReplicator(
             pushFileToFederatedCluster(context, node)
             // 记录文件传输完成标识
             recordFileTransferComplete(context, node)
-            
+
             // 记录文件传输指标
             val duration = System.currentTimeMillis() - startTime
             metricsCollector?.recordFileTransfer(
@@ -392,7 +394,7 @@ class FederationReplicator(
             true
         } catch (throwable: Throwable) {
             handleFileTransferError(context, node, throwable)
-            
+
             // 记录文件传输失败指标
             val duration = System.currentTimeMillis() - startTime
             metricsCollector?.recordFileTransfer(
@@ -637,6 +639,26 @@ class FederationReplicator(
         }
     }
 
+    override fun replicaPackageMetadataSave(
+        context: ReplicaContext,
+        packageMetadataSaveRequest: PackageMetadataSaveRequest,
+    ): Boolean {
+        context.artifactReplicaClient!!.replicaPackageMetadataSaveRequest(
+            buildPackageMetadataSaveRequest(context, packageMetadataSaveRequest)
+        )
+        return true
+    }
+
+    override fun replicaPackageMetadataDelete(
+        context: ReplicaContext,
+        packageMetadataDeleteRequest: PackageMetadataDeleteRequest,
+    ): Boolean {
+        context.artifactReplicaClient!!.replicaPackageMetadataDeleteRequest(
+            buildPackageMetadataDeleteRequest(context, packageMetadataDeleteRequest)
+        )
+        return true
+    }
+
     private fun getCurrentClusterName(projectId: String, repoName: String, taskName: String): String {
         val key = parseKeyFromTaskName(taskName)
         return federationRepositoryService.getCurrentClusterName(projectId, repoName, key)
@@ -691,6 +713,24 @@ class FederationReplicator(
                 source = getCurrentClusterName(context.localProjectId, context.localRepoName, context.task.name),
             )
         }
+    }
+
+    private fun buildPackageMetadataSaveRequest(
+        context: ReplicaContext,
+        packageMetadataSaveRequest: PackageMetadataSaveRequest
+    ): PackageMetadataSaveRequest {
+        return packageMetadataSaveRequest.copy(
+            source = getCurrentClusterName(context.localProjectId, context.localRepoName, context.task.name),
+        )
+    }
+
+    private fun buildPackageMetadataDeleteRequest(
+        context: ReplicaContext,
+        packageMetadataDeleteRequest: PackageMetadataDeleteRequest
+    ): PackageMetadataDeleteRequest {
+        return packageMetadataDeleteRequest.copy(
+            source = getCurrentClusterName(context.localProjectId, context.localRepoName, context.task.name),
+        )
     }
 
     private fun buildNodeDeleteRequest(context: ReplicaContext, node: NodeInfo): NodeDeleteRequest? {

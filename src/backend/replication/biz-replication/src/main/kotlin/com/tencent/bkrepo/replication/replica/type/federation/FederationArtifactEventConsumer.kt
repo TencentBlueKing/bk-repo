@@ -33,7 +33,9 @@ import com.tencent.bkrepo.replication.dao.EventRecordDao
 import com.tencent.bkrepo.replication.replica.executor.FederationThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.type.event.EventConsumer
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
+import org.slf4j.LoggerFactory
 import org.springframework.messaging.Message
+import org.springframework.messaging.support.MessageBuilder
 import org.springframework.stereotype.Component
 
 /**
@@ -63,7 +65,9 @@ class FederationArtifactEventConsumer(
             EventType.VERSION_DELETED,
             EventType.VERSION_UPDATED,
             EventType.METADATA_SAVED,
-            EventType.METADATA_DELETED
+            EventType.METADATA_DELETED,
+            EventType.PACKAGE_METADATA_SAVED,
+            EventType.PACKAGE_METADATA_DELETED,
         )
     }
 
@@ -72,13 +76,62 @@ class FederationArtifactEventConsumer(
     }
 
     override fun action(message: Message<ArtifactEvent>) {
-        processAction(
+        val event = message.payload
+        // 如果是跨仓库操作，额外创建对应目标仓库的操作事件并执行事件处理
+        if (isCrossRepo(event)) {
+            processFederationAction(MessageBuilder.createMessage(buildDstRepoMockEvent(event), message.headers))
+        }
+        processFederationAction(message)
+    }
+
+    private fun processFederationAction(message: Message<ArtifactEvent>) {
+        return processAction(
             message = message,
             eventRecordDao = eventRecordDao,
             getTasks = { projectId, repoName -> replicaTaskService.listFederationTasks(projectId, repoName) },
             eventType = "FEDERATION",
             executor = federationExecutors,
-            executeTask = { task, event, recordId -> federationBasedReplicaJobExecutor.execute(task, event, recordId) }
+            executeTask = { task, event, recordId -> federationBasedReplicaJobExecutor.execute(task, event, recordId) },
         )
+    }
+
+    private fun isCrossRepo(event: ArtifactEvent): Boolean {
+        return when (event.type) {
+            EventType.NODE_MOVED, EventType.NODE_COPIED -> {
+                val dstProjectId = event.data["dstProjectId"]?.toString() ?: event.projectId
+                val dstRepoName = event.data["dstRepoName"]?.toString() ?: event.repoName
+                val dstRootNodeFullPath = event.data["dstRootNodeFullPath"]?.toString()
+                (event.projectId != dstProjectId || event.repoName != dstRepoName) &&
+                        !dstRootNodeFullPath.isNullOrBlank()
+            }
+            else -> false
+        }
+    }
+
+    private fun buildDstRepoMockEvent(event: ArtifactEvent): ArtifactEvent {
+        return when (event.type) {
+            EventType.NODE_MOVED, EventType.NODE_COPIED -> {
+                val dstProjectId = event.data["dstProjectId"]?.toString() ?: event.projectId
+                val dstRepoName = event.data["dstRepoName"]?.toString() ?: event.repoName
+                // event.resourceKey/dstFullPath 不一定对应实际创建的目标节点
+                val dstRootNodeFullPath = event.data["dstRootNodeFullPath"].toString()
+                ArtifactEvent(
+                    type = EventType.NODE_CREATED,
+                    projectId = dstProjectId,
+                    repoName = dstRepoName,
+                    resourceKey = dstRootNodeFullPath,
+                    userId = event.userId,
+                    source = null,
+                )
+            }
+            else -> {
+                logger.error("Unsupported to mock from event type: $event")
+                throw UnsupportedOperationException("Unsupported event type: $event")
+            }
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(FederationArtifactEventConsumer::class.java)
     }
 }

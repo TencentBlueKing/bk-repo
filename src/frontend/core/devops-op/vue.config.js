@@ -64,7 +64,7 @@ module.exports = {
     config
       .plugin('html')
       .use(new HtmlWebpackPlugin({
-        filename: process.env.NODE_ENV !== 'development' ? '../ui/frontend#admin#index.html' : 'index.html',
+        filename: process.env.NODE_ENV !== 'development' ? '../ui/frontend_admin_index.html' : 'index.html',
         templateParameters: {
           BASE_URL: `/`
         },

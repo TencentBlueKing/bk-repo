@@ -54,9 +54,16 @@ function _M:verify_ticket(bk_ticket, input_type)
     if user_cache_value == nil then
         --- 初始化HTTP连接
         local httpc = http.new()
+        --- 分阶段设置超时：连接超时2s，发送超时3s，读取超时10s
+        httpc:set_timeouts(2000, 3000, 10000)
         --- 开始连接
-        httpc:set_timeout(3000)
-        httpc:connect(config.oauth.ip, config.oauth.port)
+        local ok, conn_err = httpc:connect(config.oauth.ip, config.oauth.port)
+        if not ok then
+            ngx.log(ngx.ERR, "verify_ticket(): failed to connect oauth server: ", conn_err,
+                    " ip=", tostring(config.oauth.ip), " port=", tostring(config.oauth.port))
+            ngx.exit(401)
+            return
+        end
 
         --- 组装请求body
         if input_type == "ticket" then
@@ -331,9 +338,16 @@ function _M:verify_ci_token(ci_login_token)
     if user_cache_value == nil then
         --- 初始化HTTP连接
         local httpc = http.new()
+        --- 分阶段设置超时：连接超时2s，发送超时3s，读取超时10s
+        httpc:set_timeouts(2000, 3000, 10000)
         --- 开始连接
-        httpc:set_timeout(3000)
-        httpc:connect(config.bkci.host, config.bkci.port)
+        local ok, conn_err = httpc:connect(config.bkci.host, config.bkci.port)
+        if not ok then
+            ngx.log(ngx.ERR, "verify_ci_token(): failed to connect bkci server: ", conn_err,
+                    " host=", tostring(config.bkci.host), " port=", tostring(config.bkci.port))
+            ngx.exit(401)
+            return
+        end
         local res, err = httpc:request({
             path = '/auth/api/external/third/login/verifyToken',
             method = "GET",

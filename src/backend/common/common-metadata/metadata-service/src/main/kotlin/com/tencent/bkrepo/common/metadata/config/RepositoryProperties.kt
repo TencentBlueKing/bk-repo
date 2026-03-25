@@ -73,5 +73,9 @@ class RepositoryProperties(
     /**
      * 更新流水线制品快照token
      */
-    var updateArtifactToken: String = ""
+    var updateArtifactToken: String = "",
+    /**
+     * 允许跳过项目禁用分享检查的平台账户白名单
+     */
+    var tokenBypassPlatforms: List<String> = emptyList()
 )
