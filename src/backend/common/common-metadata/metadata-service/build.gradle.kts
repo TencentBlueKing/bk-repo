@@ -53,4 +53,5 @@ dependencies {
     testImplementation(project(":common:common-mongo"))
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x")
     testImplementation("org.mockito.kotlin:mockito-kotlin")
+    testImplementation("io.mockk:mockk")
 }
