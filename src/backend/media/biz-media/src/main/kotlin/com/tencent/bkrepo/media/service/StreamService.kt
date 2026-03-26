@@ -1,7 +1,9 @@
 package com.tencent.bkrepo.media.service
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
@@ -19,6 +21,8 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.media.STREAM_PATH
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
+import com.tencent.bkrepo.media.common.dao.MediaActiveStreamDao
+import com.tencent.bkrepo.media.common.pojo.stream.MediaStreamRouteInfo
 import com.tencent.bkrepo.media.config.MediaProperties
 import com.tencent.bkrepo.media.stream.ArtifactFileRecordingListener
 import com.tencent.bkrepo.media.stream.ClientStream
@@ -30,9 +34,17 @@ import com.tencent.bkrepo.media.stream.StreamMode
 import com.tencent.bkrepo.media.stream.TranscodeConfig
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.devops.utils.jackson.readJsonString
+import io.swagger.v3.oas.annotations.media.Schema
+import okhttp3.Request
+import org.apache.commons.codec.digest.HmacAlgorithms
+import org.apache.commons.codec.digest.HmacUtils
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.stereotype.Service
+import java.net.InetAddress
+import java.util.Base64
 
 @Service
 class StreamService(
@@ -47,6 +59,7 @@ class StreamService(
     private val transcodeService: TranscodeService,
     private val storageService: StorageService,
     private val blockNodeService: BlockNodeService,
+    private val mediaActiveStreamDao: MediaActiveStreamDao,
 ) : ArtifactService() {
 
     /**
@@ -234,7 +247,7 @@ class StreamService(
 
         logger.info(
             "MergeExpiredBlocks completed: projectId=$projectId, repoName=$repoName, " +
-                "uploadId=$uploadId, author=$author"
+                    "uploadId=$uploadId, author=$author"
         )
     }
 
@@ -308,8 +321,156 @@ class StreamService(
         return transcodeConfig[projectId] ?: transcodeConfig[DEFAULT]
     }
 
+    fun fetchRtc(
+        projectId: String,
+        repoName: String,
+        resolution: String
+    ): String? {
+        val streamId = "$projectId-${repoName}_$resolution"
+        if (getActiveStreamRoute(streamId) == null) {
+            logger.warn("rtc stream not found, streamId=$streamId")
+            return null
+        }
+        // 5 分钟有效
+        val expireAt = System.currentTimeMillis() + 300000
+        val token: String = generateToken(streamId, expireAt)
+        return "${mediaProperties.repoHost}/rtc/v1/whep/?app=live&stream=${streamId}&token=$token"
+    }
+
+    private fun generateToken(streamPattern: String?, expireAt: Long): String {
+        val payload = "$streamPattern|$expireAt"
+        val signature = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmacHex(payload)
+        return Base64.getUrlEncoder().encodeToString(("$payload.$signature").toByteArray())
+    }
+
+    fun verifyToken(token: String?, requestedStream: String): Boolean {
+        if (token.isNullOrBlank()) {
+            return false
+        }
+        return try {
+            val decoded = String(Base64.getUrlDecoder().decode(token))
+            val parts = decoded.split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            val payload = parts.getOrNull(0)
+            val signature = parts.getOrNull(1)
+            if (payload == null || signature == null || parts.size != 2) {
+                false
+            } else {
+                val expected = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmacHex(payload)
+                val fields = payload.split("\\|".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                val streamPattern = fields[0]
+                val expireAt = fields[1].toLong()
+                expected == signature
+                    && System.currentTimeMillis() <= expireAt
+                    && requestedStream == streamPattern
+            }
+        } catch (e: Exception) {
+            logger.error("verifyToken error $token|$requestedStream", e)
+            false
+        }
+    }
+
+    fun saveActiveStream(
+        streamId: String,
+        machine: String? = null,
+        serverId: String? = null,
+        app: String? = null,
+        vhost: String? = null,
+        clientIp: String? = null,
+    ) {
+        val normalizedStreamId = streamId.trim()
+        require(normalizedStreamId.isNotBlank()) { "streamId must not be blank" }
+        val resolvedMachine = machine?.trim()?.takeIf { it.isNotBlank() } ?: resolveLocalMachine()
+        mediaActiveStreamDao.saveOrUpdate(
+            streamId = normalizedStreamId,
+            machine = resolvedMachine,
+            serverId = serverId,
+            app = app,
+            vhost = vhost,
+            clientIp = clientIp,
+        )
+        logger.info(
+            "Saved active stream: streamId=$normalizedStreamId, machine=$resolvedMachine, " +
+                    "serverId=$serverId, app=$app, vhost=$vhost"
+        )
+    }
+
+    fun deleteActiveStream(streamId: String): Boolean {
+        val normalizedStreamId = streamId.trim()
+        require(normalizedStreamId.isNotBlank()) { "streamId must not be blank" }
+        val result = mediaActiveStreamDao.deleteByStreamId(normalizedStreamId)
+        if (result.deletedCount > 0) {
+            logger.info("Deleted active stream: streamId=$normalizedStreamId")
+            return true
+        }
+        logger.info("Active stream already absent: streamId=$normalizedStreamId")
+        return false
+    }
+
+    fun getActiveStreamRoute(streamId: String): MediaStreamRouteInfo? {
+        val normalizedStreamId = streamId.trim()
+        require(normalizedStreamId.isNotBlank()) { "streamId must not be blank" }
+        return mediaActiveStreamDao.findByStreamId(normalizedStreamId)?.let {
+            MediaStreamRouteInfo(
+                streamId = it.streamId,
+                machine = it.machine,
+                serverId = it.serverId,
+            )
+        }
+    }
+
+    private fun resolveLocalMachine(): String {
+        return runCatching { InetAddress.getLocalHost().hostAddress }
+            .onFailure { logger.warn("Resolve local machine failed.", it) }
+            .getOrDefault("unknown")
+    }
+
+    @Value("\${media.plugin.devx.devops.appCode}")
+
+    private var appCode: String = ""
+
+    @Value("\${media.plugin.devx.devops.appSecret}")
+    private var appSecret: String = ""
+
+    fun checkUserWorkspaceLivePerm(projectId: String, workspaceName: String, userId: String): Boolean {
+        val requestUrl = "${mediaProperties.remoteDevHost}/apigw/remotedev/project_win_workspace" +
+                "?userId=$userId&projectId=$projectId&workspaceName=$workspaceName"
+        val getKeyRequest = Request.Builder()
+            .url(requestUrl)
+            .header(BK_API_AUTH_HEADER, """{"bk_app_code": "$appCode", "bk_app_secret": "$appSecret"}""")
+            .header(X_DEVOPS_UID, userId)
+            .build()
+        val response = httpClient.newCall(getKeyRequest).execute()
+        if (response.code != 200) {
+            logger.error("checkUserWorkspaceLivePerm " +
+                    "request[$requestUrl]resp[${response.code}]: ${response.body?.string()}")
+            return false
+        }
+        val resp = response.body!!.string().readJsonString<DevopsResult<WeSecProjectWorkspace>>().data
+        logger.debug("checkUserWorkspaceLivePerm response[$resp]")
+        return resp?.owner == userId
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(StreamService::class.java)
         private const val DEFAULT = "default"
+
+        private val httpClient = HttpClientBuilderFactory.create().build()
+        private const val X_DEVOPS_UID = "X-DEVOPS-UID"
+        private const val BK_API_AUTH_HEADER = "X-Bkapi-Authorization"
     }
 }
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class DevopsResult<out T>(
+    @get:Schema(title = "返回码")
+    val status: Int,
+    @get:Schema(title = "错误信息")
+    val message: String? = null,
+    @get:Schema(title = "数据")
+    val data: T? = null
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class WeSecProjectWorkspace(
+    val owner: String?
+)
