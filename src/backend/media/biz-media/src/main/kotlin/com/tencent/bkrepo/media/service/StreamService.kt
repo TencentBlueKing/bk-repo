@@ -1,7 +1,11 @@
 package com.tencent.bkrepo.media.service
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.databind.node.ArrayNode
+import com.fasterxml.jackson.databind.node.ObjectNode
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
@@ -19,6 +23,8 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.media.STREAM_PATH
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
+import com.tencent.bkrepo.media.common.dao.MediaActiveStreamDao
+import com.tencent.bkrepo.media.common.pojo.stream.MediaStreamRouteInfo
 import com.tencent.bkrepo.media.config.MediaProperties
 import com.tencent.bkrepo.media.stream.ArtifactFileRecordingListener
 import com.tencent.bkrepo.media.stream.ClientStream
@@ -30,9 +36,18 @@ import com.tencent.bkrepo.media.stream.StreamMode
 import com.tencent.bkrepo.media.stream.TranscodeConfig
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.devops.utils.jackson.readJsonString
+import io.swagger.v3.oas.annotations.media.Schema
+import okhttp3.Request
+import org.apache.commons.codec.digest.HmacAlgorithms
+import org.apache.commons.codec.digest.HmacUtils
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.stereotype.Service
+import java.net.InetAddress
+import java.util.Base64
+
 
 @Service
 class StreamService(
@@ -47,7 +62,9 @@ class StreamService(
     private val transcodeService: TranscodeService,
     private val storageService: StorageService,
     private val blockNodeService: BlockNodeService,
+    private val mediaActiveStreamDao: MediaActiveStreamDao,
 ) : ArtifactService() {
+
 
     /**
      * 创建推流地址
@@ -147,10 +164,12 @@ class StreamService(
             val artifactFile = ArtifactFileFactory.buildChunked(credentials)
             val clientMouseArtifactFile = ArtifactFileFactory.buildChunked(credentials)
             val hostAudioArtifactFile = ArtifactFileFactory.buildChunked(credentials)
+            val syncMetadataArtifactFile = ArtifactFileFactory.buildChunked(credentials)
             ArtifactFileRecordingListener(
                 artifactFile = artifactFile,
                 clientMouseArtifactFile = clientMouseArtifactFile,
                 hostAudioArtifactFile = hostAudioArtifactFile,
+                syncMetadataArtifactFile = syncMetadataArtifactFile,
                 fileConsumer = fileConsumer,
                 scheduler = scheduler,
                 uploadId = uploadId,
@@ -178,6 +197,7 @@ class StreamService(
         repoName: String,
         uploadId: String,
         transcodeExtraParams: String? = null,
+        syncCollectorState: String? = null,
     ) {
         val repo = repositoryService.getRepoDetail(projectId, repoName)
             ?: run {
@@ -212,11 +232,19 @@ class StreamService(
         fileConsumer.completeBlockNode(videoArtifactInfo, uploadId)
         logger.info("MergeExpiredBlocks: video merged for uploadId=$uploadId")
 
-        // 合并额外文件（鼠标轨迹、音频）的分块
+        // 合并额外文件（鼠标轨迹、音频）的分块（不含 AV 同步元数据）
         val extraFileSpecs = listOf("CM" to MediaType.JSON, "AU" to MediaType.AAC)
         val extraArtifactInfos = mergeExtraFileBlocks(
             projectId, repoName, uploadId, extraFileSpecs, fileConsumer
+        ).toMutableList()
+
+        // 处理同步元数据：优先从 AV 分块合并，若无分块则从 syncCollectorState 构造
+        val avArtifactInfo = handleSyncMetadata(
+            projectId, repoName, uploadId, fileConsumer, syncCollectorState
         )
+        if (avArtifactInfo != null) {
+            extraArtifactInfos.add(avArtifactInfo)
+        }
 
         // 合并完成后触发转码
         if (transcodeConfig != null) {
@@ -234,7 +262,7 @@ class StreamService(
 
         logger.info(
             "MergeExpiredBlocks completed: projectId=$projectId, repoName=$repoName, " +
-                "uploadId=$uploadId, author=$author"
+                    "uploadId=$uploadId, author=$author"
         )
     }
 
@@ -297,6 +325,116 @@ class StreamService(
         }
     }
 
+    /**
+     * 处理同步元数据文件
+     * 优先合并已有的 AV 分块（正常关闭路径会产生）；若无分块，从 syncCollectorState 构造 AV 文件
+     * @return 成功创建的 AV 文件 ArtifactInfo，或 null
+     */
+    private fun handleSyncMetadata(
+        projectId: String,
+        repoName: String,
+        uploadId: String,
+        fileConsumer: MediaArtifactFileConsumer,
+        syncCollectorState: String?
+    ): ArtifactInfo? {
+        val avArtifactInfo = buildArtifactInfo(projectId, repoName, uploadId, MediaType.JSON, "AV")
+        val avUploadId = "${uploadId}_AV_$uploadId"
+        val avBlocks = blockNodeService.listBlocksInUploadId(
+            projectId, repoName, avArtifactInfo.getArtifactFullPath(), avUploadId
+        )
+
+        // 优先从已有分块合并（正常关闭时 dispatch 产生的完整 AV JSON）
+        if (avBlocks.isNotEmpty()) {
+            fileConsumer.completeBlockNode(avArtifactInfo, avUploadId)
+            logger.info("handleSyncMetadata: AV file merged from blocks for uploadId=$uploadId")
+            return avArtifactInfo
+        }
+
+        // 无 AV 分块：从 syncCollectorState 构造 AV 文件
+        if (!syncCollectorState.isNullOrEmpty()) {
+            val metadataJson = convertSyncStateToMetadataJson(syncCollectorState)
+            if (metadataJson != null) {
+                val repo = repositoryService.getRepoDetail(projectId, repoName) ?: return null
+                val credentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
+                val artifactFile = ArtifactFileFactory.build(metadataJson.toByteArray().inputStream())
+                storageManager.storeArtifactFile(
+                    NodeCreateRequest(
+                        projectId = projectId,
+                        repoName = repoName,
+                        fullPath = avArtifactInfo.getArtifactFullPath(),
+                        folder = false,
+                        overwrite = true,
+                        size = metadataJson.length.toLong(),
+                    ),
+                    artifactFile,
+                    credentials
+                )
+                logger.info(
+                    "handleSyncMetadata: AV file created from syncCollectorState " +
+                        "for uploadId=$uploadId (${metadataJson.length} bytes)"
+                )
+                return avArtifactInfo
+            }
+        }
+
+        logger.info("handleSyncMetadata: no AV data available for uploadId=$uploadId")
+        return null
+    }
+
+    /**
+     * 将 SyncCollectorState JSON 转换为 SyncMetadata JSON（输出格式）
+     * 纯 Jackson 树操作，无跨模块依赖
+     */
+    private fun convertSyncStateToMetadataJson(stateJson: String): String? {
+        return try {
+            val mapper = com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
+            val state = mapper.readTree(stateJson)
+
+            val metadata = mapper.createObjectNode()
+            metadata.put("version", 1)
+
+            // video info
+            val video = mapper.createObjectNode()
+            video.put("codecType", state.path("videoCodecType").asText("UNKNOWN"))
+            video.put("width", state.path("videoWidth").asInt(0))
+            video.put("height", state.path("videoHeight").asInt(0))
+            metadata.set<ObjectNode>("video", video)
+
+            // audio info (nullable)
+            val audioCodec = state.path("audioCodec").asInt(-1)
+            if (audioCodec >= 0) {
+                val audio = mapper.createObjectNode()
+                audio.put("codec", audioCodec)
+                audio.put("sampleRate", state.path("audioSampleRate").asLong(0))
+                audio.put("channels", state.path("audioChannels").asInt(0))
+                metadata.set<ObjectNode>("audio", audio)
+            } else {
+                metadata.putNull("audio")
+            }
+
+            // syncPoints — pass through directly
+            val syncPoints = state.path("syncPoints")
+            if (syncPoints.isArray) {
+                metadata.set<ArrayNode>("syncPoints", syncPoints as ArrayNode)
+            } else {
+                metadata.set<ArrayNode>("syncPoints", mapper.createArrayNode())
+            }
+
+            // segments — pass through directly
+            val segments = state.path("segments")
+            if (segments.isArray) {
+                metadata.set<ArrayNode>("segments", segments as ArrayNode)
+            } else {
+                metadata.set<ArrayNode>("segments", mapper.createArrayNode())
+            }
+
+            mapper.writeValueAsString(metadata)
+        } catch (e: Exception) {
+            logger.error("Failed to convert syncCollectorState to metadata JSON", e)
+            null
+        }
+    }
+
     fun download(artifactInfo: MediaArtifactInfo) {
         val context = ArtifactDownloadContext()
         repository.download(context)
@@ -307,8 +445,164 @@ class StreamService(
         return transcodeConfig[projectId] ?: transcodeConfig[DEFAULT]
     }
 
+    fun fetchRtc(
+        projectId: String,
+        repoName: String,
+        resolution: String
+    ): String? {
+        val streamId = "$projectId-${repoName}_$resolution"
+        if (getActiveStreamRoute(streamId) == null) {
+            logger.warn("rtc stream not found, streamId=$streamId")
+            return null
+        }
+        // 5 分钟有效
+        val expireAt = System.currentTimeMillis() + 300000
+        val token: String = generateToken(streamId, expireAt)
+        return "${mediaProperties.repoHost}/rtc/v1/whep/?app=live&stream=${streamId}&token=$token"
+    }
+
+
+    private fun generateToken(streamPattern: String?, expireAt: Long): String {
+        val payload = "$streamPattern|$expireAt"
+        val signature = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmacHex(payload)
+        return Base64.getUrlEncoder().encodeToString(("$payload.$signature").toByteArray())
+    }
+
+    fun verifyToken(token: String?, requestedStream: String): Boolean {
+        if (token.isNullOrBlank()) {
+            return false
+        }
+        try {
+            val decoded = String(Base64.getUrlDecoder().decode(token))
+            val parts = decoded.split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            if (parts.size != 2) {
+                return false
+            }
+            val payload = parts[0]
+            val signature = parts[1]
+
+            val expected: String = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmacHex(payload)
+            if (expected != signature) {
+                return false
+            }
+
+            val fields = payload.split("\\|".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            val streamPattern = fields[0]
+            val expireAt = fields[1].toLong()
+            if (System.currentTimeMillis() > expireAt) {
+                return false
+            }
+            // 检查流名是否匹配（token 只允许拉对应项目的流）
+            if (requestedStream != streamPattern) {
+                return false
+            }
+            return true
+        } catch (e: Exception) {
+            logger.error("verifyToken error $token|$requestedStream", e)
+            return false
+        }
+    }
+
+    fun saveActiveStream(
+        streamId: String,
+        machine: String? = null,
+        serverId: String? = null,
+        app: String? = null,
+        vhost: String? = null,
+        clientIp: String? = null,
+    ) {
+        val normalizedStreamId = streamId.trim()
+        require(normalizedStreamId.isNotBlank()) { "streamId must not be blank" }
+        val resolvedMachine = machine?.trim()?.takeIf { it.isNotBlank() } ?: resolveLocalMachine()
+        mediaActiveStreamDao.saveOrUpdate(
+            streamId = normalizedStreamId,
+            machine = resolvedMachine,
+            serverId = serverId,
+            app = app,
+            vhost = vhost,
+            clientIp = clientIp,
+        )
+        logger.info(
+            "Saved active stream: streamId=$normalizedStreamId, machine=$resolvedMachine, serverId=$serverId, app=$app, vhost=$vhost"
+        )
+    }
+
+    fun deleteActiveStream(streamId: String): Boolean {
+        val normalizedStreamId = streamId.trim()
+        require(normalizedStreamId.isNotBlank()) { "streamId must not be blank" }
+        val result = mediaActiveStreamDao.deleteByStreamId(normalizedStreamId)
+        if (result.deletedCount > 0) {
+            logger.info("Deleted active stream: streamId=$normalizedStreamId")
+            return true
+        }
+        logger.info("Active stream already absent: streamId=$normalizedStreamId")
+        return false
+    }
+
+    fun getActiveStreamRoute(streamId: String): MediaStreamRouteInfo? {
+        val normalizedStreamId = streamId.trim()
+        require(normalizedStreamId.isNotBlank()) { "streamId must not be blank" }
+        return mediaActiveStreamDao.findByStreamId(normalizedStreamId)?.let {
+            MediaStreamRouteInfo(
+                streamId = it.streamId,
+                machine = it.machine,
+                serverId = it.serverId,
+            )
+        }
+    }
+
+    private fun resolveLocalMachine(): String {
+        return runCatching { InetAddress.getLocalHost().hostAddress }
+            .onFailure { logger.warn("Resolve local machine failed.", it) }
+            .getOrDefault("unknown")
+    }
+
+    @Value("\${media.plugin.devx.devops.appCode}")
+
+    private var appCode: String = ""
+
+    @Value("\${media.plugin.devx.devops.appSecret}")
+    private var appSecret: String = ""
+
+    fun checkUserWorkspaceLivePerm(projectId: String, workspaceName: String, userId: String): Boolean {
+        val requestUrl = "${mediaProperties.remoteDevHost}/apigw/remotedev/project_win_workspace" +
+                "?userId=$userId&projectId=$projectId&workspaceName=$workspaceName"
+        val getKeyRequest = Request.Builder()
+            .url(requestUrl)
+            .header(BK_API_AUTH_HEADER, """{"bk_app_code": "$appCode", "bk_app_secret": "$appSecret"}""")
+            .header(X_DEVOPS_UID, userId)
+            .build()
+        val response = httpClient.newCall(getKeyRequest).execute()
+        if (response.code != 200) {
+            logger.error("checkUserWorkspaceLivePerm request[$requestUrl]resp[${response.code}]: ${response.body?.string()}")
+            return false
+        }
+        val resp = response.body!!.string().readJsonString<DevopsResult<WeSecProjectWorkspace>>().data
+        logger.debug("checkUserWorkspaceLivePerm response[$resp]")
+        return resp?.owner == userId
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(StreamService::class.java)
         private const val DEFAULT = "default"
+
+        private val httpClient = HttpClientBuilderFactory.create().build()
+        private const val X_DEVOPS_UID = "X-DEVOPS-UID"
+        private const val BK_API_AUTH_HEADER = "X-Bkapi-Authorization"
     }
 }
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class DevopsResult<out T>(
+    @get:Schema(title = "返回码")
+    val status: Int,
+    @get:Schema(title = "错误信息")
+    val message: String? = null,
+    @get:Schema(title = "数据")
+    val data: T? = null
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class WeSecProjectWorkspace(
+    val owner: String?
+)

@@ -3,4 +3,5 @@ package com.tencent.bkrepo.media
 const val TYPE_HOST_AUDIO_DATA: Byte = 0x07
 const val TYPE_CLIENT_MOUSE_DATA: Byte = 0x08
 const val TYPE_VIDEO_DATA: Byte = 0x09
+const val TYPE_AV_MERGE_DATA: Byte = 0x0A
 const val STREAM_PATH = "/streams"
