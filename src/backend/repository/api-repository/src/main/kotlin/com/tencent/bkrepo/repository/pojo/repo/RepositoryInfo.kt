@@ -33,6 +33,7 @@ package com.tencent.bkrepo.repository.pojo.repo
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryVisibility
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -72,5 +73,9 @@ data class RepositoryInfo(
     @get:Schema(title = "仓库已使用容量")
     val used: Long?,
     @get:Schema(title = "是否展示")
-    val display: Boolean
+    val display: Boolean,
+    @get:Schema(title = "仓库可见性类型")
+    val visibility: RepositoryVisibility ? = null,
+    @get:Schema(title = "仓库所有者，PERSONAL 类型仓库有效")
+    val owner: String? = null
 )
