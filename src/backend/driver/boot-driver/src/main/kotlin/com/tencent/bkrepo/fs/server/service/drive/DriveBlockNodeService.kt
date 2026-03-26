@@ -42,7 +42,10 @@ class DriveBlockNodeService(
         }
         criteria.and(TDriveBlockNode::startPos.name).lte(range.end)
             .and(TDriveBlockNode::endPos.name).gte(range.start)
-            .and(TDriveBlockNode::createdDate.name).gt(createdDate)
+        // 由于客户端目前创建DriveNode和上传对应的DriveBlockNode是异步操作，无法控制顺序，
+        // 可能出现DriveBlockNode比DriveNode先创建的情况，此处先取消createdDate限制
+        // 在DriveNode ino被复用时，新创建的DriveNode可能读到老DriveNode的数据，不过ino随机生成，出现这种情况的概率比较小
+//            .and(TDriveBlockNode::createdDate.name).gt(createdDate)
         val query = Query(criteria).with(Sort.by(TDriveBlockNode::createdDate.name))
         return driveBlockNodeDao.find(query)
     }
