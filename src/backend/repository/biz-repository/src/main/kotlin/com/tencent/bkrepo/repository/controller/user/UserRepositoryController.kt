@@ -175,6 +175,8 @@ class UserRepositoryController(
                 quota = quota,
                 pluginRequest = pluginRequest,
                 display = display,
+                visibility = visibility,
+                owner = owner,
             )
         }
         ActionAuditContext.current().setInstance(createRequest)

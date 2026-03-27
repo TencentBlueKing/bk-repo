@@ -32,38 +32,14 @@
 package com.tencent.bkrepo.common.artifact.pojo
 
 /**
- * 仓库类型
+ * 仓库可见性/权限类型
+ *
+ * - PROJECT：项目级仓库，对项目成员可见（默认）
+ * - PERSONAL：个人仓库，仅对仓库所有者可见
+ * - SYSTEM：系统级仓库，对所有人可见
  */
-enum class RepositoryType(val supportPackage: Boolean) {
-    NONE(false),
-    GENERIC(false),
-    DOCKER(true),
-    MAVEN(true),
-    PYPI(true),
-    NPM(true),
-    HELM(true),
-    RDS(true),
-    COMPOSER(true),
-    RPM(true),
-    NUGET(true),
-    GIT(true),
-    OCI(true),
-    CONAN(true),
-    LFS(false),
-    DDC(false),
-    SVN(false),
-    S3(false),
-    MEDIA(false),
-    OHPM(true),
-    CARGO(true),
-    HUGGINGFACE(true),
-    DRIVE(false),
-    ;
-
-    companion object {
-        fun ofValueOrDefault(type: String): RepositoryType {
-            val upperCase = type.toUpperCase()
-            return values().find { it.name == upperCase } ?: NONE
-        }
-    }
+enum class RepositoryVisibility {
+    PROJECT,
+    PERSONAL,
+    SYSTEM
 }

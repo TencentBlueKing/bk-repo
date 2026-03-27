@@ -33,8 +33,10 @@ package com.tencent.bkrepo.common.metadata.model
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryVisibility
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
@@ -43,7 +45,8 @@ import java.time.LocalDateTime
  */
 @Document("repository")
 @CompoundIndexes(
-    CompoundIndex(name = "projectId_name_idx", def = "{'projectId': 1, 'name': 1}", unique = true)
+    CompoundIndex(name = "projectId_name_idx", def = "{'projectId': 1, 'name': 1}", unique = true),
+    CompoundIndex(name = "projectId_owner_idx", def = "{'projectId': 1, 'owner': 1}")
 )
 data class TRepository(
     var id: String? = null,
@@ -67,5 +70,16 @@ data class TRepository(
     var quota: Long? = null,
     var used: Long? = null,
     var clusterNames: Set<String>? = null,
-    var deleted: LocalDateTime? = null
+    var deleted: LocalDateTime? = null,
+
+    /**
+     * 仓库可见性类型，默认为 PROJECT，老数据可能为 null
+     */
+    var visibility: RepositoryVisibility? = null,
+
+    /**
+     * 仓库所有者，当 visibility 为 PERSONAL 时标明该仓库属于哪个用户
+     */
+    @Indexed
+    var owner: String? = null
 )
