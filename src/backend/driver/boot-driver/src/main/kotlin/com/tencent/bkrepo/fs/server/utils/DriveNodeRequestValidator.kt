@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.fs.server.utils
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -18,12 +20,18 @@ import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
+import java.util.concurrent.TimeUnit
 
 @Component
 class DriveNodeRequestValidator(
     private val driveNodeDao: RDriveNodeDao,
     private val driveProperties: DriveProperties,
 ) {
+    private val parentExistsCache: Cache<String, Boolean> = Caffeine.newBuilder()
+        .expireAfterWrite(PARENT_CACHE_TTL_MILLIS, TimeUnit.MILLISECONDS)
+        .maximumSize(MAX_PARENT_CACHE_SIZE)
+        .build()
+
     suspend fun validateCreateRequest(createRequest: DriveNodeCreateRequest) {
         with(createRequest) {
             DriveServiceUtils.validateProjectRepoAndParent(projectId, repoName, parent)
@@ -100,6 +108,10 @@ class DriveNodeRequestValidator(
      * 检查parent与要创建的driveNode属于同一个仓库
      */
     private suspend fun checkParent(parent: Long, projectId: String, repoName: String) {
+        val cacheKey = "$projectId|$repoName|$parent"
+        if (parentExistsCache.getIfPresent(cacheKey) == true) {
+            return
+        }
         val criteria = where(TDriveNode::projectId).isEqualTo(projectId)
             .and(TDriveNode::repoName).isEqualTo(repoName)
             .and(TDriveNode::ino).isEqualTo(parent)
@@ -109,5 +121,11 @@ class DriveNodeRequestValidator(
         if (!driveNodeDao.exists(Query(criteria))) {
             throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, parent)
         }
+        parentExistsCache.put(cacheKey, true)
+    }
+
+    companion object {
+        private const val PARENT_CACHE_TTL_MILLIS = 3000L
+        private const val MAX_PARENT_CACHE_SIZE = 10_000L
     }
 }

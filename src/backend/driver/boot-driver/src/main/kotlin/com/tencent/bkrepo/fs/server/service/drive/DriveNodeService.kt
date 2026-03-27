@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.fs.server.service.drive
 
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -32,6 +34,8 @@ import com.tencent.bkrepo.fs.server.utils.DriveNodeRequestValidator
 import com.tencent.bkrepo.fs.server.utils.DriveServiceUtils
 import com.tencent.bkrepo.fs.server.utils.ExceptionUtils
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
+import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.mono
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Query
@@ -39,7 +43,10 @@ import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
+import reactor.kotlin.core.publisher.toMono
+import java.time.Duration
 import java.time.LocalDateTime
+import java.util.Optional
 
 @Service
 class DriveNodeService(
@@ -48,6 +55,15 @@ class DriveNodeService(
     private val driveProperties: DriveProperties,
     private val driveNodeRequestValidator: DriveNodeRequestValidator,
 ) {
+    private val nodeByInoCache: AsyncLoadingCache<NodeCacheKey, Optional<TDriveNode>> = Caffeine.newBuilder()
+        .maximumSize(NODE_CACHE_MAX_SIZE)
+        .expireAfterWrite(Duration.ofSeconds(NODE_CACHE_EXPIRE_SECONDS))
+        .buildAsync { key, _ ->
+            mono {
+                Optional.ofNullable(driveNodeDao.findByProjectIdAndRepoNameAndIno(key.projectId, key.repoName, key.ino))
+            }.toFuture()
+        }
+
     suspend fun getNode(projectId: String, repoName: String, id: String): DriveNode? {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
         return driveNodeDao.findByProjectIdAndRepoNameAndId(projectId, repoName, id)?.toDriveNode()
@@ -56,7 +72,7 @@ class DriveNodeService(
 
     suspend fun getNodeByIno(projectId: String, repoName: String, ino: Long): DriveNode {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
-        return driveNodeDao.findByProjectIdAndRepoNameAndIno(projectId, repoName, ino)?.toDriveNode()
+        return queryNodeByIno(projectId, repoName, ino)?.toDriveNode()
             ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, ino)
     }
 
@@ -116,17 +132,16 @@ class DriveNodeService(
                 snapSeq = resolveSnapSeq(projectId, repoName, snapSeq),
                 operator = ReactiveSecurityUtils.getUser(),
             )
-            checkConflict(driveNode)
             val createdNode = doCreate(driveNode)
             logger.info("Create drive node[$projectId/$repoName/${createdNode.realIno}/${createdNode.name}] success.")
             return createdNode.toDriveNode()
         }
     }
 
-    suspend fun moveNode(moveRequest: DriveNodeMoveRequest): DriveNode {
+    suspend fun moveNode(moveRequest: DriveNodeMoveRequest, snapSeq: Long? = null): DriveNode {
         with(moveRequest) {
             driveNodeRequestValidator.validateMoveRequest(moveRequest)
-            val srcNode = driveNodeDao.findByProjectIdAndRepoNameAndIno(projectId, repoName, ino)
+            val srcNode = queryNodeByIno(projectId, repoName, ino, bypassCache = ifMatch != null)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, ino)
             checkIfMatch(ifMatch, srcNode)
             if (srcNode.parent == destParent && srcNode.name == destName) {
@@ -136,27 +151,15 @@ class DriveNodeService(
                 )
             }
             val operator = ReactiveSecurityUtils.getUser()
-            val currentSnapSeq = driveSnapSeqService.getLatestSnapSeq(projectId, repoName)
+            val currentSnapSeq = resolveSnapSeq(projectId, repoName, snapSeq)
             val now = LocalDateTime.now()
-
-            // 目标路径已存在文件，需要判断是否覆盖
-            val targetNode = driveNodeDao.findCurrentNode(projectId, repoName, destParent, destName)
-            if (targetNode != null) {
-                val directoryOverwrite = srcNode.type == TYPE_DIRECTORY || targetNode.type == TYPE_DIRECTORY
-                if (!overwrite || srcNode.type != targetNode.type && directoryOverwrite) {
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, destName)
-                }
-                if (targetNode.realIno == srcNode.realIno) {
-                    throw ErrorCodeException(
-                        CommonMessageCode.PARAMETER_INVALID,
-                        "${srcNode.name} and ${targetNode.name} are the same file"
-                    )
-                }
-                doDelete(targetNode, currentSnapSeq)
-            }
 
             // 更新原node父目录与文件名
             val movedNode = if (srcNode.snapSeq != currentSnapSeq) {
+                // 目标路径已存在文件，需要判断是否覆盖
+                driveNodeDao.findCurrentNode(projectId, repoName, destParent, destName)?.let {
+                    overwriteTarget(srcNode, it, currentSnapSeq, overwrite)
+                }
                 val copiedNode = DriveNodeQueryHelper.buildCowNode(srcNode, currentSnapSeq, operator, now).apply {
                     parent = destParent
                     name = destName
@@ -178,9 +181,18 @@ class DriveNodeService(
                     lastModifiedBy = operator,
                     lastModifiedDate = now
                 )
-                driveNodeDao.updateByNodeId(projectId, repoName, srcNode.id!!, ifMatch, updatedNode)
+                try {
+                    driveNodeDao.updateByNodeId(projectId, repoName, srcNode.id!!, ifMatch, updatedNode)
+                } catch (e: DuplicateKeyException) {
+                    // 目标路径已存在文件，需要判断是否覆盖
+                    driveNodeDao.findCurrentNode(projectId, repoName, destParent, destName)?.let {
+                        overwriteTarget(srcNode, it, currentSnapSeq, overwrite)
+                    }
+                    driveNodeDao.updateByNodeId(projectId, repoName, srcNode.id!!, ifMatch, updatedNode)
+                }
                 updatedNode
             }
+            invalidateNodeCache(projectId, repoName, ino)
             logger.info(
                 "Move drive node[$projectId/$repoName/${srcNode.realIno}] from[${srcNode.parent}/${srcNode.name}] " +
                         "to[$destParent/$destName] success."
@@ -192,17 +204,15 @@ class DriveNodeService(
     suspend fun update(updateRequest: DriveNodeUpdateRequest, snapSeq: Long? = null): DriveNode {
         with(updateRequest) {
             driveNodeRequestValidator.validateUpdateRequest(updateRequest)
-            val srcNode = driveNodeDao.findByProjectIdAndRepoNameAndIno(projectId, repoName, ino)
+            val srcNode = queryNodeByIno(projectId, repoName, ino, bypassCache = ifMatch != null)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, ino)
             checkIfMatch(ifMatch, srcNode)
             val operator = ReactiveSecurityUtils.getUser()
             val currentSnapSeq = resolveSnapSeq(projectId, repoName, snapSeq)
             val now = LocalDateTime.now()
             val updatedNode = buildUpdatedNode(srcNode, updateRequest, operator, now)
-            if (updatedNode.parent != srcNode.parent || updatedNode.name != srcNode.name) {
-                checkConflict(updatedNode)
-            }
             val savedNode = saveUpdatedNode(srcNode, updatedNode, updateRequest, currentSnapSeq, operator, now)
+            invalidateNodeCache(projectId, repoName, ino)
             logger.info("Update drive node[$projectId/$repoName/$ino] success.")
             return savedNode.toDriveNode()
         }
@@ -211,11 +221,12 @@ class DriveNodeService(
     suspend fun delete(deleteRequest: DriveNodeDeleteRequest, snapSeq: Long? = null): DriveNode {
         with(deleteRequest) {
             driveNodeRequestValidator.validateDeleteRequest(deleteRequest)
-            val srcNode = driveNodeDao.findByProjectIdAndRepoNameAndIno(projectId, repoName, ino)
+            val srcNode = queryNodeByIno(projectId, repoName, ino, bypassCache = ifMatch != null)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, ino)
             checkIfMatch(ifMatch, srcNode)
             val currentSnapSeq = resolveSnapSeq(projectId, repoName, snapSeq)
             doDelete(srcNode, currentSnapSeq, ifMatch)
+            invalidateNodeCache(projectId, repoName, ino)
             logger.info(
                 "Delete drive node[$projectId/$repoName/$ino] " +
                         "at[${srcNode.parent}/${srcNode.name}] success."
@@ -240,7 +251,10 @@ class DriveNodeService(
 
                         DriveNodeBatchOp.UPDATE -> update(it.node.toUpdateRequest(projectId, repoName), currentSnapSeq)
                         DriveNodeBatchOp.DELETE -> delete(it.node.toDeleteRequest(projectId, repoName), currentSnapSeq)
-                        DriveNodeBatchOp.RENAME -> moveNode(it.node.toMoveRequest(projectId, repoName))
+                        DriveNodeBatchOp.RENAME -> moveNode(
+                            it.node.toMoveRequest(projectId, repoName),
+                            currentSnapSeq
+                        )
                     }
                     successCount++
 
@@ -277,6 +291,27 @@ class DriveNodeService(
         }
     }
 
+    private suspend fun overwriteTarget(
+        srcNode: TDriveNode,
+        targetNode: TDriveNode,
+        currentSnapSeq: Long,
+        overwrite: Boolean
+    ) {
+        val directoryOverwrite = srcNode.type == TYPE_DIRECTORY || targetNode.type == TYPE_DIRECTORY
+        if (!overwrite || srcNode.type != targetNode.type && directoryOverwrite) {
+            throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, targetNode.name)
+        }
+        if (targetNode.realIno == srcNode.realIno) {
+            throw ErrorCodeException(
+                CommonMessageCode.PARAMETER_INVALID,
+                "${srcNode.name} and ${targetNode.name} are the same file"
+            )
+        }
+        doDelete(targetNode, currentSnapSeq)
+        logger.info("delete target node[${srcNode.projectId}/${srcNode.repoName}/${targetNode.ino}]")
+        invalidateNodeCache(srcNode.projectId, srcNode.repoName, targetNode.ino)
+    }
+
     private suspend fun doDelete(driveNode: TDriveNode, curSnapSeq: Long, ifMatch: LocalDateTime? = null) {
         val nodeId = driveNode.id
         requireNotNull(nodeId)
@@ -290,7 +325,7 @@ class DriveNodeService(
             }
             val result = driveNodeDao.markNodeDeleted(projectId, repoName, nodeId, curSnapSeq, ifMatch)
             if (result.modifiedCount != 1L) {
-                throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, name)
+                throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, name)
             }
             logger.info(
                 "Delete drive node[$name] id[$nodeId] ino[$ino] of parent[$parent] at snap[$curSnapSeq] success."
@@ -323,6 +358,9 @@ class DriveNodeService(
         now: LocalDateTime,
     ): TDriveNode {
         return if (srcNode.snapSeq != currentSnapSeq) {
+            if (updatedNode.parent != srcNode.parent || updatedNode.name != srcNode.name) {
+                checkConflict(updatedNode)
+            }
             saveCowUpdatedNode(srcNode, updatedNode, updateRequest, currentSnapSeq, operator, now)
         } else {
             updateCurrentSnapNode(srcNode, updatedNode, updateRequest)
@@ -384,6 +422,27 @@ class DriveNodeService(
         }
     }
 
+    /**
+     * ino 查询短期缓存，用于降低高频读取当前节点时的 Mongo 查询压力。
+     * 当请求带 ifMatch 时，建议绕过缓存，避免旧值导致预条件判断误判。
+     */
+    private suspend fun queryNodeByIno(
+        projectId: String,
+        repoName: String,
+        ino: Long,
+        bypassCache: Boolean = false,
+    ): TDriveNode? {
+        if (bypassCache) {
+            return driveNodeDao.findByProjectIdAndRepoNameAndIno(projectId, repoName, ino)
+        }
+        val cacheKey = NodeCacheKey(projectId, repoName, ino)
+        return nodeByInoCache.get(cacheKey).toMono().awaitSingle().orElse(null)
+    }
+
+    private fun invalidateNodeCache(projectId: String, repoName: String, ino: Long) {
+        nodeByInoCache.synchronous().invalidate(NodeCacheKey(projectId, repoName, ino))
+    }
+
     private suspend fun checkConflict(driveNode: TDriveNode) {
         with(driveNode) {
             val criteria = where(TDriveNode::projectId).isEqualTo(projectId)
@@ -426,6 +485,14 @@ class DriveNodeService(
 
     companion object {
         private const val SUCCESS_CODE = 0
+        private const val NODE_CACHE_EXPIRE_SECONDS = 3L
+        private const val NODE_CACHE_MAX_SIZE = 10_000L
         private val logger = LoggerFactory.getLogger(DriveNodeService::class.java)
     }
+
+    private data class NodeCacheKey(
+        val projectId: String,
+        val repoName: String,
+        val ino: Long,
+    )
 }
