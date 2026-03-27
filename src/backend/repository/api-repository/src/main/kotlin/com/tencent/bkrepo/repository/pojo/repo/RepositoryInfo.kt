@@ -75,7 +75,7 @@ data class RepositoryInfo(
     @get:Schema(title = "是否展示")
     val display: Boolean,
     @get:Schema(title = "仓库可见性类型")
-    val visibility: RepositoryVisibility ? = null,
+    val visibility: RepositoryVisibility? = null,
     @get:Schema(title = "仓库所有者，PERSONAL 类型仓库有效")
     val owner: String? = null
 )

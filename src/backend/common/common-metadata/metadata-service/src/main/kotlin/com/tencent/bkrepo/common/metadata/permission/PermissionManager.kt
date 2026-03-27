@@ -155,12 +155,7 @@ open class PermissionManager(
         val repoInfo = queryRepositoryInfo(projectId, repoName)
         // PERSONAL 类型仓库仅允许所有者访问
         checkPersonalRepoPermission(repoInfo, userId)
-        if (isReadPublicOrSystemRepoCheck(
-                action, repoInfo, public, userId
-            )
-        ) {
-            return
-        }
+        if (isReadPublicOrSystemRepoCheck(action, repoInfo, public, userId)) return
         checkPermission(
             type = ResourceType.REPO,
             action = action,
@@ -194,12 +189,7 @@ open class PermissionManager(
         val repoInfo = queryRepositoryInfo(projectId, repoName)
         // PERSONAL 类型仓库仅允许所有者访问
         checkPersonalRepoPermission(repoInfo, userId)
-        if (isReadPublicOrSystemRepoCheck(
-                action, repoInfo, public, userId
-            )
-        ) {
-            return
-        }
+        if (isReadPublicOrSystemRepoCheck(action, repoInfo, public, userId)) return
         // 禁止批量下载流水线节点
         if (path.size > 1 && repoName == PIPELINE) {
             throw PermissionException()
