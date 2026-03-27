@@ -5,6 +5,8 @@ import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.google.common.hash.BloomFilter
 import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
@@ -44,11 +46,15 @@ class DriveFileReferenceCleanupJob(
 ) : MongoDbBatchJob<DriveFileReferenceCleanupJob.FileReferenceData, FileJobContext>(properties) {
 
     private lateinit var driveBlockNodeBf: BloomFilter<CharSequence>
-    private lateinit var ignoredCredentialsKeys: Set<String?>
+    private lateinit var ignoredCredentialsKeys: Set<String>
     private val credentialsCache: LoadingCache<String, StorageCredentials> = CacheBuilder.newBuilder()
         .maximumSize(100)
         .expireAfterWrite(30, TimeUnit.MINUTES)
         .build(CacheLoader.from { key -> storageCredentialService.findByKey(key) })
+    private val driveOnlyCredentialsKeyCache: LoadingCache<String, Boolean> = CacheBuilder.newBuilder()
+        .maximumSize(1000)
+        .expireAfterWrite(30, TimeUnit.MINUTES)
+        .build(CacheLoader.from { key -> queryDriveOnlyCredentialsKey(key!!) })
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(14)
 
@@ -60,9 +66,7 @@ class DriveFileReferenceCleanupJob(
             fpp = properties.fpp,
             mongoTemplate = driveMongoTemplate
         )
-        ignoredCredentialsKeys = properties.ignoredStorageCredentialsKeys.mapTo(mutableSetOf()) { key ->
-            if (key == DEFAULT_STORAGE_KEY) null else key
-        }
+        ignoredCredentialsKeys = properties.ignoredStorageCredentialsKeys
         return FileJobContext()
     }
 
@@ -81,10 +85,19 @@ class DriveFileReferenceCleanupJob(
     }
 
     override fun run(row: FileReferenceData, collectionName: String, context: FileJobContext) {
-        if (ignoredCredentialsKeys.contains(row.credentialsKey)) {
+        val credentialsKey = row.credentialsKey
+        val normalizedCredentialsKey = normalizeCredentialsKey(credentialsKey)
+        if (ignoredCredentialsKeys.contains(normalizedCredentialsKey)) {
             return
         }
-        val credentialsKey = row.credentialsKey
+        if (!isDriveOnlyCredentialsKey(normalizedCredentialsKey)) {
+            logger.warn(
+                "Deletion refused, drive file[{}] on [{}] is skipped for credentials key not drive-only.",
+                row.sha256,
+                normalizedCredentialsKey
+            )
+            return
+        }
         val sha256 = row.sha256
         val id = row.id
         val storageCredentials = credentialsKey?.let { credentialsCache.get(it) }
@@ -146,6 +159,30 @@ class DriveFileReferenceCleanupJob(
         return false
     }
 
+    private fun isDriveOnlyCredentialsKey(credentialsKey: String): Boolean {
+        return driveOnlyCredentialsKeyCache.get(credentialsKey)
+    }
+
+    private fun queryDriveOnlyCredentialsKey(credentialsKey: String): Boolean {
+        val credentialsCriteria = if (credentialsKey == DEFAULT_STORAGE_KEY) {
+            Criteria().orOperator(
+                Criteria.where(CREDENTIALS).isEqualTo(null),
+                Criteria.where(CREDENTIALS).isEqualTo(DEFAULT_STORAGE_KEY)
+            )
+        } else {
+            Criteria.where(CREDENTIALS).isEqualTo(credentialsKey)
+        }
+        val criteria = Criteria().andOperator(
+            credentialsCriteria,
+            Criteria.where(TRepository::type.name).ne(RepositoryType.DRIVE.name)
+        )
+        return !mongoTemplate.exists(Query(criteria).limit(1), COLLECTION_REPOSITORY)
+    }
+
+    private fun normalizeCredentialsKey(credentialsKey: String?): String {
+        return credentialsKey ?: DEFAULT_STORAGE_KEY
+    }
+
     data class FileReferenceData(private val map: Map<String, Any?>) {
         val id: String by map
         val sha256: String by map
@@ -157,5 +194,6 @@ class DriveFileReferenceCleanupJob(
 
         private const val COLLECTION_DRIVE_FILE_REFERENCE_PREFIX = "drive_file_reference_"
         private const val COLLECTION_DRIVE_BLOCK_NODE_PREFIX = "drive_block_node"
+        private const val COLLECTION_REPOSITORY = "repository"
     }
 }
