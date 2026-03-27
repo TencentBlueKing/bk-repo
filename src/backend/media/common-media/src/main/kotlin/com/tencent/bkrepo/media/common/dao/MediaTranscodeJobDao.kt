@@ -59,36 +59,6 @@ class MediaTranscodeJobDao : SimpleMongoDao<TMediaTranscodeJob>() {
     }
 
     /**
-     * 统计指定项目的队列和运行中任务数
-     */
-    fun queueAndRunningJobCount(projectId: String): Long {
-        return count(
-            Query(
-                where(TMediaTranscodeJob::status).`in`(
-                    MediaTranscodeJobStatus.QUEUE,
-                    MediaTranscodeJobStatus.INIT,
-                    MediaTranscodeJobStatus.RUNNING
-                ).and(TMediaTranscodeJob::projectId).isEqualTo(projectId)
-            )
-        )
-    }
-
-    /**
-     * 统计不在指定项目列表中的队列和运行中任务数（用于默认配置的配额判断）
-     */
-    fun queueAndRunningJobCountExcludeProjects(excludeProjectIds: Set<String>): Long {
-        val criteria = where(TMediaTranscodeJob::status).`in`(
-            MediaTranscodeJobStatus.QUEUE,
-            MediaTranscodeJobStatus.INIT,
-            MediaTranscodeJobStatus.RUNNING
-        )
-        if (excludeProjectIds.isNotEmpty()) {
-            criteria.and(TMediaTranscodeJob::projectId).nin(excludeProjectIds)
-        }
-        return count(Query(criteria))
-    }
-
-    /**
      * 按时间顺序取指定项目最旧的 WAITING 任务并将其状态改为 QUEUE
      */
     fun findAndQueueOldestWaitingJob(projectId: String): TMediaTranscodeJob? {

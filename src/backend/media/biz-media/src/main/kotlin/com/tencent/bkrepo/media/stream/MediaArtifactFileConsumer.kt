@@ -107,11 +107,11 @@ class MediaArtifactFileConsumer(
         }
         if (isComplete) {
             // 正常结束：合并所有分块，创建完整node
-            completeBlockNode(artifactInfo, uploadId)
+            completeBlockNode(artifactInfo, uploadId, endTime)
             // 额外文件也合并分块
             val extraArtifactInfos = extraArtifactInfoMap.map { (extraName, extraArtifactInfo) ->
                 val extraUploadId = "${uploadId}_${extraName.substringBefore(".")}"
-                completeBlockNode(extraArtifactInfo, extraUploadId)
+                completeBlockNode(extraArtifactInfo, extraUploadId, endTime)
                 extraArtifactInfo
             }.ifEmpty { null }
             // 转码仅在completeBlockNode后触发
@@ -178,7 +178,7 @@ class MediaArtifactFileConsumer(
     /**
      * 视频流正常结束时，完成分块存储，创建对应node
      */
-    fun completeBlockNode(artifactInfo: ArtifactInfo, uploadId: String) {
+    fun completeBlockNode(artifactInfo: ArtifactInfo, uploadId: String, endTime: Long) {
         with(artifactInfo) {
             val blockNodes = blockNodeService.listBlocksInUploadId(
                 projectId,
@@ -192,7 +192,7 @@ class MediaArtifactFileConsumer(
             val totalSize = blockNodes.sumOf { it.size }
             val crc64ecma = crc64ecma(blockNodes)
             val beforeCreateNodeTime = LocalDateTime.now()
-            blockBaseNodeCreate(userId, artifactInfo, uploadId, totalSize, crc64ecma)
+            blockBaseNodeCreate(userId, artifactInfo, uploadId, totalSize, crc64ecma, endTime)
             val afterCreateNodeTime = LocalDateTime.now()
             val beforeUpdateTime = LocalDateTime.now()
             blockNodeService.updateBlockUploadId(projectId, repoName, getArtifactFullPath(), uploadId)
@@ -205,7 +205,8 @@ class MediaArtifactFileConsumer(
         artifactInfo: ArtifactInfo,
         uploadId: String,
         fileSize: Long,
-        crc64ecma: String
+        crc64ecma: String,
+        endTime: Long
     ) {
         val attributes = NodeAttribute(
             uid = NodeAttribute.NOBODY,
@@ -220,6 +221,9 @@ class MediaArtifactFileConsumer(
         val metadata = mutableListOf<MetadataModel>()
         metadata.add(MetadataModel(UPLOADID_KEY, versionedUploadId, system = true))
         metadata.add(MetadataModel(key = FS_ATTR_KEY, value = attributes))
+        metadata.add(MetadataModel(key = METADATA_KEY_MEDIA_START_TIME, value = startTime, system = true))
+        metadata.add(MetadataModel(key = METADATA_KEY_MEDIA_STOP_TIME, value = endTime, system = true))
+        metadata.add(MetadataModel(key = METADATA_KEY_MEDIA_AUTHOR, value = author, system = true))
 
         val request = NodeCreateRequest(
             projectId = artifactInfo.projectId,

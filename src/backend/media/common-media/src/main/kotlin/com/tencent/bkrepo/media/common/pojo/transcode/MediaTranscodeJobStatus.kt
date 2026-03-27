@@ -7,5 +7,6 @@ enum class MediaTranscodeJobStatus {
     RUNNING,
     SUCCESS,
     FAIL,
+    FILE_ERROR, // 文件损坏，无法重试，需要排查原因
     DONE; // FAIL -> SUCCESS 已经失败的任务重试成功，单独标记下方便查数据
 }

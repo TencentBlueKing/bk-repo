@@ -605,6 +605,19 @@ open class PermissionManager(
         }
     }
 
+    /**
+     * 判断用户是否为项目管理员
+     */
+    open fun isProjectAdmin(userId: String, projectId: String): Boolean {
+        val checkRequest = CheckPermissionRequest(
+            uid = userId,
+            resourceType = ResourceType.PROJECT.toString(),
+            action = PermissionAction.MANAGE.toString(),
+            projectId = projectId,
+        )
+        return checkPermissionFromAuthService(checkRequest) == true
+    }
+
 
     companion object {
 

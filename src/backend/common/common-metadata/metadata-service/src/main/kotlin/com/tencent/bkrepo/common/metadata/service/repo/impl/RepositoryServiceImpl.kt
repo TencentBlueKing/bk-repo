@@ -176,8 +176,8 @@ class RepositoryServiceImpl(
         projectId: String,
         option: RepoListOption,
     ): List<RepositoryInfo> {
-        // 判断用户是否为管理员
-        val isAdmin = permissionManager.ifAvailable?.isAdminUser(userId) ?: false
+        // 判断用户是否为项目管理员
+        val isAdmin = permissionManager.ifAvailable?.isProjectAdmin(userId, projectId) ?: false
         
         var names = servicePermissionClient.listPermissionRepo(
             projectId = projectId,
