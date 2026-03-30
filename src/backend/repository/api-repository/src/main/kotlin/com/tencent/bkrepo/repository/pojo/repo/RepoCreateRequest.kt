@@ -34,6 +34,7 @@ package com.tencent.bkrepo.repository.pojo.repo
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryVisibility
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -69,5 +70,9 @@ data class RepoCreateRequest(
     @get:Schema(title = "是否展示", required = true)
     val display: Boolean = true,
     @get:Schema(title = "操作来源,联邦仓库同步时源集群name", required = false)
-    val source: String? = null
+    val source: String? = null,
+    @get:Schema(title = "仓库可见性类型", required = false)
+    val visibility: RepositoryVisibility = RepositoryVisibility.PROJECT,
+    @get:Schema(title = "仓库所有者，PERSONAL 类型仓库必填", required = false)
+    val owner: String? = null
 ) : RepoRequest

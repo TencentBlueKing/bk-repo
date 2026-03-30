@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.REPOSITORY_NOT_FOUND
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryVisibility
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChannelSetting
@@ -228,6 +229,10 @@ class RepositoryServiceImpl(
             Preconditions.checkArgument(checkCategory(category, configuration), this::configuration.name)
             Preconditions.checkArgument(checkInterceptorConfig(configuration), this::configuration.name)
             Preconditions.checkArgument(checkCleanStrategy(configuration), this::configuration.name)
+            // PERSONAL 类型仓库必须指定 owner
+            if (visibility == RepositoryVisibility.PERSONAL) {
+                Preconditions.checkArgument(!owner.isNullOrBlank(), this::owner.name)
+            }
             // 确保项目一定存在
             val project = projectService.getProjectInfo(projectId)
                 ?: throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, projectId)
