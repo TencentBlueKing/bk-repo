@@ -33,6 +33,10 @@ object DriveServiceUtils {
         Preconditions.checkArgument(pageSize in 1..maxPageSize, "pageSize")
     }
 
+    fun validatePageSize(pageSize: Int, maxPageSize: Int) {
+        Preconditions.checkArgument(pageSize in 1..maxPageSize, "pageSize")
+    }
+
     fun toNanoTimestamp(now: LocalDateTime): Long {
         return now.toInstant(ZoneOffset.UTC).let { it.epochSecond * 1_000_000_000L + it.nano }
     }

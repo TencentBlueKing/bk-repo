@@ -29,7 +29,13 @@ class DriveNodeOperationsHandler(
     suspend fun listNodesPage(request: ServerRequest): ServerResponse {
         with(DriveNodePageRequest(request)) {
             val page = driveNodeService.listNodesPage(
-                projectId, repoName, parent, pageNum, pageSize, includeTotalRecords, snapSeq
+                projectId = projectId,
+                repoName = repoName,
+                parent = parent,
+                pageSize = pageSize,
+                lastName = lastName,
+                lastId = lastId,
+                snapSeq = snapSeq,
             )
             return ReactiveResponseBuilder.success(page)
         }
@@ -40,10 +46,9 @@ class DriveNodeOperationsHandler(
             val page = driveNodeService.listModifiedNodesPage(
                 projectId = projectId,
                 repoName = repoName,
-                lastModifiedDate = lastModifiedDate,
-                pageNumber = pageNum,
                 pageSize = pageSize,
-                includeTotalRecords = includeTotalRecords
+                lastModifiedDate = lastModifiedDate,
+                lastId = lastId,
             )
             return ReactiveResponseBuilder.success(page)
         }

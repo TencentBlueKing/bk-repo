@@ -5,9 +5,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.fs.server.config.properties.drive.DriveProperties
 import com.tencent.bkrepo.fs.server.message.DriveMessageCode
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
@@ -28,6 +26,7 @@ import com.tencent.bkrepo.fs.server.request.drive.toUpdateRequest
 import com.tencent.bkrepo.fs.server.response.drive.DriveNode
 import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResponse
 import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResult
+import com.tencent.bkrepo.fs.server.response.drive.CursorPage
 import com.tencent.bkrepo.fs.server.response.drive.toDriveNode
 import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper
 import com.tencent.bkrepo.fs.server.utils.DriveNodeRequestValidator
@@ -72,7 +71,7 @@ class DriveNodeService(
 
     suspend fun getNodeByIno(projectId: String, repoName: String, ino: Long): DriveNode {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
-        return queryNodeByIno(projectId, repoName, ino)?.toDriveNode()
+        return queryNodeByIno(projectId, repoName, ino, true)?.toDriveNode()
             ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, ino)
     }
 
@@ -85,44 +84,44 @@ class DriveNodeService(
         projectId: String,
         repoName: String,
         parent: Long?,
-        pageNumber: Int,
         pageSize: Int,
-        includeTotalRecords: Boolean = false,
+        lastName: String? = null,
+        lastId: String? = null,
         snapSeq: Long? = null,
-    ): Page<DriveNode> {
+    ): CursorPage<DriveNode> {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
-        DriveServiceUtils.validatePage(pageNumber, pageSize, driveProperties.listCountLimit)
-        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-        val (records, totalRecords) = driveNodeDao.nodePage(
-            projectId,
-            repoName,
-            parent,
-            pageRequest,
-            includeTotalRecords,
-            snapSeq,
+        DriveServiceUtils.validatePageSize(pageSize, driveProperties.listCountLimit)
+        // 多查询 1 条用于判断是否存在下一页（hasMore）。
+        val records = driveNodeDao.nodePage(
+            projectId = projectId,
+            repoName = repoName,
+            parent = parent,
+            pageSize = pageSize + 1,
+            lastName = lastName,
+            lastId = lastId,
+            snapSeq = snapSeq,
         )
-        return Pages.ofResponse(pageRequest, totalRecords, records.map { it.toDriveNode() })
+        return CursorPage.fromRecords(records, pageSize) { it.toDriveNode() }
     }
 
     suspend fun listModifiedNodesPage(
         projectId: String,
         repoName: String,
-        lastModifiedDate: LocalDateTime,
-        pageNumber: Int,
         pageSize: Int,
-        includeTotalRecords: Boolean = false,
-    ): Page<DriveNode> {
+        lastModifiedDate: LocalDateTime,
+        lastId: String,
+    ): CursorPage<DriveNode> {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
-        DriveServiceUtils.validatePage(pageNumber, pageSize, driveProperties.listCountLimit)
-        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-        val (records, totalRecords) = driveNodeDao.modifiedNodePage(
+        DriveServiceUtils.validatePageSize(pageSize, driveProperties.listCountLimit)
+        // 多查询 1 条用于判断是否存在下一页（hasMore）。
+        val records = driveNodeDao.modifiedNodePage(
             projectId = projectId,
             repoName = repoName,
+            pageSize = pageSize + 1,
             lastModifiedDate = lastModifiedDate,
-            pageRequest = pageRequest,
-            includeTotalRecords = includeTotalRecords
+            lastId = lastId,
         )
-        return Pages.ofResponse(pageRequest, totalRecords, records.map { it.toDriveNode() })
+        return CursorPage.fromRecords(records, pageSize) { it.toDriveNode() }
     }
 
     suspend fun createNode(createRequest: DriveNodeCreateRequest, snapSeq: Long? = null): DriveNode {

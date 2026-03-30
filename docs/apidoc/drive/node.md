@@ -265,26 +265,31 @@
   | 250104 | PARAMETER_INVALID  | 参数非法   | 目标名称非法或源目标相同      |
 
 
-## 分页查询目录下节点
+## 游标查询目录下节点
 
 - API: GET /drive/node/page/{projectId}/{repoName}
 - API 名称: drive_list_nodes_page
 - 功能说明:
-  - 中文: 分页查询指定父目录下的节点
-  - English: list nodes by parent in page
+  - 中文: 使用游标查询指定父目录下的节点
+  - English: list nodes by parent with cursor
 - 请求体
 此接口请求体为空
 - 请求字段说明
 
-  | 字段                  | 类型      | 是否必须 | 默认值   | 说明                 | Description           |
-  | ------------------- | ------- | ---- | ----- | ------------------ | --------------------- |
-  | projectId           | string  | 是    | 无     | 项目名称               | project name          |
-  | repoName            | string  | 是    | 无     | 仓库名称               | repo name             |
-  | parent              | long    | 否    | 无     | 父目录 inode，不传表示查询根层 | parent inode          |
-  | pageNum             | int     | 否    | 0     | 页码，从 0 开始          | page number           |
-  | pageSize            | int     | 否    | 20    | 每页条数               | page size             |
-  | includeTotalRecords | boolean | 否    | false | 是否统计总条数            | include total records |
-  | snapSeq             | long    | 否    | 无     | 快照序号，不传则查询当前视图     | snapshot sequence     |
+  | 字段                  | 类型      | 是否必须 | 默认值   | 说明                                                  | Description           |
+  | ------------------- | ------- | ---- | ----- | --------------------------------------------------- | --------------------- |
+  | projectId           | string  | 是    | 无     | 项目名称                                                | project name          |
+  | repoName            | string  | 是    | 无     | 仓库名称                                                | repo name             |
+  | parent              | long    | 否    | 无     | 父目录 inode，不传表示查询根层                                  | parent inode          |
+  | pageSize            | int     | 否    | 20    | 每次查询条数                                              | page size             |
+  | snapSeq             | long    | 否    | 无     | 快照序号，不传则查询当前视图                                      | snapshot sequence     |
+  | lastName            | string  | 否    | 无     | 上一页最后一条记录的 `name`，首次查询不传                            | last record name      |
+  | lastId              | string  | 否    | 无     | 上一页最后一条记录的 `id`，与 `lastName` 一起用于续页                 | last record id        |
+
+- 排序与续页规则
+  - 服务端固定按 `name ASC, id ASC` 返回
+  - 首次查询不传 `lastName/lastId`
+  - 查询下一页时，使用上一页最后一条记录的 `name/id` 作为 `lastName/lastId`
 
 - 响应体
   ```json
@@ -292,10 +297,8 @@
     "code": 0,
     "message": null,
     "data": {
-      "pageNumber": 0,
       "pageSize": 20,
-      "totalRecords": 2,
-      "totalPages": 1,
+      "hasMore": false,
       "records": [
         {
           "id": "67d074a13d19772f4b813f90",
@@ -329,28 +332,33 @@
   }
   ```
 
-## 分页查询增量变更节点
+## 游标查询增量变更节点
 
 - API: GET /drive/node/modified/page/{projectId}/{repoName}
 - API 名称: drive_list_modified_nodes_page
 - 功能说明:
-  - 中文: 按最后修改时间分页查询增量变更节点
-  - English: list modified nodes in page
+  - 中文: 按最后修改时间使用游标查询增量变更节点
+  - English: list modified nodes with cursor
 - 请求体
 此接口请求体为空
 - 请求字段说明
 
-  | 字段                  | 类型      | 是否必须 | 默认值   | 说明                          | Description                    |
-  | ------------------- | ------- | ---- | ----- | --------------------------- | ------------------------------ |
-  | projectId           | string  | 是    | 无     | 项目名称                        | project name                   |
-  | repoName            | string  | 是    | 无     | 仓库名称                        | repo name                      |
-  | lastModifiedDate    | string  | 是    | 无     | 查询该时间之后的变更，ISO_DATE_TIME 格式 | last modified date lower bound |
-  | pageNum             | int     | 否    | 0     | 页码，从 0 开始                   | page number                    |
-  | pageSize            | int     | 否    | 20    | 每页条数                        | page size                      |
-  | includeTotalRecords | boolean | 否    | false | 是否统计总条数                     | include total records          |
+  | 字段                    | 类型      | 是否必须 | 默认值   | 说明                                                            | Description                    |
+  | --------------------- | ------- | ---- | ----- | ------------------------------------------------------------- | ------------------------------ |
+  | projectId             | string  | 是    | 无     | 项目名称                                                          | project name                   |
+  | repoName              | string  | 是    | 无     | 仓库名称                                                          | repo name                      |
+  | pageSize              | int     | 否    | 20    | 每次查询条数                                                        | page size                      |
+  | lastModifiedDate      | string  | 是    | 无     | 上一条已消费记录的 `lastModifiedDate`，ISO_DATE_TIME 格式                | last modified cursor           |
+  | lastId                | string  | 是    | 无     | 上一条已消费记录的 `id`，与 `lastModifiedDate` 一起用于续页                  | last record id                 |
+
+- 排序与续页规则
+  - 服务端固定按 `lastModifiedDate ASC, id ASC` 返回
+  - `lastModifiedDate/lastId` 必须成对传递
+  - 首次查询请传入“同步起点时间 + 最小 id（可为空字符串）”
+  - 查询下一页时，传入上一页最后一条记录的 `lastModifiedDate/id`
 
 - 响应体
-与“分页查询目录下节点”一致
+与“游标查询目录下节点”一致
 
 ## DriveNode 返回字段说明
 

@@ -4,7 +4,7 @@ import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
 import org.springframework.context.annotation.Conditional
-import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -30,29 +30,27 @@ class RDriveNodeDao : DriveHashShardingMongoReactiveDao<TDriveNode>() {
         projectId: String,
         repoName: String,
         parent: Long?,
-        pageRequest: PageRequest,
-        includeTotalRecords: Boolean = false,
+        pageSize: Int,
+        lastName: String? = null,
+        lastId: String? = null,
         snapSeq: Long? = null,
-    ): Pair<List<TDriveNode>, Long> {
+    ): List<TDriveNode> {
         val criteria = listChildrenCriteria(projectId, repoName, parent, snapSeq)
-        val totalRecords = if (includeTotalRecords) count(Query(criteria)) else 0L
-        val records = find(Query(criteria).with(pageRequest))
-        return Pair(records, totalRecords)
+        appendCursorCondition(criteria, TDriveNode::name.name, lastName, lastId)
+        return findCursorPage(criteria, TDriveNode::name.name, pageSize)
     }
 
     suspend fun modifiedNodePage(
         projectId: String,
         repoName: String,
+        pageSize: Int,
         lastModifiedDate: LocalDateTime,
-        pageRequest: PageRequest,
-        includeTotalRecords: Boolean = false,
-    ): Pair<List<TDriveNode>, Long> {
+        lastId: String,
+    ): List<TDriveNode> {
         val criteria = where(TDriveNode::projectId).isEqualTo(projectId)
             .and(TDriveNode::repoName).isEqualTo(repoName)
-            .and(TDriveNode::lastModifiedDate).gt(lastModifiedDate)
-        val totalRecords = if (includeTotalRecords) count(Query(criteria)) else 0L
-        val records = find(Query(criteria).with(pageRequest))
-        return Pair(records, totalRecords)
+        appendCursorCondition(criteria, TDriveNode::lastModifiedDate.name, lastModifiedDate, lastId)
+        return findCursorPage(criteria, TDriveNode::lastModifiedDate.name, pageSize)
     }
 
     suspend fun findByProjectIdAndRepoNameAndId(projectId: String, repoName: String, id: String): TDriveNode? {
@@ -178,5 +176,18 @@ class RDriveNodeDao : DriveHashShardingMongoReactiveDao<TDriveNode>() {
             criteria.and(TDriveNode::snapSeq).lte(snapSeq)
                 .and(TDriveNode::deleteSnapSeq).gt(snapSeq)
         }
+    }
+
+    private fun appendCursorCondition(criteria: Criteria, sortField: String, lastValue: Any?, lastId: String?) {
+        if (lastValue == null || lastId == null) return
+        criteria.orOperator(
+            Criteria.where(sortField).gt(lastValue),
+            Criteria.where(sortField).isEqualTo(lastValue).and(ID).gt(lastId),
+        )
+    }
+
+    private suspend fun findCursorPage(criteria: Criteria, sortField: String, pageSize: Int): List<TDriveNode> {
+        val sort = Sort.by(Sort.Direction.ASC, sortField).and(Sort.by(Sort.Direction.ASC, ID))
+        return find(Query(criteria).with(sort).limit(pageSize))
     }
 }

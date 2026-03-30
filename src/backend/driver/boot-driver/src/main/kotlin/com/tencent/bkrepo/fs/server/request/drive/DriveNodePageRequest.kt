@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.fs.server.request.drive
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -15,8 +14,8 @@ class DriveNodePageRequest(request: ServerRequest) : DriveNodeRequest(request) {
         throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "ino")
     }
     var pageSize: Int = DEFAULT_PAGE_SIZE
-    var pageNum: Int = DEFAULT_PAGE_NUMBER
-    var includeTotalRecords: Boolean = false
+    val lastName: String? = request.queryParam("lastName").getOrNull()
+    val lastId: String? = request.queryParam("lastId").getOrNull()
     val snapSeq: Long? = try {
         request.queryParam("snapSeq").getOrNull()?.toLong()
     } catch (_: NumberFormatException) {
@@ -25,7 +24,5 @@ class DriveNodePageRequest(request: ServerRequest) : DriveNodeRequest(request) {
 
     init {
         request.useRequestParam("pageSize") { pageSize = it.toInt() }
-        request.useRequestParam("pageNum") { pageNum = it.toInt() }
-        request.useRequestParam("includeTotalRecords") { includeTotalRecords = it.toBoolean() }
     }
 }
