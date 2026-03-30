@@ -43,12 +43,14 @@ data class DriveNodeCreateRequest(
 fun DriveNodeCreateRequest.toDriveNode(
     snapSeq: Long,
     operator: String = SYSTEM_USER,
+    clientId: String? = null,
     now: LocalDateTime = LocalDateTime.now(),
 ): TDriveNode {
     return TDriveNode(
         createdBy = operator,
         createdDate = now,
         lastModifiedBy = operator,
+        lastModifiedClientId = clientId,
         lastModifiedDate = now,
         mtime = mtime ?: toNanoTimestamp(now),
         ctime = ctime ?: toNanoTimestamp(now),

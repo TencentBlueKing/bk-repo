@@ -1,6 +1,8 @@
 package com.tencent.bkrepo.fs.server.request.drive
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import org.springframework.web.reactive.function.server.ServerRequest
@@ -9,14 +11,23 @@ import java.time.LocalDateTime
 data class DriveNodeBatchRequest(
     override val projectId: String,
     override val repoName: String,
+    val clientId: String,
     val operations: List<DriveNodeBatchOperation> = emptyList(),
 ) : DriveNodeRequest(projectId, repoName) {
-    constructor(request: ServerRequest, operations: List<DriveNodeBatchOperation>) : this(
+    constructor(request: ServerRequest, payload: DriveNodeBatchPayload) : this(
         projectId = request.pathVariable(PROJECT_ID),
         repoName = request.pathVariable(REPO_NAME),
-        operations = operations,
+        clientId = payload.clientId.ifBlank {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "clientId")
+        },
+        operations = payload.operations,
     )
 }
+
+data class DriveNodeBatchPayload(
+    val clientId: String = "",
+    val operations: List<DriveNodeBatchOperation> = emptyList(),
+)
 
 data class DriveNodeBatchOperation(
     val op: DriveNodeBatchOp,

@@ -3,7 +3,6 @@ package com.tencent.bkrepo.fs.server.request.drive
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.fs.server.getOrNull
 import com.tencent.bkrepo.fs.server.useRequestParam
 import org.slf4j.LoggerFactory
 import org.springframework.web.reactive.function.server.ServerRequest
@@ -20,6 +19,8 @@ class DriveNodeModifiedPageRequest(request: ServerRequest) : DriveNodeRequest(re
     var pageSize: Int = DEFAULT_PAGE_SIZE
     val lastId: String = request.queryParam("lastId")
         .orElseThrow { ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "lastId") }
+    val clientId: String = request.queryParam("clientId")
+        .orElseThrow { ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "clientId") }
 
     init {
         try {

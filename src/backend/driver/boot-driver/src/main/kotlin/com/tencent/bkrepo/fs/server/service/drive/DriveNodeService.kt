@@ -110,6 +110,7 @@ class DriveNodeService(
         pageSize: Int,
         lastModifiedDate: LocalDateTime,
         lastId: String,
+        clientId: String,
     ): CursorPage<DriveNode> {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
         DriveServiceUtils.validatePageSize(pageSize, driveProperties.listCountLimit)
@@ -124,12 +125,17 @@ class DriveNodeService(
         return CursorPage.fromRecords(records, pageSize) { it.toDriveNode() }
     }
 
-    suspend fun createNode(createRequest: DriveNodeCreateRequest, snapSeq: Long? = null): DriveNode {
+    suspend fun createNode(
+        createRequest: DriveNodeCreateRequest,
+        snapSeq: Long? = null,
+        clientId: String? = null
+    ): DriveNode {
         with(createRequest) {
             driveNodeRequestValidator.validateCreateRequest(createRequest)
             val driveNode = createRequest.toDriveNode(
                 snapSeq = resolveSnapSeq(projectId, repoName, snapSeq),
                 operator = ReactiveSecurityUtils.getUser(),
+                clientId = clientId,
             )
             val createdNode = doCreate(driveNode)
             logger.info("Create drive node[$projectId/$repoName/${createdNode.realIno}/${createdNode.name}] success.")
@@ -137,7 +143,11 @@ class DriveNodeService(
         }
     }
 
-    suspend fun moveNode(moveRequest: DriveNodeMoveRequest, snapSeq: Long? = null): DriveNode {
+    suspend fun moveNode(
+        moveRequest: DriveNodeMoveRequest,
+        snapSeq: Long? = null,
+        clientId: String? = null
+    ): DriveNode {
         with(moveRequest) {
             driveNodeRequestValidator.validateMoveRequest(moveRequest)
             val srcNode = queryNodeByIno(projectId, repoName, ino, bypassCache = ifMatch != null)
@@ -157,9 +167,15 @@ class DriveNodeService(
             val movedNode = if (srcNode.snapSeq != currentSnapSeq) {
                 // 目标路径已存在文件，需要判断是否覆盖
                 driveNodeDao.findCurrentNode(projectId, repoName, destParent, destName)?.let {
-                    overwriteTarget(srcNode, it, currentSnapSeq, overwrite)
+                    overwriteTarget(srcNode, it, currentSnapSeq, overwrite, clientId)
                 }
-                val copiedNode = DriveNodeQueryHelper.buildCowNode(srcNode, currentSnapSeq, operator, now).apply {
+                val copiedNode = DriveNodeQueryHelper.buildCowNode(
+                    srcNode,
+                    currentSnapSeq,
+                    operator,
+                    clientId = clientId,
+                    now = now,
+                ).apply {
                     parent = destParent
                     name = destName
                     mtime = moveRequest.mtime ?: srcNode.mtime
@@ -167,7 +183,13 @@ class DriveNodeService(
                     atime = moveRequest.atime ?: srcNode.atime
                 }
                 // COW操作仅标记旧node为已删除，不需要清理drive-node-block
-                driveNodeDao.markNodeDeleted(srcNode.projectId, srcNode.repoName, srcNode.id!!, currentSnapSeq)
+                driveNodeDao.markNodeDeleted(
+                    srcNode.projectId,
+                    srcNode.repoName,
+                    srcNode.id!!,
+                    currentSnapSeq,
+                    clientId,
+                )
                 val createdNode = doCreate(copiedNode)
                 createdNode
             } else {
@@ -178,6 +200,7 @@ class DriveNodeService(
                     ctime = moveRequest.ctime ?: srcNode.ctime,
                     atime = moveRequest.atime ?: srcNode.atime,
                     lastModifiedBy = operator,
+                    lastModifiedClientId = clientId,
                     lastModifiedDate = now
                 )
                 try {
@@ -185,7 +208,7 @@ class DriveNodeService(
                 } catch (e: DuplicateKeyException) {
                     // 目标路径已存在文件，需要判断是否覆盖
                     driveNodeDao.findCurrentNode(projectId, repoName, destParent, destName)?.let {
-                        overwriteTarget(srcNode, it, currentSnapSeq, overwrite)
+                        overwriteTarget(srcNode, it, currentSnapSeq, overwrite, clientId)
                     }
                     driveNodeDao.updateByNodeId(projectId, repoName, srcNode.id!!, ifMatch, updatedNode)
                 }
@@ -200,7 +223,11 @@ class DriveNodeService(
         }
     }
 
-    suspend fun update(updateRequest: DriveNodeUpdateRequest, snapSeq: Long? = null): DriveNode {
+    suspend fun update(
+        updateRequest: DriveNodeUpdateRequest,
+        snapSeq: Long? = null,
+        clientId: String? = null
+    ): DriveNode {
         with(updateRequest) {
             driveNodeRequestValidator.validateUpdateRequest(updateRequest)
             val srcNode = queryNodeByIno(projectId, repoName, ino, bypassCache = ifMatch != null)
@@ -209,22 +236,27 @@ class DriveNodeService(
             val operator = ReactiveSecurityUtils.getUser()
             val currentSnapSeq = resolveSnapSeq(projectId, repoName, snapSeq)
             val now = LocalDateTime.now()
-            val updatedNode = buildUpdatedNode(srcNode, updateRequest, operator, now)
-            val savedNode = saveUpdatedNode(srcNode, updatedNode, updateRequest, currentSnapSeq, operator, now)
+            val updatedNode = buildUpdatedNode(srcNode, updateRequest, operator, now, clientId)
+            val savedNode =
+                saveUpdatedNode(srcNode, updatedNode, updateRequest, currentSnapSeq, operator, now, clientId)
             invalidateNodeCache(projectId, repoName, ino)
             logger.info("Update drive node[$projectId/$repoName/$ino] success.")
             return savedNode.toDriveNode()
         }
     }
 
-    suspend fun delete(deleteRequest: DriveNodeDeleteRequest, snapSeq: Long? = null): DriveNode {
+    suspend fun delete(
+        deleteRequest: DriveNodeDeleteRequest,
+        snapSeq: Long? = null,
+        clientId: String? = null
+    ): DriveNode {
         with(deleteRequest) {
             driveNodeRequestValidator.validateDeleteRequest(deleteRequest)
             val srcNode = queryNodeByIno(projectId, repoName, ino, bypassCache = ifMatch != null)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, ino)
             checkIfMatch(ifMatch, srcNode)
             val currentSnapSeq = resolveSnapSeq(projectId, repoName, snapSeq)
-            doDelete(srcNode, currentSnapSeq, ifMatch)
+            doDelete(srcNode, currentSnapSeq, clientId, ifMatch)
             invalidateNodeCache(projectId, repoName, ino)
             logger.info(
                 "Delete drive node[$projectId/$repoName/$ino] " +
@@ -245,14 +277,26 @@ class DriveNodeService(
                     val resultNode = when (it.op) {
                         DriveNodeBatchOp.CREATE -> createNode(
                             it.node.toCreateRequest(projectId, repoName),
-                            currentSnapSeq
+                            currentSnapSeq,
+                            clientId,
                         )
 
-                        DriveNodeBatchOp.UPDATE -> update(it.node.toUpdateRequest(projectId, repoName), currentSnapSeq)
-                        DriveNodeBatchOp.DELETE -> delete(it.node.toDeleteRequest(projectId, repoName), currentSnapSeq)
+                        DriveNodeBatchOp.UPDATE -> update(
+                            it.node.toUpdateRequest(projectId, repoName),
+                            currentSnapSeq,
+                            clientId,
+                        )
+
+                        DriveNodeBatchOp.DELETE -> delete(
+                            it.node.toDeleteRequest(projectId, repoName),
+                            currentSnapSeq,
+                            clientId,
+                        )
+
                         DriveNodeBatchOp.RENAME -> moveNode(
                             it.node.toMoveRequest(projectId, repoName),
-                            currentSnapSeq
+                            currentSnapSeq,
+                            clientId,
                         )
                     }
                     successCount++
@@ -294,7 +338,8 @@ class DriveNodeService(
         srcNode: TDriveNode,
         targetNode: TDriveNode,
         currentSnapSeq: Long,
-        overwrite: Boolean
+        overwrite: Boolean,
+        clientId: String?,
     ) {
         val directoryOverwrite = srcNode.type == TYPE_DIRECTORY || targetNode.type == TYPE_DIRECTORY
         if (!overwrite || srcNode.type != targetNode.type && directoryOverwrite) {
@@ -306,12 +351,17 @@ class DriveNodeService(
                 "${srcNode.name} and ${targetNode.name} are the same file"
             )
         }
-        doDelete(targetNode, currentSnapSeq)
+        doDelete(targetNode, currentSnapSeq, clientId)
         logger.info("delete target node[${srcNode.projectId}/${srcNode.repoName}/${targetNode.ino}]")
         invalidateNodeCache(srcNode.projectId, srcNode.repoName, targetNode.ino)
     }
 
-    private suspend fun doDelete(driveNode: TDriveNode, curSnapSeq: Long, ifMatch: LocalDateTime? = null) {
+    private suspend fun doDelete(
+        driveNode: TDriveNode,
+        curSnapSeq: Long,
+        clientId: String? = null,
+        ifMatch: LocalDateTime? = null,
+    ) {
         val nodeId = driveNode.id
         requireNotNull(nodeId)
         with(driveNode) {
@@ -322,7 +372,7 @@ class DriveNodeService(
             if (driveNode.type == TYPE_DIRECTORY && driveNodeDao.existsChild(projectId, repoName, ino)) {
                 throw ErrorCodeException(DriveMessageCode.DIRECTORY_NOT_EMPTY, name)
             }
-            val result = driveNodeDao.markNodeDeleted(projectId, repoName, nodeId, curSnapSeq, ifMatch)
+            val result = driveNodeDao.markNodeDeleted(projectId, repoName, nodeId, curSnapSeq, clientId, ifMatch)
             if (result.modifiedCount != 1L) {
                 throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, name)
             }
@@ -355,12 +405,13 @@ class DriveNodeService(
         currentSnapSeq: Long,
         operator: String,
         now: LocalDateTime,
+        clientId: String?,
     ): TDriveNode {
         return if (srcNode.snapSeq != currentSnapSeq) {
             if (updatedNode.parent != srcNode.parent || updatedNode.name != srcNode.name) {
                 checkConflict(updatedNode)
             }
-            saveCowUpdatedNode(srcNode, updatedNode, updateRequest, currentSnapSeq, operator, now)
+            saveCowUpdatedNode(srcNode, updatedNode, updateRequest, currentSnapSeq, operator, now, clientId)
         } else {
             updateCurrentSnapNode(srcNode, updatedNode, updateRequest)
         }
@@ -373,16 +424,18 @@ class DriveNodeService(
         currentSnapSeq: Long,
         operator: String,
         now: LocalDateTime,
+        clientId: String?,
     ): TDriveNode {
         val deleteResult = driveNodeDao.markNodeDeleted(
             srcNode.projectId,
             srcNode.repoName,
             srcNode.id!!,
             currentSnapSeq,
+            clientId,
             updateRequest.ifMatch
         )
         checkUpdateResult(deleteResult.modifiedCount, srcNode.name)
-        return doCreate(DriveNodeQueryHelper.buildCowNode(updatedNode, currentSnapSeq, operator, now))
+        return doCreate(DriveNodeQueryHelper.buildCowNode(updatedNode, currentSnapSeq, operator, clientId, now))
     }
 
     private suspend fun updateCurrentSnapNode(
@@ -462,6 +515,7 @@ class DriveNodeService(
         updateRequest: DriveNodeUpdateRequest,
         operator: String,
         now: LocalDateTime,
+        clientId: String?,
     ): TDriveNode {
         return srcNode.copy(
             parent = updateRequest.parent ?: srcNode.parent,
@@ -478,6 +532,7 @@ class DriveNodeService(
             ctime = updateRequest.ctime ?: srcNode.ctime,
             atime = updateRequest.atime ?: srcNode.atime,
             lastModifiedBy = operator,
+            lastModifiedClientId = clientId,
             lastModifiedDate = now,
         )
     }

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component
 @Component
 @ConfigurationProperties(value = "job.drive-deleted-node-cleanup")
 class DriveDeletedNodeCleanupJobProperties : MongodbJobProperties() {
+    override var enabled: Boolean = false
     override var cron: String = "0 0 2/6 * * ?"
     override var sharding: Boolean = true
     var deletedNodeReserveDays: Long = 15L

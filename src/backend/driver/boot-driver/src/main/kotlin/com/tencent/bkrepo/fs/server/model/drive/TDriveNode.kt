@@ -46,6 +46,7 @@ data class TDriveNode(
     var createdBy: String,
     var createdDate: LocalDateTime,
     var lastModifiedBy: String,
+    var lastModifiedClientId: String? = null,
     var lastModifiedDate: LocalDateTime,
 
     /**
@@ -173,7 +174,8 @@ data class TDriveNode(
          * 用于获取指定时间段有变更的drive-node给客户端
          */
         const val PROJECT_REPO_MODIFIED_IDX = "project_repo_modified_idx"
-        const val PROJECT_REPO_MODIFIED_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'lastModifiedDate': 1}"
+        const val PROJECT_REPO_MODIFIED_IDX_DEF =
+            "{'projectId': 1, 'repoName': 1, 'lastModifiedDate': 1, 'lastModifiedClientId': 1}"
 
         /**
          * 用于删除仓库时遍历该仓库未删除的drive-node

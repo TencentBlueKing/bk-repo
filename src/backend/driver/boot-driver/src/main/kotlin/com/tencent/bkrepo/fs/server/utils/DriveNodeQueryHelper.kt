@@ -15,11 +15,13 @@ object DriveNodeQueryHelper {
         origin: TDriveNode,
         currentSnapSeq: Long,
         operator: String,
+        clientId: String? = null,
         now: LocalDateTime = LocalDateTime.now(),
     ): TDriveNode {
         return origin.copy(
             id = null,
             lastModifiedBy = operator,
+            lastModifiedClientId = clientId,
             lastModifiedDate = now,
             deleted = null,
             snapSeq = currentSnapSeq,

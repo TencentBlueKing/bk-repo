@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component
 @Component
 @ConfigurationProperties("job.drive-file-reference-cleanup")
 class DriveFileReferenceCleanupJobProperties : MongodbJobProperties() {
+    override var enabled: Boolean = false
     override var cron: String = "0 0 4/6 * * ?"
     override var sharding: Boolean = true
 

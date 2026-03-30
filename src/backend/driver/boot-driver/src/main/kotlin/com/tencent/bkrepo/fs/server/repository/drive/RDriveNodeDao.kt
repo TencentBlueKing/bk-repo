@@ -81,6 +81,7 @@ class RDriveNodeDao : DriveHashShardingMongoReactiveDao<TDriveNode>() {
         repoName: String,
         id: String,
         snapSeq: Long,
+        lastModifiedClientId: String? = null,
         ifMatch: LocalDateTime? = null
     ): UpdateResult {
         val criteria = Criteria.where(ID).isEqualTo(id)
@@ -93,6 +94,7 @@ class RDriveNodeDao : DriveHashShardingMongoReactiveDao<TDriveNode>() {
         val now = LocalDateTime.now()
         val update = Update()
             .set(TDriveNode::lastModifiedDate.name, now)
+            .set(TDriveNode::lastModifiedClientId.name, lastModifiedClientId)
             .set(TDriveNode::deleteSnapSeq.name, snapSeq)
             .set(TDriveNode::deleted.name, now)
         return updateFirst(query, update)

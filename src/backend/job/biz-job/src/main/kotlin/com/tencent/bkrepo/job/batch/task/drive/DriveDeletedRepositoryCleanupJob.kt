@@ -30,6 +30,7 @@ import kotlin.reflect.KClass
 
 /**
  * 清理已软删除的 DRIVE 仓库
+ * 当drive服务使用独立数据库时需要为job服务也添加对应数据库配置，否则该任务会只清理repository漏清理关联资源
  */
 @Component
 class DriveDeletedRepositoryCleanupJob(

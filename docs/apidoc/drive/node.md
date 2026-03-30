@@ -11,52 +11,55 @@
   - English: batch create/update/delete/rename/hard-link nodes
 - 请求体
   ```json
-  [
-    {
-      "op": "create",
-      "node": {
-        "ino": 1001,
-        "parent": 1,
-        "name": "a.txt",
-        "size": 12,
-        "mode": 33188,
-        "type": 1,
-        "nlink": 1,
-        "uid": 0,
-        "gid": 0,
-        "rdev": 0,
-        "flags": 0
+  {
+    "clientId": "client-1",
+    "operations": [
+      {
+        "op": "create",
+        "node": {
+          "ino": 1001,
+          "parent": 1,
+          "name": "a.txt",
+          "size": 12,
+          "mode": 33188,
+          "type": 1,
+          "nlink": 1,
+          "uid": 0,
+          "gid": 0,
+          "rdev": 0,
+          "flags": 0
+        }
+      },
+      {
+        "op": "update",
+        "node": {
+          "ino": 1001,
+          "size": 1024,
+          "ifMatch": "2026-03-12T09:00:00"
+        }
+      },
+      {
+        "op": "delete",
+        "node": {
+          "ino": 1002,
+          "ifMatch": "2026-03-12T09:10:00"
+        }
+      },
+      {
+        "op": "rename",
+        "node": {
+          "ino": 1003,
+          "parent": 1,
+          "name": "c-renamed.txt",
+          "mtime": 1741771200000000000,
+          "ctime": 1741771200000000000,
+          "atime": 1741771200000000000,
+          "ifMatch": "2026-03-12T09:10:00",
+          "overwrite": true
+        }
       }
-    },
-    {
-      "op": "update",
-      "node": {
-        "ino": 1001,
-        "size": 1024,
-        "ifMatch": "2026-03-12T09:00:00"
-      }
-    },
-    {
-      "op": "delete",
-      "node": {
-        "ino": 1002,
-        "ifMatch": "2026-03-12T09:10:00"
-      }
-    },
-    {
-      "op": "rename",
-      "node": {
-        "ino": 1003,
-        "parent": 1,
-        "name": "c-renamed.txt",
-        "mtime": 1741771200000000000,
-        "ctime": 1741771200000000000,
-        "atime": 1741771200000000000,
-        "ifMatch": "2026-03-12T09:10:00",
-        "overwrite": true
-      }
-    }
-  ]
+    ]
+  }
   ```
 - 请求字段说明
 
@@ -64,6 +67,8 @@
   | --------- | ------ | ---- | --- | --------------------------------------------------- | -------------- |
   | projectId | string | 是    | 无   | 项目名称                                                | project name   |
   | repoName  | string | 是    | 无   | 仓库名称                                                | repo name      |
+  | clientId  | string | 是    | 无   | 当前执行批量操作的客户端 ID（请求体字段）                             | client id (request body) |
+  | operations| array  | 是    | 无   | 批量操作列表                                              | operations list |
   | op        | string | 是    | 无   | 操作类型: `create`/`update`/`delete`/`rename` | operation type |
   | node      | object | 是    | 无   | 操作对象                                                | operation node |
 
@@ -337,8 +342,8 @@
 - API: GET /drive/node/modified/page/{projectId}/{repoName}
 - API 名称: drive_list_modified_nodes_page
 - 功能说明:
-  - 中文: 按最后修改时间使用游标查询增量变更节点
-  - English: list modified nodes with cursor
+  - 中文: 按最后修改时间使用游标查询增量变更节点；请求需携带当前客户端 ID，用于服务端判定是否存在其他活跃客户端
+  - English: list modified nodes with cursor; client id is required for server-side active-client check
 - 请求体
 此接口请求体为空
 - 请求字段说明
@@ -350,12 +355,14 @@
   | pageSize              | int     | 否    | 20    | 每次查询条数                                                        | page size                      |
   | lastModifiedDate      | string  | 是    | 无     | 上一条已消费记录的 `lastModifiedDate`，ISO_DATE_TIME 格式                | last modified cursor           |
   | lastId                | string  | 是    | 无     | 上一条已消费记录的 `id`，与 `lastModifiedDate` 一起用于续页                  | last record id                 |
+  | clientId              | string  | 是    | 无     | 当前请求客户端 ID（query 参数），用于判定是否存在其他活跃客户端                  | current client id (query param) |
 
 - 排序与续页规则
   - 服务端固定按 `lastModifiedDate ASC, id ASC` 返回
   - `lastModifiedDate/lastId` 必须成对传递
   - 首次查询请传入“同步起点时间 + 最小 id（可为空字符串）”
   - 查询下一页时，传入上一页最后一条记录的 `lastModifiedDate/id`
+  - 当服务端判定不存在其他活跃客户端时，可能直接返回空列表（`hasMore=false, records=[]`）
 
 - 响应体
 与“游标查询目录下节点”一致
