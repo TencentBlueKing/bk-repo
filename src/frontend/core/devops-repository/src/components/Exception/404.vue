@@ -1,14 +1,19 @@
 <template>
     <div class="empty-data-container flex-center" :class="{ 'hidden': isLoading }" style="background-color: white">
         <div class="flex-column flex-center">
-            <img width="480" height="240" style="float: left;margin-right: 3px" :src="window.BK_STATIC_URL + '440.svg'" />
+            <img width="480" height="240" style="float: left;margin-right: 3px" :src="bkStaticUrl + '440.svg'" />
             <span class="mt5 empty-data-title">{{ $t('WRONG PATH') }}</span>
         </div>
     </div>
 </template>
 <script>
     export default {
-        name: 'Web404Component'
+        name: 'Web404Component',
+        computed: {
+            bkStaticUrl () {
+                return window.BK_STATIC_URL || ''
+            }
+        }
     }
 </script>
 <style lang="scss" scoped>
