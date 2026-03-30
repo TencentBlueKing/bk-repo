@@ -10,6 +10,7 @@ import com.tencent.bkrepo.media.common.model.TMediaTranscodeJob
 import com.tencent.bkrepo.media.common.model.TMediaTranscodeJobConfig
 import com.tencent.bkrepo.media.common.pojo.transcode.MediaTranscodeJobStatus
 import com.tencent.bkrepo.media.common.pojo.transcode.TranscodeReportData
+import com.tencent.bkrepo.media.job.metrics.TranscodeMetrics
 import com.tencent.bkrepo.media.job.pojo.ResourceLimit
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.ApiException
@@ -49,6 +50,7 @@ class TranscodeJobService @Autowired constructor(
         val job = mediaTranscodeJobDao.findAndQueueOldestWaitingJob(projectId) ?: run {
             return
         }
+        TranscodeMetrics.recordStatusChange(job.projectId, MediaTranscodeJobStatus.QUEUE)
         doCreateK8sJob(config, job)
     }
 
@@ -60,6 +62,7 @@ class TranscodeJobService @Autowired constructor(
         val job = mediaTranscodeJobDao.findAndQueueOldestWaitingJobExcludeProjects(excludeProjectIds) ?: run {
             return
         }
+        TranscodeMetrics.recordStatusChange(job.projectId, MediaTranscodeJobStatus.QUEUE)
         doCreateK8sJob(config, job)
     }
 
@@ -95,6 +98,7 @@ class TranscodeJobService @Autowired constructor(
         }
 
         mediaTranscodeJobDao.updateJobStatus(job.id!!, MediaTranscodeJobStatus.INIT)
+        TranscodeMetrics.recordStatusChange(job.projectId, MediaTranscodeJobStatus.INIT)
     }
 
     private fun createK8sJob(
@@ -393,6 +397,7 @@ class TranscodeJobService @Autowired constructor(
             fileName = artifactInfo.getResponseName(),
             status = data.status,
         )
+        TranscodeMetrics.recordStatusChange(artifactInfo.projectId, data.status)
     }
 
     companion object {

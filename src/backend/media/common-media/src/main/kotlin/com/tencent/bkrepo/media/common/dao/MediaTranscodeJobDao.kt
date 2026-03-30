@@ -16,7 +16,9 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Repository
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.temporal.ChronoUnit
 import org.springframework.data.mongodb.core.query.Criteria.where as strWhere
 
@@ -158,4 +160,37 @@ class MediaTranscodeJobDao : SimpleMongoDao<TMediaTranscodeJob>() {
         ).limit(limit)
         return find(query)
     }
+
+    /**
+     * 按项目和状态分组统计指定日期创建的转码任务数量
+     * @param lookbackDays 回看天数，0表示今天，1表示昨天
+     */
+    fun jobCountByProjectAndStatus(lookbackDays: Long = 1): List<ProjectStatusCount> {
+        val targetDate = LocalDate.now().minusDays(lookbackDays)
+        val startTime = LocalDateTime.of(targetDate, LocalTime.MIN)
+        val endTime = LocalDateTime.of(targetDate.plusDays(1), LocalTime.MIN)
+        val matchOperation = Aggregation.match(
+            where(TMediaTranscodeJob::createdTime).gte(startTime).lt(endTime)
+        )
+        val groupOperation = Aggregation.group(
+            TMediaTranscodeJob::projectId.name,
+            TMediaTranscodeJob::status.name,
+        ).count().`as`("count")
+        val aggregation = Aggregation.newAggregation(matchOperation, groupOperation)
+        val results = aggregate(aggregation, org.bson.Document::class.java)
+        return results.mappedResults.map { doc ->
+            val idDoc = doc.get("_id", org.bson.Document::class.java)
+            ProjectStatusCount(
+                projectId = idDoc?.getString(TMediaTranscodeJob::projectId.name).orEmpty(),
+                status = idDoc?.getString(TMediaTranscodeJob::status.name).orEmpty(),
+                count = doc.getInteger("count", 0).toLong(),
+            )
+        }
+    }
+
+    data class ProjectStatusCount(
+        val projectId: String,
+        val status: String,
+        val count: Long,
+    )
 }
