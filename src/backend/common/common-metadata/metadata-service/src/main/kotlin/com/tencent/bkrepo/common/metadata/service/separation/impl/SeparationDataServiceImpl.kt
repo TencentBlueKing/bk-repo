@@ -178,20 +178,22 @@ class SeparationDataServiceImpl(
         val result = mutableListOf<MutableMap<String, Any?>>()
         var skipRemaining = skip
         var remaining = limit
-        // 按降冷日期倒序遍历各分表，跨表实现正确偏移
+        // 按降冷日期倒序遍历各分表，同序游标跳过，避免每表 count
         for (date in separationDates.sortedDescending()) {
             if (remaining <= 0) break
-            val countQuery = Query.of(query).limit(0).skip(0)
-            val count = separationNodeDao.countByQuery(countQuery, date)
-            if (skipRemaining >= count) {
-                skipRemaining -= count
-                continue
+            separationNodeDao.streamByQuery(query, date).use { stream ->
+                val iterator = stream.iterator()
+                while (iterator.hasNext()) {
+                    val row = iterator.next()
+                    if (skipRemaining > 0) {
+                        skipRemaining--
+                    } else if (remaining > 0) {
+                        result.add(row)
+                        remaining--
+                    }
+                    if (remaining == 0) break
+                }
             }
-            val pageQuery = Query.of(query).skip(skipRemaining).limit(remaining)
-            val rows = separationNodeDao.findByQuery(pageQuery, date)
-            result.addAll(rows)
-            remaining -= rows.size
-            skipRemaining = 0
         }
         return result
     }

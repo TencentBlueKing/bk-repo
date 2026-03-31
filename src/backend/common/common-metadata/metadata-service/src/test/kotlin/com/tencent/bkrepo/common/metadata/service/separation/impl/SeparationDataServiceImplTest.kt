@@ -27,6 +27,7 @@ import org.mockito.quality.Strictness
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import java.time.LocalDateTime
+import java.util.stream.Stream
 
 @ExtendWith(MockitoExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -130,10 +131,13 @@ class SeparationDataServiceImplTest {
     fun searchColdNodes_skipSpansShards() {
         baseQuery()
         whenever(separationTaskService.findDistinctSeparationDate("p", "r")).thenReturn(setOf(dOld, dNew))
-        whenever(separationNodeDao.countByQuery(any(), eq(dNew))).thenReturn(2L)
-        whenever(separationNodeDao.countByQuery(any(), eq(dOld))).thenReturn(5L)
+        whenever(separationNodeDao.streamByQuery(any(), eq(dNew))).thenReturn(
+            Stream.of(mutableMapOf("i" to 0), mutableMapOf("i" to 1)),
+        )
         val row = mutableMapOf<String, Any?>("fullPath" to "/z")
-        whenever(separationNodeDao.findByQuery(any(), eq(dOld))).thenReturn(listOf(row))
+        whenever(separationNodeDao.streamByQuery(any(), eq(dOld))).thenReturn(
+            Stream.of(mutableMapOf("i" to 2), row),
+        )
 
         val out = service.searchColdNodes(baseQuery(), skip = 3, limit = 10)
         assertEquals(1, out.size)

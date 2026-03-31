@@ -151,6 +151,7 @@ class NodeSearchServiceImpl(
     private fun postProcessNodeList(nodeList: List<MutableMap<String, Any?>>): List<MutableMap<String, Any?>> {
         val projectId = nodeList.firstOrNull()?.get(NodeInfo::projectId.name)?.toString()
         val metadataLabels = projectId?.let { metadataLabelCacheService.listAll(it) } ?: emptyList()
+        // metadata格式转换，并排除id字段
         nodeList.forEach {
             it.remove("_id")
             it[NodeInfo::createdDate.name]?.let { createDate ->

@@ -71,14 +71,7 @@ class SeparationRecoveryEventConsumer(
     )
 
     fun accept(message: Message<ArtifactEvent>) {
-        if (!dataSeparationConfig.enableAutoRecovery) {
-            logger.warn(
-                "Auto recovery is disabled, skipping recovery event " +
-                    "for [${message.payload.projectId}/${message.payload.repoName}/${message.payload.resourceKey}]. " +
-                    "Set 'separation.enableAutoRecovery=true' to enable."
-            )
-            return
-        }
+        if (!dataSeparationConfig.enableAutoRecovery) return
         if (!acceptTypes.contains(message.payload.type)) {
             return
         }

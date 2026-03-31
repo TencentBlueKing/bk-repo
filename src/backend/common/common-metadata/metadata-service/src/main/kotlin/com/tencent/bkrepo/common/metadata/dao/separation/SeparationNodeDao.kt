@@ -36,6 +36,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
+import java.util.stream.Stream
 
 @Repository
 class SeparationNodeDao : MonthRangeShardingMongoDao<TSeparationNode>() {
@@ -75,6 +76,18 @@ class SeparationNodeDao : MonthRangeShardingMongoDao<TSeparationNode>() {
         val collectionName = parseSequenceToCollectionName(sequence)
         return determineMongoTemplate().find(query, MutableMap::class.java, collectionName)
             as List<MutableMap<String, Any?>>
+    }
+
+    /**
+     * 与 [findByQuery] 同序遍历，用于跨分表 skip 时避免每表 count
+     */
+    fun streamByQuery(query: Query, separationDate: LocalDateTime): Stream<MutableMap<String, Any?>> {
+        val sequence = separationDate.year * 100 + separationDate.monthValue
+        val collectionName = parseSequenceToCollectionName(sequence)
+        val baseQuery = Query.of(query).limit(0).skip(0)
+        @Suppress("UNCHECKED_CAST")
+        return determineMongoTemplate().stream(baseQuery, MutableMap::class.java, collectionName)
+            as Stream<MutableMap<String, Any?>>
     }
 
     fun countByQuery(query: Query, separationDate: LocalDateTime): Long {

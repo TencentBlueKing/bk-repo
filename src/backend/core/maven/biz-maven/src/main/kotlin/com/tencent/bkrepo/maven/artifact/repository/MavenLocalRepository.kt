@@ -53,7 +53,6 @@ import com.tencent.bkrepo.common.metadata.util.SeparationUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
-import com.tencent.bkrepo.maven.config.MavenProperties
 import com.tencent.bkrepo.maven.constants.FULL_PATH
 import com.tencent.bkrepo.maven.constants.MAVEN_METADATA_FILE_NAME
 import com.tencent.bkrepo.maven.constants.METADATA_KEY_ARTIFACT_ID
@@ -113,7 +112,6 @@ import java.util.regex.Pattern
 class MavenLocalRepository(
     private val stageService: StageService,
     private val mavenMetadataService: MavenMetadataService,
-    private val mavenProperties: MavenProperties,
     private val mavenService: MavenService,
     private val dataSeparationConfig: DataSeparationConfig,
 ) : LocalRepository() {

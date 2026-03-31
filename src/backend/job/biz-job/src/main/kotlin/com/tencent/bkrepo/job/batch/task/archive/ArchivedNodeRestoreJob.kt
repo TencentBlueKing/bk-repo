@@ -33,7 +33,7 @@ import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.job.ARCHIVE_FILE_COLLECTION
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
-import com.tencent.bkrepo.job.batch.context.NodeContext
+import com.tencent.bkrepo.job.batch.context.ArchivedNodeRestoreContext
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.config.properties.ArchivedNodeRestoreJobProperties
 import com.tencent.bkrepo.common.metadata.dao.separation.SeparationNodeDao
@@ -51,6 +51,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.reflect.KClass
 
@@ -68,10 +69,24 @@ class ArchivedNodeRestoreJob(
     private val nodeService: NodeService,
     private val separationTaskService: SeparationTaskService,
     private val separationNodeDao: SeparationNodeDao,
-) : MongoDbBatchJob<ArchivedNodeRestoreJob.ArchiveFile, NodeContext>(properties) {
+) : MongoDbBatchJob<ArchivedNodeRestoreJob.ArchiveFile, ArchivedNodeRestoreContext>(properties) {
 
-    override fun createJobContext(): NodeContext {
-        return NodeContext()
+    override fun createJobContext(): ArchivedNodeRestoreContext {
+        return ArchivedNodeRestoreContext()
+    }
+
+    override fun onRunCollectionStart(collectionName: String, context: ArchivedNodeRestoreContext) {
+        val projects = separationTaskService.findProjectList(taskType = SEPARATE_ARCHIVED)
+        context.separateArchivedProjectDates = if (projects.isEmpty()) {
+            emptyMap()
+        } else {
+            projects.associateWith { projectId ->
+                separationTaskService.findDistinctSeparationDate(
+                    projectId = projectId,
+                    taskType = SEPARATE_ARCHIVED,
+                )
+            }
+        }
     }
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
@@ -84,14 +99,10 @@ class ArchivedNodeRestoreJob(
         return Query.query(Criteria.where("status").isEqualTo(ArchiveStatus.RESTORED))
     }
 
-    override fun run(row: ArchiveFile, collectionName: String, context: NodeContext) {
+    override fun run(row: ArchiveFile, collectionName: String, context: ArchivedNodeRestoreContext) {
         with(row) {
             // 查找热表中所有的sha256 key对应的node
             val hotNodes = listNode(sha256, storageCredentialsKey)
-            
-            // 查找冷表中所有的sha256对应的node
-            val coldNodes = listSeparationNodesBySha256(sha256)
-            
             // 恢复热表节点
             hotNodes.forEach {
                 val request = NodeArchiveRequest(
@@ -105,7 +116,9 @@ class ArchivedNodeRestoreJob(
                 context.size.addAndGet(it.size)
                 logger.info("Success to restore hot node ${it.projectId}/${it.repoName}${it.fullPath}.")
             }
-            
+
+            // 查找冷表中所有的sha256对应的node
+            val coldNodes = listSeparationNodesBySha256(sha256, context.separateArchivedProjectDates)
             // 处理冷表节点：为每个冷表节点创建恢复任务
             coldNodes.forEach { separationNode ->
                 val projectId = separationNode.projectId
@@ -164,21 +177,15 @@ class ArchivedNodeRestoreJob(
      * 由于SeparationNodeDao是分表的，需要先查询配置了归档降冷任务的项目，然后根据分离日期去对应的分表查询
      */
     private fun listSeparationNodesBySha256(
-        sha256: String
+        sha256: String,
+        projectDates: Map<String, Set<LocalDateTime>>,
     ): List<TSeparationNode> {
+        if (projectDates.isEmpty()) {
+            return emptyList()
+        }
         try {
             val result = mutableListOf<TSeparationNode>()
-            // 查询所有配置了归档降冷任务的项目
-            val projectList = separationTaskService.findProjectList(taskType = SEPARATE_ARCHIVED)
-            
-            projectList.forEach { projectId ->
-                // 查询该项目下所有的分离日期
-                val separationDates = separationTaskService.findDistinctSeparationDate(
-                    projectId = projectId,
-                    taskType = SEPARATE_ARCHIVED
-                )
-                
-                // 根据每个分离日期去对应的分表查询
+            projectDates.forEach { (projectId, separationDates) ->
                 separationDates.forEach { separationDate ->
                     val criteria = Criteria.where("sha256").isEqualTo(sha256)
                         .and("folder").isEqualTo(false)
@@ -190,7 +197,6 @@ class ArchivedNodeRestoreJob(
                     result.addAll(nodes)
                 }
             }
-            
             return result
         } catch (e: Exception) {
             logger.error("Failed to list separation nodes by sha256: $sha256", e)
