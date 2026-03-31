@@ -23,10 +23,10 @@ import com.tencent.bkrepo.fs.server.request.drive.toDeleteRequest
 import com.tencent.bkrepo.fs.server.request.drive.toDriveNode
 import com.tencent.bkrepo.fs.server.request.drive.toMoveRequest
 import com.tencent.bkrepo.fs.server.request.drive.toUpdateRequest
+import com.tencent.bkrepo.fs.server.response.drive.CursorPage
 import com.tencent.bkrepo.fs.server.response.drive.DriveNode
 import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResponse
 import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResult
-import com.tencent.bkrepo.fs.server.response.drive.CursorPage
 import com.tencent.bkrepo.fs.server.response.drive.toDriveNode
 import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper
 import com.tencent.bkrepo.fs.server.utils.DriveNodeRequestValidator
@@ -153,66 +153,14 @@ class DriveNodeService(
             val srcNode = queryNodeByIno(projectId, repoName, ino, bypassCache = ifMatch != null)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, ino)
             checkIfMatch(ifMatch, srcNode)
-            if (srcNode.parent == destParent && srcNode.name == destName) {
-                throw ErrorCodeException(
-                    CommonMessageCode.PARAMETER_INVALID,
-                    "${srcNode.name} and $destName are the same file"
-                )
-            }
+            validateMoveTarget(srcNode, destParent, destName)
             val operator = ReactiveSecurityUtils.getUser()
             val currentSnapSeq = resolveSnapSeq(projectId, repoName, snapSeq)
             val now = LocalDateTime.now()
-
-            // 更新原node父目录与文件名
             val movedNode = if (srcNode.snapSeq != currentSnapSeq) {
-                // 目标路径已存在文件，需要判断是否覆盖
-                driveNodeDao.findCurrentNode(projectId, repoName, destParent, destName)?.let {
-                    overwriteTarget(srcNode, it, currentSnapSeq, overwrite, clientId)
-                }
-                val copiedNode = DriveNodeQueryHelper.buildCowNode(
-                    srcNode,
-                    currentSnapSeq,
-                    operator,
-                    clientId = clientId,
-                    now = now,
-                ).apply {
-                    parent = destParent
-                    name = destName
-                    mtime = moveRequest.mtime ?: srcNode.mtime
-                    ctime = moveRequest.ctime ?: srcNode.ctime
-                    atime = moveRequest.atime ?: srcNode.atime
-                }
-                // COW操作仅标记旧node为已删除，不需要清理drive-node-block
-                driveNodeDao.markNodeDeleted(
-                    srcNode.projectId,
-                    srcNode.repoName,
-                    srcNode.id!!,
-                    currentSnapSeq,
-                    clientId,
-                )
-                val createdNode = doCreate(copiedNode)
-                createdNode
+                moveNodeWithCow(srcNode, moveRequest, currentSnapSeq, operator, now, clientId)
             } else {
-                val updatedNode = srcNode.copy(
-                    parent = destParent,
-                    name = destName,
-                    mtime = moveRequest.mtime ?: srcNode.mtime,
-                    ctime = moveRequest.ctime ?: srcNode.ctime,
-                    atime = moveRequest.atime ?: srcNode.atime,
-                    lastModifiedBy = operator,
-                    lastModifiedClientId = clientId,
-                    lastModifiedDate = now
-                )
-                try {
-                    driveNodeDao.updateByNodeId(projectId, repoName, srcNode.id!!, ifMatch, updatedNode)
-                } catch (e: DuplicateKeyException) {
-                    // 目标路径已存在文件，需要判断是否覆盖
-                    driveNodeDao.findCurrentNode(projectId, repoName, destParent, destName)?.let {
-                        overwriteTarget(srcNode, it, currentSnapSeq, overwrite, clientId)
-                    }
-                    driveNodeDao.updateByNodeId(projectId, repoName, srcNode.id!!, ifMatch, updatedNode)
-                }
-                updatedNode
+                moveNodeInCurrentSnap(srcNode, moveRequest, currentSnapSeq, operator, now, clientId)
             }
             invalidateNodeCache(projectId, repoName, ino)
             logger.info(
@@ -220,6 +168,91 @@ class DriveNodeService(
                         "to[$destParent/$destName] success."
             )
             return movedNode.toDriveNode()
+        }
+    }
+
+    private fun validateMoveTarget(srcNode: TDriveNode, destParent: Long, destName: String) {
+        if (srcNode.parent != destParent || srcNode.name != destName) {
+            return
+        }
+        throw ErrorCodeException(
+            CommonMessageCode.PARAMETER_INVALID,
+            "${srcNode.name} and $destName are the same file"
+        )
+    }
+
+    private suspend fun moveNodeWithCow(
+        srcNode: TDriveNode,
+        moveRequest: DriveNodeMoveRequest,
+        currentSnapSeq: Long,
+        operator: String,
+        now: LocalDateTime,
+        clientId: String?,
+    ): TDriveNode {
+        handleMoveConflictIfExists(srcNode, moveRequest, currentSnapSeq, clientId)
+        val copiedNode = DriveNodeQueryHelper.buildCowNode(
+            srcNode,
+            currentSnapSeq,
+            operator,
+            clientId = clientId,
+            now = now,
+        ).apply {
+            parent = moveRequest.destParent
+            name = moveRequest.destName
+            mtime = moveRequest.mtime ?: srcNode.mtime
+            ctime = moveRequest.ctime ?: srcNode.ctime
+            atime = moveRequest.atime ?: srcNode.atime
+        }
+        // COW操作仅标记旧node为已删除，不需要清理drive-node-block
+        driveNodeDao.markNodeDeleted(
+            srcNode.projectId,
+            srcNode.repoName,
+            srcNode.id!!,
+            currentSnapSeq,
+            clientId,
+        )
+        return doCreate(copiedNode)
+    }
+
+    private suspend fun moveNodeInCurrentSnap(
+        srcNode: TDriveNode,
+        moveRequest: DriveNodeMoveRequest,
+        currentSnapSeq: Long,
+        operator: String,
+        now: LocalDateTime,
+        clientId: String?,
+    ): TDriveNode {
+        val updatedNode = srcNode.copy(
+            parent = moveRequest.destParent,
+            name = moveRequest.destName,
+            mtime = moveRequest.mtime ?: srcNode.mtime,
+            ctime = moveRequest.ctime ?: srcNode.ctime,
+            atime = moveRequest.atime ?: srcNode.atime,
+            lastModifiedBy = operator,
+            lastModifiedClientId = clientId,
+            lastModifiedDate = now
+        )
+        val nodeId = srcNode.id!!
+        try {
+            driveNodeDao.updateByNodeId(srcNode.projectId, srcNode.repoName, nodeId, moveRequest.ifMatch, updatedNode)
+            return updatedNode
+        } catch (_: DuplicateKeyException) {
+            handleMoveConflictIfExists(srcNode, moveRequest, currentSnapSeq, clientId)
+            driveNodeDao.updateByNodeId(srcNode.projectId, srcNode.repoName, nodeId, moveRequest.ifMatch, updatedNode)
+            return updatedNode
+        }
+    }
+
+    private suspend fun handleMoveConflictIfExists(
+        srcNode: TDriveNode,
+        moveRequest: DriveNodeMoveRequest,
+        currentSnapSeq: Long,
+        clientId: String?,
+    ) {
+        with(moveRequest) {
+            driveNodeDao.findCurrentNode(projectId, repoName, destParent, destName)?.let {
+                overwriteTarget(srcNode, it, currentSnapSeq, overwrite, clientId)
+            }
         }
     }
 
