@@ -4,7 +4,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 import org.springframework.http.HttpHeaders
-import java.util.*
+import java.util.Locale
 
 object ExceptionUtils {
     suspend fun getMsg(exception: Exception): String? {
