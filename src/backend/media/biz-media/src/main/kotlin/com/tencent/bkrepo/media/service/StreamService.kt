@@ -424,7 +424,6 @@ class StreamService(
     }
 
     @Value("\${media.plugin.devx.devops.appCode}")
-
     private var appCode: String = ""
 
     @Value("\${media.plugin.devx.devops.appSecret}")
