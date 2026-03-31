@@ -28,6 +28,7 @@ import com.tencent.bkrepo.media.config.MediaProperties
 import com.tencent.bkrepo.media.stream.ArtifactFileRecordingListener
 import com.tencent.bkrepo.media.stream.ClientStream
 import com.tencent.bkrepo.media.stream.MediaArtifactFileConsumer
+import com.tencent.bkrepo.media.stream.MediaMod
 import com.tencent.bkrepo.media.stream.MediaType
 import com.tencent.bkrepo.media.stream.RemuxRecordingListener
 import com.tencent.bkrepo.media.stream.StreamManger
@@ -67,7 +68,7 @@ class StreamService(
     /**
      * 创建推流地址
      * */
-    fun createStream(projectId: String, repoName: String, display: Boolean, onlyLive: Boolean): String {
+    fun createStream(projectId: String, repoName: String, display: Boolean, mediaMod: String?): String {
         val gray = HeaderUtils.getHeader("X-GATEWAY-TAG").toString().equals("gray", true)
                 && mediaProperties.grayServerAddress.isNotEmpty()
         val serverAddress = if (gray) {
@@ -76,7 +77,7 @@ class StreamService(
             mediaProperties.serverAddress
         }
         // 如果是纯直播则不创建节点
-        if (onlyLive) {
+        if (mediaMod == MediaMod.LIVE.name) {
             val expireAt = System.currentTimeMillis() + 24 * 60 * 60 * 1000
             val token: String = generateToken("$projectId-${repoName}", expireAt)
             return "$serverAddress/$projectId/$repoName$STREAM_PATH?token=$token"
