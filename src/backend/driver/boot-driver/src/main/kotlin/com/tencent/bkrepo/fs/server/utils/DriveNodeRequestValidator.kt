@@ -61,7 +61,7 @@ class DriveNodeRequestValidator(
         }
     }
 
-    fun validateDeleteRequest(deleteRequest: DriveNodeDeleteRequest) {
+    suspend fun validateDeleteRequest(deleteRequest: DriveNodeDeleteRequest) {
         with(deleteRequest) {
             DriveServiceUtils.validateProjectRepo(projectId, repoName)
             Preconditions.checkArgument(ino >= DriveNodeQueryHelper.ROOT_INO, DriveNodeDeleteRequest::ino.name)

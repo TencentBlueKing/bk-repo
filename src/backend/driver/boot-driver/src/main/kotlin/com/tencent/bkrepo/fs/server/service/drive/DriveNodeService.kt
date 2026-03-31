@@ -63,7 +63,7 @@ class DriveNodeService(
             }.toFuture()
         }
 
-    suspend fun getNode(projectId: String, repoName: String, id: String): DriveNode? {
+    suspend fun getNode(projectId: String, repoName: String, id: String): DriveNode {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
         return driveNodeDao.findByProjectIdAndRepoNameAndId(projectId, repoName, id)?.toDriveNode()
             ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, id)
