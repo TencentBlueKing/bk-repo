@@ -42,12 +42,13 @@ class UserStreamController(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @RequestParam(required = false, defaultValue = "true") display: Boolean = true,
+        @RequestParam(required = false) onlyLive: Boolean = false,
     ): Response<String> {
         permissionManager.checkProjectPermission(
             action = PermissionAction.MANAGE,
             projectId = projectId,
         )
-        return ResponseBuilder.success(streamService.createStream(projectId, repoName, display))
+        return ResponseBuilder.success(streamService.createStream(projectId, repoName, display, onlyLive))
     }
 
     /**
