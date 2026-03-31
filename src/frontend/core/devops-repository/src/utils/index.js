@@ -108,7 +108,7 @@ function formatDateWithTimezone (time) {
 }
 
 // 加载先于main.js,初次渲染Vue.prototype.$ajax.defaults为空，二次渲染于main.js，此时Vue.prototype.$ajax.defaults不为空，此时添加报文头
-const { i18n } = createLocale(require.context('@locale/repository/', false, /\.json$/))
+export const { i18n, setLocale } = createLocale(require.context('@locale/repository/', false, /\.json$/))
 
 const durationMap = {
     s: { label: i18n.t('cron.second'), deno: 60, next: 'm' },

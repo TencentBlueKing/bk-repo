@@ -33,6 +33,7 @@ package com.tencent.bkrepo.repository.pojo.repo
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryVisibility
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -63,5 +64,9 @@ data class UserRepoCreateRequest(
     @get:Schema(title = "来自插件的请求", required = false)
     val pluginRequest: Boolean = false,
     @get:Schema(title = "是否展示", required = true)
-    val display: Boolean = true
+    val display: Boolean = true,
+    @get:Schema(title = "仓库可见性类型", required = false)
+    val visibility: RepositoryVisibility = RepositoryVisibility.PROJECT,
+    @get:Schema(title = "仓库所有者，PERSONAL 类型仓库必填", required = false)
+    val owner: String? = null
 ) : RepoRequest

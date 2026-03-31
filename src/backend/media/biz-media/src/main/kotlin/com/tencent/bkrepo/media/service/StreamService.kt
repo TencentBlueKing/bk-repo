@@ -222,13 +222,13 @@ class StreamService(
         val fileConsumer = buildFileConsumer(repo, author, transcodeConfig)
 
         // 合并视频主文件分块
-        fileConsumer.completeBlockNode(videoArtifactInfo, uploadId)
+        fileConsumer.completeBlockNode(videoArtifactInfo, uploadId, videoEndTime)
         logger.info("MergeExpiredBlocks: video merged for uploadId=$uploadId")
 
         // 合并额外文件（鼠标轨迹、音频）的分块
         val extraFileSpecs = listOf("CM" to MediaType.JSON, "AU" to MediaType.AAC)
         val extraArtifactInfos = mergeExtraFileBlocks(
-            projectId, repoName, uploadId, extraFileSpecs, fileConsumer
+            projectId, repoName, uploadId, extraFileSpecs, fileConsumer, videoEndTime
         )
 
         // 合并完成后触发转码
@@ -292,7 +292,8 @@ class StreamService(
         repoName: String,
         uploadId: String,
         extraFileSpecs: List<Pair<String, MediaType>>,
-        fileConsumer: MediaArtifactFileConsumer
+        fileConsumer: MediaArtifactFileConsumer,
+        endTime: Long
     ): List<ArtifactInfo> {
         return extraFileSpecs.mapNotNull { (prefix, mediaType) ->
             val artifactInfo = buildArtifactInfo(projectId, repoName, uploadId, mediaType, prefix)
@@ -301,7 +302,7 @@ class StreamService(
                 projectId, repoName, artifactInfo.getArtifactFullPath(), extraUploadId
             )
             if (blocks.isNotEmpty()) {
-                fileConsumer.completeBlockNode(artifactInfo, extraUploadId)
+                fileConsumer.completeBlockNode(artifactInfo, extraUploadId, endTime)
                 logger.info("MergeExpiredBlocks: $prefix file merged for uploadId=$uploadId")
                 artifactInfo
             } else {

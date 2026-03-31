@@ -53,6 +53,7 @@ import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryVisibility
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
@@ -152,11 +153,9 @@ open class PermissionManager(
         if (serviceRequestCheck()) return
         projectEnabledCheck(projectId, userId)
         val repoInfo = queryRepositoryInfo(projectId, repoName)
-        if (isReadPublicOrSystemRepoCheck(
-                action, repoInfo, public, userId
-            )) {
-            return
-        }
+        // PERSONAL 类型仓库仅允许所有者访问
+        checkPersonalRepoPermission(repoInfo, userId)
+        if (isReadPublicOrSystemRepoCheck(action, repoInfo, public, userId)) return
         checkPermission(
             type = ResourceType.REPO,
             action = action,
@@ -188,11 +187,9 @@ open class PermissionManager(
         if (serviceRequestCheck()) return
         projectEnabledCheck(projectId, userId)
         val repoInfo = queryRepositoryInfo(projectId, repoName)
-        if (isReadPublicOrSystemRepoCheck(
-                action, repoInfo, public, userId
-            )) {
-            return
-        }
+        // PERSONAL 类型仓库仅允许所有者访问
+        checkPersonalRepoPermission(repoInfo, userId)
+        if (isReadPublicOrSystemRepoCheck(action, repoInfo, public, userId)) return
         // 禁止批量下载流水线节点
         if (path.size > 1 && repoName == PIPELINE) {
             throw PermissionException()
@@ -259,6 +256,10 @@ open class PermissionManager(
         repoInfo: RepositoryInfo,
         public: Boolean? = null
     ): Boolean {
+        // PERSONAL 类型仓库不允许通过 public 标志绕过权限校验
+        if (repoInfo.visibility == RepositoryVisibility.PERSONAL) {
+            return false
+        }
         if (action != PermissionAction.READ && action != PermissionAction.DOWNLOAD) {
             return false
         }
@@ -529,14 +530,14 @@ open class PermissionManager(
                 }
                 logger.info(
                     "check external permission error, url[${request.url}], project[$projectId], repo[$repoName]," +
-                        " nodes$paths, code[${it.code}], response[$content]"
+                            " nodes$paths, code[${it.code}], response[$content]"
                 )
                 throw PermissionException(errorMsg)
             }
         } catch (e: IOException) {
             logger.error(
                 "check external permission error," + "url[${request.url}], project[$projectId], " +
-                    "repo[$repoName], nodes$paths, $e"
+                        "repo[$repoName], nodes$paths, $e"
             )
             throw PermissionException(errorMsg)
         }
@@ -602,6 +603,29 @@ open class PermissionManager(
                 logger.warn("search admin user cache error: ${e.message}")
                 userResource.userInfoById(userId).data?.admin == true
             }
+        }
+    }
+
+    /**
+     * 判断用户是否为项目管理员
+     */
+    open fun isProjectAdmin(userId: String, projectId: String): Boolean {
+        val checkRequest = CheckPermissionRequest(
+            uid = userId,
+            resourceType = ResourceType.PROJECT.toString(),
+            action = PermissionAction.MANAGE.toString(),
+            projectId = projectId,
+        )
+        return checkPermissionFromAuthService(checkRequest) == true
+    }
+
+    /**
+     * 校验 PERSONAL 类型仓库的访问权限：仅允许仓库所有者或系统管理员访问
+     * 如果是 PERSONAL 类型且当前用户不是所有者且不是管理员，则抛出 PermissionException
+     */
+    private fun checkPersonalRepoPermission(repoInfo: RepositoryInfo, userId: String) {
+        if (repoInfo.visibility == RepositoryVisibility.PERSONAL && repoInfo.owner != userId) {
+            throw PermissionException()
         }
     }
 
