@@ -104,7 +104,6 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
-import java.util.Locale
 
 /**
  * 仓库服务实现类
@@ -130,23 +129,6 @@ class RRepositoryServiceImpl(
 
     override suspend fun getRepoDetail(projectId: String, name: String, type: String?): RepositoryDetail? {
         val tRepository = repositoryDao.findByNameAndType(projectId, name, type)
-        val storageCredentials = tRepository?.credentialsKey?.let { storageCredentialService.findByKey(it) }
-        return convertToDetail(tRepository, storageCredentials)
-    }
-
-    override suspend fun getRepoDetailIncludeDeleted(
-        projectId: String,
-        name: String,
-        type: String?
-    ): RepositoryDetail? {
-        val criteria = where(TRepository::projectId).isEqualTo(projectId)
-            .and(TRepository::name).isEqualTo(name)
-        val repoType = type?.uppercase(Locale.getDefault())
-        if (repoType != null && repoType != RepositoryType.NONE.name) {
-            criteria.and(TRepository::type).isEqualTo(repoType)
-        }
-
-        val tRepository = repositoryDao.findOne(Query(criteria))
         val storageCredentials = tRepository?.credentialsKey?.let { storageCredentialService.findByKey(it) }
         return convertToDetail(tRepository, storageCredentials)
     }

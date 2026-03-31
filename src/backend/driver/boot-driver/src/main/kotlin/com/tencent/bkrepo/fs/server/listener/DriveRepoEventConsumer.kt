@@ -50,7 +50,10 @@ class DriveRepoEventConsumer(
         val projectId = event.projectId
         val repoName = event.repoName
 
-        val repo = repositoryService.getRepoDetailIncludeDeleted(projectId, repoName)
+        val repo = repositoryService.getRepoDetail(projectId, repoName)
+        if (repo == null) {
+            logger.warn("can not get repo[$projectId/$repoName]")
+        }
         // 判断仓库类型是否为 DRIVE
         if (repo?.type != RepositoryType.DRIVE) {
             return
