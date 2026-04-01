@@ -435,7 +435,7 @@ class StreamService(
 
     fun checkUserWorkspaceLivePerm(projectId: String, workspaceName: String, userId: String): Boolean {
         val devops = mediaProperties.plugin.devx.devops
-        val requestUrl = "${mediaProperties.remoteDevHost}/apigw/remotedev/check_view_live" +
+        val requestUrl = "${mediaProperties.remoteDevHost}/apigw-app/remotedev/check_view_live" +
                 "?userId=$userId&projectId=$projectId&workspaceName=$workspaceName"
         val request = Request.Builder()
             .url(requestUrl)
