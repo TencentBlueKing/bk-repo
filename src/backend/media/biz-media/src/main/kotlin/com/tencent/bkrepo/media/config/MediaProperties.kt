@@ -27,6 +27,7 @@ class DevxProperties {
     var devops: DevopsProperties = DevopsProperties()
     var srtUrl: String = ""
     var mediaMode: String = "BOTH"
+    var enableDecodeResync: Boolean = true
 }
 
 class DevopsProperties {
