@@ -346,36 +346,65 @@ class StreamService(
         return "${mediaProperties.repoHost}/rtc/v1/whep/?app=live&stream=${streamId}&token=$token"
     }
 
-    private fun generateToken(streamPattern: String?, expireAt: Long): String {
+    /**
+     * 生成 token，格式: {expireAt}.{base64url(hmacBytes)}，~57 字符
+     * streamPattern 不嵌入 token（由 URL 路径携带），HMAC 中已绑定
+     */
+    fun generateToken(streamPattern: String?, expireAt: Long): String {
         val payload = "$streamPattern|$expireAt"
-        val signature = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmacHex(payload)
-        return Base64.getUrlEncoder().encodeToString(("$payload.$signature").toByteArray())
+        val hmacBytes = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmac(payload)
+        val signature = Base64.getUrlEncoder().withoutPadding().encodeToString(hmacBytes)
+        return "$expireAt.$signature"
     }
 
+    /**
+     * 校验 token，兼容新旧两种格式：
+     * - 新格式: {expireAt}.{base64url(hmacBytes)}
+     * - 旧格式: base64( streamPattern|expireAt.hmacHex )
+     */
     fun verifyToken(token: String?, requestedStream: String): Boolean {
         if (token.isNullOrBlank()) {
             return false
         }
-        return try {
-            val decoded = String(Base64.getUrlDecoder().decode(token))
-            val parts = decoded.split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-            val payload = parts.getOrNull(0)
-            val signature = parts.getOrNull(1)
-            if (payload == null || signature == null || parts.size != 2) {
-                false
-            } else {
-                val expected = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmacHex(payload)
-                val fields = payload.split("\\|".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                val streamPattern = fields[0]
-                val expireAt = fields[1].toLong()
-                expected == signature
-                    && System.currentTimeMillis() <= expireAt
-                    && requestedStream == streamPattern
-            }
-        } catch (e: Exception) {
-            logger.error("verifyToken error $token|$requestedStream", e)
+        val newResult = try {
+            verifyNewToken(token, requestedStream)
+        } catch (_: Exception) {
             false
         }
+        if (newResult) return true
+        return try {
+            verifyLegacyToken(token, requestedStream)
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun verifyNewToken(token: String, requestedStream: String): Boolean {
+        val dotIndex = token.indexOf('.')
+        if (dotIndex <= 0 || dotIndex >= token.length - 1) return false
+        val expireStr = token.substring(0, dotIndex)
+        if (!expireStr.all { it.isDigit() }) return false
+        val expireAt = expireStr.toLong()
+        val signature = token.substring(dotIndex + 1)
+        val payload = "$requestedStream|$expireAt"
+        val hmacBytes = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmac(payload)
+        val expected = Base64.getUrlEncoder().withoutPadding().encodeToString(hmacBytes)
+        return expected == signature && System.currentTimeMillis() <= expireAt
+    }
+
+    private fun verifyLegacyToken(token: String, requestedStream: String): Boolean {
+        val decoded = String(Base64.getUrlDecoder().decode(token))
+        val parts = decoded.split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+        val payload = parts.getOrNull(0) ?: return false
+        val signature = parts.getOrNull(1) ?: return false
+        if (parts.size != 2) return false
+        val expected = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmacHex(payload)
+        val fields = payload.split("\\|".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+        val streamPattern = fields[0]
+        val expireAt = fields[1].toLong()
+        return expected == signature
+            && System.currentTimeMillis() <= expireAt
+            && requestedStream == streamPattern
     }
 
     fun saveActiveStream(
