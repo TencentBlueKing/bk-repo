@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.metadata.service.router.RouterControllerService
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationColdPurgeService
 import com.tencent.bkrepo.common.metadata.service.separation.SeparationTaskService
 import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
@@ -87,6 +88,7 @@ class NodeServiceImpl(
     override val metadataCustomizer: MetadataCustomizer?,
     private val archiveClient: ArchiveClient,
     override val metadataLabelCacheService: MetadataLabelCacheService,
+    private val separationColdPurgeService: SeparationColdPurgeService,
     private val dataSeparationConfig: DataSeparationConfig? = null,
     private val separationNodeDao: SeparationNodeDao? = null,
     private val separationTaskService: SeparationTaskService? = null,
@@ -104,8 +106,10 @@ class NodeServiceImpl(
     blockNodeService,
     projectService,
     metadataCustomizer,
-    metadataLabelCacheService
+    metadataLabelCacheService,
 ) {
+
+    private fun deleteSupport() = NodeDeleteSupport(this, separationColdPurgeService)
 
     override fun computeSize(
         artifact: ArtifactInfo, estimated: Boolean
@@ -127,22 +131,22 @@ class NodeServiceImpl(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteNode(deleteRequest: NodeDeleteRequest): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteNode(deleteRequest)
+        return deleteSupport().deleteNode(deleteRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteNodes(nodesDeleteRequest)
+        return deleteSupport().deleteNodes(nodesDeleteRequest)
     }
 
     override fun countDeleteNodes(nodesDeleteRequest: NodesDeleteRequest): Long {
-        return NodeDeleteSupport(this).countDeleteNodes(nodesDeleteRequest)
+        return deleteSupport().countDeleteNodes(nodesDeleteRequest)
     }
 
     override fun deleteByFullPathWithoutDecreaseVolume(
         projectId: String, repoName: String, fullPath: String, operator: String, source: String?
     ) {
-        return NodeDeleteSupport(this).deleteByFullPathWithoutDecreaseVolume(
+        deleteSupport().deleteByFullPathWithoutDecreaseVolume(
             projectId, repoName, fullPath, operator, source
         )
     }
@@ -155,7 +159,7 @@ class NodeServiceImpl(
         operator: String,
         source: String?
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator, source)
+        return deleteSupport().deleteByPath(projectId, repoName, fullPath, operator, source)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -165,7 +169,7 @@ class NodeServiceImpl(
         fullPaths: List<String>,
         operator: String,
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteByPaths(projectId, repoName, fullPaths, operator)
+        return deleteSupport().deleteByPaths(projectId, repoName, fullPaths, operator)
     }
 
     override fun deleteBeforeDate(
@@ -177,7 +181,7 @@ class NodeServiceImpl(
         decreaseVolume: Boolean,
         source: String?
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteBeforeDate(
+        return deleteSupport().deleteBeforeDate(
             projectId, repoName, date, operator, path, decreaseVolume, source
         )
     }
@@ -191,7 +195,7 @@ class NodeServiceImpl(
         deleteTime: LocalDateTime,
         source: String?
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteNodeById(
+        return deleteSupport().deleteNodeById(
             projectId, repoName, fullPath, operator, nodeId, deleteTime, source
         )
     }

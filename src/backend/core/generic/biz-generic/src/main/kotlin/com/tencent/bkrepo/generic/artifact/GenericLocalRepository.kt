@@ -48,7 +48,6 @@ import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_CRC64ECMA
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
 import com.tencent.bkrepo.common.artifact.event.node.NodeSeparationRecoveryEvent
-import com.tencent.bkrepo.common.metadata.service.separation.SeparationDataService
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -158,7 +157,6 @@ class GenericLocalRepository(
     private val blockNodeService: BlockNodeService,
     private val storageProperties: StorageProperties,
     private val metadataLabelCacheService: MetadataLabelCacheService,
-    private val separationDataService: SeparationDataService,
     private val dataSeparationConfig: DataSeparationConfig,
 ) : LocalRepository() {
 
@@ -545,56 +543,76 @@ class GenericLocalRepository(
      * 多节点下载, 支持同时下载文件和目录
      */
     private fun downloadMultiNode(context: ArtifactDownloadContext): ArtifactResource {
-        with(context) {
-            val fullPathList = artifacts!!.map { it.getArtifactFullPath() }
-            val commonParent = PathUtils.getCommonParentPath(fullPathList)
-            val nodes = getNodeDetailsFromReq(true)
-                ?: queryNodeDetailList(
-                    projectId = projectId,
-                    repoName = repoName,
-                    paths = fullPathList,
-                )
-            val notExistNodes = fullPathList.subtract(nodes.map { it.fullPath })
-            if (notExistNodes.isNotEmpty()) {
-                if (isSeparatedRepo(projectId, repoName)) {
-                    notExistNodes.forEach { publishSeparationRecoveryEvent(this, null, it) }
-                }
-                throw NodeNotFoundException(notExistNodes.joinToString(StringPool.COMMA))
-            }
-            nodes.filter { !it.folder }.forEach { downloadIntercept(this, it) }
-            val (folderNodes, fileNodes) = nodes.partition { it.folder }
-            // 添加所有目录节点的子节点, 检查文件数量和大小总和, 下载拦截
-            val allNodes = getSubNodes(
-                context = context,
-                folders = folderNodes,
-                includeFolder = true,
-                initialCount = fileNodes.size.toLong(),
-                initialSize = fileNodes.sumOf { it.size },
-                checkSeparation = isSeparatedRepo(projectId, repoName)
-            ) + nodes
-            // 通过给每个ZipEntry.name添加或移除公共前缀, 改变zip包内的目录结构
-            // 如果多个节点没有公共目录，例如下载/file1和/file2时, 根据repoName添加公共前缀, 给zip包添加一个以repoName命名的顶层目录
-            // 目的是保证zip包解压缩出来只有1个目录, 没有顶层目录时, 有些解压缩工具有可能会直接在当前目录解压出多个文件或目录
-            val prefixToAdd = if (PathUtils.isRoot(commonParent) && fullPathList.size > 1) "$repoName/" else ""
-            // 去掉多余的公共目录层级, 例如下载/a/b/c/file1和/a/b/c/file2时, 移除前缀/a/b/, 使得zip包的顶层目录为c
-            val prefixToRemove = if (fullPathList.size > 1) PathUtils.resolveParent(commonParent) else commonParent
-            // 支持下载空目录
-            val emptyStream = ArtifactInputStream(EmptyInputStream.INSTANCE, Range.full(0))
-            val nodeMap = allNodes.associateBy(
-                keySelector = {
-                    prefixToAdd + it.fullPath.removePrefix(prefixToRemove) + if (it.folder) StringPool.SLASH else ""
-                },
-                valueTransform = {
-                    if (it.folder) emptyStream else {
-                        storageManager.loadArtifactInputStream(it, storageCredentials)
-                            ?: throw ArtifactNotFoundException(it.fullPath)
-                    }
-                }
+        val fullPathList = context.artifacts!!.map { it.getArtifactFullPath() }
+        val commonParent = PathUtils.getCommonParentPath(fullPathList)
+        val nodes = getNodeDetailsFromReq(true)
+            ?: queryNodeDetailList(
+                projectId = context.projectId,
+                repoName = context.repoName,
+                paths = fullPathList,
             )
-            // 添加node是为了下载单个空目录的时候以zip包的形式下载, 否则下载的是一个空文件而不是目录
-            val node = if (allNodes.size == 1) allNodes.first() else null
-            return ArtifactResource(nodeMap, node, useDisposition = true, nodes = allNodes)
+        ensureAllNodesExist(context, fullPathList, nodes)
+        nodes.filterNot { it.folder }.forEach { downloadIntercept(context, it) }
+        val allNodes = collectDownloadNodes(context, nodes) + nodes
+        val nodeMap = buildDownloadNodeMap(context, allNodes, commonParent, fullPathList)
+        return ArtifactResource(nodeMap, allNodes.singleOrNull(), useDisposition = true, nodes = allNodes)
+    }
+
+    private fun ensureAllNodesExist(
+        context: ArtifactDownloadContext,
+        fullPathList: List<String>,
+        nodes: List<NodeDetail>,
+    ) {
+        val notExistNodes = fullPathList.subtract(nodes.map { it.fullPath }.toSet())
+        if (notExistNodes.isEmpty()) return
+        if (isSeparatedRepo(context.projectId, context.repoName)) {
+            notExistNodes.forEach { publishSeparationRecoveryEvent(context, null, it) }
         }
+        throw NodeNotFoundException(notExistNodes.joinToString(StringPool.COMMA))
+    }
+
+    private fun collectDownloadNodes(
+        context: ArtifactDownloadContext,
+        nodes: List<NodeDetail>,
+    ): List<NodeDetail> {
+        val (folderNodes, fileNodes) = nodes.partition { it.folder }
+        return getSubNodes(
+            context = context,
+            folders = folderNodes,
+            includeFolder = true,
+            initialCount = fileNodes.size.toLong(),
+            initialSize = fileNodes.sumOf { it.size },
+            checkSeparation = isSeparatedRepo(context.projectId, context.repoName),
+        )
+    }
+
+    private fun buildDownloadNodeMap(
+        context: ArtifactDownloadContext,
+        allNodes: List<NodeDetail>,
+        commonParent: String,
+        fullPathList: List<String>,
+    ): Map<String, ArtifactInputStream> {
+        // 通过给每个ZipEntry.name添加或移除公共前缀, 改变zip包内的目录结构
+        // 如果多个节点没有公共目录，例如下载/file1和/file2时, 根据repoName添加公共前缀, 给zip包添加一个以repoName命名的顶层目录
+        // 目的是保证zip包解压缩出来只有1个目录, 没有顶层目录时, 有些解压缩工具有可能会直接在当前目录解压出多个文件或目录
+        val prefixToAdd = if (PathUtils.isRoot(commonParent) && fullPathList.size > 1) "${context.repoName}/" else ""
+        // 去掉多余的公共目录层级, 例如下载/a/b/c/file1和/a/b/c/file2时, 移除前缀/a/b/, 使得zip包的顶层目录为c
+        val prefixToRemove = if (fullPathList.size > 1) PathUtils.resolveParent(commonParent) else commonParent
+        // 支持下载空目录
+        val emptyStream = ArtifactInputStream(EmptyInputStream.INSTANCE, Range.full(0))
+        return allNodes.associateBy(
+            keySelector = {
+                prefixToAdd + it.fullPath.removePrefix(prefixToRemove) + if (it.folder) StringPool.SLASH else ""
+            },
+            valueTransform = {
+                if (it.folder) {
+                    emptyStream
+                } else {
+                    storageManager.loadArtifactInputStream(it, context.storageCredentials)
+                        ?: throw ArtifactNotFoundException(it.fullPath)
+                }
+            },
+        )
     }
 
     private fun getSubNodes(
@@ -714,14 +732,6 @@ class GenericLocalRepository(
     override fun remove(context: ArtifactRemoveContext) {
         with(context.artifactInfo) {
             val fullPath = getArtifactFullPath()
-            if (isSeparatedRepo(projectId, repoName)) {
-                // 文件：精确匹配冷表；目录：检查冷子节点（防止目录本身被删但冷子节点成为孤立数据）
-                if (separationDataService.findNodeInfo(projectId, repoName, fullPath) != null
-                    || separationDataService.hasColdNodeUnderPath(projectId, repoName, fullPath)
-                ) {
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_IN_COLD_STORAGE, fullPath)
-                }
-            }
             val node = nodeService.getNodeDetail(this) ?: throw NodeNotFoundException(fullPath)
             if (node.folder) {
                 if (nodeService.countFileNode(this) > 0) {

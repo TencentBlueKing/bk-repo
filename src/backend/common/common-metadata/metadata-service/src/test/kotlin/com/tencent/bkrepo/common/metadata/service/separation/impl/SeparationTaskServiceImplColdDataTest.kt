@@ -101,7 +101,9 @@ class SeparationTaskServiceImplColdDataTest {
     @Test
     @DisplayName("SEPARATE_ARCHIVED + GENERIC 写入任务且 type 正确")
     fun createSeparationTask_separateArchived_savesTask() {
-        whenever(repositoryService.getRepoDetail(eq("p"), eq("r"), anyOrNull())).thenReturn(repo(RepositoryType.GENERIC))
+        whenever(
+            repositoryService.getRepoDetail(eq("p"), eq("r"), anyOrNull()),
+        ).thenReturn(repo(RepositoryType.GENERIC))
         whenever(dataSeparationConfig.specialSeparateRepos).thenReturn(mutableListOf("p/r"))
 
         val req = SeparationTaskRequest(
@@ -123,7 +125,9 @@ class SeparationTaskServiceImplColdDataTest {
     @Test
     @DisplayName("RESTORE_ARCHIVED + GENERIC + specialRestoreRepos 写入恢复任务")
     fun createSeparationTask_restoreArchived_savesTask() {
-        whenever(repositoryService.getRepoDetail(eq("p"), eq("r"), anyOrNull())).thenReturn(repo(RepositoryType.GENERIC))
+        whenever(
+            repositoryService.getRepoDetail(eq("p"), eq("r"), anyOrNull()),
+        ).thenReturn(repo(RepositoryType.GENERIC))
         whenever(dataSeparationConfig.specialRestoreRepos).thenReturn(mutableListOf("p/r"))
 
         val req = SeparationTaskRequest(

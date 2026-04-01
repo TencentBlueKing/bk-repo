@@ -113,7 +113,9 @@ class SeparationRecoveryEventConsumerTest {
     fun genericNotArchived_createsRestoreTask() {
         every { dataSeparationConfig.enableAutoRecovery } returns true
         every { separationTaskService.findDistinctSeparationDate("p", "r") } returns setOf(sepAt)
-        every { separationNodeDao.findOneByFullPath("p", "r", "/a.txt", sepAt) } returns separationNode(archived = false)
+        every {
+            separationNodeDao.findOneByFullPath("p", "r", "/a.txt", sepAt)
+        } returns separationNode(archived = false)
         val reqSlot = slot<SeparationTaskRequest>()
         every { separationTaskService.createSeparationTask(capture(reqSlot)) } just runs
 

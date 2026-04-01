@@ -65,6 +65,13 @@ data class DataSeparationConfig(
     var keepDays: Duration = Duration.ofDays(365),
     // 降冷特殊项目仓库配置
     var specialSeparateRepos: MutableList<String> = mutableListOf(),
+    /**
+     * 与 [specialSeparateRepos] 同为 project/repo 通配；命中时表示允许在热表删除/清理时联动处理冷表。
+     * 该配置仅作用于热表联动，不影响管理接口的手工冷表清理权限。
+     */
+    var coldCoManagedRepos: MutableList<String> = mutableListOf(),
+    // 是否允许通过 deleteColdNodes/cleanColdNodes 接口手工清理冷表
+    var enableManualColdPurgeByApi: Boolean = false,
     // 恢复特殊项目仓库配置
     var specialRestoreRepos: MutableList<String> = mutableListOf(),
     // 允许同时执行将冷任务数

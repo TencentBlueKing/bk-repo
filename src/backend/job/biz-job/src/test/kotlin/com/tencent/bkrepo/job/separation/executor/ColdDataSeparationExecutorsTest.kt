@@ -183,7 +183,7 @@ private class RecordingDataSeparator : DataSeparator {
         packageCalls.add(context to pkg)
     }
 
-    override fun versionSeparator(context: SeparationContext, version: VersionFilterInfo) {}
+    override fun versionSeparator(context: SeparationContext, version: VersionFilterInfo) = Unit
 
     override fun nodeSeparator(context: SeparationContext, node: NodeFilterInfo) {
         nodeCalls.add(context to node)
@@ -209,7 +209,7 @@ private class RecordingDataRestorer : DataRestorer {
         packageCalls.add(context to pkg)
     }
 
-    override fun versionRestorer(context: SeparationContext, version: VersionFilterInfo) {}
+    override fun versionRestorer(context: SeparationContext, version: VersionFilterInfo) = Unit
 
     override fun nodeRestorer(context: SeparationContext, node: NodeFilterInfo) {
         nodeCalls.add(context to node)

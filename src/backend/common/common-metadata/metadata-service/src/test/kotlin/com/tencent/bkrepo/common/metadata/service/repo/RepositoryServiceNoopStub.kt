@@ -39,9 +39,13 @@ object RepositoryServiceNoopStub : RepositoryService {
     override fun createRepo(repoCreateRequest: RepoCreateRequest) =
         throw UnsupportedOperationException("RepositoryServiceNoopStub")
 
-    override fun updateRepo(repoUpdateRequest: RepoUpdateRequest) {}
-    override fun updateStorageCredentialsKey(projectId: String, repoName: String, storageCredentialsKey: String?) {}
-    override fun unsetOldStorageCredentialsKey(projectId: String, repoName: String) {}
-    override fun deleteRepo(repoDeleteRequest: RepoDeleteRequest) {}
+    override fun updateRepo(repoUpdateRequest: RepoUpdateRequest) = Unit
+    override fun updateStorageCredentialsKey(
+        projectId: String,
+        repoName: String,
+        storageCredentialsKey: String?,
+    ) = Unit
+    override fun unsetOldStorageCredentialsKey(projectId: String, repoName: String) = Unit
+    override fun deleteRepo(repoDeleteRequest: RepoDeleteRequest) = Unit
     override fun statRepo(projectId: String, repoName: String) = NodeSizeInfo(size = 0L)
 }

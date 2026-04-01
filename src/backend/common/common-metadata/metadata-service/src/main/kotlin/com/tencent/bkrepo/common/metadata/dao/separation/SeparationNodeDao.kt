@@ -29,17 +29,25 @@ package com.tencent.bkrepo.common.metadata.dao.separation
 
 import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.metadata.model.TSeparationNode
+import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.metadata.util.SeparationQueryHelper
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.common.mongo.dao.sharding.MonthRangeShardingMongoDao
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 import java.util.stream.Stream
 
 @Repository
 class SeparationNodeDao : MonthRangeShardingMongoDao<TSeparationNode>() {
+
+    companion object {
+        private const val COLD_NODE_COLLECTION_PREFIX = "separation_node_"
+    }
 
     fun findOneByFullPath(
         projectId: String, repoName: String,
@@ -66,6 +74,61 @@ class SeparationNodeDao : MonthRangeShardingMongoDao<TSeparationNode>() {
 
     fun removeById(id: String, separationDate: LocalDateTime): DeleteResult {
         return this.remove(SeparationQueryHelper.nodeIdRemoveQuery(id, separationDate))
+    }
+
+    /**
+     * 遍历全部冷节点分表，不依赖降冷任务表中的 separationDate（任务缺失时仍能标 deleted）。
+     */
+    fun markDeletedColdSubtreeAllCollections(
+        projectId: String,
+        repoName: String,
+        fullPathRegex: String,
+        deletedAt: LocalDateTime,
+    ): Long {
+        val template = determineMongoTemplate()
+        val names = template.collectionNames.filter { it.startsWith(COLD_NODE_COLLECTION_PREFIX) }.sorted()
+        val criteria = Criteria.where(TSeparationNode::projectId.name).isEqualTo(projectId)
+            .and(TSeparationNode::repoName.name).isEqualTo(repoName)
+            .and(TSeparationNode::fullPath.name).regex(fullPathRegex)
+            .and(TSeparationNode::deleted.name).`is`(null)
+        val query = Query(criteria).withHint(SeparationQueryHelper.FULL_PATH_IDX)
+        val update = Update().set(TSeparationNode::deleted.name, deletedAt)
+        var modified = 0L
+        for (coll in names) {
+            modified += template.updateMulti(query, update, TSeparationNode::class.java, coll).modifiedCount
+        }
+        return modified
+    }
+
+    /**
+     * 与热表 [com.tencent.bkrepo.common.metadata.service.node.impl.NodeDeleteSupport.deleteBeforeDate] 一致：
+     * 作用域内、非目录、deleted 为空，且 (lastAccessDate & lastModifiedDate 均早于阈值) 或 (lastAccess 为空且 lastModified 早于阈值)。
+     */
+    fun markDeletedColdMatchingHotNodeClean(
+        projectId: String,
+        repoName: String,
+        cleanScopePath: String,
+        cleanBeforeDate: LocalDateTime,
+        deletedAt: LocalDateTime,
+    ): Long {
+        val option = NodeListOption(includeFolder = false, deep = true)
+        val scopeCriteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, cleanScopePath, option)
+        val timeCriteria = Criteria().orOperator(
+            Criteria.where(TSeparationNode::lastAccessDate.name).lt(cleanBeforeDate)
+                .and(TSeparationNode::lastModifiedDate.name).lt(cleanBeforeDate),
+            Criteria.where(TSeparationNode::lastAccessDate.name).`is`(null)
+                .and(TSeparationNode::lastModifiedDate.name).lt(cleanBeforeDate),
+        )
+        val criteria = Criteria().andOperator(scopeCriteria, timeCriteria)
+        val template = determineMongoTemplate()
+        val names = template.collectionNames.filter { it.startsWith(COLD_NODE_COLLECTION_PREFIX) }.sorted()
+        val query = Query(criteria).withHint(SeparationQueryHelper.FULL_PATH_IDX)
+        val update = Update().set(TSeparationNode::deleted.name, deletedAt)
+        var modified = 0L
+        for (coll in names) {
+            modified += template.updateMulti(query, update, TSeparationNode::class.java, coll).modifiedCount
+        }
+        return modified
     }
 
     /**

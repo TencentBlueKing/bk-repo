@@ -84,8 +84,16 @@ class DataSeparatorImplRoutingTest {
         ).thenReturn(emptyList())
         val ctx = ctx(RepositoryType.GENERIC)
         impl.repoSeparator(ctx)
-        verify(mongoTemplate).find(any<Query>(), eq(NodeBaseInfo::class.java), eq(SeparationUtils.getNodeCollectionName("p")))
-        verify(mongoTemplate, never()).find(any<Query>(), eq(PackageInfo::class.java), eq(SeparationTaskServiceImpl.PACKAGE_COLLECTION_NAME))
+        verify(mongoTemplate).find(
+            any<Query>(),
+            eq(NodeBaseInfo::class.java),
+            eq(SeparationUtils.getNodeCollectionName("p")),
+        )
+        verify(mongoTemplate, never()).find(
+            any<Query>(),
+            eq(PackageInfo::class.java),
+            eq(SeparationTaskServiceImpl.PACKAGE_COLLECTION_NAME),
+        )
     }
 
     @Test
@@ -100,8 +108,16 @@ class DataSeparatorImplRoutingTest {
         ).thenReturn(emptyList())
         val ctx = ctx(RepositoryType.MAVEN)
         impl.repoSeparator(ctx)
-        verify(mongoTemplate).find(any<Query>(), eq(PackageInfo::class.java), eq(SeparationTaskServiceImpl.PACKAGE_COLLECTION_NAME))
-        verify(mongoTemplate, never()).find(any<Query>(), eq(NodeBaseInfo::class.java), eq(SeparationUtils.getNodeCollectionName("p")))
+        verify(mongoTemplate).find(
+            any<Query>(),
+            eq(PackageInfo::class.java),
+            eq(SeparationTaskServiceImpl.PACKAGE_COLLECTION_NAME),
+        )
+        verify(mongoTemplate, never()).find(
+            any<Query>(),
+            eq(NodeBaseInfo::class.java),
+            eq(SeparationUtils.getNodeCollectionName("p")),
+        )
     }
 
     private fun ctx(type: RepositoryType): SeparationContext {

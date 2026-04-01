@@ -181,21 +181,35 @@ class SeparationDataServiceImpl(
         // 按降冷日期倒序遍历各分表，同序游标跳过，避免每表 count
         for (date in separationDates.sortedDescending()) {
             if (remaining <= 0) break
-            separationNodeDao.streamByQuery(query, date).use { stream ->
-                val iterator = stream.iterator()
-                while (iterator.hasNext()) {
-                    val row = iterator.next()
-                    if (skipRemaining > 0) {
-                        skipRemaining--
-                    } else if (remaining > 0) {
-                        result.add(row)
-                        remaining--
-                    }
-                    if (remaining == 0) break
-                }
-            }
+            val updatedState = appendColdNodesFromDate(query, date, skipRemaining, remaining, result)
+            skipRemaining = updatedState.first
+            remaining = updatedState.second
         }
         return result
+    }
+
+    private fun appendColdNodesFromDate(
+        query: Query,
+        separationDate: LocalDateTime,
+        skip: Long,
+        limit: Int,
+        result: MutableList<MutableMap<String, Any?>>,
+    ): Pair<Long, Int> {
+        var skipRemaining = skip
+        var remaining = limit
+        separationNodeDao.streamByQuery(query, separationDate).use { stream ->
+            val iterator = stream.iterator()
+            while (iterator.hasNext() && remaining > 0) {
+                val row = iterator.next()
+                if (skipRemaining > 0) {
+                    skipRemaining--
+                    continue
+                }
+                result.add(row)
+                remaining--
+            }
+        }
+        return skipRemaining to remaining
     }
 
     /**
