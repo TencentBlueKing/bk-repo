@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.media.config
 
 import cn.hutool.core.io.unit.DataSize
+import com.tencent.bkrepo.media.stream.MediaMod
 import com.tencent.bkrepo.media.stream.TranscodeConfig
 import org.springframework.boot.context.properties.ConfigurationProperties
 
@@ -26,7 +27,7 @@ class DevxProperties {
     var key: String = ""
     var devops: DevopsProperties = DevopsProperties()
     var srtUrl: String = ""
-    var mediaMode: String = "BOTH"
+    var mediaMode: String = MediaMod.ALL.name
     var enableDecodeResync: Boolean = true
 }
 
