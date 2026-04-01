@@ -328,6 +328,7 @@ class RepositoryServiceHelper(
             projectId: String,
             names: List<String>,
             option: RepoListOption,
+            operator: String,
             isAdmin: Boolean = false
         ): Query {
             val criteria = where(TRepository::projectId).isEqualTo(projectId)
@@ -341,8 +342,12 @@ class RepositoryServiceHelper(
                             and(TRepository::display).isEqualTo(option.display)
                         }
                     }
-                    // 过滤掉 SYSTEM 和 PERSONAL 类型，visibility 为 null 的老数据也视为 PROJECT 类型展示
-                    and(TRepository::visibility).nin(RepositoryVisibility.SYSTEM, RepositoryVisibility.PERSONAL)
+                    // 展示 visibility 为空或为 PROJECT 的仓库，以及 visibility 为 PERSONAL 且 owner 为本人的仓库
+                    orOperator(
+                        where(TRepository::visibility).`in`(null, RepositoryVisibility.PROJECT),
+                        where(TRepository::visibility).isEqualTo(RepositoryVisibility.PERSONAL)
+                            .and(TRepository::owner.name).isEqualTo(operator)
+                    )
                 }
             option.type?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type).isEqualTo(this.uppercase(
                 Locale.getDefault()
