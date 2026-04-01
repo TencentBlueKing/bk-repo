@@ -488,13 +488,19 @@ class RepositoryServiceTest @Autowired constructor(
             UT_USER,
             StorageCredentialsCreateRequest(restrictedStorageKey, restrictedCredentials, UT_REGION),
         )
-        repositoryService.createRepo(createRequest(name = "test-update-restricted", storageCredentialsKey = UT_STORAGE_CREDENTIALS_KEY))
+        repositoryService.createRepo(
+            createRequest(
+                name = "test-update-restricted",
+                storageCredentialsKey = UT_STORAGE_CREDENTIALS_KEY
+            )
+        )
 
         val exception = assertThrows<ErrorCodeException> {
             repositoryService.updateStorageCredentialsKey(UT_PROJECT_ID, "test-update-restricted", restrictedStorageKey)
         }
         assertEquals(RepositoryMessageCode.STORAGE_CREDENTIALS_REPO_TYPE_NOT_ALLOWED, exception.messageCode)
-        val repo = repositoryService.getRepoDetail(UT_PROJECT_ID, "test-update-restricted", RepositoryType.GENERIC.name)!!
+        val repo =
+            repositoryService.getRepoDetail(UT_PROJECT_ID, "test-update-restricted", RepositoryType.GENERIC.name)!!
         assertEquals(UT_STORAGE_CREDENTIALS_KEY, repo.storageCredentials?.key)
         assertNull(repo.oldCredentialsKey)
         storageCredentialService.delete(restrictedStorageKey)
@@ -515,7 +521,8 @@ class RepositoryServiceTest @Autowired constructor(
             StorageCredentialsCreateRequest(driveStorageKey, driveCredentials, UT_REGION),
         )
         val repoName = "repo-drive-recreate"
-        val request = createRequest(name = repoName, storageCredentialsKey = driveStorageKey, repoType = RepositoryType.DRIVE)
+        val request =
+            createRequest(name = repoName, storageCredentialsKey = driveStorageKey, repoType = RepositoryType.DRIVE)
         repositoryService.createRepo(request)
         repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, repoName, operator = UT_USER))
 
