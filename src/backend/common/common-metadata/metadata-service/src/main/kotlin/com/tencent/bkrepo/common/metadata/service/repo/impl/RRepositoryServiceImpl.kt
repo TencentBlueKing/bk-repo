@@ -195,7 +195,7 @@ class RRepositoryServiceImpl(
         if (!option.name.isNullOrBlank()) {
             names = names.filter { it.startsWith(option.name.orEmpty(), true) }
         }
-        val query = buildListPermissionRepoQuery(projectId, names, option, isAdmin)
+        val query = buildListPermissionRepoQuery(projectId, names, option, userId, isAdmin)
         val originResults = repositoryDao.find(query).map { convertToInfo(it)!! }
         val originNames = originResults.map { it.name }.toSet()
         var includeResults = emptyList<RepositoryInfo>()

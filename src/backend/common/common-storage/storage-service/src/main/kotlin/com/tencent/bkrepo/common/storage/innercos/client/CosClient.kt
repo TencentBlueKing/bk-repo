@@ -518,11 +518,12 @@ class CosClient(val credentials: InnerCosCredentials) {
             var i = 0
             var priority = System.currentTimeMillis()
             val rateLimiter = RateLimiter.create(config.qps.toDouble())
+            val tracedExecutor = executor.trace()
             while (factory.hasMoreRequests()) {
                 val downloadPartRequest = factory.nextDownloadPartRequest()
                 val task = DownloadTask(i, downloadPartRequest, tempRootPath, session, priority, rateLimiter)
                 val futureTask = ComparableFutureTask(task)
-                executor.execute(futureTask)
+                tracedExecutor.execute(futureTask)
                 val futureWrapper = EnhanceFileChunkedFutureWrapper(futureTask) {
                     val getRequest = task.getComparable().downloadPartRequest
                     this.getObject(getRequest).inputStream ?: throw InnerCosException("not found $getRequest")
