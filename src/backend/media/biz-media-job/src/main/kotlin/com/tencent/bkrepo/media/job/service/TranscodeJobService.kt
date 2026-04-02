@@ -124,6 +124,7 @@ class TranscodeJobService @Autowired constructor(
         val container = V1Container()
             .name("transcoder")
             .image(config.image)
+            .imagePullPolicy("IfNotPresent")
             .command(PYTHON_CMD)
             .env(
                 listOf(
@@ -217,6 +218,7 @@ class TranscodeJobService @Autowired constructor(
         val initContainer = V1Container()
             .name("transcoder")
             .image(config.image)
+            .imagePullPolicy("IfNotPresent")
             .command(PYTHON_CMD)
             .env(
                 listOf(
@@ -254,6 +256,7 @@ class TranscodeJobService @Autowired constructor(
         val container = V1Container()
             .name("upload")
             .image(config.image)
+            .imagePullPolicy("IfNotPresent")
             .command(PYTHON_CMD)
             .env(
                 listOf(
