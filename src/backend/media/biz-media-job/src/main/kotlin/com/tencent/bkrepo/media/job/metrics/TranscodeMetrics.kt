@@ -18,8 +18,8 @@ import com.tencent.bkrepo.common.metrics.constant.TRANSCODE_JOB_SUCCESS_COUNT
 import com.tencent.bkrepo.common.metrics.constant.TRANSCODE_JOB_SUCCESS_COUNT_DESC
 import com.tencent.bkrepo.common.metrics.constant.TRANSCODE_JOB_WAITING_COUNT
 import com.tencent.bkrepo.common.metrics.constant.TRANSCODE_JOB_WAITING_COUNT_DESC
-import com.tencent.bkrepo.common.metrics.constant.TRANSCODE_JOB_YESTERDAY_STATUS_COUNT
-import com.tencent.bkrepo.common.metrics.constant.TRANSCODE_JOB_YESTERDAY_STATUS_COUNT_DESC
+import com.tencent.bkrepo.common.metrics.constant.TRANSCODE_JOB_LOOKBACK_STATUS_COUNT
+import com.tencent.bkrepo.common.metrics.constant.TRANSCODE_JOB_LOOKBACK_STATUS_COUNT_DESC
 import com.tencent.bkrepo.media.common.dao.MediaTranscodeJobDao
 import com.tencent.bkrepo.media.common.model.TMediaTranscodeJob
 import com.tencent.bkrepo.media.common.pojo.transcode.MediaTranscodeJobStatus
@@ -44,13 +44,13 @@ class TranscodeMetrics(
 ) : MeterBinder {
 
     /**
-     * 昨日创建任务按 (projectId, status) 缓存的计数
+     * 回看日期创建任务按 (projectId, status) 缓存的计数
      * key = "$projectId:$status", value = count
      */
-    private val yesterdayCache = ConcurrentHashMap<String, Double>()
+    private val lookbackCache = ConcurrentHashMap<String, Double>()
 
     /**
-     * 已注册的昨日 Gauge 的 key 集合，避免重复注册
+     * 已注册的回看周期 Gauge 的 key 集合，避免重复注册
      */
     private val registeredGaugeKeys = ConcurrentHashMap.newKeySet<String>()
 
@@ -121,10 +121,10 @@ class TranscodeMetrics(
     }
 
     /**
-     * 定时刷新昨日创建任务的按项目+状态统计缓存，每5分钟执行一次
+     * 定时刷新回看日期创建任务的按项目+状态统计缓存，每5分钟执行一次
      */
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
-    fun refreshYesterdayMetrics() {
+    fun refreshLookbackMetrics() {
         try {
             val results = mediaTranscodeJobDao.jobCountByProjectAndStatus(
                 mediaJobProperties.metricsLookbackDays
@@ -133,28 +133,28 @@ class TranscodeMetrics(
             for (result in results) {
                 val key = "${result.projectId}:${result.status}"
                 newKeys.add(key)
-                yesterdayCache[key] = result.count.toDouble()
+                lookbackCache[key] = result.count.toDouble()
                 // 动态注册 Gauge（首次出现的 key）
                 if (registeredGaugeKeys.add(key)) {
                     val projectId = result.projectId
                     val status = result.status
-                    Gauge.builder(TRANSCODE_JOB_YESTERDAY_STATUS_COUNT) {
-                        yesterdayCache.getOrDefault("$projectId:$status", 0.0)
+                    Gauge.builder(TRANSCODE_JOB_LOOKBACK_STATUS_COUNT) {
+                        lookbackCache.getOrDefault("$projectId:$status", 0.0)
                     }
-                        .description(TRANSCODE_JOB_YESTERDAY_STATUS_COUNT_DESC)
+                        .description(TRANSCODE_JOB_LOOKBACK_STATUS_COUNT_DESC)
                         .tag(TAG_PROJECT_ID, projectId)
                         .tag(TAG_STATUS, status)
                         .register(registry)
                 }
             }
             // 将不再出现的 key 置零
-            for (existingKey in yesterdayCache.keys) {
+            for (existingKey in lookbackCache.keys) {
                 if (existingKey !in newKeys) {
-                    yesterdayCache[existingKey] = 0.0
+                    lookbackCache[existingKey] = 0.0
                 }
             }
         } catch (e: Exception) {
-            logger.error("Failed to refresh yesterday transcode metrics", e)
+            logger.error("Failed to refresh lookback transcode metrics", e)
         }
     }
 
