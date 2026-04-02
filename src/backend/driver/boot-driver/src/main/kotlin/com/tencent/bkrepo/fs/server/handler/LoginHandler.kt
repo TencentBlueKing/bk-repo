@@ -31,6 +31,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PREFIX
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryVisibility
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
@@ -182,11 +183,15 @@ class LoginHandler(
 
     private suspend fun createToken(projectId: String, repoName: String, username: String): String {
         val claims = mutableMapOf(JWT_CLAIMS_REPOSITORY to "$projectId/$repoName")
+        val repoDetail = ReactiveArtifactContextHolder.getRepoDetail()
+        // 个人仓库仅允许 owner 本人访问
+        if (repoDetail.visibility == RepositoryVisibility.PERSONAL && repoDetail.owner != username) {
+            throw AuthenticationException("no permission to access personal repository")
+        }
         val writePermit = permissionService.checkPermission(projectId, repoName, PermissionAction.WRITE, username)
         if (writePermit) {
             claims[JWT_CLAIMS_PERMIT] = PermissionAction.WRITE.name
         } else {
-            val repoDetail = ReactiveArtifactContextHolder.getRepoDetail()
             val readPermit = repoDetail.public ||
                 permissionService.checkPermission(projectId, repoName, PermissionAction.READ, username)
             if (readPermit) {
