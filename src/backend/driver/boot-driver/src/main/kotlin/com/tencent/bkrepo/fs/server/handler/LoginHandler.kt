@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.metadata.client.RAuthClient
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXWorkSpace
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
@@ -186,7 +187,7 @@ class LoginHandler(
         val repoDetail = ReactiveArtifactContextHolder.getRepoDetail()
         // 个人仓库仅允许 owner 本人访问
         if (repoDetail.visibility == RepositoryVisibility.PERSONAL && repoDetail.owner != username) {
-            throw AuthenticationException("no permission to access personal repository")
+            throw PermissionException("no permission to access personal repository")
         }
         val writePermit = permissionService.checkPermission(projectId, repoName, PermissionAction.WRITE, username)
         if (writePermit) {
