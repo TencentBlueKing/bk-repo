@@ -18,14 +18,14 @@ export default {
 
     if (icon) {
       if (icon.includes('el-icon')) {
-        vnodes.push(<i class={[icon, 'sub-el-icon']} />)
+        vnodes.push(h('i', { class: [icon, 'sub-el-icon'] }))
       } else {
-        vnodes.push(<svg-icon icon-class={icon}/>)
+        vnodes.push(h('svg-icon', { attrs: { 'icon-class': icon } }))
       }
     }
 
     if (title) {
-      vnodes.push(<span slot='title'>{(title)}</span>)
+      vnodes.push(h('span', { slot: 'title' }, [title]))
     }
     return vnodes
   }
