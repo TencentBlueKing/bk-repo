@@ -261,6 +261,9 @@
                     { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse') },
                     this.permission.delete && { clickEvent: () => this.$emit('delete'), label: this.$t('delete') }
                 ]
+            },
+            projectId () {
+                return this.$route.params.projectId || ''
             }
         },
         watch: {

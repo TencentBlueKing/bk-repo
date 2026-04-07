@@ -116,6 +116,9 @@
         },
         computed: {
             ...mapState(['repoListAll', 'permission', 'userInfo']),
+            projectId () {
+                return this.$route.params.projectId || ''
+            },
             currentRepo () {
                 return this.repoListAll.find(repo => repo.name === this.repoName) || {}
             }
