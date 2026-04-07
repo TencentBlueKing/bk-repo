@@ -189,7 +189,7 @@
                                         ...(!row.folder && row.category !== 'REMOTE' ? [
                                             showShare() && { clickEvent: () => handlerShare(row), label: $t('share') },
                                             showRepoScan(row) && { clickEvent: () => handlerScan(row), label: $t('scanArtifact') }
-                                        ] : []),
+                                        ] : [])
                                     ] : []),
                                     !row.folder && row.category !== 'REMOTE' && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
                                     permission.delete && row.category !== 'REMOTE' && ((repoName === 'pipeline' && (userInfo.admin || userInfo.manage)) || repoName !== 'pipeline') && { clickEvent: () => deleteRes(row), label: $t('delete') }
@@ -483,9 +483,7 @@
                     this.selectCount = this.pagination.count
                 })
             },
-            showShare() {
-                console.log(this.projectShare)
-                console.log(!this.community && this.projectShare)
+            showShare () {
                 return !this.community && this.projectShare
             },
             showRepoScan (node) {
