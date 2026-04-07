@@ -187,9 +187,9 @@
                                             permission.write && { clickEvent: () => copyRes(row), label: $t('copy') }
                                         ] : []),
                                         ...(!row.folder && row.category !== 'REMOTE' ? [
-                                            !community && { clickEvent: () => handlerShare(row), label: $t('share') },
+                                            !community && projectShare && { clickEvent: () => handlerShare(row), label: $t('share') },
                                             showRepoScan(row) && { clickEvent: () => handlerScan(row), label: $t('scanArtifact') }
-                                        ] : [])
+                                        ] : []),
                                     ] : []),
                                     !row.folder && row.category !== 'REMOTE' && { clickEvent: () => handlerForbid(row), label: row.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
                                     permission.delete && row.category !== 'REMOTE' && ((repoName === 'pipeline' && (userInfo.admin || userInfo.manage)) || repoName !== 'pipeline') && { clickEvent: () => deleteRes(row), label: $t('delete') }
@@ -322,7 +322,8 @@
                 showMultiDelete: false,
                 selectedAll: false,
                 selectCount: 0,
-                multiMode: BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true'
+                multiMode: BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true',
+                projectShare: true
             }
         },
         computed: {
@@ -401,6 +402,9 @@
             } else next()
         },
         created () {
+            this.queryProjectShare({ id: this.projectId }).then(res => {
+                this.projectShare = res.data
+            })
             this.getRepoListAll({ projectId: this.projectId }).then(_ => {
                 if (!this.repoListAll.find(repo => repo.name === this.repoName)) {
                     this.$router.replace({ name: 'repositories', params: { projectId: this.projectId } })
@@ -442,7 +446,8 @@
                 'forbidMetadata',
                 'refreshSupportFileNameExtList',
                 'getMultiFolderNumOfFolder',
-                'getPermissionUrl'
+                'getPermissionUrl',
+                'queryProjectShare'
             ]),
             cancelSelect () {
                 sessionStorage.removeItem(this.userInfo.name + 'SelectedPaths')
