@@ -187,7 +187,7 @@
                                             permission.write && { clickEvent: () => copyRes(row), label: $t('copy') }
                                         ] : []),
                                         ...(!row.folder && row.category !== 'REMOTE' ? [
-                                            !community && projectShare && { clickEvent: () => handlerShare(row), label: $t('share') },
+                                            showShare() && { clickEvent: () => handlerShare(row), label: $t('share') },
                                             showRepoScan(row) && { clickEvent: () => handlerScan(row), label: $t('scanArtifact') }
                                         ] : []),
                                     ] : []),
@@ -381,6 +381,9 @@
         },
         watch: {
             projectId () {
+                this.queryProjectShare({ id: this.projectId }).then(res => {
+                    this.projectShare = res.data
+                })
                 this.getRepoListAll({ projectId: this.projectId })
             },
             repoName () {
@@ -402,11 +405,6 @@
             } else next()
         },
         created () {
-            this.queryProjectShare({ id: this.projectId }).then(res => {
-                this.projectShare = res.data
-            })
-            console.log(this.projectShare)
-            console.log(!this.community && this.projectShare)
             this.getRepoListAll({ projectId: this.projectId }).then(_ => {
                 if (!this.repoListAll.find(repo => repo.name === this.repoName)) {
                     this.$router.replace({ name: 'repositories', params: { projectId: this.projectId } })
@@ -484,6 +482,11 @@
                     this.selectedAll = true
                     this.selectCount = this.pagination.count
                 })
+            },
+            showShare() {
+                console.log(this.projectShare)
+                console.log(!this.community && this.projectShare)
+                return !this.community && this.projectShare
             },
             showRepoScan (node) {
                 const indexOfLastDot = node.name.lastIndexOf('.')
