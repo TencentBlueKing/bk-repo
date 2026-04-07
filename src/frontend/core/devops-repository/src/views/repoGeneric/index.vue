@@ -405,6 +405,8 @@
             this.queryProjectShare({ id: this.projectId }).then(res => {
                 this.projectShare = res.data
             })
+            console.log(this.projectShare)
+            console.log(!this.community && this.projectShare)
             this.getRepoListAll({ projectId: this.projectId }).then(_ => {
                 if (!this.repoListAll.find(repo => repo.name === this.repoName)) {
                     this.$router.replace({ name: 'repositories', params: { projectId: this.projectId } })
