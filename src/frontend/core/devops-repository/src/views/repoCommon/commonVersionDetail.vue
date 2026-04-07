@@ -262,7 +262,7 @@
                     this.permission.delete && { clickEvent: () => this.$emit('delete'), label: this.$t('delete') }
                 ]
             },
-            projectId () {
+            originProjectId () {
                 return this.$route.params.projectId || ''
             }
         },
@@ -290,7 +290,7 @@
             getDetail () {
                 this.isLoading = true
                 this.getVersionDetail({
-                    projectId: this.projectId,
+                    projectId: this.originProjectId,
                     repoType: this.repoType,
                     repoName: this.repoName,
                     packageKey: this.packageKey,
