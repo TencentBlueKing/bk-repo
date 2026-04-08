@@ -34,6 +34,7 @@ import java.util.concurrent.Executors
 @Conditional(ReactiveCondition::class)
 class DriveSnapSeqService(
     private val driveSnapSeqDao: RDriveSnapSeqDao,
+    private val driveRepositoryInitService: DriveRepositoryInitService,
 ) {
     private val refreshExecutor = Executors.newFixedThreadPool(
         1,
@@ -48,11 +49,12 @@ class DriveSnapSeqService(
         .expireAfterWrite(Duration.ofSeconds(CACHE_EXPIRE_SECONDS))
         .maximumSize(MAXIMUM_CACHE_SIZE)
         .buildAsync { key, _ ->
-            mono(refreshDispatcher) { queryLatestSnapSeq(key.projectId, key.repoName).snapSeq }.toFuture()
+            mono(refreshDispatcher) { getOrInitLatestSnapSeq(key.projectId, key.repoName).snapSeq }.toFuture()
         }
 
     /**
-     * 查询仓库当前快照序列号，不存在时抛出异常。
+     * 查询仓库当前快照序列号。
+     * 若仓库尚未完成 Drive 资源初始化，则自动初始化后返回快照序列号。
      */
     suspend fun getLatestSnapSeq(projectId: String, repoName: String, fromCache: Boolean = true): Long {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
@@ -60,7 +62,7 @@ class DriveSnapSeqService(
             val cacheKey = SnapSeqCacheKey(projectId, repoName)
             snapSeqCache.get(cacheKey).toMono().awaitSingle()
         } else {
-            queryLatestSnapSeq(projectId, repoName).snapSeq
+            getOrInitLatestSnapSeq(projectId, repoName).snapSeq
         }
     }
 
@@ -116,6 +118,16 @@ class DriveSnapSeqService(
             .and(TDriveSnapSeq::repoName.name).isEqualTo(repoName)
         return driveSnapSeqDao.findOne(Query(criteria))
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, "drive snapSeq[$projectId/$repoName]")
+    }
+
+    private suspend fun getOrInitLatestSnapSeq(projectId: String, repoName: String): TDriveSnapSeq {
+        return try {
+            queryLatestSnapSeq(projectId, repoName)
+        } catch (_: NotFoundException) {
+            logger.info("Drive snapSeq[$projectId/$repoName] not found, initialize repository and retry.")
+            driveRepositoryInitService.ensureInitialized(projectId, repoName)
+            queryLatestSnapSeq(projectId, repoName)
+        }
     }
 
     @PreDestroy
