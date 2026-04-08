@@ -116,12 +116,15 @@
         },
         computed: {
             ...mapState(['repoListAll', 'permission', 'userInfo']),
+            originProjectId () {
+                return this.$route.params.projectId || ''
+            },
             currentRepo () {
                 return this.repoListAll.find(repo => repo.name === this.repoName) || {}
             }
         },
         created () {
-            this.getRepoListAll({ projectId: this.projectId })
+            this.getRepoListAll({ projectId: this.originProjectId })
             this.handlerPaginationChange()
         },
         methods: {
@@ -155,7 +158,7 @@
                 if (this.isLoading) return
                 this.isLoading = !load
                 return this.searchPackageList({
-                    projectId: this.projectId,
+                    projectId: this.originProjectId,
                     repoType: this.repoType,
                     repoName: this.repoName,
                     packageName: this.packageNameVal,
@@ -170,7 +173,7 @@
                     if (err.status === 403) {
                         this.getPermissionUrl({
                             body: {
-                                projectId: this.projectId,
+                                projectId: this.originProjectId,
                                 action: 'READ',
                                 resourceType: 'REPO',
                                 uid: this.userInfo.name,
@@ -180,7 +183,7 @@
                             if (res !== '') {
                                 this.showIamDenyDialog = true
                                 this.showData = {
-                                    projectId: this.projectId,
+                                    projectId: this.originProjectId,
                                     repoName: this.repoName,
                                     action: 'READ',
                                     url: res
@@ -199,7 +202,7 @@
                     subMessage: pkg.key,
                     confirmFn: () => {
                         return this.deletePackage({
-                            projectId: this.projectId,
+                            projectId: this.originProjectId,
                             repoType: this.repoType,
                             repoName: this.repoName,
                             packageKey: pkg.key
@@ -213,7 +216,7 @@
                             if (e.status === 403) {
                                 this.getPermissionUrl({
                                     body: {
-                                        projectId: this.projectId,
+                                        projectId: this.originProjectId,
                                         action: 'DELETE',
                                         resourceType: 'REPO',
                                         uid: this.userInfo.name,
@@ -223,7 +226,7 @@
                                     if (res !== '') {
                                         this.showIamDenyDialog = true
                                         this.showData = {
-                                            projectId: this.projectId,
+                                            projectId: this.originProjectId,
                                             repoName: this.repoName,
                                             action: 'DELETE',
                                             packageName: pkg.name,
