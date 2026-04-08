@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
  * Copyright (C) 2020 Tencent.  All rights reserved.
@@ -43,6 +43,7 @@ import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.oci.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.oci.constant.OCI_API_SUFFIX
 import com.tencent.bkrepo.oci.constant.OCI_FILTER_ENDPOINT
+import com.tencent.bkrepo.oci.util.OciNameAliasCodec
 import com.tencent.bkrepo.oci.util.TimeUtil
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -93,9 +94,12 @@ class OciLoginAuthHandler(
             val scope = request.getParameterValues("scope")?.firstOrNull() ?: throw authenticationException
             val scopeValues = scope.split(":")
             val values = scopeValues[1].split("/")
-            val repositoryId = RepositoryId(values[0], values[1])
+            val repositoryId = RepositoryId(
+                OciNameAliasCodec.decodeSegment(values[0]),
+                OciNameAliasCodec.decodeSegment(values[1])
+            )
             val repo = ArtifactContextHolder.getRepoDetail(repositoryId)
-            // 针对仓库类型的为public的，允许下载。
+            // 针对仓库类型为public的，允许下载。
             if (repo.public) {
                 logger.info("empty user pull,push ,change to  [$this]")
                 return onAuthenticateSuccess(request, response, ANONYMOUS_USER)
