@@ -194,8 +194,8 @@ class RepositoryServiceHelper(
                     request.storageCredentialsKey
                 } else if (repoStorageMapping.names.containsKey(request.name)) {
                     repoStorageMapping.names[request.name]
-                } else if (repoStorageMapping.types.containsKey(request.type)) {
-                    repoStorageMapping.types[request.type]
+                } else if (repoStorageMapping.types.containsKey(request.type.name)) {
+                    repoStorageMapping.types[request.type.name]
                 } else if (!projectCredentialsKey.isNullOrEmpty()) {
                     projectCredentialsKey
                 } else {

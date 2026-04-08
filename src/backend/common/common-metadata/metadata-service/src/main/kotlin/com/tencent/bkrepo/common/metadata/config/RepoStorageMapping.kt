@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.common.metadata.config
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 
 /**
  * 仓库-存储映射
@@ -47,5 +46,5 @@ data class RepoStorageMapping(
     /**
      * 仓库类型-存储映射
      */
-    var types: MutableMap<RepositoryType, String> = mutableMapOf()
+    var types: MutableMap<String, String> = mutableMapOf()
 )
