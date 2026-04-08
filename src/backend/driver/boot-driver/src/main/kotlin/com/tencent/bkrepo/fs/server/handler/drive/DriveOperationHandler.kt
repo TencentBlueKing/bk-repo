@@ -96,7 +96,7 @@ class DriveOperationHandler(
         val currentCount = ongoingWriteRequestCount.incrementAndGet()
         if (currentCount > limit) {
             ongoingWriteRequestCount.decrementAndGet()
-            throw TooManyRequestsException("drive.writeRequestLimit[$limit]")
+            throw TooManyRequestsException()
         }
         return true
     }
