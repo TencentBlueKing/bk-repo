@@ -4,7 +4,6 @@ import './webpack_public_path'
 import Vue from 'vue'
 import axios from 'axios'
 import cookies from 'js-cookie'
-import BkUserDisplayName from '@blueking/bk-user-display-name'
 import * as VueDemi from 'vue-demi'
 import { defineComponent } from '@vue/composition-api'
 import VueCompositionAPI from '@vue/composition-api'
@@ -49,6 +48,7 @@ async function setDisplayNamePlugin () {
     if (BK_REPO_ENABLE_MULTI_TENANT_MODE !== 'true') return
     try {
         const { data } = await axios.get(window.BK_SUBPATH + 'web/auth/api/user/info')
+        const { default: BkUserDisplayName } = await import('@blueking/bk-user-display-name');
         BkUserDisplayName.configure({
             tenantId: data.data.tenantId,
             apiBaseUrl: API_BASE_URL,
