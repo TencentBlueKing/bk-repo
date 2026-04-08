@@ -10,6 +10,7 @@ import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.fs.server.model.drive.TDriveSnapSeq
 import com.tencent.bkrepo.fs.server.repository.drive.RDriveSnapSeqDao
 import com.tencent.bkrepo.fs.server.utils.DriveServiceUtils
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import jakarta.annotation.PreDestroy
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.reactor.awaitSingle
@@ -125,7 +126,7 @@ class DriveSnapSeqService(
             queryLatestSnapSeq(projectId, repoName)
         } catch (_: NotFoundException) {
             logger.info("Drive snapSeq[$projectId/$repoName] not found, initialize repository and retry.")
-            driveRepositoryInitService.ensureInitialized(projectId, repoName)
+            driveRepositoryInitService.ensureInitialized(projectId, repoName, SYSTEM_USER)
             queryLatestSnapSeq(projectId, repoName)
         }
     }
