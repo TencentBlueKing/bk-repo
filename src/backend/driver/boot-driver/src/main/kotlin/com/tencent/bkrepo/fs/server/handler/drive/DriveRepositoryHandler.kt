@@ -2,8 +2,11 @@ package com.tencent.bkrepo.fs.server.handler.drive
 
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
+import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.fs.server.service.drive.DriveRepositoryService
+import com.tencent.bkrepo.fs.server.service.PermissionService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
@@ -14,6 +17,7 @@ import org.springframework.web.reactive.function.server.ServerResponse
 @Component
 class DriveRepositoryHandler(
     private val driveRepositoryService: DriveRepositoryService,
+    private val permissionService: PermissionService,
 ) {
 
     /**
@@ -24,6 +28,10 @@ class DriveRepositoryHandler(
      * 2. 仓库异常状态的修复
      */
     suspend fun initRepository(request: ServerRequest): ServerResponse {
+        val userId = ReactiveSecurityUtils.getUser()
+        if (!permissionService.checkAdmin(userId)) {
+            throw PermissionException()
+        }
         val projectId = request.pathVariable(PROJECT_ID)
         val repoName = request.pathVariable(REPO_NAME)
         driveRepositoryService.initDriveRepository(projectId, repoName)
