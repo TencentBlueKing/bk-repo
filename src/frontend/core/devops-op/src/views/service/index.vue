@@ -7,7 +7,7 @@
       <el-table-column
         prop="name"
         label="服务名"
-        width="180"
+        width="280"
       />
       <el-table-column
         prop="instances"
@@ -18,6 +18,16 @@
           {{ scope.row.instances ? scope.row.instances.length: 0 }}
         </template>
       </el-table-column>
+      <el-table-column
+        prop="onlineNumber"
+        label="在线实例数"
+        width="180"
+      />
+      <el-table-column
+        prop="offlineNumber"
+        label="离线实例数"
+        width="180"
+      />
       <el-table-column label="操作">
         <template slot-scope="scope">
           <el-button type="primary" size="mini" @click="toInstance(scope.row.name)">详情</el-button>
