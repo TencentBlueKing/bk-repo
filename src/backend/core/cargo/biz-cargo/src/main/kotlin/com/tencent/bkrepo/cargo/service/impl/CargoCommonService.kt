@@ -29,12 +29,14 @@ package com.tencent.bkrepo.cargo.service.impl
 
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoDeleteArtifactInfo
+import com.tencent.bkrepo.cargo.pojo.base.CargoMetadata
 import com.tencent.bkrepo.cargo.pojo.index.CrateIndex
 import com.tencent.bkrepo.cargo.pojo.json.CrateJsonData
 import com.tencent.bkrepo.cargo.service.impl.CargoExtServiceImpl.Companion.PAGE_SIZE
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoFileFolder
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoFileFullPath
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoIndexFullPath
+import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoMetadataFullPath
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoJsonFullPath
 import com.tencent.bkrepo.cargo.utils.ObjectBuilderUtil.buildMetadataSaveRequest
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -96,6 +98,9 @@ class CargoCommonService {
     @Autowired
     lateinit var nodeSearchService: NodeSearchService
 
+    @Autowired
+    lateinit var cargoDependencyService: CargoDependencyService
+
     /**
      * 针对自旋达到次数后，还没有获取到锁的情况默认也会执行所传入的方法,确保业务流程不中断
      */
@@ -132,6 +137,14 @@ class CargoCommonService {
         val inputStream = getStreamOfCrate(projectId, repoName, fullPath)
         return inputStream?.use {
             JsonUtils.objectMapper.readValue(it, CrateJsonData::class.java)
+        }
+    }
+
+    fun getMetadataOfCrate(projectId: String, repoName: String, crateName: String, version: String): CargoMetadata? {
+        val fullPath = getCargoMetadataFullPath(crateName, version)
+        val inputStream = getStreamOfCrate(projectId, repoName, fullPath)
+        return inputStream?.use {
+            JsonUtils.objectMapper.readValue(it, CargoMetadata::class.java)
         }
     }
 
@@ -243,9 +256,11 @@ class CargoCommonService {
     ) {
         packageService.deleteVersion(projectId, repoName, packageKey, version)
         val packageName = PackageKeys.resolveCargo(packageKey)
+        cargoDependencyService.removeByPackageVersion(projectId, repoName, packageName, version)
         val deletedNodes = listOf(
             getCargoFileFullPath(packageName, version),
-            getCargoJsonFullPath(packageName, version)
+            getCargoJsonFullPath(packageName, version),
+            getCargoMetadataFullPath(packageName, version)
         )
         deletedNodes.forEach {
             if (it.isNotBlank()) {
