@@ -74,8 +74,10 @@ class KubernetesServiceDiscovery(
     logger.info("targetDetails is $targetDetails")
     return targetDetails.map { service->
        ServiceInfo(
-         name = service.serviceName,
-         instances = service.details.map {
+           name = service.serviceName,
+           onlineNumber = targetDetails.size,
+           offlineNumber = 0,
+           instances = service.details.map {
            buildInfo(it, service.serviceName)
          }
        )
