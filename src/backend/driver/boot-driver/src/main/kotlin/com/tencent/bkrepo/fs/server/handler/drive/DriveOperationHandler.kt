@@ -5,8 +5,8 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
-import com.tencent.bkrepo.fs.server.config.properties.drive.DriveProperties
 import com.tencent.bkrepo.fs.server.bodyToArtifactFile
+import com.tencent.bkrepo.fs.server.config.properties.drive.DriveProperties
 import com.tencent.bkrepo.fs.server.request.drive.DriveBlockRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveBlockWriteRequest
 import com.tencent.bkrepo.fs.server.resolveRange
@@ -70,7 +70,9 @@ class DriveOperationHandler(
 
             // 检查node是否已经被变更
             request.headers().firstHeader(HEADER_IF_MATCH)?.let { lastModifiedDate ->
-                val node = driveNodeService.getNodeByIno(blockRequest.projectId, blockRequest.repoName, blockRequest.ino)
+                val node = driveNodeService.getNodeByIno(
+                    blockRequest.projectId, blockRequest.repoName, blockRequest.ino
+                )
                 if (node.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME) != lastModifiedDate) {
                     throw ErrorCodeException(
                         status = HttpStatus.PRECONDITION_FAILED,
