@@ -27,13 +27,13 @@
 
 package com.tencent.bkrepo.job.separation.executor
 
-import com.tencent.bkrepo.job.SEPARATE
-import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
-import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
-import com.tencent.bkrepo.job.separation.pojo.record.SeparationContext
-import com.tencent.bkrepo.job.separation.service.DataRestorer
-import com.tencent.bkrepo.job.separation.service.DataSeparator
-import com.tencent.bkrepo.job.separation.util.SeparationUtils
+import com.tencent.bkrepo.common.metadata.config.DataSeparationConfig
+import com.tencent.bkrepo.common.metadata.dao.separation.SeparationTaskDao
+import com.tencent.bkrepo.common.metadata.pojo.separation.record.SeparationContext
+import com.tencent.bkrepo.common.metadata.service.separation.DataRestorer
+import com.tencent.bkrepo.common.metadata.service.separation.DataSeparator
+import com.tencent.bkrepo.common.metadata.service.separation.impl.SeparationTaskServiceImpl.Companion.SEPARATE
+import com.tencent.bkrepo.common.metadata.util.SeparationUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.util.concurrent.ThreadPoolExecutor

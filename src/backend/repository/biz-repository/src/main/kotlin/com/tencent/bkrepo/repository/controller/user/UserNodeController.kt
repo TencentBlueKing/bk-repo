@@ -201,10 +201,11 @@ class UserNodeController(
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
     ): Response<NodeDeleteResult> {
         with(artifactInfo) {
+            val fullPath = getArtifactFullPath()
             val deleteRequest = NodeDeleteRequest(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = getArtifactFullPath(),
+                fullPath = fullPath,
                 operator = userId,
             )
             ActionAuditContext.current().setInstance(deleteRequest)
@@ -683,7 +684,7 @@ class UserNodeController(
     ): Response<List<String>> {
         with(request) {
             permissionManager.checkRepoPermission(PermissionAction.MANAGE, projectId, repoName, userId = userId)
-            return ResponseBuilder.success (
+            return ResponseBuilder.success(
                 fullPaths.filter { nodeService.checkFolderExists(projectId, repoName, it) }
             )
         }

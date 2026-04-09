@@ -30,21 +30,22 @@ package com.tencent.bkrepo.job.separation.listener
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.job.RESTORE
-import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
-import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
-import com.tencent.bkrepo.job.separation.dao.SeparationPackageDao
-import com.tencent.bkrepo.job.separation.dao.SeparationPackageVersionDao
-import com.tencent.bkrepo.job.separation.model.TSeparationNode
-import com.tencent.bkrepo.job.separation.model.TSeparationPackageVersion
-import com.tencent.bkrepo.job.separation.pojo.NodeFilterInfo
-import com.tencent.bkrepo.job.separation.pojo.PackageFilterInfo
-import com.tencent.bkrepo.job.separation.pojo.RecoveryNodeInfo
-import com.tencent.bkrepo.job.separation.pojo.RecoveryVersionInfo
-import com.tencent.bkrepo.job.separation.pojo.SeparationContent
-import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskRequest
-import com.tencent.bkrepo.job.separation.service.SeparationTaskService
-import com.tencent.bkrepo.job.separation.service.impl.repo.RepoSpecialSeparationMappings
+import com.tencent.bkrepo.common.metadata.config.DataSeparationConfig
+import com.tencent.bkrepo.common.metadata.dao.separation.SeparationNodeDao
+import com.tencent.bkrepo.common.metadata.dao.separation.SeparationPackageDao
+import com.tencent.bkrepo.common.metadata.dao.separation.SeparationPackageVersionDao
+import com.tencent.bkrepo.common.metadata.model.TSeparationNode
+import com.tencent.bkrepo.common.metadata.model.TSeparationPackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.separation.NodeFilterInfo
+import com.tencent.bkrepo.common.metadata.pojo.separation.PackageFilterInfo
+import com.tencent.bkrepo.common.metadata.pojo.separation.RecoveryNodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.separation.RecoveryVersionInfo
+import com.tencent.bkrepo.common.metadata.pojo.separation.SeparationContent
+import com.tencent.bkrepo.common.metadata.pojo.separation.task.SeparationTaskRequest
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationTaskService
+import com.tencent.bkrepo.common.metadata.service.separation.impl.SeparationTaskServiceImpl.Companion.RESTORE
+import com.tencent.bkrepo.common.metadata.service.separation.impl.SeparationTaskServiceImpl.Companion.RESTORE_ARCHIVED
+import com.tencent.bkrepo.common.metadata.service.separation.impl.repo.RepoSpecialSeparationMappings
 import org.slf4j.LoggerFactory
 import org.springframework.messaging.Message
 import org.springframework.stereotype.Component
@@ -101,7 +102,9 @@ class SeparationRecoveryEventConsumer(
             }
             RepositoryType.GENERIC.name -> {
                 val node = recoveryNodeCheck(recoveryNodeInfo) ?: return
-                buildNodeSeparationTaskRequest(recoveryNodeInfo, node)
+                // 根据节点是否为归档节点选择任务类型
+                val taskType = if (node.archived == true) RESTORE_ARCHIVED else RESTORE
+                buildNodeSeparationTaskRequest(recoveryNodeInfo, node, taskType)
             }
             else -> {
                 null
@@ -158,20 +161,21 @@ class SeparationRecoveryEventConsumer(
             projectId = recoveryVersionInfo.projectId,
             repoName = recoveryVersionInfo.repoName,
             type = RESTORE,
-            separateAt = separationPackageVersion.separationDate.format(DateTimeFormatter.ISO_DATE_TIME),
+            separateAt = separationPackageVersion.separationDate?.format(DateTimeFormatter.ISO_DATE_TIME) ?: "",
             content = buildSeparationContent(recoveryVersionInfo.packageKey, separationPackageVersion.name)!!
         )
     }
 
     private fun buildNodeSeparationTaskRequest(
         recoveryNodeInfo: RecoveryNodeInfo,
-        separationNode: TSeparationNode
+        separationNode: TSeparationNode,
+        taskType: String = RESTORE
     ): SeparationTaskRequest {
         return SeparationTaskRequest(
             projectId = recoveryNodeInfo.projectId,
             repoName = recoveryNodeInfo.repoName,
-            type = RESTORE,
-            separateAt = separationNode.separationDate.format(DateTimeFormatter.ISO_DATE_TIME),
+            type = taskType,
+            separateAt = separationNode.separationDate?.format(DateTimeFormatter.ISO_DATE_TIME) ?: "",
             content = buildSeparationContent(fullPath = separationNode.fullPath)!!
         )
     }

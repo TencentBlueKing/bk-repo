@@ -1,9 +1,11 @@
 package com.tencent.bkrepo.job.separation.service.impl
 
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
-import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
-import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
-import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
+import com.tencent.bkrepo.common.metadata.config.DataSeparationConfig
+import com.tencent.bkrepo.common.metadata.dao.separation.SeparationFailedRecordDao
+import com.tencent.bkrepo.common.metadata.dao.separation.SeparationTaskDao
+import com.tencent.bkrepo.common.metadata.service.separation.impl.SeparationTaskServiceImpl
+import com.tencent.bkrepo.common.metadata.util.SeparationUtils
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -25,13 +27,12 @@ class SeparationTaskServiceImplTest {
     private lateinit var separationTaskDao: SeparationTaskDao
     private lateinit var separationFailedRecordDao: SeparationFailedRecordDao
     private lateinit var mongoTemplate: MongoTemplate
-    private lateinit var matchesConfigReposMethod: Method
     private lateinit var isProjectAllowedForSeparationMethod: Method
     private lateinit var separationTaskService: SeparationTaskServiceImpl
 
     @BeforeAll
     fun commonMock() {
-        dataSeparationConfig = mockk() // 显式初始化 Mock 对象
+        dataSeparationConfig = mockk()
         repositoryService = mockk()
         separationTaskDao = mockk()
         separationFailedRecordDao = mockk()
@@ -40,12 +41,6 @@ class SeparationTaskServiceImplTest {
         separationTaskService = SeparationTaskServiceImpl(
             dataSeparationConfig, repositoryService, separationTaskDao, separationFailedRecordDao, mongoTemplate
         )
-        matchesConfigReposMethod = SeparationTaskServiceImpl::class.java.getDeclaredMethod(
-            "matchesConfigRepos",
-            String::class.java,
-            List::class.java
-        )
-        matchesConfigReposMethod.isAccessible = true
 
         isProjectAllowedForSeparationMethod = SeparationTaskServiceImpl::class.java.getDeclaredMethod(
             "isProjectAllowedForSeparation",
@@ -55,10 +50,10 @@ class SeparationTaskServiceImplTest {
     }
 
     /**
-     * 调用私有方法matchesConfigRepos的辅助方法
+     * matchesConfigRepos 已提取为 SeparationUtils 的公共方法，直接调用
      */
     private fun callMatchesConfigRepos(projectRepoKey: String, configRepos: List<String>): Boolean {
-        return matchesConfigReposMethod.invoke(separationTaskService, projectRepoKey, configRepos) as Boolean
+        return SeparationUtils.matchesConfigRepos(projectRepoKey, configRepos)
     }
 
     /**
@@ -341,14 +336,13 @@ class SeparationTaskServiceImplTest {
     @Test
     @DisplayName("测试项目模式匹配 - 通配符逻辑")
     fun testMatchesProjectPattern() {
-        // 使用反射调用私有方法进行测试
         val method = SeparationTaskServiceImpl::class.java.getDeclaredMethod(
-            "matchesProjectPattern", 
-            String::class.java, 
+            "matchesProjectPattern",
+            String::class.java,
             String::class.java
         )
         method.isAccessible = true
-        
+
         fun callMatchesProjectPattern(projectId: String, pattern: String): Boolean {
             return method.invoke(separationTaskService, projectId, pattern) as Boolean
         }
