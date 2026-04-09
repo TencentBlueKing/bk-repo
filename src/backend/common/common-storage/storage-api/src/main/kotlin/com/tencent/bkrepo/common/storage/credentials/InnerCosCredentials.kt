@@ -54,6 +54,10 @@ data class InnerCosCredentials(
     var inner: Boolean = false,
     var slowLogSpeed: Int = MB,
     var slowLogTimeInMillis: Long = 30_000,
+    /**
+     * 分片上传/下载阈值，单位 MB
+     */
+    var multipartThreshold: Long = 10,
     var download: DownloadProperties = DownloadProperties(),
     override var key: String? = null,
     override var cache: CacheProperties = CacheProperties(),
