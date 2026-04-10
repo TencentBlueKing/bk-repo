@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.security.interceptor.devx.DevXWorkSpace
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
+import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 import com.tencent.bkrepo.fs.server.pojo.DevxLoginResponse
 import com.tencent.bkrepo.fs.server.request.DevxLoginRequest
 import com.tencent.bkrepo.fs.server.request.IoaLoginRequest
@@ -215,6 +216,9 @@ class LoginHandler(
     }
 
     private suspend fun createToken(projectId: String, repoName: String, username: String): String {
+        val attributes = ReactiveRequestContextHolder.getWebExchange().attributes
+        attributes[PROJECT_ID] = projectId
+        attributes[REPO_NAME] = repoName
         val claims = mutableMapOf(JWT_CLAIMS_REPOSITORY to "$projectId/$repoName")
         val repoDetail = ReactiveArtifactContextHolder.getRepoDetail()
         // 个人仓库仅允许 owner 本人访问
