@@ -29,6 +29,8 @@ package com.tencent.bkrepo.common.ratelimiter.rule
 
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.rule.common.PathNode
+import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
+import com.tencent.bkrepo.common.ratelimiter.rule.common.ResLimitInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.utils.ResourcePathUtils
 import org.slf4j.Logger
@@ -45,10 +47,35 @@ import java.util.regex.Pattern
 open class PathResourceLimitRule(
     private val root: PathNode = PathNode("/"),
     private val pathLengthCheck: Boolean = false
-) {
+) : RateLimitRule {
 
-    fun isEmpty(): Boolean {
+    override fun isEmpty(): Boolean {
         return root.getEdges().isEmpty() && root.getResourceLimit() == null
+    }
+
+    override fun getRateLimitRule(resInfo: ResInfo): ResLimitInfo? {
+        val resourceLimit = getPathResourceLimit(resInfo.resource) ?: return null
+        return ResLimitInfo(resInfo.resource, resourceLimit)
+    }
+
+    override fun addRateLimitRule(resourceLimit: ResourceLimit) {
+        val resourcePath = resourceLimit.resource
+        if (!resourcePath.startsWith("/")) {
+            throw InvalidResourceException(resourcePath)
+        }
+        addPathNode(resourcePath, resourceLimit)
+    }
+
+    override fun addRateLimitRules(resourceLimit: List<ResourceLimit>) {
+        resourceLimit.forEach { addRateLimitRule(it) }
+    }
+
+    override fun filterResourceLimit(resourceLimit: ResourceLimit) {
+        // 默认不过滤
+    }
+
+    open fun ignore(resInfo: ResInfo): Boolean {
+        return false
     }
 
     /**
@@ -66,7 +93,7 @@ open class PathResourceLimitRule(
         addPathNode(resourcePath, resourceLimit)
     }
 
-    fun addPathResourceLimits(resourceLimits: List<ResourceLimit>, limits: List<String>) {
+    private fun addPathResourceLimits(resourceLimits: List<ResourceLimit>, limits: List<String>) {
         resourceLimits.forEach {
             addPathResourceLimit(it, limits)
         }
@@ -92,10 +119,10 @@ open class PathResourceLimitRule(
 
     private fun findResourceLimit(pathDirs: List<String>): ResourceLimit? {
         var p = root
-        var currentLimit: ResourceLimit? = null
-        if (p.getResourceLimit() != null) {
-            currentLimit = p.getResourceLimit()
-        }
+        // 收集遍历路径上所有命中的规则，包括根节点
+        val matchedLimits = mutableListOf<ResourceLimit>()
+        p.getResourceLimit()?.let { matchedLimits.add(it) }
+
         for (path in pathDirs) {
             val children = p.getEdges()
             var matchedNode = children[path]
@@ -109,18 +136,23 @@ open class PathResourceLimitRule(
                 break
             }
             p = matchedNode
-            if (matchedNode.getResourceLimit() != null) {
-                currentLimit = matchedNode.getResourceLimit()
+            matchedNode.getResourceLimit()?.let { matchedLimits.add(it) }
+        }
+
+        // 同优先级时越深（越晚加入列表）的规则越具体，用 >= 使后来者覆盖
+        val selectByPriority: (List<ResourceLimit>) -> ResourceLimit? = { candidates ->
+            candidates.reduceOrNull { acc, limit ->
+                if (limit.priority >= acc.priority) limit else acc
             }
         }
-        if (pathLengthCheck) {
-            return if (pathLengthCheck(currentLimit, pathDirs.size)) {
-                currentLimit
-            } else {
-                null
-            }
+
+        return if (pathLengthCheck) {
+            // pathLengthCheck=true 时仅考虑路径深度与请求完全匹配的规则，再按 priority 选最优
+            // 避免高 priority 浅层规则被选中后被 pathLengthCheck 拒绝导致规则完全失效
+            selectByPriority(matchedLimits.filter { pathLengthCheck(it, pathDirs.size) })
+        } else {
+            selectByPriority(matchedLimits)
         }
-        return currentLimit
     }
 
     private fun pathLengthCheck(currentLimit: ResourceLimit?, pathDirSize: Int): Boolean {

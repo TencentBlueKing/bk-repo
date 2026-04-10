@@ -68,10 +68,10 @@ class DistributedTokenBucketRateLimiterTest : DistributedTest() {
     @Test
     fun testTryAcquireOnMultiThreads() {
         val key = KEY + "testTryAcquireOnMultiThreads"
-        var ratelimiter = DistributedTokenBucketRateLimiter(key, 5.0, 5, redisTemplate)
-        var successNum = 0
-        var failedNum = 0
-        var errorNum = 0
+        val ratelimiter = DistributedTokenBucketRateLimiter(key, 5.0, 5, redisTemplate)
+        val successNum = java.util.concurrent.atomic.AtomicInteger(0)
+        val failedNum = java.util.concurrent.atomic.AtomicInteger(0)
+        val errorNum = java.util.concurrent.atomic.AtomicInteger(0)
         val readers = Runtime.getRuntime().availableProcessors()
         val countDownLatch = CountDownLatch(readers)
         val elapsedTime = measureTimeMillis {
@@ -80,12 +80,12 @@ class DistributedTokenBucketRateLimiterTest : DistributedTest() {
                     try {
                         val passed = ratelimiter.tryAcquire(1)
                         if (passed) {
-                            successNum++
+                            successNum.incrementAndGet()
                         } else {
-                            failedNum++
+                            failedNum.incrementAndGet()
                         }
                     } catch (e: Exception) {
-                        errorNum++
+                        errorNum.incrementAndGet()
                     }
                     countDownLatch.countDown()
                 }
@@ -93,7 +93,9 @@ class DistributedTokenBucketRateLimiterTest : DistributedTest() {
         }
         countDownLatch.await()
         println("elapse: ${HumanReadable.time(elapsedTime, TimeUnit.MILLISECONDS)}")
-        println("successNum $successNum, failedNum $failedNum. errorNum $errorNum")
+        println("successNum ${successNum.get()}, failedNum ${failedNum.get()}. errorNum ${errorNum.get()}")
+        Assertions.assertEquals(0, errorNum.get())
+        Assertions.assertEquals(readers, successNum.get() + failedNum.get())
         clean(key)
     }
 
