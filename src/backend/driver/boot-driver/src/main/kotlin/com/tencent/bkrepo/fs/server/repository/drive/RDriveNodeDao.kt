@@ -62,12 +62,22 @@ class RDriveNodeDao : DriveHashShardingMongoReactiveDao<TDriveNode>() {
         return findOne(Query(criteria))
     }
 
-    suspend fun findByProjectIdAndRepoNameAndIno(projectId: String, repoName: String, ino: Long): TDriveNode? {
+    suspend fun findByProjectIdAndRepoNameAndIno(
+        projectId: String,
+        repoName: String,
+        ino: Long,
+        snapSeq: Long? = null,
+    ): TDriveNode? {
         val criteria = where(TDriveNode::projectId).isEqualTo(projectId)
             .and(TDriveNode::repoName).isEqualTo(repoName)
             .and(TDriveNode::ino).isEqualTo(ino)
-            .and(TDriveNode::deleteSnapSeq).isEqualTo(Long.MAX_VALUE)
-            .and(TDriveNode::deleted).isNull()
+        if (snapSeq == null) {
+            criteria.and(TDriveNode::deleteSnapSeq).isEqualTo(Long.MAX_VALUE)
+                .and(TDriveNode::deleted).isNull()
+        } else {
+            criteria.and(TDriveNode::snapSeq).lte(snapSeq)
+                .and(TDriveNode::deleteSnapSeq).gt(snapSeq)
+        }
         return findOne(Query(criteria))
     }
 

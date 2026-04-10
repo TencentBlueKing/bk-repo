@@ -43,7 +43,7 @@ class DriveOperationHandler(
      */
     suspend fun read(request: ServerRequest): ServerResponse {
         with(DriveBlockRequest(request)) {
-            val node = driveNodeService.getNodeByIno(projectId, repoName, ino)
+            val node = driveNodeService.getNodeByIno(projectId, repoName, ino, snapSeq)
             val range = try {
                 request.resolveRange(node.size)
             } catch (e: IllegalArgumentException) {

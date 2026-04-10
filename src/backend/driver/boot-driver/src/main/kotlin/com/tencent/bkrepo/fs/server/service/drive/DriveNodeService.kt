@@ -69,9 +69,9 @@ class DriveNodeService(
             ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, id)
     }
 
-    suspend fun getNodeByIno(projectId: String, repoName: String, ino: Long): DriveNode {
+    suspend fun getNodeByIno(projectId: String, repoName: String, ino: Long, snapSeq: Long? = null): DriveNode {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
-        return queryNodeByIno(projectId, repoName, ino, true)?.toDriveNode()
+        return driveNodeDao.findByProjectIdAndRepoNameAndIno(projectId, repoName, ino, snapSeq)?.toDriveNode()
             ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, ino)
     }
 
