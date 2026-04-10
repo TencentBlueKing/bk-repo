@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.mongo.properties
+package com.tencent.bkrepo.common.mongo.api.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 

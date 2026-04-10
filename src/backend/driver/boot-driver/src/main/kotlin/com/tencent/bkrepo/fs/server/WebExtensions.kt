@@ -27,11 +27,13 @@
 
 package com.tencent.bkrepo.fs.server
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.fs.server.storage.CoArtifactFile
 import com.tencent.bkrepo.fs.server.storage.CoArtifactFileFactory
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.core.io.buffer.DataBuffer
 import org.springframework.core.io.buffer.DataBufferUtils
@@ -58,13 +60,46 @@ suspend fun ServerRequest.bodyToArtifactFile(): CoArtifactFile {
     return reactiveArtifactFile
 }
 
+/**
+ * 反序列化请求体，捕获反序列化异常并抛出 ErrorCodeException
+ * @param clazz 目标类型
+ * @return 反序列化后的对象
+ * @throws ErrorCodeException 反序列化失败时抛出，包含详细错误信息
+ */
+suspend fun <T : Any> ServerRequest.readBody(clazz: Class<T>): T {
+    return try {
+        bodyToMono(clazz).awaitSingle()
+    } catch (e: Exception) {
+        throw ErrorCodeException(
+            CommonMessageCode.REQUEST_CONTENT_INVALID,
+            e.message.orEmpty()
+        )
+    }
+}
+
+/**
+ * 反序列化请求体，捕获反序列化异常并抛出 ErrorCodeException
+ * @param clazz 目标类型
+ * @return 反序列化后的对象，请求体为空时返回 null
+ * @throws ErrorCodeException 反序列化失败时抛出，包含详细错误信息
+ */
+suspend fun <T : Any> ServerRequest.readBodyOrNull(clazz: Class<T>): T? {
+    return try {
+        bodyToMono(clazz).awaitSingleOrNull()
+    } catch (e: Exception) {
+        throw ErrorCodeException(
+            CommonMessageCode.REQUEST_CONTENT_INVALID,
+            e.message.orEmpty()
+        )
+    }
+}
+
 fun ServerRequest.useRequestParam(param: String, consumer: (x: String) -> Unit) {
     this.queryParam(param).ifPresent { consumer(it) }
 }
 
 /**
  * 处理文件范围请求
- * @param request http server request
  * @param total 文件总长度
  * @return range 文件请求范围
  * @throws IllegalArgumentException
