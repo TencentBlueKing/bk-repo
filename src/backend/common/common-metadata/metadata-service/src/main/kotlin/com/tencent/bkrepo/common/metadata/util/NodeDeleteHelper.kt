@@ -14,15 +14,18 @@ object NodeDeleteHelper {
         fullPath: String,
     ): Criteria {
         val normalizedFullPath = PathUtils.normalizeFullPath(fullPath)
-        val normalizedPath = PathUtils.toPath(normalizedFullPath)
-        val escapedPath = PathUtils.escapeRegex(normalizedPath)
-        val criteria = where(TNode::projectId).isEqualTo(projectId)
+        val escapedFullPath = PathUtils.escapeRegex(normalizedFullPath)
+        // { projectId:"x", repoName:"y", deleted:null, $or: [ {fullPath:/^prefix/}, {fullPath:"exact"} ] }
+        // $or 存在时，优化器对每个子句单独评估索引，两个子句都只涉及 fullPath，不涉及 path，理论上应该走 FULL_PATH_IDX。但实际走了 PATH_IDX，原因是：
+        // MongoDB 处理顶层 $or 时，会用 index intersection 或 subplan 策略，
+        // 如果某个子计划的 winning plan 是 PATH_IDX（例如之前有过一次 path 字段查询把 PATH_IDX 的缓存评分刷高了），
+        // 优化器会复用缓存计划，导致错选。这是 MongoDB plan cache 污染问题，不是索引定义问题。
+        // 单条 regex 同时匹配节点本身和所有子节点，消灭 $or 避免优化器选错索引：
+        // ^/p/b$    匹配节点本身
+        // ^/p/b/.*  匹配子节点
+        return where(TNode::projectId).isEqualTo(projectId)
             .and(TNode::repoName).isEqualTo(repoName)
             .and(TNode::deleted).isEqualTo(null)
-            .orOperator(
-                where(TNode::fullPath).regex("^$escapedPath"),
-                where(TNode::fullPath).isEqualTo(normalizedFullPath)
-            )
-        return criteria
+            .and(TNode::fullPath).regex("^$escapedFullPath(/.*)?$")
     }
 }
