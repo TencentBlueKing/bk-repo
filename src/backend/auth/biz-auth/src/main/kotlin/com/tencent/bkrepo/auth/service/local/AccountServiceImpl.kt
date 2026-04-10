@@ -31,11 +31,14 @@
 
 package com.tencent.bkrepo.auth.service.local
 
+import com.tencent.bkrepo.auth.config.AuthProperties
+import com.tencent.bkrepo.auth.context.FederationWriteContext
 import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TAccount
 import com.tencent.bkrepo.auth.pojo.account.Account
+import com.tencent.bkrepo.auth.pojo.account.AccountInfo
 import com.tencent.bkrepo.auth.pojo.account.CreateAccountRequest
 import com.tencent.bkrepo.auth.pojo.account.UpdateAccountRequest
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
@@ -49,7 +52,11 @@ import com.tencent.bkrepo.common.api.constant.ADMIN_USER
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -59,7 +66,9 @@ import java.time.LocalDateTime
 class AccountServiceImpl constructor(
     private val accountDao: AccountDao,
     private val oauthTokenRepository: OauthTokenRepository,
-    private val userDao: UserDao
+    private val userDao: UserDao,
+    private val messageSupplier: MessageSupplier,
+    private val authProperties: AuthProperties
 ) : AccountService {
 
     override fun createAccount(request: CreateAccountRequest, owner: String): Account {
@@ -106,11 +115,12 @@ class AccountServiceImpl constructor(
                 lastModifiedDate = LocalDateTime.now()
             )
         )
+        publishEvent(EventType.ACCOUNT_CREATE, result.appId)
         return transferAccount(result, displaySecretKey = true)
     }
 
-    override fun listAccount(): List<Account> {
-        return accountDao.findAllBy().map { transferAccount(it) }
+    override fun listAccount(displaySecretKey: Boolean): List<Account> {
+        return accountDao.findAllBy().map { transferAccount(it, displaySecretKey) }
     }
 
     override fun listOwnAccount(userId: String): List<Account> {
@@ -132,6 +142,7 @@ class AccountServiceImpl constructor(
         val account = findAccountAndCheckOwner(appId, userId)
         oauthTokenRepository.deleteByAccountId(account.id!!)
         accountDao.removeById(account.id)
+        publishEvent(EventType.ACCOUNT_DELETE, appId)
         return true
     }
 
@@ -163,6 +174,7 @@ class AccountServiceImpl constructor(
             account.lastModifiedDate = LocalDateTime.now()
 
             accountDao.save(account)
+            publishEvent(EventType.ACCOUNT_UPDATE, appId)
             return true
         }
     }
@@ -326,7 +338,67 @@ class AccountServiceImpl constructor(
         }
     }
 
+    override fun upsertAccountForFederation(accountInfo: AccountInfo) {
+        val grantTypes = accountInfo.authorizationGrantTypes
+            .mapNotNull { runCatching { AuthorizationGrantType.valueOf(it) }.getOrNull() }.toSet()
+            .ifEmpty { setOf(AuthorizationGrantType.PLATFORM) }
+        val scopeTypes = accountInfo.scope
+            ?.mapNotNull { runCatching { com.tencent.bkrepo.auth.pojo.enums.ResourceType.valueOf(it) }.getOrNull() }
+            ?.toSet()
+        val existing = accountDao.findOneByAppId(accountInfo.appId)
+        if (existing == null) {
+            accountDao.insert(
+                TAccount(
+                    appId = accountInfo.appId,
+                    locked = accountInfo.locked,
+                    credentials = accountInfo.credentials ?: emptyList(),
+                    owner = null,
+                    authorizationGrantTypes = grantTypes,
+                    homepageUrl = accountInfo.homepageUrl,
+                    redirectUri = accountInfo.redirectUri,
+                    avatarUrl = accountInfo.avatarUrl,
+                    scope = scopeTypes,
+                    scopeDesc = null,
+                    description = accountInfo.description,
+                    createdDate = LocalDateTime.now(),
+                    lastModifiedDate = LocalDateTime.now()
+                )
+            )
+        } else {
+            existing.locked = accountInfo.locked
+            existing.authorizationGrantTypes = grantTypes
+            existing.homepageUrl = accountInfo.homepageUrl ?: existing.homepageUrl
+            existing.redirectUri = accountInfo.redirectUri ?: existing.redirectUri
+            existing.avatarUrl = accountInfo.avatarUrl ?: existing.avatarUrl
+            existing.scope = scopeTypes ?: existing.scope
+            existing.description = accountInfo.description ?: existing.description
+            existing.lastModifiedDate = LocalDateTime.now()
+            if (!accountInfo.credentials.isNullOrEmpty()) {
+                existing.credentials = accountInfo.credentials!!
+            }
+            accountDao.save(existing)
+        }
+    }
+
+    private fun publishEvent(type: EventType, resourceKey: String) {
+        if (!authProperties.eventEnabled || FederationWriteContext.isFederationWrite()) return
+        val event = ArtifactEvent(
+            type = type,
+            projectId = "",
+            repoName = "",
+            resourceKey = resourceKey,
+            userId = runCatching { SecurityUtils.getUserId() }.getOrDefault(""),
+            eventId = ArtifactEvent.generateEventId()
+        )
+        messageSupplier.delegateToSupplier(event, topic = BINDING_OUT_NAME)
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(AccountServiceImpl::class.java)
+        private const val BINDING_OUT_NAME = "artifactEvent-out-0"
+    }
+
+    override fun getAccountForFederation(appId: String): Account? {
+        return accountDao.findOneByAppId(appId)?.let { transferAccount(it, displaySecretKey = true) }
     }
 }

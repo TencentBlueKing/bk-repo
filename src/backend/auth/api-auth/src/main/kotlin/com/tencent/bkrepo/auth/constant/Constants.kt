@@ -80,6 +80,8 @@ const val AUTH_CLUSTER_TOKEN_DECREMENT_PREFIX = "/cluster/temporary/token/decrem
 const val AUTH_CLUSTER_PERMISSION_CHECK_PREFIX = "/cluster/permission/check"
 const val AUTH_API_EXT_PERMISSION_PREFIX = "/api/ext-permission"
 const val AUTH_SERVICE_EXT_PERMISSION_PREFIX = "/service/ext-permission"
+const val AUTH_SERVICE_KEY_PREFIX = "/service/key"
+const val AUTH_SERVICE_REPO_MODE_PREFIX = "/service/mode/repo"
 
 const val AUTH_ADMIN = "admin"
 const val AUTH_BUILTIN_ADMIN = "repo_admin"

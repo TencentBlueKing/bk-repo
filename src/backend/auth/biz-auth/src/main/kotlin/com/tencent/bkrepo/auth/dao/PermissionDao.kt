@@ -120,6 +120,40 @@ class PermissionDao : SimpleMongoDao<TPermission>() {
         return this.find(query)
     }
 
+    fun listAllByProject(projectId: String): List<TPermission> {
+        val query = Query.query(Criteria.where(TPermission::projectId.name).`is`(projectId))
+        return this.find(query)
+    }
+
+    /**
+     * 按 permName+projectId+resourceType 做原子 upsert（更新所有可变字段），用于联邦同步，避免 delete-then-create 间的鉴权空窗期。
+     */
+    fun upsertForFederation(perm: TPermission) {
+        val query = Query.query(
+            Criteria().andOperator(
+                Criteria.where(TPermission::permName.name).`is`(perm.permName),
+                Criteria.where(TPermission::projectId.name).`is`(perm.projectId),
+                Criteria.where(TPermission::resourceType.name).`is`(perm.resourceType)
+            )
+        )
+        val update = Update()
+            .set(TPermission::repos.name, perm.repos)
+            .set(TPermission::includePattern.name, perm.includePattern)
+            .set(TPermission::excludePattern.name, perm.excludePattern)
+            .set(TPermission::users.name, perm.users)
+            .set(TPermission::roles.name, perm.roles)
+            .set(TPermission::departments.name, perm.departments)
+            .set(TPermission::actions.name, perm.actions)
+            .set(TPermission::updatedBy.name, perm.updatedBy)
+            .set(TPermission::updateAt.name, perm.updateAt)
+            .setOnInsert(TPermission::permName.name, perm.permName)
+            .setOnInsert(TPermission::projectId.name, perm.projectId)
+            .setOnInsert(TPermission::resourceType.name, perm.resourceType)
+            .setOnInsert(TPermission::createBy.name, perm.createBy)
+            .setOnInsert(TPermission::createAt.name, perm.createAt)
+        this.upsert(query, update)
+    }
+
     fun listPermissionInRepo(
         projectId: String,
         repoName: String,

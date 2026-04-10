@@ -69,7 +69,7 @@ class PermissionController @Autowired constructor(
     fun createPermission(@RequestBody request: CreatePermissionRequest): Response<Boolean> {
         // todo check request
         if (request.projectId != null) {
-            preCheckProjectAdmin(request.projectId)
+            preCheckProjectAdmin(request.projectId!!)
         } else {
             preCheckUserAdmin()
         }
@@ -127,7 +127,7 @@ class PermissionController @Autowired constructor(
     fun deletePermission(@PathVariable id: String): Response<Boolean> {
         val permission = permissionService.getPermission(id) ?: return ResponseBuilder.success(false)
         if (permission.projectId != null) {
-            preCheckProjectAdmin(permission.projectId)
+            preCheckProjectAdmin(permission.projectId!!)
         } else {
             preCheckUserAdmin()
         }

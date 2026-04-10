@@ -47,6 +47,8 @@ class FederationArtifactEventConsumer(
     private val replicaTaskService: ReplicaTaskService,
     private val federationBasedReplicaJobExecutor: FederationEventBasedReplicaJobExecutor,
     private val eventRecordDao: EventRecordDao,
+    private val federationRepoEventConsumer: FederationRepoEventConsumer,
+    private val federationPermissionEventConsumer: FederationPermissionEventConsumer,
 ) : EventConsumer() {
 
     private val federationExecutors = FederationThreadPoolExecutor.instance
@@ -55,27 +57,30 @@ class FederationArtifactEventConsumer(
      * 允许接收的事件类型
      */
     override fun getAcceptTypes(): Set<EventType> {
-        return setOf(
-            EventType.NODE_MOVED,
-            EventType.NODE_COPIED,
-            EventType.NODE_CREATED,
-            EventType.NODE_DELETED,
-            EventType.NODE_RENAMED,
-            EventType.VERSION_CREATED,
-            EventType.VERSION_DELETED,
-            EventType.VERSION_UPDATED,
-            EventType.METADATA_SAVED,
-            EventType.METADATA_DELETED,
-            EventType.PACKAGE_METADATA_SAVED,
-            EventType.PACKAGE_METADATA_DELETED,
-        )
+        return ARTIFACT_TYPES + FederationPermissionEventConsumer.GLOBAL_TYPES +
+            FederationPermissionEventConsumer.PROJECT_TYPES
     }
 
+    // 权限事件不受 source 过滤（无复制循环风险），仅对制品事件过滤
     override fun sourceCheck(message: ArtifactEvent): Boolean {
+        if (message.type in FederationPermissionEventConsumer.GLOBAL_TYPES ||
+            message.type in FederationPermissionEventConsumer.PROJECT_TYPES) {
+            return false
+        }
         return !message.source.isNullOrEmpty()
     }
 
     override fun action(message: Message<ArtifactEvent>) {
+        val eventType = message.payload.type
+        if (eventType in FederationPermissionEventConsumer.GLOBAL_TYPES ||
+            eventType in FederationPermissionEventConsumer.PROJECT_TYPES) {
+            federationPermissionEventConsumer.action(message)
+            return
+        }
+        if (eventType == EventType.REPO_CREATED) {
+            federationRepoEventConsumer.accept(message)
+            return
+        }
         val event = message.payload
         // 如果是跨仓库操作，额外创建对应目标仓库的操作事件并执行事件处理
         if (isCrossRepo(event)) {
@@ -133,5 +138,20 @@ class FederationArtifactEventConsumer(
 
     companion object {
         private val logger = LoggerFactory.getLogger(FederationArtifactEventConsumer::class.java)
+        val ARTIFACT_TYPES: Set<EventType> = setOf(
+            EventType.REPO_CREATED,
+            EventType.NODE_MOVED,
+            EventType.NODE_COPIED,
+            EventType.NODE_CREATED,
+            EventType.NODE_DELETED,
+            EventType.NODE_RENAMED,
+            EventType.VERSION_CREATED,
+            EventType.VERSION_DELETED,
+            EventType.VERSION_UPDATED,
+            EventType.METADATA_SAVED,
+            EventType.METADATA_DELETED,
+            EventType.PACKAGE_METADATA_SAVED,
+            EventType.PACKAGE_METADATA_DELETED
+        )
     }
 }
