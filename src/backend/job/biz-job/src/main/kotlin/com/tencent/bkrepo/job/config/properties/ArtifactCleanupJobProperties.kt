@@ -38,7 +38,5 @@ class ArtifactCleanupJobProperties: MongodbJobProperties() {
     var projectList: List<String> = listOf()
     // 如配置仓库，则不清理改清理该仓库下的仓库
     var repoList: List<String> = listOf()
-    // 微服务调用超时后等待时间， 防止并发过大导致db压力过大
-    var sleepSeconds: Long = 20
     override var cron: String = "0 0 0 * * ?"
 }
