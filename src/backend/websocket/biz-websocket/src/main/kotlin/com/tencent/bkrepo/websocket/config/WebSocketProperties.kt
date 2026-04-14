@@ -38,6 +38,6 @@ data class WebSocketProperties(
     var sendTimeLimit: Int = 10 * 1000,
     var sendBufferSizeLimit: Int = 1024 * 1024,
     var heartbeatSchedulerPoolSize: Int = 8,
-    var serverHeartbeatInterval: Long = 10_000,
-    var clientHeartbeatInterval: Long = 10_000,
+    var serverHeartbeatInterval: Long = 15_000,
+    var clientHeartbeatInterval: Long = 30_000,
 )
