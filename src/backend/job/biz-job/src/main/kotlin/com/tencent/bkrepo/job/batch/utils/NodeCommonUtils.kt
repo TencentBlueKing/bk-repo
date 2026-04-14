@@ -135,12 +135,15 @@ class NodeCommonUtils(
             query: Query,
             batchSize: Int = BATCH_SIZE,
             shardingCount: Int = SHARDING_COUNT,
+            mongoTemplate: MongoTemplate = Companion.mongoTemplate,
             consumer: Consumer<Map<String, Any?>>,
         ) {
             val futures = mutableListOf<Future<*>>()
             for (i in 0 until shardingCount) {
                 val collection = "${collectionNamePrefix}_$i"
-                futures.add(workPool.submit { findByCollection(query, batchSize, collection, consumer) })
+                futures.add(workPool.submit {
+                    findByCollection(query, batchSize, collection, mongoTemplate, consumer)
+                })
             }
             futures.forEach { it.get() }
         }
@@ -156,7 +159,7 @@ class NodeCommonUtils(
                 val collection = SEPARATION_COLLECTION_NAME_PREFIX.plus(
                     MonthRangeShardingUtils.shardingSequenceFor(date, 1)
                 )
-                futures.add(workPool.submit { findByCollection(query, batchSize, collection, consumer) })
+                futures.add(workPool.submit { findByCollection(query, batchSize, collection, mongoTemplate, consumer) })
 
             }
             futures.forEach { it.get() }
@@ -166,6 +169,7 @@ class NodeCommonUtils(
             query: Query,
             batchSize: Int,
             collection: String,
+            mongoTemplate: MongoTemplate = Companion.mongoTemplate,
             consumer: Consumer<Map<String, Any?>>,
         ) {
             var querySize: Int
@@ -192,10 +196,11 @@ class NodeCommonUtils(
             query: Query,
             batchSize: Int,
             collection: String,
+            mongoTemplate: MongoTemplate = Companion.mongoTemplate,
             consumer: Consumer<Map<String, Any?>>,
         ): Mono<Unit> {
             return Mono.fromCallable {
-                findByCollection(query, batchSize, collection, consumer)
+                findByCollection(query, batchSize, collection, mongoTemplate, consumer)
             }.publishOn(Schedulers.boundedElastic())
         }
 
@@ -233,11 +238,12 @@ class NodeCommonUtils(
             collectionName: String,
             shardingCount: Int,
             expectedInsertions: Long,
-            fpp: Double
+            fpp: Double,
+            mongoTemplate: MongoTemplate = Companion.mongoTemplate,
         ): BloomFilter<CharSequence> {
             return buildBloomFilter(expectedInsertions, fpp) { bf ->
                 val query = Query().apply { fields().include(SHA256) }
-                forEachByCollectionParallel(collectionName, query, BATCH_SIZE, shardingCount) {
+                forEachByCollectionParallel(collectionName, query, BATCH_SIZE, shardingCount, mongoTemplate) {
                     it[SHA256]?.toString()?.let { sha256 -> bf.put(sha256) }
                 }
             }

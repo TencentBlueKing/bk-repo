@@ -69,7 +69,7 @@ class ArchiveJobServiceImpl(
         val collectionName = COLLECTION_NAME_PREFIX.plus(index)
         val context = NodeContext()
         NodeCommonUtils
-            .findByCollectionAsync(query, BATCH_SIZE, collectionName, RestoreConsumer(context))
+            .findByCollectionAsync(query, BATCH_SIZE, collectionName, consumer = RestoreConsumer(context))
             .subscribe { logger.info("Success to restore project[$projectId], $context") }
     }
 

@@ -42,6 +42,7 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus")
 
     implementation("com.github.ben-manes.caffeine:caffeine:2.9.3")
+    implementation("cn.hutool:hutool-core:${Versions.HutoolCrypto}")
 
     testImplementation("org.mockito.kotlin:mockito-kotlin")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x")
