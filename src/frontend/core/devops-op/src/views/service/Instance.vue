@@ -134,7 +134,14 @@ export default {
   },
   created() {
     instances(this.serviceName).then(res => {
-      this.instances = res.data
+      const host = localStorage.getItem('instanceHost') || ''
+      if (host !== '') {
+        this.instances = res.data.filter(instance =>
+          instance.host && instance.host.includes(host)
+        )
+      } else {
+        this.instances = res.data
+      }
       this.loading = false
       bandwidths(this.serviceName).then(bandwidths => {
         if (this.instances.length > 0 && bandwidths.data.length > 0) {
