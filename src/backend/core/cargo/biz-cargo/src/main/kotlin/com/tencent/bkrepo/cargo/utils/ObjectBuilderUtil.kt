@@ -42,8 +42,6 @@ import com.tencent.bkrepo.cargo.pojo.index.IndexDependency
 import com.tencent.bkrepo.cargo.pojo.json.CrateJsonData
 import com.tencent.bkrepo.cargo.pojo.json.JsonDataDependency
 import com.tencent.bkrepo.cargo.pojo.user.BasicInfo
-import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -230,7 +228,10 @@ object ObjectBuilderUtil {
     }
 
     private fun convertToMap(cargoMetadata: CargoMetadata): Map<String, Any> {
-        return cargoMetadata.toJsonString().readJsonString<Map<String, Any>>().filter { it.value != null }.minus(keys)
+        return mapOf(
+            CargoMetadata::name.name to cargoMetadata.name,
+            CargoMetadata::vers.name to cargoMetadata.vers
+        )
     }
 
     private fun convert2JsonDataDependency(dependency: MetaDependency): JsonDataDependency {
