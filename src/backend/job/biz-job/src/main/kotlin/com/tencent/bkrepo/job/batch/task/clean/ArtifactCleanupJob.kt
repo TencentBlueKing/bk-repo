@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.IGNORE_PROJECT_PREFIX_LIST
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
+import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.ArtifactCleanupJobProperties
@@ -62,6 +63,7 @@ import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestTemplate
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -78,6 +80,7 @@ class ArtifactCleanupJob(
     private val discoveryClient: DiscoveryClient,
     private val serviceAuthManager: ServiceAuthManager,
     private val quotaService: QuotaService,
+    private val activeProjectService: ActiveProjectService,
 ) : DefaultContextMongoDbJob<ArtifactCleanupJob.RepoData>(properties) {
 
     private val restTemplate = RestTemplate()
@@ -107,6 +110,17 @@ class ArtifactCleanupJob(
             val cleanupStrategyMap = config.getSetting<Map<String, Any>>(CLEAN_UP_STRATEGY) ?: return
             val cleanupStrategy = toCleanupStrategy(cleanupStrategyMap) ?: return
             if (filterConfig(row.projectId, row.name, cleanupStrategy)) return
+            // 非活跃项目仅在周末清理，降低DB 压力
+            val isWeekend = LocalDateTime.now().dayOfWeek.let {
+                it == DayOfWeek.SATURDAY || it == DayOfWeek.SUNDAY
+            }
+            val isActive = activeProjectService.getActiveProjects().contains(row.projectId)
+            if (!isActive && !isWeekend) {
+                logger.info(
+                    "Skip cleanup for inactive project ${row.projectId}|${row.name} on weekday"
+                )
+                return
+            }
             logger.info(
                 "Will clean the artifacts in repo ${row.projectId}|${row.name} " +
                     "with cleanup strategy $cleanupStrategy"
