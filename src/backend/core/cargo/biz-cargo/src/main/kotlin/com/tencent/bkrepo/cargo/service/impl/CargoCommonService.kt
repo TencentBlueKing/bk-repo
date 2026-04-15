@@ -65,7 +65,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
@@ -262,11 +262,9 @@ class CargoCommonService {
             getCargoJsonFullPath(packageName, version),
             getCargoMetadataFullPath(packageName, version)
         )
-        deletedNodes.forEach {
-            if (it.isNotBlank()) {
-                val request = NodeDeleteRequest(projectId, repoName, it, userId)
-                nodeService.deleteNode(request)
-            }
+        val paths = deletedNodes.filter { it.isNotBlank() }
+        if (paths.isNotEmpty()) {
+            nodeService.deleteNodes(NodesDeleteRequest(projectId, repoName, paths, userId))
         }
     }
 

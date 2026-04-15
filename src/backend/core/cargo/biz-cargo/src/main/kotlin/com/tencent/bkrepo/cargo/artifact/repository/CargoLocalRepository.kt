@@ -63,6 +63,7 @@ import com.tencent.bkrepo.cargo.utils.ObjectBuilderUtil.buildCrateIndexData
 import com.tencent.bkrepo.cargo.utils.ObjectBuilderUtil.buildCrateJsonData
 import com.tencent.bkrepo.cargo.utils.ObjectBuilderUtil.convertToMetadata
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
@@ -322,6 +323,8 @@ class CargoLocalRepository(
                     fillUploadContext(context, metadata, crateArtifactFile)
                 }
             }
+        } catch (e: ErrorCodeException) {
+            throw e
         } catch (e: Exception) {
             logger.warn("parse cargo upload data error: ${e.message}")
             throw CargoBadRequestException(CargoMessageCode.CARGO_UPLOAD_DATA_BROKEN)
