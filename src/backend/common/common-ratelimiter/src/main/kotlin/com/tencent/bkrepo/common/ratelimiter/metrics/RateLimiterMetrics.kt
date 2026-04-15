@@ -79,7 +79,7 @@ import com.tencent.bkrepo.common.metrics.constant.TAG_DIMENSION
 import com.tencent.bkrepo.common.metrics.constant.TAG_NAME
 import com.tencent.bkrepo.common.metrics.constant.TAG_REASON
 import com.tencent.bkrepo.common.metrics.constant.TAG_RESOURCE
-import com.tencent.bkrepo.common.metrics.constant.TAG_STATUS
+import com.tencent.bkrepo.common.metrics.constant.TAG_RATE_LIMITER_STATUS
 import com.tencent.bkrepo.common.ratelimiter.service.connection.ServiceInstanceConnectionLimiterService
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.DistributionSummary
@@ -286,7 +286,7 @@ class RateLimiterMetrics(
     ): Counter {
         val builder = Counter.builder(metricsName)
             .description(metricsDes)
-            .tag(TAG_STATUS, status)
+            .tag(TAG_RATE_LIMITER_STATUS, status)
             .tag(TAG_NAME, resource)
         dimension?.let { builder.tag(TAG_DIMENSION, it) }
         return builder.register(registry)

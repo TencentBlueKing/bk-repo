@@ -6,7 +6,7 @@ package com.tencent.bkrepo.common.metrics.constant
 
 // ==================== Tags（标签） ====================
 
-const val TAG_STATUS = "status"
+const val TAG_RATE_LIMITER_STATUS = "status"
 const val TAG_NAME = "name"
 const val TAG_DIMENSION = "dimension"
 const val TAG_ALGORITHM = "algorithm"
