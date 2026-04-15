@@ -21,6 +21,11 @@ import java.util.UUID
  *
  * connectionUuid 是实例级 ThreadLocal：同一资源的所有请求共享此 RateLimiter 实例，
  * 每个线程独立持有自己的 UUID，preHandle/afterCompletion 同线程保证配对。
+ *
+ * ⚠️ 仅适用于同步 Servlet 模型（Spring MVC 阻塞线程）：
+ * 若请求在 preHandle 与 afterCompletion 之间发生线程切换（如 WebFlux、异步 Controller、
+ * Kotlin 协程、虚拟线程），ThreadLocal 将无法跨线程传递，导致 release 错误槽位或漏 release。
+ * 禁止在 WebFlux 或任何异步/协程场景中使用本类。
  */
 class DistributedSemaphoreRateLimiter(
     private val key: String,

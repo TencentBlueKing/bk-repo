@@ -43,6 +43,11 @@ import java.util.regex.Pattern
  * pathLengthCheck : 当为false时，不校验resource根据/分割后的字符个数与查出的队友匹配规则的resource按照/分割后的字符个数是否相等
  * 如果是url 类型的路径， 如果配置resource为/project1/, 则其子目录都遵循该规则, 此时pathLengthCheck设置为false
  * 如果是project/repo类型的路径，如何配置resource为/project1/,则只有当查询资源为/project1/才能够匹配。 此时pathLengthCheck应该设置为 true
+ *
+ * 规则选取优先级说明：
+ * - priority 越高的规则越优先命中。
+ * - priority 相同时，路径越深（越具体）的规则越优先，浅层通配规则会被深层精确规则覆盖。
+ * - 若需要浅层通配规则作为兜底默认值，请为其配置比精确规则更低的 priority 值。
  */
 open class PathResourceLimitRule(
     private val root: PathNode = PathNode("/"),

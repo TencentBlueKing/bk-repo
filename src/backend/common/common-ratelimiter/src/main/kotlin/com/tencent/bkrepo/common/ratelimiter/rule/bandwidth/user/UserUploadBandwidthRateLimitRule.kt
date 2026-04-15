@@ -77,8 +77,8 @@ open class UserUploadBandwidthRateLimitRule(
 
         if (ruleLimit == null && extraResource.isNotEmpty()) {
             for (res in extraResource) {
-                var (_, resWithoutUser) = ResourcePathUtils.getUserAndPath(res)
-                ruleLimit = userBandwidthRule?.getPathResourceLimit(user, resWithoutUser)
+                val (_, extraResWithoutUser) = ResourcePathUtils.getUserAndPath(res)
+                ruleLimit = userBandwidthRule?.getPathResourceLimit(user, extraResWithoutUser)
                     ?: userBandwidthRule?.getUserResourceLimit(user)
                 if (ruleLimit != null) {
                     realResource = res

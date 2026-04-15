@@ -122,6 +122,8 @@ class RateLimiterMetrics(
     private val resourcePassRateMap = ConcurrentHashMap<String, AtomicLong>()
     private val resourceLimitRateMap = ConcurrentHashMap<String, AtomicLong>()
     private val dimensionStatsMap = ConcurrentHashMap<String, DimensionStats>()
+    // 已注册 Gauge 的资源集合，用于保证并发下每个 resource 只注册一次
+    private val registeredResourceSet = ConcurrentHashMap<String, Boolean>()
 
     init {
         connectionLimiterServiceProvider?.let { registerConnectionGauges() }
@@ -221,34 +223,33 @@ class RateLimiterMetrics(
     }
 
     private fun registerResourceGauges(resource: String) {
-        if (!resourcePassRateMap.containsKey(resource)) {
-            Gauge.builder(RATE_LIMITER_RESOURCE_PASSED_COUNT) {
-                resourcePassRateMap[resource]?.get()?.toDouble() ?: 0.0
-            }
-                .description(RATE_LIMITER_RESOURCE_PASSED_COUNT_DESC)
-                .tag(TAG_NAME, resource)
-                .register(registry)
-        }
+        // putIfAbsent 是原子操作，返回 null 表示首次插入，保证并发下只注册一次 Gauge
+        if (registeredResourceSet.putIfAbsent(resource, true) != null) return
 
-        if (!resourceLimitRateMap.containsKey(resource)) {
-            Gauge.builder(RATE_LIMITER_RESOURCE_LIMITED_COUNT) {
-                resourceLimitRateMap[resource]?.get()?.toDouble() ?: 0.0
-            }
-                .description(RATE_LIMITER_RESOURCE_LIMITED_COUNT_DESC)
-                .tag(TAG_NAME, resource)
-                .register(registry)
-
-            Gauge.builder(RATE_LIMITER_RESOURCE_PASS_RATE) {
-                val passed = resourcePassRateMap[resource]?.get() ?: 0L
-                val limited = resourceLimitRateMap[resource]?.get() ?: 0L
-                val total = passed + limited
-                if (total > 0) passed.toDouble() / total else 0.0
-            }
-                .description(RATE_LIMITER_RESOURCE_PASS_RATE_DESC)
-                .tag(TAG_NAME, resource)
-                .baseUnit("percent")
-                .register(registry)
+        Gauge.builder(RATE_LIMITER_RESOURCE_PASSED_COUNT) {
+            resourcePassRateMap[resource]?.get()?.toDouble() ?: 0.0
         }
+            .description(RATE_LIMITER_RESOURCE_PASSED_COUNT_DESC)
+            .tag(TAG_NAME, resource)
+            .register(registry)
+
+        Gauge.builder(RATE_LIMITER_RESOURCE_LIMITED_COUNT) {
+            resourceLimitRateMap[resource]?.get()?.toDouble() ?: 0.0
+        }
+            .description(RATE_LIMITER_RESOURCE_LIMITED_COUNT_DESC)
+            .tag(TAG_NAME, resource)
+            .register(registry)
+
+        Gauge.builder(RATE_LIMITER_RESOURCE_PASS_RATE) {
+            val passed = resourcePassRateMap[resource]?.get() ?: 0L
+            val limited = resourceLimitRateMap[resource]?.get() ?: 0L
+            val total = passed + limited
+            if (total > 0) passed.toDouble() / total else 0.0
+        }
+            .description(RATE_LIMITER_RESOURCE_PASS_RATE_DESC)
+            .tag(TAG_NAME, resource)
+            .baseUnit("percent")
+            .register(registry)
     }
 
     private fun getTotalCounter(resource: String, dimension: String? = null): Counter {
