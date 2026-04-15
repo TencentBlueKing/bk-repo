@@ -6,11 +6,16 @@ const guideMap = {
 export default {
     computed: {
         ...mapState(['userInfo', 'domain', 'dependAccessTokenValue', 'dependInputValue1', 'dependInputValue2', 'dependInputValue3']),
-        projectId () {
-            return this.$route.params.projectId || ''
-        },
         repoType () {
             return this.$route.params.repoType || ''
+        },
+        projectId () {
+            const projectId = this.$route.params.projectId || ''
+            if (!projectId.startsWith('_') || this.repoType !== 'docker') return projectId
+            const ESCAPE_PREFIX = 'x0'
+            return ESCAPE_PREFIX + Array.from(new TextEncoder().encode(projectId))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('')
         },
         repoName () {
             return this.$route.query.repoName || ''

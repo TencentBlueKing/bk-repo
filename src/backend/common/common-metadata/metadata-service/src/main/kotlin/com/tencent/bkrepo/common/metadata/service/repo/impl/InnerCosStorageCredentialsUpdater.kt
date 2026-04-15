@@ -44,8 +44,14 @@ class InnerCosStorageCredentialsUpdater : StorageCredentialsUpdater {
         }
         old.slowLogSpeed = new.slowLogSpeed
         old.slowLogTimeInMillis = new.slowLogTimeInMillis
+        old.multipartThreshold = new.multipartThreshold
         old.download = new.download
         old.modId = new.modId
         old.cmdId = new.cmdId
+        old.inner = new.inner
+        old.public = new.public
+        if (new.cache.enabled) {
+            old.cache.enabled = true
+        }
     }
 }

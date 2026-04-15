@@ -1,6 +1,6 @@
-package com.tencent.bkrepo.common.mongo.dao.util
+package com.tencent.bkrepo.common.mongo.api.util
 
-import com.tencent.bkrepo.common.mongo.properties.MongoSslProperties
+import com.tencent.bkrepo.common.mongo.api.properties.MongoSslProperties
 import org.slf4j.LoggerFactory
 import java.io.FileInputStream
 import java.security.KeyStore

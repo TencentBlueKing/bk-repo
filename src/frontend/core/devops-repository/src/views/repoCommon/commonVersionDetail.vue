@@ -261,6 +261,9 @@
                     { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse') },
                     this.permission.delete && { clickEvent: () => this.$emit('delete'), label: this.$t('delete') }
                 ]
+            },
+            originProjectId () {
+                return this.$route.params.projectId || ''
             }
         },
         watch: {
@@ -287,7 +290,7 @@
             getDetail () {
                 this.isLoading = true
                 this.getVersionDetail({
-                    projectId: this.projectId,
+                    projectId: this.originProjectId,
                     repoType: this.repoType,
                     repoName: this.repoName,
                     packageKey: this.packageKey,

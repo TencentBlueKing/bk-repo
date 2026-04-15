@@ -74,7 +74,6 @@ class CatalogController(private val catalogService: OciCatalogService) {
         @Parameter(name = "last", required = false)
         last: String?
     ): ResponseEntity<Any> {
-
         val catalogResponse = catalogService.getCatalog(
             artifactInfo = artifactInfo,
             n = n,

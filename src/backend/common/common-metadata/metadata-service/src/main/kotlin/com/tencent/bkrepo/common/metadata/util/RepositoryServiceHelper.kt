@@ -7,6 +7,7 @@ import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryVisibility
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChannelSetting
@@ -19,6 +20,8 @@ import com.tencent.bkrepo.common.metadata.interceptor.DownloadInterceptorFactory
 import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.constant.DEFAULT_STORAGE_CREDENTIALS_KEY
+import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelDeleteRequest
@@ -78,6 +81,8 @@ class RepositoryServiceHelper(
                     quota = it.quota,
                     used = it.used,
                     oldCredentialsKey = it.oldCredentialsKey,
+                    visibility = it.visibility,
+                    owner = it.owner,
                 )
             }
         }
@@ -101,7 +106,9 @@ class RepositoryServiceHelper(
                     lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     quota = it.quota,
                     used = it.used,
-                    display = it.display
+                    display = it.display,
+                    visibility = it.visibility,
+                    owner = it.owner,
                 )
             }
         }
@@ -189,13 +196,42 @@ class RepositoryServiceHelper(
                     request.storageCredentialsKey
                 } else if (repoStorageMapping.names.containsKey(request.name)) {
                     repoStorageMapping.names[request.name]
-                } else if (repoStorageMapping.types.containsKey(request.type)) {
-                    repoStorageMapping.types[request.type]
+                } else if (repoStorageMapping.types.containsKey(request.type.name)) {
+                    repoStorageMapping.types[request.type.name]
                 } else if (!projectCredentialsKey.isNullOrEmpty()) {
                     projectCredentialsKey
                 } else {
                     defaultStorageCredentialsKey
                 }
+            }
+        }
+
+        /**
+         * 检查存储凭据是否允许指定的仓库类型使用
+         * 检查规则：
+         * 1. 如果 allowRepoTypes 不为空，则仓库类型必须在 allowRepoTypes 中
+         * 2. 如果 notAllowRepoTypes 不为空，则仓库类型不能在 notAllowRepoTypes 中
+         */
+        fun checkStorageCredentialsRepoType(credentials: StorageCredentials, repoType: RepositoryType) {
+            val repoTypeName = repoType.name
+            val credentialsKey = credentials.key ?: DEFAULT_STORAGE_CREDENTIALS_KEY
+            // 检查 allowRepoTypes
+            credentials.allowRepoTypes?.let { allowTypes ->
+                if (!allowTypes.contains(repoTypeName)) {
+                    throw ErrorCodeException(
+                        RepositoryMessageCode.STORAGE_CREDENTIALS_REPO_TYPE_NOT_ALLOWED,
+                        credentialsKey,
+                        repoTypeName,
+                    )
+                }
+            }
+            // 检查 notAllowRepoTypes
+            if (credentials.notAllowRepoTypes?.contains(repoTypeName) == true) {
+                throw ErrorCodeException(
+                    RepositoryMessageCode.STORAGE_CREDENTIALS_REPO_TYPE_NOT_ALLOWED,
+                    credentialsKey,
+                    repoTypeName,
+                )
             }
         }
 
@@ -242,6 +278,8 @@ class RepositoryServiceHelper(
                     quota = quota,
                     used = 0,
                     display = display,
+                    visibility = visibility,
+                    owner = owner,
                 )
             }
         }
@@ -321,6 +359,7 @@ class RepositoryServiceHelper(
             projectId: String,
             names: List<String>,
             option: RepoListOption,
+            operator: String,
             isAdmin: Boolean = false
         ): Query {
             val criteria = where(TRepository::projectId).isEqualTo(projectId)
@@ -334,6 +373,12 @@ class RepositoryServiceHelper(
                             and(TRepository::display).isEqualTo(option.display)
                         }
                     }
+                    // 展示 visibility 为空或为 PROJECT 的仓库，以及 visibility 为 PERSONAL 且 owner 为本人的仓库
+                    orOperator(
+                        where(TRepository::visibility).`in`(null, RepositoryVisibility.PROJECT),
+                        where(TRepository::visibility).isEqualTo(RepositoryVisibility.PERSONAL)
+                            .and(TRepository::owner.name).isEqualTo(operator)
+                    )
                 }
             option.type?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type).isEqualTo(this.uppercase(
                 Locale.getDefault()
