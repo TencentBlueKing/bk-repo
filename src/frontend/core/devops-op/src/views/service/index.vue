@@ -91,7 +91,7 @@ export default {
       this.ips = res.data.reduce((acc, service) => {
         if (service.instances) {
           service.instances.forEach(instance => {
-            if (instance.host && instance.host.trim() && !acc.includes(instance.host)) {
+            if (instance.host && !acc.includes(instance.host)) {
               acc.push(instance.host)
             }
           })
@@ -105,9 +105,8 @@ export default {
       if (queryString.trim() === '') {
         this.services = this.originalServices
       }
-      var ips = this.ips || []
+      var ips = this.ips
       var results = queryString ? ips.filter(ip => ip.includes(queryString)) : ips
-      // 调用 callback 返回建议列表的数据
       cb(results.map(ip => ({ value: ip })))
     },
     toInstance(serviceName) {
