@@ -13,7 +13,7 @@
                         <Icon class="mr5" size="14" :name="openList.includes(item.roadMap) ? 'folder-open' : 'folder'" />
                     </slot>
                     <slot name="text" :item="item">
-                        <div class="mr10 node-text" v-html="importantTransform(item.displayName)" :title="item.displayName.toString().length > 19 && openType === '' ? item.displayName : ''"></div>
+                        <div class="mr10 node-text" v-html="DOMPurify.sanitize(importantTransform(item.displayName))" :title="item.displayName.toString().length > 19 && openType === '' ? item.displayName : ''"></div>
                     </slot>
                     <div class="mr10 node-operation flex-align-center">
                         <slot name="operation" :item="item"></slot>
@@ -26,6 +26,7 @@
 </template>
 
 <script>
+    import DOMPurify from 'dompurify'
     import { throttle } from '@repository/utils'
     export default {
         name: 'repo-tree',
@@ -53,6 +54,7 @@
         },
         data () {
             return {
+                DOMPurify,
                 resizeFn: null,
                 size: 0,
                 start: 0
