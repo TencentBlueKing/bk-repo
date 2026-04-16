@@ -34,6 +34,11 @@ export const ROUTER_NAME_MIGRATE_REPO_STORAGE_CONFIG = 'MigrationConfig'
 export const ROUTER_NAME_MIGRATE_PROJECT_GRAYSCALE_CONFIG = 'ProjectGrayscaleConfig'
 export const ROUTER_NAME_SERVER_LOG = 'ServerLog'
 export const ROUTER_NAME_SIGN_CONFIG = 'SignConfig'
+export const ROUTER_NAME_FEDERATED_REPOSITORY_CONFIG = 'FederatedRepositoryConfig'
+export const ROUTER_NAME_FEDERATED_EVENT = 'FederatedEvent'
+export const ROUTER_NAME_FEDERATED_TRACK_RECORD = 'FederatedTrackRecord'
+export const ROUTER_NAME_FEDERATED_FAILURE_RECORD = 'FederatedFailureRecord'
+export const ROUTER_NAME_FEDERATED_STATUS = 'FederatedStatus'
 
 Vue.use(Router)
 
@@ -396,6 +401,44 @@ export const asyncRoutes = [
         name: ROUTER_NAME_WEBHOOK,
         meta: { title: 'WebHook日志', icon: 'file' },
         component: () => import('@/views/webhook/log/index')
+      }
+    ]
+  },
+  {
+    path: '/federated',
+    component: Layout,
+    meta: { title: '联邦仓库配置', icon: 'separate' },
+    redirect: '/federated/federated-repository',
+    children: [
+      {
+        path: 'federated-repository',
+        name: ROUTER_NAME_FEDERATED_REPOSITORY_CONFIG,
+        meta: { title: '联邦仓库配置', icon: 'server-log' },
+        component: () => import('@/views/federatedRepoConfig/index')
+      },
+      {
+        path: 'event',
+        name: ROUTER_NAME_FEDERATED_EVENT,
+        meta: { title: '事件配置', icon: 'separate' },
+        component: () => import('@/views/federatedRepoConfig/event')
+      },
+      {
+        path: 'trace',
+        name: ROUTER_NAME_FEDERATED_TRACK_RECORD,
+        meta: { title: '元数据追踪', icon: 'separate' },
+        component: () => import('@/views/federatedRepoConfig/trace')
+      },
+      {
+        path: 'failure-record',
+        name: ROUTER_NAME_FEDERATED_FAILURE_RECORD,
+        meta: { title: '分发失败记录', icon: 'separate' },
+        component: () => import('@/views/federatedRepoConfig/failureRecord')
+      },
+      {
+        path: 'status',
+        name: ROUTER_NAME_FEDERATED_FAILURE_RECORD,
+        meta: { title: '联邦状态记录', icon: 'separate' },
+        component: () => import('@/views/federatedRepoConfig/status')
       }
     ]
   },
