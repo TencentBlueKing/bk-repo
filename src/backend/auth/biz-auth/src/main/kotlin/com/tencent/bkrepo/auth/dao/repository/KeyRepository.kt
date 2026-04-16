@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.auth.dao.repository
 
 import com.tencent.bkrepo.auth.model.TKey
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
 
@@ -35,4 +37,6 @@ import org.springframework.stereotype.Repository
 interface KeyRepository : MongoRepository<TKey, String> {
     fun findByUserId(userId: String): List<TKey>
     fun findByFingerprint(fingerprint: String): TKey?
+    fun findByUserIdAndFingerprint(userId: String, fingerprint: String): TKey?
+    fun findAllBy(pageable: Pageable): Page<TKey>
 }

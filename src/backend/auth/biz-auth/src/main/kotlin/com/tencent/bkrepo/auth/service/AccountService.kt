@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.auth.service
 
 import com.tencent.bkrepo.auth.pojo.account.Account
+import com.tencent.bkrepo.auth.pojo.account.AccountInfo
 import com.tencent.bkrepo.auth.pojo.account.CreateAccountRequest
 import com.tencent.bkrepo.auth.pojo.account.UpdateAccountRequest
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
@@ -40,7 +41,7 @@ import com.tencent.bkrepo.auth.pojo.token.CredentialSet
 
 interface AccountService {
 
-    fun listAccount(): List<Account>
+    fun listAccount(displaySecretKey: Boolean = false): List<Account>
 
     fun listOwnAccount(userId: String): List<Account>
 
@@ -71,4 +72,10 @@ interface AccountService {
     ): String?
 
     fun findSecretKey(appId: String, accessKey: String): String?
+
+    /** 联邦同步专用：直接覆盖写入账号（含真实 credentials），跳过脱敏逻辑 */
+    fun upsertAccountForFederation(accountInfo: AccountInfo)
+
+    /** 联邦同步专用：按 appId 查询单个账号，不校验 owner */
+    fun getAccountForFederation(appId: String): Account?
 }

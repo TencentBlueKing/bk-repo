@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.auth.api
 
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ROLE_PREFIX
+import com.tencent.bkrepo.auth.pojo.role.RoleInfo
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.v3.oas.annotations.Operation
@@ -39,9 +40,13 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
 @Tag(name = "SERVICE_ROLE", description = "服务-角色接口")
 @Primary
@@ -64,4 +69,42 @@ interface ServiceRoleClient {
         @Parameter(name = "项目ID")
         @PathVariable repoName: String
     ): Response<String?>
+
+    @Operation(summary = "查询项目下所有角色（联邦同步）")
+    @GetMapping("/list/project/{projectId}")
+    fun listRoleByProject(
+        @PathVariable projectId: String
+    ): Response<List<RoleInfo>>
+
+    @Operation(summary = "分页查询项目下角色（联邦同步）")
+    @GetMapping("/federation/list/page/{projectId}")
+    fun listRoleByProjectPage(
+        @PathVariable projectId: String,
+        @RequestParam(defaultValue = "1") pageNumber: Int,
+        @RequestParam(defaultValue = "500") pageSize: Int,
+    ): Response<List<RoleInfo>>
+
+    @Operation(summary = "按 id 查询单个角色（联邦同步）")
+    @GetMapping("/federation/detail/{id}")
+    fun getRoleByIdForFederation(
+        @PathVariable id: String
+    ): Response<RoleInfo?>
+
+    @Operation(summary = "创建角色（联邦同步）")
+    @PostMapping("/federation/create")
+    fun createRoleForFederation(
+        @RequestBody roleInfo: RoleInfo
+    ): Response<String?>
+
+    @Operation(summary = "更新角色（联邦同步）")
+    @PostMapping("/federation/update")
+    fun updateRoleForFederation(
+        @RequestBody roleInfo: RoleInfo
+    ): Response<Boolean>
+
+    @Operation(summary = "删除角色（联邦同步）")
+    @DeleteMapping("/federation/delete/{id}")
+    fun deleteRoleForFederation(
+        @PathVariable id: String
+    ): Response<Boolean>
 }

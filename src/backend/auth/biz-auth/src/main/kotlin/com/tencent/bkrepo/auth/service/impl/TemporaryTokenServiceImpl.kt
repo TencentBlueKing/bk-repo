@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.auth.service.impl
 
+import com.tencent.bkrepo.auth.config.AuthProperties
+import com.tencent.bkrepo.auth.context.FederationWriteContext
 import com.tencent.bkrepo.auth.dao.AuthTemporaryTokenDao
 import com.tencent.bkrepo.auth.model.TTemporaryToken
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
@@ -34,10 +36,13 @@ import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.service.TemporaryTokenService
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.handler.MaskPartString
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
@@ -52,6 +57,8 @@ import java.util.UUID
 @Conditional(DefaultCondition::class)
 class TemporaryTokenServiceImpl(
     private val temporaryTokenRepository: AuthTemporaryTokenDao,
+    private val messageSupplier: MessageSupplier,
+    private val authProperties: AuthProperties
 ) : TemporaryTokenService {
 
     override fun createToken(request: TemporaryTokenCreateRequest): List<TemporaryTokenInfo> {
@@ -74,6 +81,8 @@ class TemporaryTokenServiceImpl(
                 )
                 temporaryTokenRepository.save(temporaryToken)
                 convert(temporaryToken)
+            }.also {
+                if (it.isNotEmpty()) publishEvent(EventType.TEMP_TOKEN_CREATED, request.projectId, request.projectId)
             }
         }
     }
@@ -84,8 +93,10 @@ class TemporaryTokenServiceImpl(
     }
 
     override fun deleteToken(token: String) {
+        val tokenInfo = temporaryTokenRepository.findByToken(token)
         temporaryTokenRepository.deleteByToken(token)
         logger.info("Delete temporary token ${MaskPartString().desensitize(token)} success.")
+        tokenInfo?.let { publishEvent(EventType.TEMP_TOKEN_DELETED, token, it.projectId) }
     }
 
     override fun decrementPermits(token: String) {
@@ -103,8 +114,23 @@ class TemporaryTokenServiceImpl(
         }
     }
 
+
+    private fun publishEvent(type: EventType, resourceKey: String, projectId: String) {
+        if (!authProperties.eventEnabled || FederationWriteContext.isFederationWrite()) return
+        val event = ArtifactEvent(
+            type = type,
+            projectId = projectId,
+            repoName = "",
+            resourceKey = resourceKey,
+            userId = runCatching { SecurityUtils.getUserId() }.getOrDefault(""),
+            eventId = ArtifactEvent.generateEventId()
+        )
+        messageSupplier.delegateToSupplier(event, topic = BINDING_OUT_NAME)
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(TemporaryTokenServiceImpl::class.java)
+        private const val BINDING_OUT_NAME = "artifactEvent-out-0"
 
         private fun generateToken(): String {
             return UUID.randomUUID().toString().replace(StringPool.DASH, StringPool.EMPTY).toLowerCase()

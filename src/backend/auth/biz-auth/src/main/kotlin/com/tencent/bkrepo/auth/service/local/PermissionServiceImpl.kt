@@ -31,12 +31,14 @@
 
 package com.tencent.bkrepo.auth.service.local
 
+import com.tencent.bkrepo.auth.config.AuthProperties
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_ADMIN
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_USER
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_VIEWER
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
 import com.tencent.bkrepo.auth.constant.REPLICATION_MANAGE_ID
+import com.tencent.bkrepo.auth.context.FederationWriteContext
 import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
@@ -77,8 +79,12 @@ import com.tencent.bkrepo.auth.util.request.PermRequestUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.DEVX_ACCESS_FROM_OFFICE
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.slf4j.LoggerFactory
 
 open class PermissionServiceImpl constructor(
@@ -89,7 +95,9 @@ open class PermissionServiceImpl constructor(
     private val personalPathDao: PersonalPathDao,
     private val repoAuthConfigDao: RepoAuthConfigDao,
     val repositoryService: RepositoryService,
-    val projectService: ProjectService
+    val projectService: ProjectService,
+    private val messageSupplier: MessageSupplier,
+    protected val authProperties: AuthProperties
 ) : PermissionService {
 
     private val permHelper by lazy { PermissionHelper(userDao, roleRepository, permissionDao, personalPathDao) }
@@ -99,7 +107,12 @@ open class PermissionServiceImpl constructor(
 
     override fun deletePermission(id: String): Boolean {
         logger.info("delete  permission  repoName: [$id]")
+        val permission = permissionDao.findFirstById(id)
         permissionDao.deleteById(id)
+        val extraData = if (permission != null) {
+            mapOf("permName" to permission.permName, "resourceType" to permission.resourceType)
+        } else emptyMap()
+        publishEvent(EventType.PERMISSION_DELETED, id, permission?.projectId ?: "", extraData)
         return true
     }
 
@@ -113,6 +126,15 @@ open class PermissionServiceImpl constructor(
         return permissionDao.listByResourceAndProject(PROJECT.name, projectId).map {
             PermRequestUtil.convToPermission(it)
         }
+    }
+
+    override fun listAllPermissionByProject(projectId: String): List<Permission> {
+        return permissionDao.listAllByProject(projectId).map { PermRequestUtil.convToPermission(it) }
+    }
+
+    override fun getPermissionByName(projectId: String?, resourceType: String, permName: String): Permission? {
+        return permissionDao.listPermissionByProject(permName, projectId, resourceType)
+            ?.let { PermRequestUtil.convToPermission(it) }
     }
 
     override fun listBuiltinPermission(projectId: String, repoName: String): List<Permission> {
@@ -139,10 +161,16 @@ open class PermissionServiceImpl constructor(
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_PERMNAME)
         }
         val result = permissionDao.insert(PermRequestUtil.convToTPermission(request))
-        result.id?.let {
+        result.id?.let { id ->
+            publishEvent(EventType.PERMISSION_CREATED, id, request.projectId.orEmpty())
             return true
         }
         return false
+    }
+
+    override fun upsertPermissionForFederation(request: CreatePermissionRequest): Boolean {
+        permissionDao.upsertForFederation(PermRequestUtil.convToTPermission(request))
+        return true
     }
 
     override fun updateRepoPermission(request: UpdatePermissionRepoRequest): Boolean {
@@ -169,6 +197,7 @@ open class PermissionServiceImpl constructor(
                     userHelper.addUserToRoleBatchCommon(addRoleUserList, adminRoleId!!)
                     permHelper.removeUserFromRoleBatchCommon(removeRoleUserList, adminRoleId)
                     permHelper.removeUserFromRoleBatchCommon(addRoleUserList, commonRoleId!!)
+                    publishEvent(EventType.PERMISSION_UPDATED, permissionId, projectId)
                     return true
                 }
 
@@ -184,6 +213,7 @@ open class PermissionServiceImpl constructor(
                     userHelper.addUserToRoleBatchCommon(addRoleUserList, commonRoleId!!)
                     permHelper.removeUserFromRoleBatchCommon(removeRoleUserList, commonRoleId)
                     permHelper.removeUserFromRoleBatchCommon(addRoleUserList, adminRoleId!!)
+                    publishEvent(EventType.PERMISSION_UPDATED, permissionId, projectId)
                     return true
                 }
 
@@ -198,12 +228,15 @@ open class PermissionServiceImpl constructor(
                     val removeRoleUserList = serviceUsers.filter { !userId.contains(it) }
                     userHelper.addUserToRoleBatchCommon(addRoleUserList, replicationRoleId!!)
                     permHelper.removeUserFromRoleBatchCommon(removeRoleUserList, replicationRoleId)
+                    publishEvent(EventType.PERMISSION_UPDATED, permissionId, "")
                     return true
                 }
 
                 else -> {
                     permHelper.checkPermissionExist(permissionId)
-                    return permHelper.updatePermissionById(permissionId, TPermission::users.name, userId)
+                    val result = permHelper.updatePermissionById(permissionId, TPermission::users.name, userId)
+                    if (result) publishEvent(EventType.PERMISSION_UPDATED, permissionId, projectId ?: "")
+                    return result
                 }
             }
         }
@@ -549,7 +582,27 @@ open class PermissionServiceImpl constructor(
         return true
     }
 
+    fun publishEvent(
+        type: EventType,
+        resourceKey: String,
+        projectId: String,
+        data: Map<String, Any> = emptyMap()
+    ) {
+        if (!authProperties.eventEnabled || FederationWriteContext.isFederationWrite()) return
+        val event = ArtifactEvent(
+            type = type,
+            projectId = projectId,
+            repoName = "",
+            resourceKey = resourceKey,
+            userId = runCatching { SecurityUtils.getUserId() }.getOrDefault(""),
+            data = data,
+            eventId = ArtifactEvent.generateEventId()
+        )
+        messageSupplier.delegateToSupplier(event, topic = BINDING_OUT_NAME)
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(PermissionServiceImpl::class.java)
+        private const val BINDING_OUT_NAME = "artifactEvent-out-0"
     }
 }

@@ -34,7 +34,9 @@ package com.tencent.bkrepo.auth.api
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_USER_PREFIX
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
+import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
+import com.tencent.bkrepo.auth.pojo.user.UserFederationInfo
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -43,9 +45,11 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -119,4 +123,64 @@ interface ServiceUserClient {
     @Operation(summary = "获取admin用户")
     @GetMapping("/admin/users")
     fun listAdminUsers(): Response<List<String>>
+
+    @Operation(summary = "查询用户列表（用于联邦同步）")
+    @GetMapping("/list")
+    fun listUser(
+        @RequestParam(required = false, defaultValue = "") rids: List<String>,
+        @RequestParam(required = false) tenantId: String?
+    ): Response<List<User>>
+
+    @Operation(summary = "分页查询用户列表（用于联邦同步）")
+    @GetMapping("/list/page")
+    fun listUserPage(
+        @RequestParam(required = false) tenantId: String?,
+        @RequestParam(defaultValue = "1") pageNumber: Int,
+        @RequestParam(defaultValue = "500") pageSize: Int,
+    ): Response<List<User>>
+
+    @Operation(summary = "分页查询完整用户信息（联邦同步专用，含 hashedPwd）")
+    @GetMapping("/federation/list/page")
+    fun listUsersForFederationPage(
+        @RequestParam(required = false) tenantId: String?,
+        @RequestParam(defaultValue = "1") pageNumber: Int,
+        @RequestParam(defaultValue = "500") pageSize: Int,
+    ): Response<List<UserFederationInfo>>
+
+    @Operation(summary = "更新用户信息（用于联邦同步）")
+    @PutMapping("/update/{uid}")
+    fun updateUserById(
+        @PathVariable uid: String,
+        @RequestBody request: UpdateUserRequest
+    ): Response<Boolean>
+
+    @Operation(summary = "删除用户（用于联邦同步）")
+    @DeleteMapping("/delete/{uid}")
+    fun deleteUser(
+        @PathVariable uid: String
+    ): Response<Boolean>
+
+    @Operation(summary = "创建或更新用户（联邦同步，密码已hash，直接存储）")
+    @PostMapping("/federation/upsert")
+    fun upsertUserForFederation(
+        @RequestBody request: CreateUserRequest,
+        @RequestParam hashedPwd: String?
+    ): Response<Void>
+
+    @Operation(summary = "联邦同步：新增用户 token（hashed id 直接写入）")
+    @PostMapping("/federation/token/{uid}/{name}")
+    fun addUserTokenForFederation(
+        @PathVariable uid: String,
+        @PathVariable name: String,
+        @RequestParam hashedTokenId: String,
+        @RequestParam(required = false) createdAt: String?,
+        @RequestParam(required = false) expiredAt: String?
+    ): Response<Void>
+
+    @Operation(summary = "联邦同步：删除用户 token")
+    @DeleteMapping("/federation/token/{uid}/{name}")
+    fun removeUserTokenForFederation(
+        @PathVariable uid: String,
+        @PathVariable name: String
+    ): Response<Void>
 }

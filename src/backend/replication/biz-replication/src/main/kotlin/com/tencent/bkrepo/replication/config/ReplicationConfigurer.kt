@@ -33,6 +33,8 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import com.tencent.bkrepo.replication.context.FederationReplicaContext
+import feign.RequestInterceptor
 import org.quartz.Scheduler
 import org.quartz.impl.StdSchedulerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -57,5 +59,14 @@ class ReplicationConfigurer : ArtifactConfigurerSupport() {
     @Bean
     fun scheduler(): Scheduler {
         return StdSchedulerFactory.getDefaultScheduler().apply { start() }
+    }
+
+    @Bean("federationWriteRequestInterceptor")
+    fun federationWriteRequestInterceptor(): RequestInterceptor {
+        return RequestInterceptor { template ->
+            if (FederationReplicaContext.isFederationWrite()) {
+                template.header("X-Federation-Write", "true")
+            }
+        }
     }
 }
