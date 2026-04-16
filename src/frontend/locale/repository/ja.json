@@ -164,7 +164,7 @@
   "superAdmin": "管理者",
   "modify": "変更",
   "chineseName": "中文名",
-  "userIdPlaceHolder": "英字、数字、_、-、@。英字で始まる必要があります",
+  "userIdPlaceHolder": "英字、数字、_、-、@、.。英字で始まる必要があります",
   "email": "メールアドレス",
   "deleteUserTitle": "ユーザー {0} を削除してもよろしいですか？",
   "pwdPlacehodler": "長さ8-32文字。大文字・小文字の英字、数字、特殊文字（スペースを除く）を含む必要があります",
