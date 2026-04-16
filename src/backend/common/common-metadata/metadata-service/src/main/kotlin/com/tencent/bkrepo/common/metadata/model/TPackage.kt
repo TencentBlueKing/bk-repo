@@ -49,7 +49,7 @@ import java.time.LocalDateTime
     CompoundIndex(name = PACKAGE_NAME_IDX, def = PACKAGE_NAME_IDX_DEF, background = true),
     CompoundIndex(name = PACKAGE_KEY_IDX, def = PACKAGE_KEY_IDX_DEF, background = true, unique = true)
 )
-data class TPackage(
+open class TPackage(
     var id: String? = null,
     var createdBy: String,
     var createdDate: LocalDateTime,

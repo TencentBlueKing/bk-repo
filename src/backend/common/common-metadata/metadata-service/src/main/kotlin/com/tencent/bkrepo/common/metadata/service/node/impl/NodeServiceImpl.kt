@@ -32,9 +32,11 @@ import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.config.DataSeparationConfig
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.dao.separation.SeparationNodeDao
 import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.common.metadata.pojo.node.RestoreContext
@@ -45,6 +47,8 @@ import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.metadata.service.router.RouterControllerService
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationColdPurgeService
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationTaskService
 import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
@@ -83,7 +87,11 @@ class NodeServiceImpl(
     override val projectService: ProjectService,
     override val metadataCustomizer: MetadataCustomizer?,
     private val archiveClient: ArchiveClient,
-    override val metadataLabelCacheService: MetadataLabelCacheService
+    override val metadataLabelCacheService: MetadataLabelCacheService,
+    private val separationColdPurgeService: SeparationColdPurgeService,
+    private val dataSeparationConfig: DataSeparationConfig? = null,
+    private val separationNodeDao: SeparationNodeDao? = null,
+    private val separationTaskService: SeparationTaskService? = null,
 ) : NodeBaseService(
     nodeDao,
     repositoryDao,
@@ -98,8 +106,10 @@ class NodeServiceImpl(
     blockNodeService,
     projectService,
     metadataCustomizer,
-    metadataLabelCacheService
+    metadataLabelCacheService,
 ) {
+
+    private fun deleteSupport() = NodeDeleteSupport(this, separationColdPurgeService)
 
     override fun computeSize(
         artifact: ArtifactInfo, estimated: Boolean
@@ -121,22 +131,22 @@ class NodeServiceImpl(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteNode(deleteRequest: NodeDeleteRequest): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteNode(deleteRequest)
+        return deleteSupport().deleteNode(deleteRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteNodes(nodesDeleteRequest)
+        return deleteSupport().deleteNodes(nodesDeleteRequest)
     }
 
     override fun countDeleteNodes(nodesDeleteRequest: NodesDeleteRequest): Long {
-        return NodeDeleteSupport(this).countDeleteNodes(nodesDeleteRequest)
+        return deleteSupport().countDeleteNodes(nodesDeleteRequest)
     }
 
     override fun deleteByFullPathWithoutDecreaseVolume(
         projectId: String, repoName: String, fullPath: String, operator: String, source: String?
     ) {
-        return NodeDeleteSupport(this).deleteByFullPathWithoutDecreaseVolume(
+        deleteSupport().deleteByFullPathWithoutDecreaseVolume(
             projectId, repoName, fullPath, operator, source
         )
     }
@@ -149,7 +159,7 @@ class NodeServiceImpl(
         operator: String,
         source: String?
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator, source)
+        return deleteSupport().deleteByPath(projectId, repoName, fullPath, operator, source)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -159,7 +169,7 @@ class NodeServiceImpl(
         fullPaths: List<String>,
         operator: String,
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteByPaths(projectId, repoName, fullPaths, operator)
+        return deleteSupport().deleteByPaths(projectId, repoName, fullPaths, operator)
     }
 
     override fun deleteBeforeDate(
@@ -171,7 +181,7 @@ class NodeServiceImpl(
         decreaseVolume: Boolean,
         source: String?
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteBeforeDate(
+        return deleteSupport().deleteBeforeDate(
             projectId, repoName, date, operator, path, decreaseVolume, source
         )
     }
@@ -185,7 +195,7 @@ class NodeServiceImpl(
         deleteTime: LocalDateTime,
         source: String?
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteNodeById(
+        return deleteSupport().deleteNodeById(
             projectId, repoName, fullPath, operator, nodeId, deleteTime, source
         )
     }
@@ -237,20 +247,24 @@ class NodeServiceImpl(
     }
 
     override fun archiveNode(nodeArchiveRequest: NodeArchiveRequest) {
-        return NodeArchiveSupport(this, archiveClient).archiveNode(nodeArchiveRequest)
+        return nodeArchiveSupport().archiveNode(nodeArchiveRequest)
     }
 
     override fun restoreNode(nodeArchiveRequest: NodeArchiveRequest) {
-        return NodeArchiveSupport(this, archiveClient).restoreNode(nodeArchiveRequest)
+        return nodeArchiveSupport().restoreNode(nodeArchiveRequest)
     }
 
     override fun restoreNode(nodeRestoreRequest: NodeArchiveRestoreRequest): List<String> {
-        return NodeArchiveSupport(this, archiveClient).restoreNode(nodeRestoreRequest)
+        return nodeArchiveSupport().restoreNode(nodeRestoreRequest)
     }
 
     override fun getArchivableSize(projectId: String, repoName: String?, days: Int, size: Long?): Long {
-        return NodeArchiveSupport(this, archiveClient).getArchivableSize(projectId, repoName, days, size)
+        return nodeArchiveSupport().getArchivableSize(projectId, repoName, days, size)
     }
+
+    private fun nodeArchiveSupport() = NodeArchiveSupport(
+        this, archiveClient, dataSeparationConfig, separationNodeDao, separationTaskService
+    )
 
     override fun compressedNode(nodeCompressedRequest: NodeCompressedRequest) {
         return NodeCompressSupport(this).compressedNode(nodeCompressedRequest)

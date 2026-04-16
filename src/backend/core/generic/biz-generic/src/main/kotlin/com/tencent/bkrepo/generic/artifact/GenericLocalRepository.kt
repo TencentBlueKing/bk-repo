@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.artifact.constant.PARAM_PREVIEW
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_CRC64ECMA
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
+import com.tencent.bkrepo.common.artifact.event.node.NodeSeparationRecoveryEvent
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -93,6 +94,8 @@ import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
+import com.tencent.bkrepo.common.metadata.config.DataSeparationConfig
+import com.tencent.bkrepo.common.metadata.util.SeparationUtils
 import com.tencent.bkrepo.generic.constant.BKREPO_META
 import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
 import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD
@@ -154,6 +157,7 @@ class GenericLocalRepository(
     private val blockNodeService: BlockNodeService,
     private val storageProperties: StorageProperties,
     private val metadataLabelCacheService: MetadataLabelCacheService,
+    private val dataSeparationConfig: DataSeparationConfig,
 ) : LocalRepository() {
 
     private val edgeClusterNodeCache = CacheBuilder.newBuilder()
@@ -515,7 +519,13 @@ class GenericLocalRepository(
         with(context) {
             val node = getNodeDetailsFromReq(true)?.firstOrNull()
                 ?: ArtifactContextHolder.getNodeDetail(artifactInfo)
-                ?: return null
+                ?: run {
+                    // 节点不存在时，检查是否为降冷仓库，如果是则发出事件去冷表查询
+                    if (isSeparatedRepo(projectId, repoName)) {
+                        publishSeparationRecoveryEvent(context, null)
+                    }
+                    return null
+                }
             if (node.folder) {
                 return downloadFolder(this, node)
             }
@@ -533,52 +543,76 @@ class GenericLocalRepository(
      * 多节点下载, 支持同时下载文件和目录
      */
     private fun downloadMultiNode(context: ArtifactDownloadContext): ArtifactResource {
-        with(context) {
-            val fullPathList = artifacts!!.map { it.getArtifactFullPath() }
-            val commonParent = PathUtils.getCommonParentPath(fullPathList)
-            val nodes = getNodeDetailsFromReq(true)
-                ?: queryNodeDetailList(
-                    projectId = projectId,
-                    repoName = repoName,
-                    paths = fullPathList,
-                )
-            val notExistNodes = fullPathList.subtract(nodes.map { it.fullPath })
-            if (notExistNodes.isNotEmpty()) {
-                throw NodeNotFoundException(notExistNodes.joinToString(StringPool.COMMA))
-            }
-            nodes.filter { !it.folder }.forEach { downloadIntercept(this, it) }
-            val (folderNodes, fileNodes) = nodes.partition { it.folder }
-            // 添加所有目录节点的子节点, 检查文件数量和大小总和, 下载拦截
-            val allNodes = getSubNodes(
-                context = context,
-                folders = folderNodes,
-                includeFolder = true,
-                initialCount = fileNodes.size.toLong(),
-                initialSize = fileNodes.sumOf { it.size }
-            ) + nodes
-            // 通过给每个ZipEntry.name添加或移除公共前缀, 改变zip包内的目录结构
-            // 如果多个节点没有公共目录，例如下载/file1和/file2时, 根据repoName添加公共前缀, 给zip包添加一个以repoName命名的顶层目录
-            // 目的是保证zip包解压缩出来只有1个目录, 没有顶层目录时, 有些解压缩工具有可能会直接在当前目录解压出多个文件或目录
-            val prefixToAdd = if (PathUtils.isRoot(commonParent) && fullPathList.size > 1) "$repoName/" else ""
-            // 去掉多余的公共目录层级, 例如下载/a/b/c/file1和/a/b/c/file2时, 移除前缀/a/b/, 使得zip包的顶层目录为c
-            val prefixToRemove = if (fullPathList.size > 1) PathUtils.resolveParent(commonParent) else commonParent
-            // 支持下载空目录
-            val emptyStream = ArtifactInputStream(EmptyInputStream.INSTANCE, Range.full(0))
-            val nodeMap = allNodes.associateBy(
-                keySelector = {
-                    prefixToAdd + it.fullPath.removePrefix(prefixToRemove) + if (it.folder) StringPool.SLASH else ""
-                },
-                valueTransform = {
-                    if (it.folder) emptyStream else {
-                        storageManager.loadArtifactInputStream(it, storageCredentials)
-                            ?: throw ArtifactNotFoundException(it.fullPath)
-                    }
-                }
+        val fullPathList = context.artifacts!!.map { it.getArtifactFullPath() }
+        val commonParent = PathUtils.getCommonParentPath(fullPathList)
+        val nodes = getNodeDetailsFromReq(true)
+            ?: queryNodeDetailList(
+                projectId = context.projectId,
+                repoName = context.repoName,
+                paths = fullPathList,
             )
-            // 添加node是为了下载单个空目录的时候以zip包的形式下载, 否则下载的是一个空文件而不是目录
-            val node = if (allNodes.size == 1) allNodes.first() else null
-            return ArtifactResource(nodeMap, node, useDisposition = true, nodes = allNodes)
+        ensureAllNodesExist(context, fullPathList, nodes)
+        nodes.filterNot { it.folder }.forEach { downloadIntercept(context, it) }
+        val allNodes = collectDownloadNodes(context, nodes) + nodes
+        val nodeMap = buildDownloadNodeMap(context, allNodes, commonParent, fullPathList)
+        return ArtifactResource(nodeMap, allNodes.singleOrNull(), useDisposition = true, nodes = allNodes)
+    }
+
+    private fun ensureAllNodesExist(
+        context: ArtifactDownloadContext,
+        fullPathList: List<String>,
+        nodes: List<NodeDetail>,
+    ) {
+        val notExistNodes = fullPathList.subtract(nodes.map { it.fullPath }.toSet())
+        if (notExistNodes.isEmpty()) return
+        if (isSeparatedRepo(context.projectId, context.repoName)) {
+            notExistNodes.forEach { publishSeparationRecoveryEvent(context, null, it) }
         }
+        throw NodeNotFoundException(notExistNodes.joinToString(StringPool.COMMA))
+    }
+
+    private fun collectDownloadNodes(
+        context: ArtifactDownloadContext,
+        nodes: List<NodeDetail>,
+    ): List<NodeDetail> {
+        val (folderNodes, fileNodes) = nodes.partition { it.folder }
+        return getSubNodes(
+            context = context,
+            folders = folderNodes,
+            includeFolder = true,
+            initialCount = fileNodes.size.toLong(),
+            initialSize = fileNodes.sumOf { it.size },
+            checkSeparation = isSeparatedRepo(context.projectId, context.repoName),
+        )
+    }
+
+    private fun buildDownloadNodeMap(
+        context: ArtifactDownloadContext,
+        allNodes: List<NodeDetail>,
+        commonParent: String,
+        fullPathList: List<String>,
+    ): Map<String, ArtifactInputStream> {
+        // 通过给每个ZipEntry.name添加或移除公共前缀, 改变zip包内的目录结构
+        // 如果多个节点没有公共目录，例如下载/file1和/file2时, 根据repoName添加公共前缀, 给zip包添加一个以repoName命名的顶层目录
+        // 目的是保证zip包解压缩出来只有1个目录, 没有顶层目录时, 有些解压缩工具有可能会直接在当前目录解压出多个文件或目录
+        val prefixToAdd = if (PathUtils.isRoot(commonParent) && fullPathList.size > 1) "${context.repoName}/" else ""
+        // 去掉多余的公共目录层级, 例如下载/a/b/c/file1和/a/b/c/file2时, 移除前缀/a/b/, 使得zip包的顶层目录为c
+        val prefixToRemove = if (fullPathList.size > 1) PathUtils.resolveParent(commonParent) else commonParent
+        // 支持下载空目录
+        val emptyStream = ArtifactInputStream(EmptyInputStream.INSTANCE, Range.full(0))
+        return allNodes.associateBy(
+            keySelector = {
+                prefixToAdd + it.fullPath.removePrefix(prefixToRemove) + if (it.folder) StringPool.SLASH else ""
+            },
+            valueTransform = {
+                if (it.folder) {
+                    emptyStream
+                } else {
+                    storageManager.loadArtifactInputStream(it, context.storageCredentials)
+                        ?: throw ArtifactNotFoundException(it.fullPath)
+                }
+            },
+        )
     }
 
     private fun getSubNodes(
@@ -586,7 +620,8 @@ class GenericLocalRepository(
         folders: List<NodeDetail>,
         includeFolder: Boolean = false,
         initialCount: Long = 0,
-        initialSize: Long = 0
+        initialSize: Long = 0,
+        checkSeparation: Boolean = false
     ): List<NodeDetail> {
         // 先计算所有目录的总大小和文件数,提前校验避免无效的分页查询
         var totalCount = initialCount
@@ -622,6 +657,12 @@ class GenericLocalRepository(
                 nodes.addAll(records)
                 pageNumber++
             } while (records.size == PAGE_SIZE)
+
+            // 如果是降冷仓库，发出事件检查冷表中是否有该目录的子节点
+            // 无论目录是否为空，都需要检查，因为可能存在部分子节点被降冷的情况
+            if (checkSeparation) {
+                publishSeparationRecoveryEvent(context, folder)
+            }
         }
         return nodes
     }
@@ -643,7 +684,8 @@ class GenericLocalRepository(
      */
     private fun downloadFolder(context: ArtifactDownloadContext, node: NodeDetail): ArtifactResource? {
         // 查询子节点, 检查文件数量和目录大小, 下载拦截
-        val nodes = getSubNodes(context, listOf(node))
+        val checkSeparation = isSeparatedRepo(context.projectId, context.repoName)
+        val nodes = getSubNodes(context, listOf(node), checkSeparation = checkSeparation)
         // 构造name-node map
         val prefix = "${node.fullPath}/"
         val nodeMap = nodes.associate {
@@ -689,14 +731,14 @@ class GenericLocalRepository(
 
     override fun remove(context: ArtifactRemoveContext) {
         with(context.artifactInfo) {
-            val node = nodeService.getNodeDetail(this)
-                ?: throw NodeNotFoundException(this.getArtifactFullPath())
+            val fullPath = getArtifactFullPath()
+            val node = nodeService.getNodeDetail(this) ?: throw NodeNotFoundException(fullPath)
             if (node.folder) {
                 if (nodeService.countFileNode(this) > 0) {
                     throw ErrorCodeException(ArtifactMessageCode.FOLDER_CONTAINS_FILE)
                 }
             }
-            val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, getArtifactFullPath(), context.userId)
+            val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, fullPath, context.userId)
             nodeService.deleteNode(nodeDeleteRequest)
         }
     }
@@ -986,6 +1028,62 @@ class GenericLocalRepository(
     private fun checkMetadataLabel(context: ArtifactUploadContext) {
         val metadataList = resolveMetadata(context.request)
         metadataLabelCacheService.checkEnumMetadataLabel(context.projectId, metadataList)
+    }
+
+    /**
+     * 检查是否为降冷仓库
+     */
+    private fun isSeparatedRepo(projectId: String, repoName: String): Boolean {
+        val projectRepoKey = "$projectId/$repoName"
+        return dataSeparationConfig.specialSeparateRepos.any {
+            val regex = Regex(it.replace("*", ".*"))
+            regex.matches(projectRepoKey)
+        }
+    }
+
+    /**
+     * 发布节点降冷恢复事件
+     * 用于在下载节点时触发冷表查询和恢复任务创建
+     * @param node 节点详情，如果为null表示节点不存在，需要去冷表查询
+     * @param fullPath 可选的完整路径，用于多节点下载场景指定具体路径
+     */
+    private fun publishSeparationRecoveryEvent(
+        context: ArtifactDownloadContext,
+        node: NodeDetail?,
+        fullPath: String? = null
+    ) {
+        try {
+            // 检查是否启用自动恢复
+            if (!dataSeparationConfig.autoRecovery) return
+            if (dataSeparationConfig.recoveryTopic.isNullOrEmpty()) return
+
+            val projectId = node?.projectId ?: context.projectId
+            val repoName = node?.repoName ?: context.repoName
+            // 检查该仓库是否配置了降冷
+            val repoKey = "$projectId/$repoName"
+            if (!SeparationUtils.matchesConfigRepos(repoKey, dataSeparationConfig.specialSeparateRepos)) return
+            val resourceKey = fullPath ?: node?.fullPath ?: context.artifactInfo.getArtifactFullPath()
+
+            val event = NodeSeparationRecoveryEvent(
+                projectId = projectId,
+                repoName = repoName,
+                resourceKey = resourceKey,
+                userId = context.userId,
+                repoType = node?.let { context.repositoryDetail.type.name } ?: context.repositoryDetail.type.name
+            )
+            messageSupplier.delegateToSupplier(
+                data = event,
+                topic = dataSeparationConfig.recoveryTopic!!,
+                key = event.getFullResourceKey(),
+            )
+            logger.info("Published NodeSeparationRecoveryEvent for node [$projectId/$repoName$resourceKey]")
+        } catch (e: Exception) {
+            // 事件发布失败不应影响下载流程
+            logger.warn(
+                "Failed to publish NodeSeparationRecoveryEvent for node " +
+                    "[${fullPath ?: node?.fullPath ?: context.artifactInfo.getArtifactFullPath()}]", e
+            )
+        }
     }
 
 

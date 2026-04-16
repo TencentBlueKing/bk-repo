@@ -37,10 +37,13 @@ import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.job.separation.pojo.task.SeparationTask
-import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskRequest
-import com.tencent.bkrepo.job.separation.service.SeparationDataService
-import com.tencent.bkrepo.job.separation.service.SeparationTaskService
+import com.tencent.bkrepo.common.metadata.pojo.separation.task.SeparationTask
+import com.tencent.bkrepo.common.metadata.pojo.separation.task.SeparationTaskRequest
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationColdPurgeService
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationDataService
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationTaskService
+import com.tencent.bkrepo.job.pojo.separation.SeparationNodeCleanRequest
+import com.tencent.bkrepo.job.pojo.separation.SeparationNodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
@@ -64,7 +67,8 @@ import java.time.format.DateTimeParseException
 @Principal(type = PrincipalType.ADMIN)
 class UserSeparationController(
     private val separationTaskService: SeparationTaskService,
-    private val separationDataService: SeparationDataService
+    private val separationDataService: SeparationDataService,
+    private val separationColdPurgeService: SeparationColdPurgeService,
 ) {
     @PostMapping
     fun createTask(@RequestBody request: SeparationTaskRequest): Response<Void> {
@@ -89,6 +93,36 @@ class UserSeparationController(
     @PostMapping("/update/{taskId}/state")
     fun updateTaskState(@PathVariable("taskId") taskId: String): Response<Void> {
         separationTaskService.reInitTaskState(taskId)
+        return ResponseBuilder.success()
+    }
+
+    @Operation(summary = "冷表管理：按路径根软删标记（不写热表）")
+    @PostMapping("/node/delete")
+    fun deleteColdNodes(@RequestBody request: SeparationNodeDeleteRequest): Response<Void> {
+        if (request.fullPaths.isEmpty() || request.fullPaths.size > 200) {
+            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "fullPaths")
+        }
+        val deletedAt = request.deletedAt ?: LocalDateTime.now()
+        separationColdPurgeService.markColdDeletedByApiPathDelete(
+            request.projectId,
+            request.repoName,
+            request.fullPaths,
+            deletedAt,
+        )
+        return ResponseBuilder.success()
+    }
+
+    @Operation(summary = "冷表管理：按相同时间条件软删标记（不写热表）")
+    @PostMapping("/node/clean")
+    fun cleanColdNodes(@RequestBody request: SeparationNodeCleanRequest): Response<Void> {
+        val deletedAt = request.deletedAt ?: LocalDateTime.now()
+        separationColdPurgeService.markColdDeletedByApiNodeClean(
+            request.projectId,
+            request.repoName,
+            request.path,
+            request.date,
+            deletedAt,
+        )
         return ResponseBuilder.success()
     }
 

@@ -108,7 +108,11 @@ class DeletedNodeCleanupJob(
     }
 
     override fun collectionNames(): List<String> {
-        return (0 until SHARDING_COUNT).map { "$COLLECTION_NODE_PREFIX$it" }.toList()
+        val hot = (0 until SHARDING_COUNT).map { "$COLLECTION_NODE_PREFIX$it" }
+        val cold = mongoTemplate.collectionNames
+            .filter { it.startsWith(SEPARATION_NODE_PREFIX) }
+            .sorted()
+        return hot + cold
     }
 
     override fun buildQuery(): Query {
@@ -141,7 +145,7 @@ class DeletedNodeCleanupJob(
             return
         }
         if (row.folder) {
-            cleanupFolderNode(context, row.id, collectionName)
+            cleanupFolderNode(context, row, collectionName)
         } else {
             cleanUpFileNode(context, row, collectionName)
         }
@@ -149,10 +153,10 @@ class DeletedNodeCleanupJob(
 
     private fun cleanupFolderNode(
         context: DeletedNodeCleanupJobContext,
-        id: String,
+        node: Node,
         collectionName: String
     ) {
-        val query = Query.query(Criteria.where(ID).isEqualTo(id))
+        val query = Query.query(Criteria.where(ID).isEqualTo(node.id))
         val result = mongoTemplate.remove(query, collectionName)
         context.folderCount.addAndGet(result.deletedCount)
     }
@@ -296,6 +300,7 @@ class DeletedNodeCleanupJob(
     companion object {
         private val logger = LoggerFactory.getLogger(DeletedNodeCleanupJob::class.java)
         private const val COLLECTION_NODE_PREFIX = "node_"
+        private const val SEPARATION_NODE_PREFIX = "separation_node_"
         private const val COLLECTION_FILE_REFERENCE = "file_reference_"
     }
 }

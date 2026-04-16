@@ -18,8 +18,8 @@ import com.tencent.bkrepo.job.backup.pojo.setting.BackupConflictStrategy
 import com.tencent.bkrepo.job.backup.service.BackupDataHandler
 import com.tencent.bkrepo.job.backup.service.impl.BaseService
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
-import com.tencent.bkrepo.job.separation.pojo.query.NodeDetailInfo
-import com.tencent.bkrepo.job.separation.util.SeparationUtils
+import com.tencent.bkrepo.common.metadata.pojo.separation.query.NodeDetailInfo
+import com.tencent.bkrepo.common.metadata.util.SeparationUtils
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo

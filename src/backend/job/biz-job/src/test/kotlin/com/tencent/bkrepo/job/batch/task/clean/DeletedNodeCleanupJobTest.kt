@@ -17,7 +17,7 @@ import com.tencent.bkrepo.job.UT_SHA256
 import com.tencent.bkrepo.job.batch.JobBaseTest
 import com.tencent.bkrepo.job.batch.context.DeletedNodeCleanupJobContext
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
-import com.tencent.bkrepo.job.separation.service.SeparationTaskService
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationTaskService
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull

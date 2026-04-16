@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.job.separation.executor
 
-import com.tencent.bkrepo.job.separation.pojo.record.SeparationContext
+import com.tencent.bkrepo.common.metadata.pojo.separation.record.SeparationContext
 
 interface SeparationTaskExecutor {
     fun execute(context: SeparationContext)

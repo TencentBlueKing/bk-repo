@@ -4,7 +4,7 @@ import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.job.batch.base.JobContext
 import java.util.concurrent.atomic.AtomicLong
 
-class NodeContext(
+open class NodeContext(
     var count: AtomicLong = AtomicLong(),
     var size: AtomicLong = AtomicLong(),
 ) : JobContext() {

@@ -40,6 +40,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeDeleteSupport
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationColdPurgeService
 import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildCriteria
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import org.bson.types.ObjectId
@@ -54,11 +55,10 @@ import org.springframework.data.mongodb.core.query.where
 import java.time.LocalDateTime
 
 class CenterNodeDeleteSupport(
-    private val nodeBaseService: NodeBaseService,
-    private val clusterProperties: ClusterProperties
-): NodeDeleteSupport(
-    nodeBaseService
-) {
+    nodeBaseService: NodeBaseService,
+    private val clusterProperties: ClusterProperties,
+    separationColdPurgeService: SeparationColdPurgeService,
+) : NodeDeleteSupport(nodeBaseService, separationColdPurgeService) {
 
     override fun deleteByPath(
         projectId: String,
