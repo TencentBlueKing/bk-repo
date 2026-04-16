@@ -16,7 +16,7 @@ router.beforeEach(async(to, from, next) => {
   NProgress.start()
 
   // set page title
-  document.title = process.env.VUE_APP_TITLE
+  document.title = import.meta.env.VITE_APP_TITLE
 
   // determine whether the user has logged in
   // const bkTicket = getBkTicket()
