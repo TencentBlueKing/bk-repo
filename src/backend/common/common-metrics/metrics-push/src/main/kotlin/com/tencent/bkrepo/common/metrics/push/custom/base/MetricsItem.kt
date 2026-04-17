@@ -36,4 +36,11 @@ data class MetricsItem(
     val keepHistory: Boolean = true,
     val value: Double = 0.0,
     val labels: MutableMap<String, String> = mutableMapOf(),
+    /**
+     * 仅用于 event 上报路径，映射到 event.extra 字段。
+     * key 与 labels 中的 key 重叠时，该 key 从 dimension 中移除，只出现在 event.extra。
+     * 不影响 metrics 路径的 Prometheus label。
+     * 为空时 toEventItem 退化为通用转换（将 value 放入 dimension）。
+     */
+    val eventExtra: Map<String, Any> = emptyMap(),
 )
