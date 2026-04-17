@@ -8,7 +8,7 @@
         <bk-form class="mr10 repo-base-info" :label-width="150" :model="repoBaseInfo" :rules="rules" ref="repoBaseInfo">
             <bk-form-item :label="$t('repoType')" :required="true" property="type" error-display-type="normal">
                 <bk-radio-group v-model="repoBaseInfo.type" class="repo-type-radio-group" @change="changeRepoType">
-                    <bk-radio-button v-for="repo in repoEnum" :key="repo.label" :value="repo.value" :disabled="disCheck(repo.value)">
+                    <bk-radio-button v-for="repo in visibleRepoEnum" :key="repo.label" :value="repo.value" :disabled="disCheck(repo.value)">
                         <div class="flex-column flex-center repo-type-radio">
                             <Icon size="32" :name="repo.value" />
                             <span>{{repo.label}}</span>
@@ -16,6 +16,23 @@
                     </bk-radio-button>
                 </bk-radio-group>
             </bk-form-item>
+            <template v-if="isRemote">
+                <bk-form-item :label="$t('remoteUrl')" :required="true" property="remoteUrl" error-display-type="normal">
+                    <bk-input
+                        class="w480"
+                        v-model.trim="repoBaseInfo.remoteUrl"
+                        :placeholder="$t('remoteUrlPlaceholder')">
+                    </bk-input>
+                </bk-form-item>
+                <bk-form-item :label="$t('accessToken')" property="accessToken" error-display-type="normal">
+                    <bk-input
+                        class="w480"
+                        type="password"
+                        v-model.trim="repoBaseInfo.accessToken"
+                        :placeholder="$t('accessTokenInputPlaceholder')">
+                    </bk-input>
+                </bk-form-item>
+            </template>
             <bk-form-item :label="$t('repoName')" :required="true" property="name" error-display-type="normal">
                 <bk-input
                     class="w480" v-model.trim="repoBaseInfo.name" maxlength="32" show-word-limit
@@ -23,7 +40,7 @@
                 </bk-input>
                 <div v-if="repoBaseInfo.type === 'docker'" class="form-tip">{{ $t('dockerRepoTip')}}</div>
             </bk-form-item>
-            <bk-form-item :label="$t('accessPermission')">
+            <bk-form-item v-if="!isRemote" :label="$t('accessPermission')">
                 <card-radio-group
                     class="permission-card"
                     v-model="available"
@@ -36,7 +53,7 @@
                     <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
                 </bk-radio-group>
             </bk-form-item>
-            <bk-form-item :label="$t('isAllowShowFolder')">
+            <bk-form-item v-if="!isRemote" :label="$t('isAllowShowFolder')">
                 <div style="display: flex;margin-top: 5px">
                     <bk-radio-group ref="isAllowShowFolderRadio" v-model="repoBaseInfo.autoIndex" style="width: 120px">
                         <bk-radio class="mr20" :value="true">{{ $t('yes') }}</bk-radio>
@@ -47,7 +64,7 @@
             </bk-form-item>
             <bk-form-item
                 :label="$t('bkPermissionCheck')"
-                v-if="!specialRepoEnum.includes(repoBaseInfo.name)">
+                v-if="!isRemote && !specialRepoEnum.includes(repoBaseInfo.name)">
                 <bk-radio-group v-model="bkiamv3Check">
                     <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
                     <bk-radio :value="false">{{ $t('close') }}</bk-radio>
@@ -102,6 +119,8 @@
     import { mapActions, mapState } from 'vuex'
     import cookies from 'js-cookie'
 
+    const DEFAULT_HUGGINGFACE_URL = 'https://huggingface.co'
+
     const getRepoBaseInfo = () => {
         return {
             type: 'generic',
@@ -115,6 +134,8 @@
             description: '',
             display: true,
             autoIndex: true,
+            remoteUrl: '',
+            accessToken: '',
             mobile: {
                 enable: false,
                 filename: '',
@@ -143,6 +164,7 @@
                 specialRepoEnum,
                 show: false,
                 loading: false,
+                category: 'LOCAL',
                 repoBaseInfo: getRepoBaseInfo(),
                 showIamDenyDialog: false,
                 showData: {},
@@ -160,6 +182,15 @@
             ...mapState(['userInfo']),
             projectId () {
                 return this.$route.params.projectId
+            },
+            isRemote () {
+                return this.category === 'REMOTE'
+            },
+            visibleRepoEnum () {
+                if (this.isRemote) {
+                    return repoEnum.filter(r => r.value === 'huggingface')
+                }
+                return repoEnum
             },
             rules () {
                 return {
@@ -203,6 +234,18 @@
                             },
                             message: this.$t('pleaseInput') + this.$t('legit') + this.$t('groupXmlSet') + `(.xml${this.$t('type')})`,
                             trigger: 'change'
+                        }
+                    ],
+                    remoteUrl: [
+                        {
+                            required: true,
+                            message: this.$t('pleaseInput') + this.$t('remoteUrl'),
+                            trigger: 'blur'
+                        },
+                        {
+                            regex: /^https?:\/\/.+/,
+                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('remoteUrl'),
+                            trigger: 'blur'
                         }
                     ]
                 }
@@ -252,6 +295,7 @@
                 if (val) {
                     this.language = cookies.get('blueking_language') || 'zh-cn'
                     this.$nextTick(() => {
+                        if (!this.$refs.isAllowShowFolderRadio) return
                         if (this.language !== 'zh-cn') {
                             this.$refs.isAllowShowFolderRadio.$el.style.width = '140px'
                         } else {
@@ -270,9 +314,17 @@
                     return ciDisableRepoEnum.includes(repoName)
                 }
             },
-            showDialogHandler () {
+            showDialogHandler (category = 'LOCAL') {
                 this.show = true
+                this.category = category
                 this.repoBaseInfo = getRepoBaseInfo()
+                if (category === 'REMOTE') {
+                    this.title = this.$t('createRemoteRepository')
+                    this.repoBaseInfo.type = 'huggingface'
+                    this.repoBaseInfo.remoteUrl = DEFAULT_HUGGINGFACE_URL
+                } else {
+                    this.title = this.$t('createLocalRepository')
+                }
                 this.$refs.repoBaseInfo && this.$refs.repoBaseInfo.clearError()
             },
             cancel () {
@@ -291,31 +343,55 @@
             },
             async confirm () {
                 await this.$refs.repoBaseInfo.validate()
-                const body = {
-                    projectId: this.projectId,
-                    type: this.repoBaseInfo.type.toUpperCase(),
-                    name: this.repoBaseInfo.name,
-                    public: this.repoBaseInfo.public,
-                    display: this.repoBaseInfo.display,
-                    description: this.repoBaseInfo.description,
-                    category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
-                    configuration: {
-                        type: this.repoBaseInfo.type === 'generic' ? 'local' : 'composite',
-                        settings: {
-                            system: this.repoBaseInfo.system,
-                            interceptors: undefined,
-                            autoIndex: {
-                                enabled: this.repoBaseInfo.autoIndex
-                            },
-                            ...(
-                                this.repoBaseInfo.type === 'rpm'
-                                    ? {
-                                        enabledFileLists: this.repoBaseInfo.enabledFileLists,
-                                        repodataDepth: this.repoBaseInfo.repodataDepth,
-                                        groupXmlSet: this.repoBaseInfo.groupXmlSet
+                let body
+                if (this.isRemote) {
+                    body = {
+                        projectId: this.projectId,
+                        type: this.repoBaseInfo.type.toUpperCase(),
+                        name: this.repoBaseInfo.name,
+                        public: false,
+                        display: this.repoBaseInfo.display,
+                        description: this.repoBaseInfo.description,
+                        category: 'REMOTE',
+                        configuration: {
+                            type: 'remote',
+                            url: this.repoBaseInfo.remoteUrl,
+                            ...(this.repoBaseInfo.accessToken
+                                ? {
+                                    credentials: {
+                                        password: this.repoBaseInfo.accessToken
                                     }
-                                    : {}
-                            )
+                                }
+                                : {})
+                        }
+                    }
+                } else {
+                    body = {
+                        projectId: this.projectId,
+                        type: this.repoBaseInfo.type.toUpperCase(),
+                        name: this.repoBaseInfo.name,
+                        public: this.repoBaseInfo.public,
+                        display: this.repoBaseInfo.display,
+                        description: this.repoBaseInfo.description,
+                        category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
+                        configuration: {
+                            type: this.repoBaseInfo.type === 'generic' ? 'local' : 'composite',
+                            settings: {
+                                system: this.repoBaseInfo.system,
+                                interceptors: undefined,
+                                autoIndex: {
+                                    enabled: this.repoBaseInfo.autoIndex
+                                },
+                                ...(
+                                    this.repoBaseInfo.type === 'rpm'
+                                        ? {
+                                            enabledFileLists: this.repoBaseInfo.enabledFileLists,
+                                            repodataDepth: this.repoBaseInfo.repodataDepth,
+                                            groupXmlSet: this.repoBaseInfo.groupXmlSet
+                                        }
+                                        : {}
+                                )
+                            }
                         }
                     }
                 }

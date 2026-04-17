@@ -969,5 +969,15 @@
     "targetPath": "Target Path",
     "targetPathPlaceholder": "Please enter target path",
     "model": "Model",
-    "dataset": "Dataset"
+    "dataset": "Dataset",
+    "localRepo": "Local Repository",
+    "localRepoDesc": "Upload and manage your own artifacts",
+    "remoteRepo": "Remote Repository",
+    "remoteRepoDesc": "Proxy and cache remotely hosted artifacts",
+    "createLocalRepository": "New Local Repository",
+    "createRemoteRepository": "New Remote Repository",
+    "remoteUrl": "Remote URL",
+    "remoteUrlPlaceholder": "Please enter remote URL",
+    "accessToken": "Access Token",
+    "accessTokenInputPlaceholder": "Please enter access token"
 }
