@@ -8,9 +8,8 @@
                 trigger="click"
                 :arrow="false"
                 :distance="4">
-                <bk-button icon="plus" theme="primary" class="create-repo-btn">
-                    <span>{{ $t('createRepository') }}</span>
-                    <i class="bk-icon icon-angle-up ml5"></i>
+                <bk-button theme="primary" class="create-repo-btn">
+                    {{ $t('createRepository') }}
                 </bk-button>
                 <template slot="content">
                     <ul class="create-repo-menu">
@@ -19,7 +18,6 @@
                             :key="item.category"
                             class="create-repo-menu-item"
                             @click="onCreateRepoMenuClick(item)">
-                            <i class="create-repo-menu-icon" :class="item.iconClass"></i>
                             <div class="create-repo-menu-text">
                                 <div class="create-repo-menu-title">{{ $t(item.titleKey) }}</div>
                                 <div class="create-repo-menu-desc">{{ $t(item.descKey) }}</div>
@@ -180,14 +178,12 @@
                     {
                         category: 'LOCAL',
                         titleKey: 'localRepo',
-                        descKey: 'localRepoDesc',
-                        iconClass: 'bk-icon icon-folder'
+                        descKey: 'localRepoDesc'
                     },
                     {
                         category: 'REMOTE',
                         titleKey: 'remoteRepo',
-                        descKey: 'remoteRepoDesc',
-                        iconClass: 'bk-icon icon-cc-nav-resource'
+                        descKey: 'remoteRepoDesc'
                     }
                 ]
             }
@@ -525,11 +521,6 @@
             display: block;
         }
     }
-    .create-repo-btn {
-        ::v-deep .icon-angle-up {
-            transition: transform 0.2s;
-        }
-    }
 }
 </style>
 <style lang="scss">
@@ -547,24 +538,11 @@
         min-width: 240px;
     }
     .create-repo-menu-item {
-        display: flex;
-        align-items: flex-start;
         padding: 8px 16px;
         cursor: pointer;
         transition: background-color 0.2s;
         &:hover {
             background-color: #f5f7fa;
-        }
-        .create-repo-menu-icon {
-            flex-shrink: 0;
-            margin-right: 10px;
-            margin-top: 2px;
-            font-size: 16px;
-            color: #63656e;
-        }
-        .create-repo-menu-text {
-            flex: 1;
-            min-width: 0;
         }
         .create-repo-menu-title {
             font-size: 13px;

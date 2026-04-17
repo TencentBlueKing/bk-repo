@@ -40,7 +40,7 @@
                 </bk-input>
                 <div v-if="repoBaseInfo.type === 'docker'" class="form-tip">{{ $t('dockerRepoTip')}}</div>
             </bk-form-item>
-            <bk-form-item v-if="!isRemote" :label="$t('accessPermission')">
+            <bk-form-item :label="$t('accessPermission')">
                 <card-radio-group
                     class="permission-card"
                     v-model="available"
@@ -53,7 +53,7 @@
                     <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
                 </bk-radio-group>
             </bk-form-item>
-            <bk-form-item v-if="!isRemote" :label="$t('isAllowShowFolder')">
+            <bk-form-item :label="$t('isAllowShowFolder')">
                 <div style="display: flex;margin-top: 5px">
                     <bk-radio-group ref="isAllowShowFolderRadio" v-model="repoBaseInfo.autoIndex" style="width: 120px">
                         <bk-radio class="mr20" :value="true">{{ $t('yes') }}</bk-radio>
@@ -64,7 +64,7 @@
             </bk-form-item>
             <bk-form-item
                 :label="$t('bkPermissionCheck')"
-                v-if="!isRemote && !specialRepoEnum.includes(repoBaseInfo.name)">
+                v-if="!specialRepoEnum.includes(repoBaseInfo.name)">
                 <bk-radio-group v-model="bkiamv3Check">
                     <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
                     <bk-radio :value="false">{{ $t('close') }}</bk-radio>
@@ -349,7 +349,7 @@
                         projectId: this.projectId,
                         type: this.repoBaseInfo.type.toUpperCase(),
                         name: this.repoBaseInfo.name,
-                        public: false,
+                        public: this.repoBaseInfo.public,
                         display: this.repoBaseInfo.display,
                         description: this.repoBaseInfo.description,
                         category: 'REMOTE',
@@ -362,7 +362,14 @@
                                         password: this.repoBaseInfo.accessToken
                                     }
                                 }
-                                : {})
+                                : {}),
+                            settings: {
+                                system: this.repoBaseInfo.system,
+                                interceptors: undefined,
+                                autoIndex: {
+                                    enabled: this.repoBaseInfo.autoIndex
+                                }
+                            }
                         }
                     }
                 } else {
