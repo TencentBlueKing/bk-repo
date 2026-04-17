@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.repository.service.metrics.impl
 
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.metrics.push.custom.CustomMetricsExporter
 import com.tencent.bkrepo.common.metrics.push.custom.base.MetricsItem
 import com.tencent.bkrepo.common.metrics.push.custom.enums.DataModel
@@ -21,6 +23,14 @@ class ClientMetricsServiceImpl(
         clientIp: String,
         userId: String
     ): MetricsPushConfigResponse {
+        val maxSize = metricsPushProperties.maxMetricsSize
+        if (request.metrics.size > maxSize) {
+            throw BadRequestException(
+                CommonMessageCode.PARAMETER_INVALID,
+                "metrics size[${request.metrics.size}], max $maxSize"
+            )
+        }
+        
         val enabledForUser = metricsPushProperties.isEnabledForUser(userId)
         if (enabledForUser) {
             request.metrics.forEach {
