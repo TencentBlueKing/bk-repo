@@ -6,12 +6,19 @@
         :title="title"
         @cancel="cancel">
         <bk-form class="mr10 repo-base-info" :label-width="150" :model="repoBaseInfo" :rules="rules" ref="repoBaseInfo">
+            <bk-form-item :label="$t('repoName')" :required="true" property="name" error-display-type="normal">
+                <bk-input
+                    class="w480" v-model.trim="repoBaseInfo.name" maxlength="32" show-word-limit
+                    :placeholder="$t(repoBaseInfo.type === 'docker' ? 'repoDockerNamePlaceholder' : 'repoNamePlaceholder')">
+                </bk-input>
+                <div v-if="repoBaseInfo.type === 'docker'" class="form-tip">{{ $t('dockerRepoTip')}}</div>
+            </bk-form-item>
             <bk-form-item :label="$t('repoType')" :required="true" property="type" error-display-type="normal">
                 <bk-radio-group v-model="repoBaseInfo.type" class="repo-type-radio-group" @change="changeRepoType">
                     <bk-radio-button v-for="repo in visibleRepoEnum" :key="repo.label" :value="repo.value" :disabled="disCheck(repo.value)">
                         <div class="flex-column flex-center repo-type-radio">
                             <Icon size="32" :name="repo.value" />
-                            <span>{{repo.label}}</span>
+                            <span class="repo-type-label">{{repo.label}}</span>
                         </div>
                     </bk-radio-button>
                 </bk-radio-group>
@@ -24,7 +31,7 @@
                         :placeholder="$t('remoteUrlPlaceholder')">
                     </bk-input>
                 </bk-form-item>
-                <bk-form-item :label="$t('accessToken')" property="accessToken" error-display-type="normal">
+                <bk-form-item :label="$t('accessToken')" :required="true" property="accessToken" error-display-type="normal">
                     <bk-input
                         class="w480"
                         type="password"
@@ -33,13 +40,6 @@
                     </bk-input>
                 </bk-form-item>
             </template>
-            <bk-form-item :label="$t('repoName')" :required="true" property="name" error-display-type="normal">
-                <bk-input
-                    class="w480" v-model.trim="repoBaseInfo.name" maxlength="32" show-word-limit
-                    :placeholder="$t(repoBaseInfo.type === 'docker' ? 'repoDockerNamePlaceholder' : 'repoNamePlaceholder')">
-                </bk-input>
-                <div v-if="repoBaseInfo.type === 'docker'" class="form-tip">{{ $t('dockerRepoTip')}}</div>
-            </bk-form-item>
             <bk-form-item :label="$t('accessPermission')">
                 <card-radio-group
                     class="permission-card"
@@ -245,6 +245,13 @@
                         {
                             regex: /^https?:\/\/.+/,
                             message: this.$t('pleaseInput') + this.$t('legit') + this.$t('remoteUrl'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    accessToken: [
+                        {
+                            required: true,
+                            message: this.$t('pleaseInput') + this.$t('accessToken'),
                             trigger: 'blur'
                         }
                     ]
@@ -493,6 +500,16 @@
             padding: 5px;
             width: 80px;
             height: 60px;
+            .repo-type-label {
+                margin-top: 2px;
+                max-width: 100%;
+                font-size: 12px;
+                line-height: 16px;
+                text-align: center;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
         }
     }
     .member-selector{
