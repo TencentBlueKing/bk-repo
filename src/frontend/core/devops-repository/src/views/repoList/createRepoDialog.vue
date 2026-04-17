@@ -6,13 +6,6 @@
         :title="title"
         @cancel="cancel">
         <bk-form class="mr10 repo-base-info" :label-width="150" :model="repoBaseInfo" :rules="rules" ref="repoBaseInfo">
-            <bk-form-item :label="$t('repoName')" :required="true" property="name" error-display-type="normal">
-                <bk-input
-                    class="w480" v-model.trim="repoBaseInfo.name" maxlength="32" show-word-limit
-                    :placeholder="$t(repoBaseInfo.type === 'docker' ? 'repoDockerNamePlaceholder' : 'repoNamePlaceholder')">
-                </bk-input>
-                <div v-if="repoBaseInfo.type === 'docker'" class="form-tip">{{ $t('dockerRepoTip')}}</div>
-            </bk-form-item>
             <bk-form-item :label="$t('repoType')" :required="true" property="type" error-display-type="normal">
                 <bk-radio-group v-model="repoBaseInfo.type" class="repo-type-radio-group" @change="changeRepoType">
                     <bk-radio-button v-for="repo in visibleRepoEnum" :key="repo.label" :value="repo.value" :disabled="disCheck(repo.value)">
@@ -22,6 +15,13 @@
                         </div>
                     </bk-radio-button>
                 </bk-radio-group>
+            </bk-form-item>
+            <bk-form-item :label="$t('repoName')" :required="true" property="name" error-display-type="normal">
+                <bk-input
+                    class="w480" v-model.trim="repoBaseInfo.name" maxlength="32" show-word-limit
+                    :placeholder="$t(repoBaseInfo.type === 'docker' ? 'repoDockerNamePlaceholder' : 'repoNamePlaceholder')">
+                </bk-input>
+                <div v-if="repoBaseInfo.type === 'docker'" class="form-tip">{{ $t('dockerRepoTip')}}</div>
             </bk-form-item>
             <template v-if="isRemote">
                 <bk-form-item :label="$t('remoteUrl')" :required="true" property="remoteUrl" error-display-type="normal">
