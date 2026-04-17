@@ -33,6 +33,8 @@ import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
+import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
+import com.tencent.bkrepo.common.ratelimiter.rule.common.ResLimitInfo
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
 import com.tencent.bkrepo.common.ratelimiter.stream.RateCheckContext
@@ -71,6 +73,27 @@ abstract class AbstractBandwidthRateLimiterService(
     }
 
     /**
+     * 查询当前请求匹配的带宽规则完整结果（resLimitInfo + resInfo），无匹配或规则为空时返回 null。
+     * - isEmpty 快路：无规则配置时跳过 buildResource / ResInfo 构造等所有开销
+     * - 结果供调用方复用，避免 bandwidthRateStart 内部再次调用 getResLimitInfoAndResInfo
+     */
+    internal fun getMatchedRuleResult(request: HttpServletRequest): Pair<ResLimitInfo, ResInfo>? {
+        if (ignoreRequest(request)) return null
+        if (rateLimitRule == null || rateLimitRule!!.isEmpty()) return null
+        val (resLimitInfo, resInfo) = getResLimitInfoAndResInfo(request)
+        if (resLimitInfo == null || resInfo == null) return null
+        return Pair(resLimitInfo, resInfo)
+    }
+
+    /**
+     * 查询当前请求匹配的带宽规则优先级，无匹配规则时返回 null。
+     * 供 [com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService.bandwidthCheck]
+     * 跨服务选择最高优先级规则使用，不触发实际限流。
+     */
+    fun getMatchedRulePriority(request: HttpServletRequest): Int? =
+        getMatchedRuleResult(request)?.first?.resourceLimit?.priority
+
+    /**
      * 根据资源返回对应带限流实现的InputStream
      */
     fun bandwidthRateStart(
@@ -81,13 +104,39 @@ abstract class AbstractBandwidthRateLimiterService(
     ): CommonRateLimitInputStream? {
         whiteListCheck(request)
         val (resLimitInfo, resInfo) = getResLimitInfoAndResInfo(request)
-        if (resLimitInfo == null) return null
+        if (resLimitInfo == null || resInfo == null) return null
+        return buildRateLimitStream(inputStream, circuitBreakerPerSecond, resLimitInfo, resInfo, rangeLength)
+    }
+
+    /**
+     * 使用调用方已计算好的规则结果构造限速流，避免重复调用 getResLimitInfoAndResInfo。
+     * 由 [RequestLimitCheckService] 的 bandwidthCheck / uploadBandwidthStreamCheck 使用。
+     */
+    internal fun bandwidthRateStartWithResult(
+        request: HttpServletRequest,
+        inputStream: InputStream,
+        circuitBreakerPerSecond: DataSize,
+        resLimitInfo: ResLimitInfo,
+        resInfo: ResInfo,
+        rangeLength: Long? = null,
+    ): CommonRateLimitInputStream? {
+        whiteListCheck(request)
+        return buildRateLimitStream(inputStream, circuitBreakerPerSecond, resLimitInfo, resInfo, rangeLength)
+    }
+
+    private fun buildRateLimitStream(
+        inputStream: InputStream,
+        circuitBreakerPerSecond: DataSize,
+        resLimitInfo: ResLimitInfo,
+        resInfo: ResInfo,
+        rangeLength: Long?,
+    ): CommonRateLimitInputStream? {
         logger.info("will check the bandwidth with length $rangeLength of ${resLimitInfo.resource}")
         return try {
             interceptorChain.doBeforeLimitCheck(resLimitInfo.resource, resLimitInfo.resourceLimit)
             circuitBreakerCheck(resLimitInfo.resourceLimit, circuitBreakerPerSecond.toBytes())
             val context = RateCheckContext(
-                resInfo = resInfo!!,
+                resInfo = resInfo,
                 resourceLimit = resLimitInfo.resourceLimit,
                 limitKey = generateKey(resLimitInfo.resource, resLimitInfo.resourceLimit),
                 dryRun = rateLimiterProperties.dryRun,

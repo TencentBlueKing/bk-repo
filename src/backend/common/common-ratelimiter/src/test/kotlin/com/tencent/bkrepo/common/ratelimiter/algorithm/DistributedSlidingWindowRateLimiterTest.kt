@@ -67,9 +67,9 @@ class DistributedSlidingWindowRateLimiterTest : DistributedTest() {
     fun testTryAcquireOnMultiThreads() {
         val key = KEY + "testTryAcquireOnMultiThreads"
         val ratelimiter = DistributedSlidingWindowRateLimiter(key, 5, Duration.ofSeconds(1), redisTemplate)
-        var successNum = 0
-        var failedNum = 0
-        var errorNum = 0
+        val successNum = java.util.concurrent.atomic.AtomicInteger(0)
+        val failedNum = java.util.concurrent.atomic.AtomicInteger(0)
+        val errorNum = java.util.concurrent.atomic.AtomicInteger(0)
         val readers = Runtime.getRuntime().availableProcessors()
         val countDownLatch = CountDownLatch(readers)
         val elapsedTime = measureTimeMillis {
@@ -78,12 +78,12 @@ class DistributedSlidingWindowRateLimiterTest : DistributedTest() {
                     try {
                         val passed = ratelimiter.tryAcquire(1)
                         if (passed) {
-                            successNum++
+                            successNum.incrementAndGet()
                         } else {
-                            failedNum++
+                            failedNum.incrementAndGet()
                         }
                     } catch (e: Exception) {
-                        errorNum++
+                        errorNum.incrementAndGet()
                     }
                     countDownLatch.countDown()
                 }
@@ -91,7 +91,10 @@ class DistributedSlidingWindowRateLimiterTest : DistributedTest() {
         }
         countDownLatch.await()
         println("elapse: ${HumanReadable.time(elapsedTime, TimeUnit.MILLISECONDS)}")
-        println("successNum $successNum, failedNum $failedNum. errorNum $errorNum")
+        println("successNum ${successNum.get()}, failedNum ${failedNum.get()}. errorNum ${errorNum.get()}")
+        Assertions.assertEquals(0, errorNum.get())
+        Assertions.assertEquals(readers, successNum.get() + failedNum.get())
+        Assertions.assertTrue(successNum.get() <= 5)
         clean(key)
     }
 
