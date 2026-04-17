@@ -1,7 +1,31 @@
 <template>
     <div class="repo-list-container" v-bkloading="{ isLoading }">
         <div class="ml20 mr20 mt10 flex-between-center">
-            <bk-button icon="plus" theme="primary" @click="createRepo">{{ $t('createRepository') }}</bk-button>
+            <bk-popover
+                ref="createRepoPopover"
+                theme="light create-repo-popover"
+                placement="bottom-start"
+                trigger="click"
+                :arrow="false"
+                :distance="4">
+                <bk-button theme="primary" class="create-repo-btn">
+                    {{ $t('createRepository') }}
+                </bk-button>
+                <template slot="content">
+                    <ul class="create-repo-menu">
+                        <li
+                            v-for="item in createRepoMenu"
+                            :key="item.category"
+                            class="create-repo-menu-item"
+                            @click="onCreateRepoMenuClick(item)">
+                            <div class="create-repo-menu-text">
+                                <div class="create-repo-menu-title">{{ $t(item.titleKey) }}</div>
+                                <div class="create-repo-menu-desc">{{ $t(item.descKey) }}</div>
+                            </div>
+                        </li>
+                    </ul>
+                </template>
+            </bk-popover>
             <div class="flex-align-center">
                 <bk-input
                     v-model.trim="query.name"
@@ -149,7 +173,19 @@
                 sortType: [],
                 showIamDenyDialog: false,
                 showData: {},
-                multiMode: BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true'
+                multiMode: BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true',
+                createRepoMenu: [
+                    {
+                        category: 'LOCAL',
+                        titleKey: 'localRepo',
+                        descKey: 'localRepoDesc'
+                    },
+                    {
+                        category: 'REMOTE',
+                        titleKey: 'remoteRepo',
+                        descKey: 'remoteRepoDesc'
+                    }
+                ]
             }
         },
         computed: {
@@ -258,6 +294,13 @@
             },
             createRepo () {
                 this.$refs.createRepo.showDialogHandler()
+            },
+            onCreateRepoMenuClick (item) {
+                const popover = this.$refs.createRepoPopover
+                if (popover && popover.instance) {
+                    popover.instance.hide()
+                }
+                this.$refs.createRepo.showDialogHandler(item.category)
             },
             toPackageList ({ projectId, repoType, name, category }) {
                 this.$router.push({
@@ -476,6 +519,41 @@
         margin-right: 20%;
         ::v-deep .bk-tooltip-ref {
             display: block;
+        }
+    }
+}
+</style>
+<style lang="scss">
+.tippy-tooltip.create-repo-popover-theme {
+    padding: 6px 0;
+    border-radius: 2px;
+    box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.1);
+    .tippy-content {
+        padding: 0;
+    }
+    .create-repo-menu {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        min-width: 240px;
+    }
+    .create-repo-menu-item {
+        padding: 8px 16px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        &:hover {
+            background-color: #f5f7fa;
+        }
+        .create-repo-menu-title {
+            font-size: 13px;
+            color: #313238;
+            line-height: 20px;
+        }
+        .create-repo-menu-desc {
+            font-size: 12px;
+            color: #979ba5;
+            line-height: 18px;
+            margin-top: 2px;
         }
     }
 }
