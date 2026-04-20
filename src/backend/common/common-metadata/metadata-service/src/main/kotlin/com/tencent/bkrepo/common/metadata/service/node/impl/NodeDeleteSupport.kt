@@ -42,6 +42,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.common.metadata.service.node.NodeDeleteOperation
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.router.RouterControllerService
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationColdPurgeService
 import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildCriteria
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildNodeCleanEvent
@@ -60,7 +61,8 @@ import java.time.LocalDateTime
  * 节点删除接口实现
  */
 open class NodeDeleteSupport(
-    private val nodeBaseService: NodeBaseService
+    private val nodeBaseService: NodeBaseService,
+    private val separationColdPurgeService: SeparationColdPurgeService,
 ) : NodeDeleteOperation {
 
     val nodeDao: NodeDao = nodeBaseService.nodeDao
@@ -125,7 +127,10 @@ open class NodeDeleteSupport(
     ) {
         val criteria = buildCriteria(projectId, repoName, fullPath)
         val query = Query(criteria)
-        delete(query, operator, criteria, projectId, repoName, listOf(fullPath), false, source = source)
+        delete(
+            query, operator, criteria, projectId, repoName, listOf(fullPath),
+            decreaseVolume = false, source = source,
+        )
     }
 
     override fun deleteByPath(
@@ -180,7 +185,16 @@ open class NodeDeleteSupport(
         val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, path, option)
             .andOperator(timeCriteria)
         val query = Query(criteria)
-        val nodeDeleteResult = delete(query, operator, criteria, projectId, repoName, decreaseVolume = decreaseVolume)
+        val nodeDeleteResult = delete(
+            query,
+            operator,
+            criteria,
+            projectId,
+            repoName,
+            nodeCleanScopeRootFullPath = path,
+            cleanBeforeDate = date,
+            decreaseVolume = decreaseVolume,
+        )
         publishEvent(
             buildNodeCleanEvent(
                 projectId, repoName, path, operator, nodeDeleteResult.deletedTime.toString(), source
@@ -226,6 +240,10 @@ open class NodeDeleteSupport(
         projectId: String,
         repoName: String,
         fullPaths: List<String>? = null,
+        /** 仅 deleteBeforeDate：与热表 clean 作用域根路径一致，走冷表 node-clean 入口 */
+        nodeCleanScopeRootFullPath: String? = null,
+        /** 与 deleteBeforeDate 的 date 一致，用于冷表按相同时间条件打 deleted */
+        cleanBeforeDate: LocalDateTime? = null,
         decreaseVolume: Boolean = true,
         source: String? = null,
         deleteTime: LocalDateTime = LocalDateTime.now()
@@ -245,6 +263,20 @@ open class NodeDeleteSupport(
             if (deletedNum == 0L) {
                 logger.info("Delete node[$resourceKey] by [$operator] success. No nodes were deleted.")
                 return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
+            }
+            when {
+                fullPaths != null ->
+                    separationColdPurgeService.markColdDeletedAfterHotPathSoftDelete(
+                        projectId, repoName, fullPaths, deleteTime,
+                    )
+                nodeCleanScopeRootFullPath != null ->
+                    separationColdPurgeService.markColdDeletedAfterHotNodeClean(
+                        projectId,
+                        repoName,
+                        nodeCleanScopeRootFullPath,
+                        requireNotNull(cleanBeforeDate) { "cleanBeforeDate required for node clean cold purge" },
+                        deleteTime,
+                    )
             }
             if (decreaseVolume) {
                 var deletedCriteria = criteria.and(TNode::deleted).isEqualTo(deleteTime)

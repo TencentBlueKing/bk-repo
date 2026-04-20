@@ -90,8 +90,7 @@ val IGNORE_PROJECT_PREFIX_LIST = listOf(CODE_PROJECT_PREFIX, CLOSED_SOURCE_PREFI
 /**
  * 数据降冷
  */
-const val RESTORE = "RESTORE"
-const val SEPARATE = "SEPARATE"
+
 
 const val PACKAGE_COLLECTION_NAME = "package"
 const val PACKAGE_VERSION_COLLECTION_NAME = "package_version"

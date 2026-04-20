@@ -52,6 +52,7 @@ import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.metadata.service.router.RouterControllerService
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationColdPurgeService
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.checkOverwriteAndConflict
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.convertToDetail
@@ -95,7 +96,8 @@ class CenterNodeServiceImpl(
     override val metadataCustomizer: MetadataCustomizer?,
     val clusterProperties: ClusterProperties,
     val archiveClient: ArchiveClient,
-    override val metadataLabelCacheService: MetadataLabelCacheService
+    override val metadataLabelCacheService: MetadataLabelCacheService,
+    private val separationColdPurgeService: SeparationColdPurgeService,
 ) : NodeServiceImpl(
     nodeDao,
     repositoryDao,
@@ -112,7 +114,11 @@ class CenterNodeServiceImpl(
     metadataCustomizer,
     archiveClient,
     metadataLabelCacheService,
+    separationColdPurgeService,
 ) {
+
+    private fun centerDeleteSupport() =
+        CenterNodeDeleteSupport(this, clusterProperties, separationColdPurgeService)
 
     override fun checkRepo(projectId: String, repoName: String): TRepository {
         val repo = repositoryDao.findByNameAndType(projectId, repoName)
@@ -128,7 +134,7 @@ class CenterNodeServiceImpl(
     override fun deleteByFullPathWithoutDecreaseVolume(
         projectId: String, repoName: String, fullPath: String, operator: String, source: String?
     ) {
-        return CenterNodeDeleteSupport(this, clusterProperties).deleteByFullPathWithoutDecreaseVolume(
+        centerDeleteSupport().deleteByFullPathWithoutDecreaseVolume(
             projectId,
             repoName,
             fullPath,
@@ -201,11 +207,11 @@ class CenterNodeServiceImpl(
     }
 
     override fun deleteNode(deleteRequest: NodeDeleteRequest): NodeDeleteResult {
-        return CenterNodeDeleteSupport(this, clusterProperties).deleteNode(deleteRequest)
+        return centerDeleteSupport().deleteNode(deleteRequest)
     }
 
     override fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): NodeDeleteResult {
-        return CenterNodeDeleteSupport(this, clusterProperties).deleteNodes(nodesDeleteRequest)
+        return centerDeleteSupport().deleteNodes(nodesDeleteRequest)
     }
 
     override fun deleteByPath(
@@ -215,7 +221,7 @@ class CenterNodeServiceImpl(
         operator: String,
         source: String?,
     ): NodeDeleteResult {
-        return CenterNodeDeleteSupport(this, clusterProperties).deleteByPath(
+        return centerDeleteSupport().deleteByPath(
             projectId,
             repoName,
             fullPath,
@@ -230,7 +236,7 @@ class CenterNodeServiceImpl(
         fullPaths: List<String>,
         operator: String
     ): NodeDeleteResult {
-        return CenterNodeDeleteSupport(this, clusterProperties).deleteByPaths(
+        return centerDeleteSupport().deleteByPaths(
             projectId,
             repoName,
             fullPaths,
@@ -247,7 +253,7 @@ class CenterNodeServiceImpl(
         decreaseVolume: Boolean,
         source: String?
     ): NodeDeleteResult {
-        return CenterNodeDeleteSupport(this, clusterProperties).deleteBeforeDate(
+        return centerDeleteSupport().deleteBeforeDate(
             projectId,
             repoName,
             date,
@@ -267,7 +273,7 @@ class CenterNodeServiceImpl(
         deleteTime: LocalDateTime,
         source: String?
     ): NodeDeleteResult {
-        return CenterNodeDeleteSupport(this, clusterProperties).deleteNodeById(
+        return centerDeleteSupport().deleteNodeById(
             projectId,
             repoName,
             fullPath,
