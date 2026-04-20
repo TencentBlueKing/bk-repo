@@ -1,5 +1,16 @@
 <template>
   <div class="app-container">
+    <el-form ref="form" :inline="true">
+      <el-form-item ref="project-form-item" label="在线节点数">
+        <el-input v-model="onlineNumber" :disabled="true" />
+      </el-form-item>
+      <el-form-item ref="project-form-item" label="离线节点数">
+        <el-input v-model="offlineNumber" :disabled="true" />
+      </el-form-item>
+      <el-form-item style="margin-left: 15px">
+        <span v-if="countTimer"> {{ timeLimit + '秒内刷新' }} </span>
+      </el-form-item>
+    </el-form>
     <el-table
       :data="instances.filter(data => !search || (data.host+':'+data.port).includes(search))"
       style="width: 100%"
@@ -129,36 +140,63 @@ export default {
       loading: true,
       instances: [],
       search: '',
-      isConsul: true
+      isConsul: true,
+      onlineNumber: '',
+      offlineNumber: '',
+      countTimer: null,
+      instancesTimer: null,
+      timeLimit: 10,
+      started: false
     }
   },
   created() {
-    instances(this.serviceName).then(res => {
-      const host = localStorage.getItem('instanceHost') || ''
-      if (host !== '') {
-        this.instances = res.data.filter(instance =>
-          instance.host && instance.host.includes(host)
-        )
-      } else {
-        this.instances = res.data
-      }
-      this.loading = false
-      bandwidths(this.serviceName).then(bandwidths => {
-        if (this.instances.length > 0 && bandwidths.data.length > 0) {
-          this.instances = this.instances.map(instance => {
-            const match = bandwidths.data.find(bandwidth => bandwidth.host === instance.host)
-            return match ? { ...instance, ...match } : instance
-          })
+    this.getAllInstances()
+    if (!this.started) {
+      this.countTimer = setInterval(() => {
+        if (this.timeLimit > 0) {
+          this.timeLimit = this.timeLimit - 1
         }
-      })
-    }).catch(() => {
-      this.loading = false
-    })
+      }, 1000)
+      this.instancesTimer = setInterval(() => {
+        this.getAllInstances()
+      }, 1000 * 10)
+      this.started = true
+    }
     checkConsulPattern().then(res => {
       this.isConsul = res.data
     })
   },
   methods: {
+    getAllInstances() {
+      instances(this.serviceName).then(res => {
+        this.timeLimit = 10
+        const host = localStorage.getItem('instanceHost') || ''
+        if (host !== '') {
+          this.instances = res.data.filter(instance =>
+            instance.host && instance.host.includes(host)
+          )
+        } else {
+          this.instances = res.data
+        }
+        this.onlineNumber = this.instances.filter(instance =>
+          instance.status === 'RUNNING'
+        ).length
+        this.offlineNumber = this.instances.filter(instance =>
+          instance.status !== 'RUNNING'
+        ).length
+        this.loading = false
+        bandwidths(this.serviceName).then(bandwidths => {
+          if (this.instances.length > 0 && bandwidths.data.length > 0) {
+            this.instances = this.instances.map(instance => {
+              const match = bandwidths.data.find(bandwidth => bandwidth.host === instance.host)
+              return match ? { ...instance, ...match } : instance
+            })
+          }
+        })
+      }).catch(() => {
+        this.loading = false
+      })
+    },
     changeInstanceStatus(serviceName, instance, index) {
       const instanceStatus = instance.status
       const instanceId = instance.id
