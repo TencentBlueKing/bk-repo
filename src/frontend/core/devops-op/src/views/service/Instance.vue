@@ -166,6 +166,14 @@ export default {
       this.isConsul = res.data
     })
   },
+  beforeDestroy() {
+    if (this.countTimer) {
+      clearInterval(this.countTimer)
+    }
+    if (this.instancesTimer) {
+      clearInterval(this.instancesTimer)
+    }
+  },
   methods: {
     getAllInstances() {
       instances(this.serviceName).then(res => {
