@@ -8,9 +8,7 @@
                 trigger="click"
                 :arrow="false"
                 :distance="4">
-                <bk-button theme="primary" class="create-repo-btn">
-                    {{ $t('createRepository') }}
-                </bk-button>
+                <bk-button icon="plus" theme="primary">{{ $t('createRepository') }}</bk-button>
                 <template slot="content">
                     <ul class="create-repo-menu">
                         <li
