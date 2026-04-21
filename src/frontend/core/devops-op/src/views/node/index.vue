@@ -310,7 +310,7 @@ export default {
         const lastIndex = temp.lastIndexOf('/')
         target = temp.substring(0, lastIndex)
       }
-      this.nodeQuery.path = target === '' ? '/' : target
+      this.nodeQuery.path = target + '/'
       this.changeRouteQueryParams(true)
     },
     changeRouteQueryParams(resetPage = false) {
