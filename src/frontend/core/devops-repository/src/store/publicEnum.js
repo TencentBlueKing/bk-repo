@@ -16,7 +16,7 @@ export const repoEnum = [
     { label: 'Conan', value: 'conan' },
     { label: 'Ohpm', value: 'ohpm' },
     { label: 'Cargo', value: 'cargo' },
-    { label: 'HuggingFace', value: 'huggingface' }
+    { label: 'HuggingFace', value: 'huggingface', remote: true }
 ]
 
 export const ciDisableRepoEnum = [

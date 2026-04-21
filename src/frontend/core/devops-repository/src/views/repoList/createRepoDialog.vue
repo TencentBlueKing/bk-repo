@@ -188,7 +188,7 @@
             },
             visibleRepoEnum () {
                 if (this.isRemote) {
-                    return repoEnum.filter(r => r.value === 'huggingface')
+                    return repoEnum.filter(r => r.remote)
                 }
                 return repoEnum
             },
@@ -327,7 +327,10 @@
                 this.repoBaseInfo = getRepoBaseInfo()
                 if (category === 'REMOTE') {
                     this.title = this.$t('createRemoteRepository')
-                    this.repoBaseInfo.type = 'huggingface'
+                    const firstRemote = repoEnum.find(r => r.remote)
+                    if (firstRemote) {
+                        this.repoBaseInfo.type = firstRemote.value
+                    }
                     this.repoBaseInfo.remoteUrl = DEFAULT_HUGGINGFACE_URL
                 } else {
                     this.title = this.$t('createLocalRepository')
@@ -336,6 +339,7 @@
             },
             cancel () {
                 this.accessControl = 'DEFAULT'
+                this.category = 'LOCAL'
                 this.show = false
             },
             asynCheckRepoName () {
@@ -363,13 +367,9 @@
                         configuration: {
                             type: 'remote',
                             url: this.repoBaseInfo.remoteUrl,
-                            ...(this.repoBaseInfo.accessToken
-                                ? {
-                                    credentials: {
-                                        password: this.repoBaseInfo.accessToken
-                                    }
-                                }
-                                : {}),
+                            credentials: {
+                                password: this.repoBaseInfo.accessToken
+                            },
                             settings: {
                                 system: this.repoBaseInfo.system,
                                 interceptors: undefined,
