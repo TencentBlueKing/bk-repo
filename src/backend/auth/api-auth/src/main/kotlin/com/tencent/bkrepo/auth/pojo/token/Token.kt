@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.auth.pojo.token
 
 import io.swagger.v3.oas.annotations.media.Schema
+import org.springframework.data.annotation.Transient
 import java.time.LocalDateTime
 
 @Schema(title = "token信息")
@@ -43,5 +44,16 @@ data class Token(
     @get:Schema(title = "创建时间")
     val createdAt: LocalDateTime,
     @get:Schema(title = "过期时间")
-    val expiredAt: LocalDateTime?
+    val expiredAt: LocalDateTime?,
+
+    /**
+     * 可直接使用的认证凭证串。
+     *
+     * - **仅在"创建 token"类接口的响应中填充**，用于让客户端免去自行拼接 `Basic base64(userId:token)` 的步骤；
+     * - 标记为 [Transient]，MongoDB 不会把该字段序列化到 `user.tokens` 集合中，避免明文凭证落库；
+     * - 其他返回路径（列表/查询等）应保持为 `null`，防止明文凭证通过查询接口泄漏。
+     */
+    @get:Schema(title = "可直接使用的认证凭证，仅创建 token 时返回")
+    @field:Transient
+    val authorization: Authorization? = null
 )
