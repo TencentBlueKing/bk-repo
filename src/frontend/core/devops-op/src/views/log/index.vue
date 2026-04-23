@@ -16,7 +16,7 @@
         style="margin-left: 15px"
         label="节点"
       >
-        <el-select :disabled="!service" v-model="node" clearable placeholder="请选择">
+        <el-select v-model="node" :disabled="!service" clearable placeholder="请选择">
           <el-option
             v-for="item in nodeOptions"
             :key="item"
@@ -54,117 +54,125 @@
 </template>
 
 <script>
-  import * as monaco from 'monaco-editor'
-  import { getLog, getLogConfig } from '@/api/jfrog-log'
+import * as monaco from 'monaco-editor'
+import { getLog, getLogConfig } from '@/api/jfrog-log'
 
-  export default {
-    name: 'EditorIndex',
-    data() {
-      return {
-        editor: null,
-        text: '',
-        timer: null,
-        service: '',
-        serviceOptions: [],
-        node: '',
-        nodeOptions: [],
-        logName: '',
-        logOptions: [],
-        timeLimit: -1,
-        countTimer: null,
-        startPosition: 0,
-        originTimeLimit: 0,
-        serviceNodeMap: null
-      }
-    },
-    watch: {
-      logName(val) {
-        if (val) {
-          this.editor.setValue('')
-          this.startPosition = 0
-          this.showLog(val)
-          this.timer = setInterval(() => {
-            this.showLog(val)
-          }, this.originTimeLimit)
-          if (!this.countTimer) {
-            this.countTimer = setInterval(() => {
-              if (this.timeLimit > 0) {
-                this.timeLimit = this.timeLimit - 1
-              }
-            }, 1000)
-          }
-        } else {
-          this.text = ''
-          this.startPosition = 0
-          this.editor.setValue('')
-          this.pause()
-        }
-      },
-      node() {
-        this.text = ''
+export default {
+  name: 'EditorIndex',
+  data() {
+    return {
+      editor: null,
+      text: '',
+      timer: null,
+      service: '',
+      serviceOptions: [],
+      node: '',
+      nodeOptions: [],
+      logName: '',
+      logOptions: [],
+      timeLimit: -1,
+      countTimer: null,
+      startPosition: 0,
+      originTimeLimit: 0,
+      serviceNodeMap: null
+    }
+  },
+  watch: {
+    logName(val) {
+      if (val) {
         this.editor.setValue('')
         this.startPosition = 0
+        this.showLog(val)
+        this.timer = setInterval(() => {
+          this.showLog(val)
+        }, this.originTimeLimit)
+        if (!this.countTimer) {
+          this.countTimer = setInterval(() => {
+            if (this.timeLimit > 0) {
+              this.timeLimit = this.timeLimit - 1
+            }
+          }, 1000)
+        }
+      } else {
+        this.text = ''
+        this.startPosition = 0
+        this.editor.setValue('')
+        this.pause()
       }
     },
-    mounted() {
-      this.init()
-    },
-    created() {
-      getLogConfig().then(res => {
-        this.logOptions = res.data.logs
-        this.timeLimit = res.data.refreshRateMillis / 1000
-        this.originTimeLimit = res.data.refreshRateMillis
-        this.serviceOptions = Object.keys(res.data.nodes)
-        this.serviceNodeMap = res.data.nodes
+    node() {
+      this.text = ''
+      this.editor.setValue('')
+      this.startPosition = 0
+    }
+  },
+  mounted() {
+    this.init()
+  },
+  created() {
+    getLogConfig().then(res => {
+      this.logOptions = res.data.logs
+      this.timeLimit = res.data.refreshRateMillis / 1000
+      this.originTimeLimit = res.data.refreshRateMillis
+      this.serviceOptions = Object.keys(res.data.nodes)
+      this.serviceNodeMap = res.data.nodes
+    })
+  },
+  beforeDestroy() {
+    if (this.countTimer) {
+      clearInterval(this.countTimer)
+    }
+    if (this.timer) {
+      clearInterval(this.timer)
+    }
+  },
+  methods: {
+    init() {
+      this.editor = monaco.editor.create(document.getElementById('editor'), {
+        value: this.text, // 编辑器初始显示文字
+        language: 'javascript', // 语言
+        automaticLayout: true, // 自动布局
+        theme: 'vs-dark', // 官方自带三种主题vs, hc-black, or vs-dark
+        minimap: { // 关闭小地图
+          enabled: true
+        },
+        readOnly: true,
+        lineNumbers: 'on' // 隐藏控制行号
       })
     },
-    methods: {
-      init() {
-        this.editor = monaco.editor.create(document.getElementById('editor'), {
-          value: this.text, // 编辑器初始显示文字
-          language: 'javascript', // 语言
-          automaticLayout: true, // 自动布局
-          theme: 'vs-dark', // 官方自带三种主题vs, hc-black, or vs-dark
-          minimap: { // 关闭小地图
-            enabled: true
-          },
-          readOnly: true,
-          lineNumbers: 'on' // 隐藏控制行号
-        })
-      },
-      serviceChanged() {
-        this.node = ''
-        this.nodeOptions = this.serviceNodeMap[this.service]
-      },
-      showLog(val) {
-        this.timeLimit = this.originTimeLimit / 1000
-        getLog(val, this.node, this.startPosition).then(res => {
-          if (this.text === '') {
-            this.text = res.data.logContent
-          } else {
-            this.text = this.text + '\n' + res.data.logContent
-          }
-          this.editor.setValue(this.text)
-          this.startPosition = res.data.fileSize
-        })
-      },
-      pause() {
-        clearInterval(this.timer)
-        this.timer = null
-        this.timeLimit = -1
-      },
-      refresh() {
-        if (this.timer !== null) {
-          this.showLog(this.logName)
+    serviceChanged() {
+      this.node = ''
+      this.nodeOptions = this.serviceNodeMap[this.service]
+    },
+    showLog(val) {
+      this.timeLimit = this.originTimeLimit / 1000
+      getLog(val, this.node, this.startPosition).then(res => {
+        if (this.text === '') {
+          this.text = res.data.logContent
         } else {
-          this.showLog(this.logName)
-          this.timer = setInterval(() => {
-            this.showLog(this.logName)
-          }, this.originTimeLimit)
+          this.text = this.text + '\n' + res.data.logContent
         }
+        this.editor.setValue(this.text)
+        this.startPosition = res.data.fileSize
+      })
+    },
+    pause() {
+      clearInterval(this.timer)
+      this.timer = null
+      this.timeLimit = -1
+    },
+    refresh() {
+      if (this.timer !== null) {
+        this.showLog(this.logName)
+      } else {
+        this.showLog(this.logName)
+        this.timer = setInterval(() => {
+          this.showLog(this.logName)
+        }, this.originTimeLimit)
       }
     }
   }
+}
 </script>
 
 <style lang="scss" scoped>
