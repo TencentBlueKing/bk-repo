@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.auth.pojo.token
 
 import io.swagger.v3.oas.annotations.media.Schema
-import org.springframework.data.annotation.Transient
 import java.time.LocalDateTime
 
 @Schema(title = "token信息")
