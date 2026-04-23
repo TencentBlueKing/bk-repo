@@ -146,7 +146,7 @@ class DriveSnapSeqService(
          * 两次创建快照的最小间隔
          */
         private const val MIN_INC_INTERVAL_SECONDS = 60L
-        private const val CACHE_REFRESH_SECONDS = 10L
+        private const val CACHE_REFRESH_SECONDS = 3L
         private const val CACHE_EXPIRE_SECONDS = 300L
         private const val MAXIMUM_CACHE_SIZE = 10_000L
         private val logger = LoggerFactory.getLogger(DriveSnapSeqService::class.java)
