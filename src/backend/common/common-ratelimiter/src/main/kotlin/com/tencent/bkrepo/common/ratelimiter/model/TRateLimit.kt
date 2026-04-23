@@ -70,4 +70,6 @@ data class TRateLimit(
     var moduleName: List<String>,
     // 是否保持连接
     var keepConnection: Boolean = true,
+    // 规则优先级，值越大越优先；同优先级时路径越具体越优先（默认 0）
+    var priority: Int = 0,
 )

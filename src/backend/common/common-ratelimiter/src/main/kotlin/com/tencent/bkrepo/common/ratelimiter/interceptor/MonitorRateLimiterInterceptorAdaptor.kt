@@ -44,6 +44,12 @@ class MonitorRateLimiterInterceptorAdaptor(
         result: Boolean, e: Exception?
     ) {
         if (resourceLimit == null) return
-        rateLimiterMetrics.collectMetrics(resource = resource, result = result, e = e)
+        rateLimiterMetrics.collectMetrics(
+            resource = resource,
+            result = result,
+            e = e,
+            dimension = resourceLimit.limitDimension,
+            permits = 1L
+        )
     }
 }
