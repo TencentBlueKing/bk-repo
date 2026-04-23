@@ -50,6 +50,7 @@
         </template>
         <template slot-scope="scope">
           {{ scope.row.offlineNumber }}
+          <i v-if="scope.row.offlineNumber > 0" class="el-icon-error" style="color: #F56C6C;" />
         </template>
       </el-table-column>
       <el-table-column>
