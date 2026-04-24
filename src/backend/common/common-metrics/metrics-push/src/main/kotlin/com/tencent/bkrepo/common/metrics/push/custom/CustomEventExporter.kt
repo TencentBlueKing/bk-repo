@@ -6,21 +6,20 @@ import com.tencent.bkrepo.common.metrics.push.custom.config.CustomEventConfig
 import jakarta.annotation.PreDestroy
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
-import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.locks.ReentrantLock
 
 class CustomEventExporter(
     private val config: CustomEventConfig,
     private val push: CustomEventPush,
     private val scheduler: ThreadPoolTaskScheduler,
 ) {
-    private val queue: ConcurrentLinkedQueue<CustomEventItem> = ConcurrentLinkedQueue()
-    private val queueSize = AtomicInteger(0)
+    private val queue: LinkedBlockingQueue<CustomEventItem> = LinkedBlockingQueue(config.maxQueueSize)
 
-    /** 防止定时任务与 shutdown 并发执行 export */
-    private val exporting = AtomicBoolean(false)
+    /** 保护 export 与 shutdown 不并发执行 */
+    private val lock = ReentrantLock()
     private val scheduledTask: ScheduledFuture<*>
 
     /** 队列满状态标志，避免每次丢弃都打 warn */
@@ -31,18 +30,15 @@ class CustomEventExporter(
     }
 
     fun reportEvent(item: CustomEventItem) {
-        val sizeAfter = queueSize.incrementAndGet()
-        if (sizeAfter > config.maxQueueSize) {
-            queueSize.decrementAndGet()
+        val target = item.target.ifEmpty { DEFAULT_TARGET }
+        val offered = queue.offer(item.copy(target = target))
+        if (!offered) {
             if (queueFullLogged.compareAndSet(false, true)) {
                 logger.warn("custom event queue full (>=${config.maxQueueSize}), subsequent drops will be silent")
             } else {
                 logger.debug("custom event queue full, drop event: ${item.eventName}")
             }
-            return
         }
-        val target = item.target.ifEmpty { DEFAULT_TARGET }
-        queue.offer(item.copy(target = target))
     }
 
     /** 定时任务入口：catch Throwable 保证定时器不会因 Error 停摆 */
@@ -56,11 +52,11 @@ class CustomEventExporter(
 
     private fun export() {
         if (queue.isEmpty()) return
-        if (!exporting.compareAndSet(false, true)) return
+        if (!lock.tryLock()) return
         try {
             drainAndPush()
         } finally {
-            exporting.set(false)
+            lock.unlock()
         }
     }
 
@@ -71,7 +67,6 @@ class CustomEventExporter(
             val batch = pollBatch(batchSize)
             if (batch.isEmpty()) return
             val success = push.push(batch)
-            queueSize.addAndGet(-batch.size)
             if (success) {
                 queueFullLogged.set(false)
             } else {
@@ -91,36 +86,20 @@ class CustomEventExporter(
     @PreDestroy
     fun shutdown() {
         scheduledTask.cancel(false)
-        waitForInFlightExport()
-        logger.info("flushing ${queueSize.get()} remaining custom events before shutdown")
-        if (exporting.compareAndSet(false, true)) {
-            try {
-                drainAndPush()
-            } catch (t: Throwable) {
-                logger.error("error during shutdown flush", t)
-            } finally {
-                exporting.set(false)
-            }
-        }
-    }
-
-    /** 等待正在执行的 export 完成，最长等待 SHUTDOWN_WAIT_MS */
-    private fun waitForInFlightExport() {
-        val deadline = System.currentTimeMillis() + SHUTDOWN_WAIT_MS
-        while (exporting.get() && System.currentTimeMillis() < deadline) {
-            try {
-                Thread.sleep(SHUTDOWN_POLL_INTERVAL_MS)
-            } catch (e: InterruptedException) {
-                Thread.currentThread().interrupt()
-                return
-            }
+        // 持有锁等待正在进行的 export 完成，然后执行最终 flush
+        lock.lock()
+        try {
+            logger.info("flushing ${queue.size} remaining custom events before shutdown")
+            drainAndPush()
+        } catch (t: Throwable) {
+            logger.error("error during shutdown flush", t)
+        } finally {
+            lock.unlock()
         }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(CustomEventExporter::class.java)
-        private const val SHUTDOWN_WAIT_MS = 5_000L
-        private const val SHUTDOWN_POLL_INTERVAL_MS = 50L
         private const val DEFAULT_TARGET = "127.0.0.1"
     }
 }

@@ -11,7 +11,7 @@ import io.prometheus.client.CollectorRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.boot.actuate.autoconfigure.metrics.export.prometheus.PrometheusProperties
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
-import java.util.concurrent.ConcurrentHashMap
+import java.util.Collections
 
 class CustomMetricsExporter(
     private val customPushConfig: CustomPushConfig,
@@ -30,7 +30,12 @@ class CustomMetricsExporter(
      */
     private val baseEventDimension: Map<String, String> = commonTagProvider?.provide().orEmpty()
 
-    private val patternCache: ConcurrentHashMap<String, Regex> = ConcurrentHashMap()
+    private val patternCache: MutableMap<String, Regex> = Collections.synchronizedMap(
+        object : LinkedHashMap<String, Regex>(16, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Regex>) =
+                size > MAX_PATTERN_CACHE_SIZE
+        }
+    )
 
     /** metrics push 路径：drive 为 null 时（仅开启 event）不创建，避免空指针 */
     private val scheduleMetricsExporter: ScheduleMetricsExporter? = drive?.let {
@@ -66,6 +71,7 @@ class CustomMetricsExporter(
     private fun resolveReportMode(item: MetricsItem): ReportMode {
         val config = customEventConfig ?: return ReportMode.METRIC_ONLY
         if (customEventExporter == null || !config.reportMetricsAsEvent) return ReportMode.METRIC_ONLY
+        // metricAndEventIncludes 优先级高于 metricEventIncludes，同时命中取 BOTH
         if (matchesIncludes(item.name, config.metricAndEventIncludes)) return ReportMode.BOTH
         if (matchesIncludes(item.name, config.metricEventIncludes)) return ReportMode.EVENT_ONLY
         return ReportMode.METRIC_ONLY
@@ -83,14 +89,14 @@ class CustomMetricsExporter(
     private fun pruneLabelsForMetric(item: MetricsItem): MetricsItem {
         val keepKeys = customPushConfig.labelIncludes[item.name] ?: return item
         val pruned = item.labels.filterKeys { it in keepKeys }
-        return item.copy(labels = pruned.toMutableMap())
+        return item.copy(labels = pruned)
     }
 
     private fun reportAsEvent(item: MetricsItem) {
         try {
             customEventExporter?.reportEvent(item.toEventItem())
         } catch (e: Exception) {
-            logger.warn("report MetricsItem as event failed, name=${item.name}, errmsg=${e.message}")
+            logger.warn("report MetricsItem as event failed, name=${item.name}, errmsg= ${e.message}")
         }
     }
 
@@ -101,8 +107,9 @@ class CustomMetricsExporter(
                 pattern == "*" -> true
                 '*' !in pattern -> pattern == name
                 else -> {
-                    if (patternCache.size > MAX_PATTERN_CACHE_SIZE) patternCache.clear()
-                    patternCache.computeIfAbsent(pattern) { compileGlob(it) }.matches(name)
+                    synchronized(patternCache) {
+                        patternCache.getOrPut(pattern) { compileGlob(pattern) }
+                    }.matches(name)
                 }
             }
         }
