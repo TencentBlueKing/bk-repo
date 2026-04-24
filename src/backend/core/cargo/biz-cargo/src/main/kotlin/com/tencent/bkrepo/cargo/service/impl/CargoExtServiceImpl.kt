@@ -38,6 +38,8 @@ import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoDeleteArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.base.CargoMetadata
 import com.tencent.bkrepo.cargo.pojo.index.CrateIndex
+import com.tencent.bkrepo.cargo.pojo.user.CargoDependencyInfo
+import com.tencent.bkrepo.cargo.pojo.user.CargoDependentInfo
 import com.tencent.bkrepo.cargo.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.cargo.service.CargoExtService
 import com.tencent.bkrepo.cargo.utils.CargoUtils
@@ -47,6 +49,7 @@ import com.tencent.bkrepo.cargo.utils.ObjectBuilderUtil.buildNodeCreateRequest
 import com.tencent.bkrepo.cargo.utils.ObjectBuilderUtil.convert2IndexDependency
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
@@ -64,6 +67,7 @@ import org.springframework.stereotype.Service
 class CargoExtServiceImpl(
     private val cargoProperties: CargoProperties,
     private val cargoCommonService: CargoCommonService,
+    private val cargoDependencyService: CargoDependencyService
 ) : CargoExtService {
 
     override fun detailVersion(
@@ -85,8 +89,40 @@ class CargoExtServiceImpl(
                 logger.warn("Cloud not find cargo package [$packageKey] with version $version.")
                 throw PackageNotFoundException(packageKey)
             }
+            val cargoMetadata = cargoCommonService.getMetadataOfCrate(projectId, repoName, name, version)
             val basicInfo = ObjectBuilderUtil.buildBasicInfo(nodeDetail, packageVersion)
-            return PackageVersionInfo(basicInfo, packageVersion.packageMetadata)
+            return PackageVersionInfo(basicInfo, packageVersion.packageMetadata, cargoMetadata)
+        }
+    }
+
+    override fun queryDeps(
+        userId: String,
+        artifactInfo: CargoArtifactInfo,
+        packageKey: String,
+        version: String
+    ): List<CargoDependencyInfo> {
+        with(artifactInfo) {
+            return cargoDependencyService.queryDeps(projectId, repoName, packageKey, version)
+        }
+    }
+
+    override fun queryDependents(
+        userId: String,
+        artifactInfo: CargoArtifactInfo,
+        packageKey: String,
+        version: String,
+        pageNumber: Int,
+        pageSize: Int
+    ): Page<CargoDependentInfo> {
+        with(artifactInfo) {
+            return cargoDependencyService.queryDependents(
+                projectId = projectId,
+                repoName = repoName,
+                packageKey = packageKey,
+                version = version,
+                pageNumber = pageNumber,
+                pageSize = pageSize
+            )
         }
     }
 

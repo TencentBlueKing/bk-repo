@@ -8,10 +8,10 @@
         <bk-form class="mr10 repo-base-info" :label-width="150" :model="repoBaseInfo" :rules="rules" ref="repoBaseInfo">
             <bk-form-item :label="$t('repoType')" :required="true" property="type" error-display-type="normal">
                 <bk-radio-group v-model="repoBaseInfo.type" class="repo-type-radio-group" @change="changeRepoType">
-                    <bk-radio-button v-for="repo in repoEnum" :key="repo.label" :value="repo.value" :disabled="disCheck(repo.value)">
+                    <bk-radio-button v-for="repo in visibleRepoEnum" :key="repo.label" :value="repo.value" :disabled="disCheck(repo.value)">
                         <div class="flex-column flex-center repo-type-radio">
                             <Icon size="32" :name="repo.value" />
-                            <span>{{repo.label}}</span>
+                            <span class="repo-type-label">{{repo.label}}</span>
                         </div>
                     </bk-radio-button>
                 </bk-radio-group>
@@ -23,6 +23,23 @@
                 </bk-input>
                 <div v-if="repoBaseInfo.type === 'docker'" class="form-tip">{{ $t('dockerRepoTip')}}</div>
             </bk-form-item>
+            <template v-if="isRemote">
+                <bk-form-item :label="$t('remoteUrl')" :required="true" property="remoteUrl" error-display-type="normal">
+                    <bk-input
+                        class="w480"
+                        v-model.trim="repoBaseInfo.remoteUrl"
+                        :placeholder="$t('remoteUrlPlaceholder')">
+                    </bk-input>
+                </bk-form-item>
+                <bk-form-item :label="$t('accessToken')" :required="true" property="accessToken" error-display-type="normal">
+                    <bk-input
+                        class="w480"
+                        type="password"
+                        v-model.trim="repoBaseInfo.accessToken"
+                        :placeholder="$t('accessTokenInputPlaceholder')">
+                    </bk-input>
+                </bk-form-item>
+            </template>
             <bk-form-item :label="$t('accessPermission')">
                 <card-radio-group
                     class="permission-card"
@@ -102,6 +119,8 @@
     import { mapActions, mapState } from 'vuex'
     import cookies from 'js-cookie'
 
+    const DEFAULT_HUGGINGFACE_URL = 'https://huggingface.co'
+
     const getRepoBaseInfo = () => {
         return {
             type: 'generic',
@@ -115,6 +134,8 @@
             description: '',
             display: true,
             autoIndex: true,
+            remoteUrl: '',
+            accessToken: '',
             mobile: {
                 enable: false,
                 filename: '',
@@ -143,6 +164,7 @@
                 specialRepoEnum,
                 show: false,
                 loading: false,
+                category: 'LOCAL',
                 repoBaseInfo: getRepoBaseInfo(),
                 showIamDenyDialog: false,
                 showData: {},
@@ -160,6 +182,15 @@
             ...mapState(['userInfo']),
             projectId () {
                 return this.$route.params.projectId
+            },
+            isRemote () {
+                return this.category === 'REMOTE'
+            },
+            visibleRepoEnum () {
+                if (this.isRemote) {
+                    return repoEnum.filter(r => r.remote)
+                }
+                return repoEnum
             },
             rules () {
                 return {
@@ -203,6 +234,25 @@
                             },
                             message: this.$t('pleaseInput') + this.$t('legit') + this.$t('groupXmlSet') + `(.xml${this.$t('type')})`,
                             trigger: 'change'
+                        }
+                    ],
+                    remoteUrl: [
+                        {
+                            required: true,
+                            message: this.$t('pleaseInput') + this.$t('remoteUrl'),
+                            trigger: 'blur'
+                        },
+                        {
+                            regex: /^https?:\/\/.+/,
+                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('remoteUrl'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    accessToken: [
+                        {
+                            required: true,
+                            message: this.$t('pleaseInput') + this.$t('accessToken'),
+                            trigger: 'blur'
                         }
                     ]
                 }
@@ -252,6 +302,7 @@
                 if (val) {
                     this.language = cookies.get('blueking_language') || 'zh-cn'
                     this.$nextTick(() => {
+                        if (!this.$refs.isAllowShowFolderRadio) return
                         if (this.language !== 'zh-cn') {
                             this.$refs.isAllowShowFolderRadio.$el.style.width = '140px'
                         } else {
@@ -270,13 +321,25 @@
                     return ciDisableRepoEnum.includes(repoName)
                 }
             },
-            showDialogHandler () {
+            showDialogHandler (category = 'LOCAL') {
                 this.show = true
+                this.category = category
                 this.repoBaseInfo = getRepoBaseInfo()
+                if (category === 'REMOTE') {
+                    this.title = this.$t('createRemoteRepository')
+                    const firstRemote = repoEnum.find(r => r.remote)
+                    if (firstRemote) {
+                        this.repoBaseInfo.type = firstRemote.value
+                    }
+                    this.repoBaseInfo.remoteUrl = DEFAULT_HUGGINGFACE_URL
+                } else {
+                    this.title = this.$t('createLocalRepository')
+                }
                 this.$refs.repoBaseInfo && this.$refs.repoBaseInfo.clearError()
             },
             cancel () {
                 this.accessControl = 'DEFAULT'
+                this.category = 'LOCAL'
                 this.show = false
             },
             asynCheckRepoName () {
@@ -291,31 +354,58 @@
             },
             async confirm () {
                 await this.$refs.repoBaseInfo.validate()
-                const body = {
-                    projectId: this.projectId,
-                    type: this.repoBaseInfo.type.toUpperCase(),
-                    name: this.repoBaseInfo.name,
-                    public: this.repoBaseInfo.public,
-                    display: this.repoBaseInfo.display,
-                    description: this.repoBaseInfo.description,
-                    category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
-                    configuration: {
-                        type: this.repoBaseInfo.type === 'generic' ? 'local' : 'composite',
-                        settings: {
-                            system: this.repoBaseInfo.system,
-                            interceptors: undefined,
-                            autoIndex: {
-                                enabled: this.repoBaseInfo.autoIndex
+                let body
+                if (this.isRemote) {
+                    body = {
+                        projectId: this.projectId,
+                        type: this.repoBaseInfo.type.toUpperCase(),
+                        name: this.repoBaseInfo.name,
+                        public: this.repoBaseInfo.public,
+                        display: this.repoBaseInfo.display,
+                        description: this.repoBaseInfo.description,
+                        category: 'REMOTE',
+                        configuration: {
+                            type: 'remote',
+                            url: this.repoBaseInfo.remoteUrl,
+                            credentials: {
+                                password: this.repoBaseInfo.accessToken
                             },
-                            ...(
-                                this.repoBaseInfo.type === 'rpm'
-                                    ? {
-                                        enabledFileLists: this.repoBaseInfo.enabledFileLists,
-                                        repodataDepth: this.repoBaseInfo.repodataDepth,
-                                        groupXmlSet: this.repoBaseInfo.groupXmlSet
-                                    }
-                                    : {}
-                            )
+                            settings: {
+                                system: this.repoBaseInfo.system,
+                                interceptors: undefined,
+                                autoIndex: {
+                                    enabled: this.repoBaseInfo.autoIndex
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    body = {
+                        projectId: this.projectId,
+                        type: this.repoBaseInfo.type.toUpperCase(),
+                        name: this.repoBaseInfo.name,
+                        public: this.repoBaseInfo.public,
+                        display: this.repoBaseInfo.display,
+                        description: this.repoBaseInfo.description,
+                        category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
+                        configuration: {
+                            type: this.repoBaseInfo.type === 'generic' ? 'local' : 'composite',
+                            settings: {
+                                system: this.repoBaseInfo.system,
+                                interceptors: undefined,
+                                autoIndex: {
+                                    enabled: this.repoBaseInfo.autoIndex
+                                },
+                                ...(
+                                    this.repoBaseInfo.type === 'rpm'
+                                        ? {
+                                            enabledFileLists: this.repoBaseInfo.enabledFileLists,
+                                            repodataDepth: this.repoBaseInfo.repodataDepth,
+                                            groupXmlSet: this.repoBaseInfo.groupXmlSet
+                                        }
+                                        : {}
+                                )
+                            }
                         }
                     }
                 }
@@ -410,6 +500,16 @@
             padding: 5px;
             width: 80px;
             height: 60px;
+            .repo-type-label {
+                margin-top: 2px;
+                max-width: 100%;
+                font-size: 12px;
+                line-height: 16px;
+                text-align: center;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
         }
     }
     .member-selector{
