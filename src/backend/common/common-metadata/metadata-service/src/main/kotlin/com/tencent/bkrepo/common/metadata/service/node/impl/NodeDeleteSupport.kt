@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.metadata.service.node.NodeDeleteOperation
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.router.RouterControllerService
 import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildCriteria
+import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildFileCriteria
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildNodeCleanEvent
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
@@ -121,9 +122,14 @@ open class NodeDeleteSupport(
         repoName: String,
         fullPath: String,
         operator: String,
-        source: String?
+        source: String?,
+        isFile: Boolean
     ) {
-        val criteria = buildCriteria(projectId, repoName, fullPath)
+        val criteria = if (isFile) {
+            buildFileCriteria(projectId, repoName, fullPath)
+        } else {
+            buildCriteria(projectId, repoName, fullPath)
+        }
         val query = Query(criteria)
         delete(query, operator, criteria, projectId, repoName, listOf(fullPath), false, source = source)
     }
@@ -135,7 +141,7 @@ open class NodeDeleteSupport(
         operator: String,
         source: String?,
     ): NodeDeleteResult {
-        val criteria = buildCriteria(projectId, repoName, fullPath)
+        val criteria = buildDeleteCriteria(projectId, repoName, fullPath)
         val query = Query(criteria)
         return delete(query, operator, criteria, projectId, repoName, listOf(fullPath), source = source)
     }
@@ -152,7 +158,7 @@ open class NodeDeleteSupport(
         var totalDeletedNum = 0L
         var totalDeletedSize = 0L
         fullPaths.forEach { fullPath ->
-            val criteria = buildCriteria(projectId, repoName, fullPath)
+            val criteria = buildDeleteCriteria(projectId, repoName, fullPath)
             val query = Query(criteria)
             val result = delete(
                 query, operator, criteria, projectId, repoName, listOf(fullPath), deleteTime = deleteTime
@@ -272,6 +278,17 @@ open class NodeDeleteSupport(
         return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
     }
 
+
+    // 文件用精确匹配，目录或节点不存在（并发删除场景）退化到正则前缀查询
+    private fun buildDeleteCriteria(projectId: String, repoName: String, fullPath: String): Criteria {
+        val normalizedFullPath = PathUtils.normalizeFullPath(fullPath)
+        val existNode = nodeDao.findNode(projectId, repoName, normalizedFullPath)
+        return if (existNode != null && !existNode.folder) {
+            buildFileCriteria(projectId, repoName, fullPath)
+        } else {
+            buildCriteria(projectId, repoName, fullPath)
+        }
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeDeleteSupport::class.java)
