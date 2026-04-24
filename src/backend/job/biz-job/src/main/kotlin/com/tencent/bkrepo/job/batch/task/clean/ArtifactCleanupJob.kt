@@ -88,6 +88,24 @@ class ArtifactCleanupJob(
     @Value("\${service.prefix:}")
     private val servicePrefix: String = ""
 
+    // 每次 job 执行前缓存，避免每行重复计算和 Redis 请求
+    @Volatile
+    private var isWeekend: Boolean = false
+
+    @Volatile
+    private var cachedActiveProjects: Set<String> = emptySet()
+
+    override fun onRunCollectionStart(collectionName: String, context: JobContext) {
+        isWeekend = LocalDateTime.now().dayOfWeek.let {
+            it == DayOfWeek.SATURDAY || it == DayOfWeek.SUNDAY
+        }
+        cachedActiveProjects = activeProjectService.getActiveProjects()
+        logger.info(
+            "ArtifactCleanupJob collection[$collectionName] start, " +
+                "isWeekend=$isWeekend, activeProjects=${cachedActiveProjects.size}"
+        )
+    }
+
     override fun entityClass(): KClass<RepoData> {
         return RepoData::class
     }
@@ -106,21 +124,12 @@ class ArtifactCleanupJob(
     override fun run(row: RepoData, collectionName: String, context: JobContext) {
         try {
             if (ignoreProjectOrRepoCheck(row.projectId)) return
+            // 非活跃项目仅在周末清理，提前判断避免后续不必要的 JSON 解析开销
+            if (!isWeekend && !cachedActiveProjects.contains(row.projectId)) return
             val config = row.configuration.readJsonString<RepositoryConfiguration>()
             val cleanupStrategyMap = config.getSetting<Map<String, Any>>(CLEAN_UP_STRATEGY) ?: return
             val cleanupStrategy = toCleanupStrategy(cleanupStrategyMap) ?: return
             if (filterConfig(row.projectId, row.name, cleanupStrategy)) return
-            // 非活跃项目仅在周末清理，降低DB 压力
-            val isWeekend = LocalDateTime.now().dayOfWeek.let {
-                it == DayOfWeek.SATURDAY || it == DayOfWeek.SUNDAY
-            }
-            val isActive = activeProjectService.getActiveProjects().contains(row.projectId)
-            if (!isActive && !isWeekend) {
-                logger.info(
-                    "Skip cleanup for inactive project ${row.projectId}|${row.name} on weekday"
-                )
-                return
-            }
             logger.info(
                 "Will clean the artifacts in repo ${row.projectId}|${row.name} " +
                     "with cleanup strategy $cleanupStrategy"
