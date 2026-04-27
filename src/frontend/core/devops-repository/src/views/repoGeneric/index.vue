@@ -405,6 +405,9 @@
             } else next()
         },
         created () {
+            this.queryProjectShare({ id: this.projectId }).then(res => {
+                this.projectShare = res.data
+            })
             this.getRepoListAll({ projectId: this.projectId }).then(_ => {
                 if (!this.repoListAll.find(repo => repo.name === this.repoName)) {
                     this.$router.replace({ name: 'repositories', params: { projectId: this.projectId } })
