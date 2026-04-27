@@ -157,8 +157,17 @@ open class NodeDeleteSupport(
         val deleteTime = LocalDateTime.now()
         var totalDeletedNum = 0L
         var totalDeletedSize = 0L
+        val normalizedPaths = fullPaths.map { PathUtils.normalizeFullPath(it) }
+        // 批量查询一次，避免循环内 N 次 findNode
+        val filePathSet = nodeDao.find(NodeQueryHelper.nodeQuery(projectId, repoName, normalizedPaths))
+            .filterNot { it.folder }.map { it.fullPath }.toHashSet()
         fullPaths.forEach { fullPath ->
-            val criteria = buildDeleteCriteria(projectId, repoName, fullPath)
+            val normalizedFullPath = PathUtils.normalizeFullPath(fullPath)
+            val criteria = if (normalizedFullPath in filePathSet) {
+                buildFileCriteria(projectId, repoName, fullPath)
+            } else {
+                buildCriteria(projectId, repoName, fullPath)
+            }
             val query = Query(criteria)
             val result = delete(
                 query, operator, criteria, projectId, repoName, listOf(fullPath), deleteTime = deleteTime
