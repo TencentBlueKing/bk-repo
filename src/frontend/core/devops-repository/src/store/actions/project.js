@@ -49,5 +49,9 @@ export default {
             url = url + '?sortProperty=' + sortProperty + '&direction=' + direction
         }
         return Vue.prototype.$ajax.get(url)
+    },
+    // 查询项目分享功能是否启用
+    getProjectShareEnabled (_, { projectId }) {
+        return Vue.prototype.$ajax.get(`${prefix}/project/${projectId}/share/enabled`)
     }
 }

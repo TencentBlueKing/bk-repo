@@ -64,6 +64,7 @@
                         v-for="pkg in resultList"
                         :key="pkg.repoName + (pkg.key || pkg.fullPath)"
                         :card-data="pkg"
+                        :share-enabled="projectShareEnabled"
                         readonly
                         @show-detail="showDetail"
                         @share="handlerShare"
@@ -122,7 +123,8 @@
                 hasNext: true,
                 focusContent: this.$t('toggle'),
                 repoNames: [],
-                init: false
+                init: false,
+                projectShareEnabled: true
             }
         },
         computed: {
@@ -138,10 +140,15 @@
         created () {
             // 更新程度：类型 》 包名 》 树/排序 》 滚动加载
             this.changeRepoType(this.repoType)
+            this.getProjectShareEnabled({ projectId: this.projectId }).then(res => {
+                this.projectShareEnabled = res
+            }).catch(() => {
+                this.projectShareEnabled = true
+            })
         },
         methods: {
             formatDate,
-            ...mapActions(['searchPackageList', 'searchRepoList']),
+            ...mapActions(['searchPackageList', 'searchRepoList', 'getProjectShareEnabled']),
             refreshRoute () {
                 this.$router.replace({
                     query: {
