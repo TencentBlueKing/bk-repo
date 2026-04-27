@@ -238,7 +238,9 @@ class CenterNodeDeleteSupport(
         if (nodeId != null) {
             super.deleteNodeById(node.projectId, node.repoName, node.fullPath, operator, nodeId, deleteTime, source)
         } else {
-            super.deleteByFullPathWithoutDecreaseVolume(node.projectId, node.repoName, node.fullPath, operator, source)
+            super.deleteByFullPathWithoutDecreaseVolume(
+                node.projectId, node.repoName, node.fullPath, operator, source, isFile = true
+            )
         }
         quotaService.decreaseUsedVolume(node.projectId, node.repoName, node.size)
         return true
