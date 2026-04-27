@@ -382,7 +382,7 @@
         watch: {
             projectId () {
                 this.queryProjectShare({ id: this.projectId }).then(res => {
-                    this.projectShare = res.data
+                    this.projectShare = res
                 })
                 this.getRepoListAll({ projectId: this.projectId })
             },
@@ -406,7 +406,7 @@
         },
         created () {
             this.queryProjectShare({ id: this.projectId }).then(res => {
-                this.projectShare = res.data
+                this.projectShare = res
             })
             this.getRepoListAll({ projectId: this.projectId }).then(_ => {
                 if (!this.repoListAll.find(repo => repo.name === this.repoName)) {
