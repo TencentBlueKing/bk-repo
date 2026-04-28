@@ -54,6 +54,15 @@ class DriveSnapSeqService(
         }
 
     /**
+     * 查询仓库当前快照序列号记录。
+     * 若仓库尚未完成 Drive 资源初始化，则自动初始化后返回快照序列号记录。
+     */
+    suspend fun getLatestSnapSeqRecord(projectId: String, repoName: String): TDriveSnapSeq {
+        DriveServiceUtils.validateProjectRepo(projectId, repoName)
+        return getOrInitLatestSnapSeq(projectId, repoName)
+    }
+
+    /**
      * 查询仓库当前快照序列号。
      * 若仓库尚未完成 Drive 资源初始化，则自动初始化后返回快照序列号。
      */
@@ -92,16 +101,14 @@ class DriveSnapSeqService(
     }
 
     /**
-     * 增加仓库快照序列号并返回增加后的值，两次增加的间隔不能少于[MIN_INC_INTERVAL_SECONDS],避免频繁创建快照或异常原因连续创建快照
+     * 增加仓库快照序列号并返回增加后的值
      */
     suspend fun incSnapSeq(projectId: String, repoName: String, oldSeq: Long): Long {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
-        val requiredInterval = LocalDateTime.now().minusSeconds(MIN_INC_INTERVAL_SECONDS)
         val now = LocalDateTime.now()
         val criteria = where(TDriveSnapSeq::projectId).isEqualTo(projectId)
             .and(TDriveSnapSeq::repoName.name).isEqualTo(repoName)
             .and(TDriveSnapSeq::snapSeq.name).isEqualTo(oldSeq)
-            .and(TDriveSnapSeq::lastModifiedDate.name).lte(requiredInterval)
         val update = Update()
             .set(TDriveSnapSeq::lastModifiedDate.name, now)
             .set(TDriveSnapSeq::lastModifiedBy.name, DriveServiceUtils.getUserOrSystem())
@@ -142,10 +149,6 @@ class DriveSnapSeqService(
     )
 
     companion object {
-        /**
-         * 两次创建快照的最小间隔
-         */
-        private const val MIN_INC_INTERVAL_SECONDS = 60L
         private const val CACHE_REFRESH_SECONDS = 10L
         private const val CACHE_EXPIRE_SECONDS = 300L
         private const val MAXIMUM_CACHE_SIZE = 10_000L
