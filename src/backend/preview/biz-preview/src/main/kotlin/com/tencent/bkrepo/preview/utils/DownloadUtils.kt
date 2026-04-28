@@ -48,7 +48,10 @@ import java.util.UUID
  * 文件下载工具
  */
 @Component
-class DownloadUtils(private val httpUtils: HttpUtils) {
+class DownloadUtils(
+    private val httpUtils: HttpUtils,
+    private val ssrfGuard: SsrfGuard
+) {
     companion object {
         private val logger = org.slf4j.LoggerFactory.getLogger(DownloadUtils::class.java)
         private const val URL_PARAM_FTP_USERNAME = "ftp.username"
@@ -101,6 +104,8 @@ class DownloadUtils(private val httpUtils: HttpUtils) {
 
     private fun downloadHttpFile(url: URL, realPath: String, result: DownloadResult) {
         try {
+            // SSRF 防护：校验协议/端口/域名白名单，阻止内网、环回、链路本地、云元数据等目标
+            ssrfGuard.validate(url.toString())
             val response = httpUtils.downloadHttpFile(url)
             saveFile(response.body, realPath)
             result.apply {

@@ -293,4 +293,36 @@ class PreviewConfig {
      */
     @Value("\${preview.compressed.report.filename:bkrepo_compressed_report.zip}")
     val compressedReportFilename = "bkrepo_compressed_report.zip"
+
+    // 远程预览安全相关配置（防 SSRF）
+    /**
+     * 是否启用远程 URL 预览能力，默认关闭，需显式开启
+     */
+    @Value("\${preview.remote.enabled:false}")
+    val isRemotePreviewEnabled: Boolean = false
+
+    /**
+     * 远程预览允许的协议，逗号分隔，默认仅允许 https
+     */
+    @Value("\${preview.remote.allowedSchemes:https}")
+    val remoteAllowedSchemes: String = "https"
+
+    /**
+     * 远程预览允许的域名/IP 白名单（精确匹配或后缀匹配，以 . 开头表示域后缀），逗号分隔。
+     * 为空表示不限制域名（仍然会进行内网/保留地址黑名单校验），建议在生产环境配置具体白名单
+     */
+    @Value("\${preview.remote.allowedHosts:}")
+    val remoteAllowedHosts: String = ""
+
+    /**
+     * 远程预览允许的端口，逗号分隔，默认仅允许 80、443
+     */
+    @Value("\${preview.remote.allowedPorts:80,443}")
+    val remoteAllowedPorts: String = "80,443"
+
+    /**
+     * 是否禁止访问内网/环回/链路本地/云元数据等保留地址，默认启用
+     */
+    @Value("\${preview.remote.blockInternalAddress:true}")
+    val isBlockInternalAddress: Boolean = true
 }
