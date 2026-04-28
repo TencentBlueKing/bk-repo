@@ -22,4 +22,19 @@ class DriveProperties {
      * 每个连接都可能占用较大的接收缓存，连接数过多时可能触发 OOM，因此需要限制写请求并发数。
      */
     var writeRequestLimit: Int = 0
+
+    /**
+     * 快照序列号缓存异步刷新间隔，默认5秒。
+     */
+    var snapSeqCacheRefreshDuration: Duration = Duration.ofSeconds(5)
+
+    /**
+     * 快照序列号缓存强制过期时间，默认300秒。
+     */
+    var snapSeqCacheExpireDuration: Duration = Duration.ofSeconds(300)
+
+    /**
+     * 快照序列号缓存最大条目数，默认10000。
+     */
+    var snapSeqCacheMaximumSize: Long = 10_000L
 }

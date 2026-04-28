@@ -7,6 +7,7 @@ import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
+import com.tencent.bkrepo.fs.server.config.properties.drive.DriveProperties
 import com.tencent.bkrepo.fs.server.model.drive.TDriveSnapSeq
 import com.tencent.bkrepo.fs.server.repository.drive.RDriveSnapSeqDao
 import com.tencent.bkrepo.fs.server.utils.DriveServiceUtils
@@ -24,7 +25,6 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import reactor.kotlin.core.publisher.toMono
-import java.time.Duration
 import java.time.LocalDateTime
 import java.util.concurrent.Executors
 
@@ -36,6 +36,7 @@ import java.util.concurrent.Executors
 class DriveSnapSeqService(
     private val driveSnapSeqDao: RDriveSnapSeqDao,
     private val driveRepositoryInitService: DriveRepositoryInitService,
+    private val driveProperties: DriveProperties,
 ) {
     private val refreshExecutor = Executors.newFixedThreadPool(
         1,
@@ -45,10 +46,10 @@ class DriveSnapSeqService(
 
     private val snapSeqCache: AsyncLoadingCache<SnapSeqCacheKey, Long> = Caffeine.newBuilder()
         .executor(refreshExecutor)
-        // 10秒后触发异步刷新，读取可先返回旧值；5分钟后强制过期，避免异常场景下长期持有陈旧数据。
-        .refreshAfterWrite(Duration.ofSeconds(CACHE_REFRESH_SECONDS))
-        .expireAfterWrite(Duration.ofSeconds(CACHE_EXPIRE_SECONDS))
-        .maximumSize(MAXIMUM_CACHE_SIZE)
+        // 刷新后触发异步刷新，读取可先返回旧值；过期后强制过期，避免异常场景下长期持有陈旧数据。
+        .refreshAfterWrite(driveProperties.snapSeqCacheRefreshDuration)
+        .expireAfterWrite(driveProperties.snapSeqCacheExpireDuration)
+        .maximumSize(driveProperties.snapSeqCacheMaximumSize)
         .buildAsync { key, _ ->
             mono(refreshDispatcher) { getOrInitLatestSnapSeq(key.projectId, key.repoName).snapSeq }.toFuture()
         }
@@ -149,9 +150,6 @@ class DriveSnapSeqService(
     )
 
     companion object {
-        private const val CACHE_REFRESH_SECONDS = 10L
-        private const val CACHE_EXPIRE_SECONDS = 300L
-        private const val MAXIMUM_CACHE_SIZE = 10_000L
         private val logger = LoggerFactory.getLogger(DriveSnapSeqService::class.java)
     }
 }
