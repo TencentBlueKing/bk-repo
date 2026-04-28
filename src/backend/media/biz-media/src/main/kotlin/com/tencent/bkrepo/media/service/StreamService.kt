@@ -16,7 +16,6 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.config.StorageProperties
@@ -468,7 +467,10 @@ class StreamService(
                 "?userId=$userId&projectId=$projectId&workspaceName=$workspaceName"
         val request = Request.Builder()
             .url(requestUrl)
-            .header(BK_API_AUTH_HEADER, """{"bk_app_code": "${devops.appCode}", "bk_app_secret": "${devops.appSecret}"}""")
+            .header(
+                BK_API_AUTH_HEADER,
+                """{"bk_app_code": "${devops.appCode}", "bk_app_secret": "${devops.appSecret}"}"""
+            )
             .header(X_DEVOPS_UID, userId)
             .build()
         val response = executeWithRetry(request, "checkUserWorkspaceLivePerm") ?: return false
