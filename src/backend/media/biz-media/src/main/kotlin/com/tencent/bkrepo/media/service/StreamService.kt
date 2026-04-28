@@ -402,8 +402,8 @@ class StreamService(
         val streamPattern = fields[0]
         val expireAt = fields[1].toLong()
         return expected == signature
-            && System.currentTimeMillis() <= expireAt
-            && requestedStream == streamPattern
+                && System.currentTimeMillis() <= expireAt
+                && requestedStream == streamPattern
     }
 
     fun saveActiveStream(
@@ -504,7 +504,7 @@ class StreamService(
                 response.close()
                 logger.warn(
                     "$operationName attempt $attempt/$maxRetries failed: " +
-                        "HTTP ${response.code}, body=$body"
+                            "HTTP ${response.code}, body=$body"
                 )
             } catch (e: IOException) {
                 lastException = e
