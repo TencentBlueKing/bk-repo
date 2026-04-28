@@ -182,8 +182,7 @@ class SsrfGuard(private val config: PreviewConfig) {
      */
     private fun isForbiddenAddress(addr: InetAddress): Boolean {
         // 通用判断：回环、链路本地、多播、任意地址
-        if (addr.isLoopbackAddress || addr.isLinkLocalAddress
-            || addr.isMulticastAddress || addr.isAnyLocalAddress) {
+        if (isReservedAddress(addr)) {
             return true
         }
         if (config.isBlockInternalAddress && addr.isSiteLocalAddress) {
@@ -194,6 +193,19 @@ class SsrfGuard(private val config: PreviewConfig) {
             is Inet6Address -> isForbiddenV6(addr)
             else -> false
         }
+    }
+
+    /**
+     * 判断是否为 JDK 内置识别的保留地址（回环、链路本地、多播、任意地址）。
+     */
+    private fun isReservedAddress(addr: InetAddress): Boolean {
+        val checks: List<(InetAddress) -> Boolean> = listOf(
+            InetAddress::isLoopbackAddress,
+            InetAddress::isLinkLocalAddress,
+            InetAddress::isMulticastAddress,
+            InetAddress::isAnyLocalAddress
+        )
+        return checks.any { it(addr) }
     }
 
     private fun isForbiddenV4(addr: Inet4Address): Boolean {
@@ -218,15 +230,22 @@ class SsrfGuard(private val config: PreviewConfig) {
         if ((bytes[0].toInt() and 0xFE) == 0xFC) {
             return true
         }
-        // IPv4-mapped：前 80 位 0、接下来 16 位 1，再映射 IPv4
-        val isV4Mapped = (0..9).all { bytes[it].toInt() == 0 }
-            && bytes[10].toInt() and 0xFF == 0xFF
-            && bytes[11].toInt() and 0xFF == 0xFF
-        if (isV4Mapped) {
+        if (isV4MappedV6(bytes)) {
             val mappedV4 = InetAddress.getByAddress(bytes.copyOfRange(12, 16)) as Inet4Address
             return isForbiddenV4(mappedV4)
         }
         return false
+    }
+
+    /**
+     * 判断一段 IPv6 字节是否为 IPv4-mapped 形式（::ffff:0:0/96）。
+     * 前 80 位必须全 0，紧接着的 16 位必须全 1。
+     */
+    private fun isV4MappedV6(bytes: ByteArray): Boolean {
+        val prefixAllZero = (0..9).all { bytes[it].toInt() == 0 }
+        val markerAllOne = (bytes[10].toInt() and 0xFF) == 0xFF
+            && (bytes[11].toInt() and 0xFF) == 0xFF
+        return prefixAllZero && markerAllOne
     }
 
     /**
