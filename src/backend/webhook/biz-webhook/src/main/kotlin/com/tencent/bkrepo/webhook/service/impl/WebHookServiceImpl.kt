@@ -40,6 +40,7 @@ import com.tencent.bkrepo.webhook.constant.WebHookRequestStatus
 import com.tencent.bkrepo.webhook.dao.WebHookDao
 import com.tencent.bkrepo.webhook.dao.WebHookLogDao
 import com.tencent.bkrepo.webhook.event.WebHookTestEvent
+import com.tencent.bkrepo.webhook.executor.WebhookArtifactEventConsumer
 import com.tencent.bkrepo.webhook.exception.WebHookMessageCode
 import com.tencent.bkrepo.webhook.executor.WebHookExecutor
 import com.tencent.bkrepo.webhook.model.TWebHook
@@ -60,7 +61,8 @@ class WebHookServiceImpl(
     private val webHookLogDao: WebHookLogDao,
     private val webHookExecutor: WebHookExecutor,
     private val permissionManager: PermissionManager,
-    private val eventPayloadFactory: EventPayloadFactory
+    private val eventPayloadFactory: EventPayloadFactory,
+    private val webhookArtifactEventConsumer: WebhookArtifactEventConsumer,
 ) : WebHookService {
 
     override fun createWebHook(userId: String, request: CreateWebHookRequest): WebHook {
@@ -80,6 +82,7 @@ class WebHookServiceImpl(
                 lastModifiedDate = LocalDateTime.now()
             )
             val tWebHook = webHookDao.insert(webHook)
+            webhookArtifactEventConsumer.invalidateWebHookCache(associationType, associationId)
             return transferWebHook(tWebHook)
         }
     }
@@ -95,6 +98,7 @@ class WebHookServiceImpl(
         webHook.lastModifiedBy = userId
         webHook.lastModifiedDate = LocalDateTime.now()
         val tWebHook = webHookDao.save(webHook)
+        webhookArtifactEventConsumer.invalidateWebHookCache(webHook.associationType, webHook.associationId)
         return transferWebHook(tWebHook)
     }
 
@@ -103,6 +107,7 @@ class WebHookServiceImpl(
         val webHook = findWebHookById(id)
         checkPermission(userId, webHook.associationType, webHook.associationId)
         webHookDao.removeById(id)
+        webhookArtifactEventConsumer.invalidateWebHookCache(webHook.associationType, webHook.associationId)
     }
 
     override fun getWebHook(userId: String, id: String): WebHook {

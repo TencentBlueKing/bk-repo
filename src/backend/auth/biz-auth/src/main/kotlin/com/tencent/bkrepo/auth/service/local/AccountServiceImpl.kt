@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.service.local
 
+import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.message.AuthMessageCode
@@ -55,12 +56,26 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import java.time.LocalDateTime
+import java.util.Optional
+import java.util.concurrent.TimeUnit
 
 class AccountServiceImpl constructor(
     private val accountDao: AccountDao,
     private val oauthTokenRepository: OauthTokenRepository,
     private val userDao: UserDao
 ) : AccountService {
+
+    // key: "$accessKey:$secretKey:${authorizationGrantType?.name ?: ""}", value: Optional<appId>
+    private val credentialCache = CacheBuilder.newBuilder()
+        .maximumSize(2000)
+        .expireAfterWrite(5, TimeUnit.MINUTES)
+        .build<String, Optional<String>>()
+
+    private fun invalidateCredentialByAccessKey(accessKey: String) {
+        credentialCache.asMap().keys
+            .filter { it.startsWith("$accessKey:") }
+            .forEach { credentialCache.invalidate(it) }
+    }
 
     override fun createAccount(request: CreateAccountRequest, owner: String): Account {
         logger.info("create  account  request : [$request]")
@@ -209,6 +224,7 @@ class AccountServiceImpl constructor(
         account.credentials = account.credentials.filter { it.accessKey != accessKey }
         account.lastModifiedDate = LocalDateTime.now()
         accountDao.save(account)
+        invalidateCredentialByAccessKey(accessKey)
         return true
     }
 
@@ -225,7 +241,10 @@ class AccountServiceImpl constructor(
             val update = Update()
             update.set("credentials.$.status", status.toString())
             val result = accountDao.updateFirst(query, update)
-            if (result.modifiedCount == 1L) return true
+            if (result.modifiedCount == 1L) {
+                invalidateCredentialByAccessKey(accessKey)
+                return true
+            }
         }
         return false
     }
@@ -236,9 +255,11 @@ class AccountServiceImpl constructor(
         authorizationGrantType: AuthorizationGrantType?
     ): String? {
         logger.debug("check  credential  accessKey : [$accessKey] , secretKey: []")
-        val query = AccountQueryHelper.checkCredential(accessKey, secretKey, authorizationGrantType)
-        val result = accountDao.findOne(query) ?: return null
-        return result.appId
+        val cacheKey = "$accessKey:$secretKey:${authorizationGrantType?.name ?: ""}"
+        return credentialCache.get(cacheKey) {
+            val query = AccountQueryHelper.checkCredential(accessKey, secretKey, authorizationGrantType)
+            Optional.ofNullable(accountDao.findOne(query)?.appId)
+        }.orElse(null)
     }
 
     override fun findSecretKey(appId: String, accessKey: String): String? {

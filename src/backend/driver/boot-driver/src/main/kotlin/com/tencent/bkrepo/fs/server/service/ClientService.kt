@@ -56,12 +56,14 @@ import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.ConcurrentHashMap
 
 @Service
 class ClientService(
@@ -69,6 +71,8 @@ class ClientService(
     private val dailyClientRepository: DailyClientRepository,
     private val customMetricsExporter: CustomMetricsExporter? = null
 ) {
+    // 缓存客户端元数据（mountPoint/ip/version等稳定字段），避免心跳时重复读 DB
+    private val clientMetaCache = ConcurrentHashMap<String, TClient>()
 
     suspend fun createClient(request: ClientCreateRequest): ClientDetail {
         with(request) {
@@ -86,6 +90,7 @@ class ClientService(
             } else {
                 updateClient(request, client)
             }
+            clientMetaCache[newClient.id!!] = newClient
             pushHeartbeatMetrics(newClient)
             return newClient.convert()
         }
@@ -102,20 +107,26 @@ class ClientService(
         val request = convertClientRequest(client)
         recordDairyClient(request, "finish")
         clientRepository.remove(query)
+        clientMetaCache.remove(clientId)
     }
 
     suspend fun heartbeat(projectId: String, repoName: String, clientId: String) {
-        val query = Query(
-            Criteria.where(TClient::projectId.name).isEqualTo(projectId)
-                .and(TClient::repoName.name).isEqualTo(repoName)
-                .and(TClient::id.name).isEqualTo(clientId)
-        )
-        val client = clientRepository.findOne(query)
-            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, clientId)
-        client.heartbeatTime = LocalDateTime.now()
-        client.online = true
-        val newClient = clientRepository.save(client)
-        pushHeartbeatMetrics(newClient)
+        val now = LocalDateTime.now()
+        val query = Query(Criteria.where("_id").isEqualTo(clientId))
+        val update = Update()
+            .set(TClient::heartbeatTime.name, now)
+            .set(TClient::online.name, true)
+        val updateResult = clientRepository.updateFirst(query, update)
+        if (updateResult.matchedCount == 0L) {
+            throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, clientId)
+        }
+        // cache miss（如服务重启）时回查一次 DB 补充元数据，之后由缓存维护
+        val cachedClient = clientMetaCache[clientId] ?: clientRepository.findOne(query)
+        if (cachedClient != null) {
+            val updated = cachedClient.copy(heartbeatTime = now, online = true)
+            clientMetaCache[clientId] = updated
+            pushHeartbeatMetrics(updated)
+        }
     }
 
     suspend fun listClients(request: ClientListRequest): Page<ClientDetail> {
