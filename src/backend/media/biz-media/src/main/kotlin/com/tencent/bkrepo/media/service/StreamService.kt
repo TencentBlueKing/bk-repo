@@ -27,6 +27,7 @@ import com.tencent.bkrepo.media.config.MediaProperties
 import com.tencent.bkrepo.media.stream.ArtifactFileRecordingListener
 import com.tencent.bkrepo.media.stream.ClientStream
 import com.tencent.bkrepo.media.stream.MediaArtifactFileConsumer
+import com.tencent.bkrepo.media.stream.MediaMod
 import com.tencent.bkrepo.media.stream.MediaType
 import com.tencent.bkrepo.media.stream.RemuxRecordingListener
 import com.tencent.bkrepo.media.stream.StreamManger
@@ -37,12 +38,13 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.devops.utils.jackson.readJsonString
 import io.swagger.v3.oas.annotations.media.Schema
 import okhttp3.Request
+import okhttp3.Response
 import org.apache.commons.codec.digest.HmacAlgorithms
 import org.apache.commons.codec.digest.HmacUtils
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.stereotype.Service
+import java.io.IOException
 import java.net.InetAddress
 import java.util.Base64
 
@@ -65,7 +67,20 @@ class StreamService(
     /**
      * 创建推流地址
      * */
-    fun createStream(projectId: String, repoName: String, display: Boolean): String {
+    fun createStream(projectId: String, repoName: String, display: Boolean, mediaMod: String?): String {
+        val gray = HeaderUtils.getHeader("X-GATEWAY-TAG").toString().equals("gray", true)
+                && mediaProperties.grayServerAddress.isNotEmpty()
+        val serverAddress = if (gray) {
+            mediaProperties.grayServerAddress
+        } else {
+            mediaProperties.serverAddress
+        }
+        // 如果是纯直播则不创建节点
+        if (mediaMod == MediaMod.LIVE.name) {
+            val expireAt = System.currentTimeMillis() + 24 * 60 * 60 * 1000
+            val token: String = generateToken("$projectId-${repoName}", expireAt)
+            return "$serverAddress/$projectId/$repoName$STREAM_PATH?token=$token"
+        }
         /*
         * 1. 创建媒体库
         * 2. 创建streams目录
@@ -99,13 +114,6 @@ class StreamService(
             type = TokenType.UPLOAD,
         )
         val token = tokenService.createToken(temporaryTokenRequest).firstOrNull()
-        val gray = HeaderUtils.getHeader("X-GATEWAY-TAG").toString().equals("gray", true)
-                && mediaProperties.grayServerAddress.isNotEmpty()
-        val serverAddress = if (gray) {
-            mediaProperties.grayServerAddress
-        } else {
-            mediaProperties.serverAddress
-        }
         return "$serverAddress/$projectId/$repoName$STREAM_PATH?token=$token"
     }
 
@@ -337,36 +345,65 @@ class StreamService(
         return "${mediaProperties.repoHost}/rtc/v1/whep/?app=live&stream=${streamId}&token=$token"
     }
 
-    private fun generateToken(streamPattern: String?, expireAt: Long): String {
+    /**
+     * 生成 token，格式: {expireAt}.{base64url(hmacBytes)}，~57 字符
+     * streamPattern 不嵌入 token（由 URL 路径携带），HMAC 中已绑定
+     */
+    fun generateToken(streamPattern: String?, expireAt: Long): String {
         val payload = "$streamPattern|$expireAt"
-        val signature = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmacHex(payload)
-        return Base64.getUrlEncoder().encodeToString(("$payload.$signature").toByteArray())
+        val hmacBytes = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmac(payload)
+        val signature = Base64.getUrlEncoder().withoutPadding().encodeToString(hmacBytes)
+        return "$expireAt.$signature"
     }
 
+    /**
+     * 校验 token，兼容新旧两种格式：
+     * - 新格式: {expireAt}.{base64url(hmacBytes)}
+     * - 旧格式: base64( streamPattern|expireAt.hmacHex )
+     */
     fun verifyToken(token: String?, requestedStream: String): Boolean {
         if (token.isNullOrBlank()) {
             return false
         }
-        return try {
-            val decoded = String(Base64.getUrlDecoder().decode(token))
-            val parts = decoded.split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-            val payload = parts.getOrNull(0)
-            val signature = parts.getOrNull(1)
-            if (payload == null || signature == null || parts.size != 2) {
-                false
-            } else {
-                val expected = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmacHex(payload)
-                val fields = payload.split("\\|".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                val streamPattern = fields[0]
-                val expireAt = fields[1].toLong()
-                expected == signature
-                    && System.currentTimeMillis() <= expireAt
-                    && requestedStream == streamPattern
-            }
-        } catch (e: Exception) {
-            logger.error("verifyToken error $token|$requestedStream", e)
+        val newResult = try {
+            verifyNewToken(token, requestedStream)
+        } catch (_: Exception) {
             false
         }
+        if (newResult) return true
+        return try {
+            verifyLegacyToken(token, requestedStream)
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun verifyNewToken(token: String, requestedStream: String): Boolean {
+        val dotIndex = token.indexOf('.')
+        if (dotIndex <= 0 || dotIndex >= token.length - 1) return false
+        val expireStr = token.substring(0, dotIndex)
+        if (!expireStr.all { it.isDigit() }) return false
+        val expireAt = expireStr.toLong()
+        val signature = token.substring(dotIndex + 1)
+        val payload = "$requestedStream|$expireAt"
+        val hmacBytes = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmac(payload)
+        val expected = Base64.getUrlEncoder().withoutPadding().encodeToString(hmacBytes)
+        return expected == signature && System.currentTimeMillis() <= expireAt
+    }
+
+    private fun verifyLegacyToken(token: String, requestedStream: String): Boolean {
+        val decoded = String(Base64.getUrlDecoder().decode(token))
+        val parts = decoded.split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+        val payload = parts.getOrNull(0) ?: return false
+        val signature = parts.getOrNull(1) ?: return false
+        if (parts.size != 2) return false
+        val expected = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmacHex(payload)
+        val fields = payload.split("\\|".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+        val streamPattern = fields[0]
+        val expireAt = fields[1].toLong()
+        return expected == signature
+                && System.currentTimeMillis() <= expireAt
+                && requestedStream == streamPattern
     }
 
     fun saveActiveStream(
@@ -424,35 +461,69 @@ class StreamService(
             .getOrDefault("unknown")
     }
 
-    @Value("\${media.plugin.devx.devops.appCode}")
-
-    private var appCode: String = ""
-
-    @Value("\${media.plugin.devx.devops.appSecret}")
-    private var appSecret: String = ""
-
     fun checkUserWorkspaceLivePerm(projectId: String, workspaceName: String, userId: String): Boolean {
-        val requestUrl = "${mediaProperties.remoteDevHost}/apigw/remotedev/project_win_workspace" +
+        val devops = mediaProperties.plugin.devx.devops
+        val requestUrl = "${mediaProperties.remoteDevHost}/apigw-app/remotedev/check_view_live" +
                 "?userId=$userId&projectId=$projectId&workspaceName=$workspaceName"
-        val getKeyRequest = Request.Builder()
+        val request = Request.Builder()
             .url(requestUrl)
-            .header(BK_API_AUTH_HEADER, """{"bk_app_code": "$appCode", "bk_app_secret": "$appSecret"}""")
+            .header(
+                BK_API_AUTH_HEADER,
+                """{"bk_app_code": "${devops.appCode}", "bk_app_secret": "${devops.appSecret}"}"""
+            )
             .header(X_DEVOPS_UID, userId)
             .build()
-        val response = httpClient.newCall(getKeyRequest).execute()
-        if (response.code != 200) {
-            logger.error("checkUserWorkspaceLivePerm " +
-                    "request[$requestUrl]resp[${response.code}]: ${response.body?.string()}")
-            return false
+        val response = executeWithRetry(request, "checkUserWorkspaceLivePerm") ?: return false
+        return response.use {
+            if (it.code != 200) {
+                logger.error(
+                    "checkUserWorkspaceLivePerm request[$requestUrl]resp[${it.code}]: ${it.body?.string()}"
+                )
+                false
+            } else {
+                val resp = it.body!!.string().readJsonString<DevopsResult<Boolean>>().data
+                logger.debug("checkUserWorkspaceLivePerm response[$resp]")
+                resp == true
+            }
         }
-        val resp = response.body!!.string().readJsonString<DevopsResult<WeSecProjectWorkspace>>().data
-        logger.debug("checkUserWorkspaceLivePerm response[$resp]")
-        return resp?.owner == userId
+    }
+
+    private fun executeWithRetry(
+        request: Request,
+        operationName: String,
+        maxRetries: Int = MAX_RETRIES,
+    ): Response? {
+        var lastException: Exception? = null
+        for (attempt in 1..maxRetries) {
+            try {
+                val response = httpClient.newCall(request).execute()
+                if (response.code == 200 || attempt == maxRetries) {
+                    return response
+                }
+                val body = response.body?.string()
+                response.close()
+                logger.warn(
+                    "$operationName attempt $attempt/$maxRetries failed: " +
+                            "HTTP ${response.code}, body=$body"
+                )
+            } catch (e: IOException) {
+                lastException = e
+                logger.warn("$operationName attempt $attempt/$maxRetries IOException: ${e.message}")
+            }
+            if (attempt < maxRetries) {
+                val backoffMs = RETRY_BASE_DELAY_MS * (1L shl (attempt - 1))
+                Thread.sleep(backoffMs)
+            }
+        }
+        logger.error("$operationName failed after $maxRetries attempts", lastException)
+        return null
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(StreamService::class.java)
         private const val DEFAULT = "default"
+        private const val MAX_RETRIES = 3
+        private const val RETRY_BASE_DELAY_MS = 1000L
 
         private val httpClient = HttpClientBuilderFactory.create().build()
         private const val X_DEVOPS_UID = "X-DEVOPS-UID"
@@ -468,9 +539,4 @@ data class DevopsResult<out T>(
     val message: String? = null,
     @get:Schema(title = "数据")
     val data: T? = null
-)
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class WeSecProjectWorkspace(
-    val owner: String?
 )
