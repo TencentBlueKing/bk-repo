@@ -32,6 +32,7 @@ import com.tencent.bkrepo.media.stream.RemuxRecordingListener
 import com.tencent.bkrepo.media.stream.StreamManger
 import com.tencent.bkrepo.media.stream.StreamMode
 import com.tencent.bkrepo.media.stream.TranscodeConfig
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.devops.utils.jackson.readJsonString
@@ -160,10 +161,14 @@ class StreamService(
             val artifactFile = ArtifactFileFactory.buildChunked(credentials)
             val clientMouseArtifactFile = ArtifactFileFactory.buildChunked(credentials)
             val hostAudioArtifactFile = ArtifactFileFactory.buildChunked(credentials)
+            val micAudioArtifactFile = ArtifactFileFactory.buildChunked(credentials)
+            val syncMetadataArtifactFile = ArtifactFileFactory.buildChunked(credentials)
             ArtifactFileRecordingListener(
                 artifactFile = artifactFile,
                 clientMouseArtifactFile = clientMouseArtifactFile,
                 hostAudioArtifactFile = hostAudioArtifactFile,
+                micAudioArtifactFile = micAudioArtifactFile,
+                syncMetadataArtifactFile = syncMetadataArtifactFile,
                 fileConsumer = fileConsumer,
                 scheduler = scheduler,
                 uploadId = uploadId,
@@ -191,6 +196,7 @@ class StreamService(
         repoName: String,
         uploadId: String,
         transcodeExtraParams: String? = null,
+        syncCollectorState: String? = null,
     ) {
         val repo = repositoryService.getRepoDetail(projectId, repoName)
             ?: run {
@@ -225,11 +231,19 @@ class StreamService(
         fileConsumer.completeBlockNode(videoArtifactInfo, uploadId, videoEndTime)
         logger.info("MergeExpiredBlocks: video merged for uploadId=$uploadId")
 
-        // 合并额外文件（鼠标轨迹、音频）的分块
-        val extraFileSpecs = listOf("CM" to MediaType.JSON, "AU" to MediaType.AAC)
+        // 合并额外文件（鼠标轨迹、主机音频、麦克风音频）的分块（不含 AV 同步元数据）
+        val extraFileSpecs = listOf("CM" to MediaType.JSON, "AU" to MediaType.AAC, "MI" to MediaType.AAC)
         val extraArtifactInfos = mergeExtraFileBlocks(
             projectId, repoName, uploadId, extraFileSpecs, fileConsumer, videoEndTime
+        ).toMutableList()
+
+        // 处理同步元数据：优先从 AV 分块合并，若无分块则从 syncCollectorState 构造
+        val avArtifactInfo = handleSyncMetadata(
+            projectId, repoName, uploadId, fileConsumer, syncCollectorState
         )
+        if (avArtifactInfo != null) {
+            extraArtifactInfos.add(avArtifactInfo)
+        }
 
         // 合并完成后触发转码
         if (transcodeConfig != null) {
@@ -308,6 +322,102 @@ class StreamService(
             } else {
                 null
             }
+        }
+    }
+
+    /**
+     * 处理同步元数据文件
+     * 优先合并已有的 AV 分块（正常关闭路径会产生）；若无分块，从 syncCollectorState 构造 AV 文件
+     * @return 成功创建的 AV 文件 ArtifactInfo，或 null
+     */
+    private fun handleSyncMetadata(
+        projectId: String,
+        repoName: String,
+        uploadId: String,
+        fileConsumer: MediaArtifactFileConsumer,
+        syncCollectorState: String?
+    ): ArtifactInfo? {
+        val avArtifactInfo = buildArtifactInfo(projectId, repoName, uploadId, MediaType.JSON, "AV")
+        val avUploadId = "${uploadId}_AV_$uploadId"
+        val avBlocks = blockNodeService.listBlocksInUploadId(
+            projectId, repoName, avArtifactInfo.getArtifactFullPath(), avUploadId
+        )
+
+        // 优先从已有分块合并（正常关闭时 dispatch 产生的完整 AV JSON）
+        if (avBlocks.isNotEmpty()) {
+            fileConsumer.completeBlockNode(avArtifactInfo, avUploadId)
+            logger.info("handleSyncMetadata: AV file merged from blocks for uploadId=$uploadId")
+            return avArtifactInfo
+        }
+
+        // 无分块：从 syncCollectorState 构造 AV 文件
+        if (!syncCollectorState.isNullOrEmpty()) {
+            val metadataJson = convertSyncStateToMetadataJson(syncCollectorState)
+            if (metadataJson != null) {
+                storageService.store(
+                    projectId, repoName, avArtifactInfo.getArtifactFullPath(),
+                    metadataJson.toByteArray().inputStream(),
+                    metadataJson.toByteArray().size.toLong(),
+                    storageProperties.defaultStorageCredentials()
+                )
+                logger.info("handleSyncMetadata: AV file constructed from syncCollectorState for uploadId=$uploadId")
+                return avArtifactInfo
+            }
+        }
+
+        logger.info("handleSyncMetadata: no AV data available for uploadId=$uploadId")
+        return null
+    }
+
+    /**
+     * 将 SyncCollectorState JSON 转换为 SyncMetadata JSON
+     * SyncCollectorState 是内部状态（含计数器），SyncMetadata 是供 run.py 使用的精简格式
+     */
+    private fun convertSyncStateToMetadataJson(stateJson: String): String? {
+        return try {
+            val state = JsonUtils.objectMapper.readTree(stateJson)
+            val metadata = com.fasterxml.jackson.databind.node.ObjectNode(com.fasterxml.jackson.databind.node.JsonNodeFactory.instance)
+            metadata.put("version", 1)
+
+            // video info
+            val video = metadata.putObject("video")
+            video.put("codecType", state.get("videoCodecType")?.asText() ?: "UNKNOWN")
+            video.put("width", state.get("videoWidth")?.asInt() ?: 0)
+            video.put("height", state.get("videoHeight")?.asInt() ?: 0)
+
+            // audio info
+            if (state.has("audioCodec") && state.get("audioCodec").asInt(-1) >= 0) {
+                val audio = metadata.putObject("audio")
+                audio.put("codec", state.get("audioCodec").asInt())
+                audio.put("sampleRate", state.get("audioSampleRate").asLong())
+                audio.put("channels", state.get("audioChannels").asInt())
+            }
+
+            // mic audio info
+            if (state.has("micAudioCodec") && state.get("micAudioCodec").asInt(-1) >= 0) {
+                val micAudio = metadata.putObject("micAudio")
+                micAudio.put("codec", state.get("micAudioCodec").asInt())
+                micAudio.put("sampleRate", state.get("micAudioSampleRate").asLong())
+                micAudio.put("channels", state.get("micAudioChannels").asInt())
+            }
+
+            // syncPoints & micSyncPoints
+            if (state.has("syncPoints")) {
+                metadata.set<com.fasterxml.jackson.databind.node.ObjectNode>("syncPoints", state.get("syncPoints"))
+            }
+            if (state.has("micSyncPoints")) {
+                metadata.set<com.fasterxml.jackson.databind.node.ObjectNode>("micSyncPoints", state.get("micSyncPoints"))
+            }
+
+            // segments
+            if (state.has("segments")) {
+                metadata.set<com.fasterxml.jackson.databind.node.ObjectNode>("segments", state.get("segments"))
+            }
+
+            JsonUtils.objectMapper.writeValueAsString(metadata)
+        } catch (e: Exception) {
+            logger.error("convertSyncStateToMetadataJson failed", e)
+            null
         }
     }
 
