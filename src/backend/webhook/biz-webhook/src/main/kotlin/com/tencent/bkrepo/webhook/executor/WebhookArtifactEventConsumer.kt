@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.webhook.cache.WebHookCache
 import com.tencent.bkrepo.webhook.config.WebHookProperties
 import com.tencent.bkrepo.webhook.constant.AssociationType
 import com.tencent.bkrepo.webhook.dao.WebHookDao
@@ -55,6 +56,7 @@ class WebhookArtifactEventConsumer(
     private val webHookExecutor: WebHookExecutor,
     private val webHookProperties: WebHookProperties,
     private val repositoryService: RepositoryService,
+    private val webHookCache: WebHookCache,
 ) {
 
     private val executors = ThreadPoolExecutor(
@@ -92,18 +94,22 @@ class WebhookArtifactEventConsumer(
 
         if (event.projectId.isNotBlank()) {
             webHookList.addAll(
-                webHookDao.findByAssociationTypeAndAssociationId(
-                    AssociationType.PROJECT, event.projectId
-                )
+                webHookCache.get(AssociationType.PROJECT, event.projectId) {
+                    webHookDao.findByAssociationTypeAndAssociationId(
+                        AssociationType.PROJECT, event.projectId
+                    )
+                }
             )
         }
 
         if (event.projectId.isNotBlank() && event.repoName.isNotBlank()) {
             val associationId = "${event.projectId}:${event.repoName}"
             webHookList.addAll(
-                webHookDao.findByAssociationTypeAndAssociationId(
-                    AssociationType.REPO, associationId
-                )
+                webHookCache.get(AssociationType.REPO, associationId) {
+                    webHookDao.findByAssociationTypeAndAssociationId(
+                        AssociationType.REPO, associationId
+                    )
+                }
             )
         }
         val triggerWebHookList = webHookList.filter {

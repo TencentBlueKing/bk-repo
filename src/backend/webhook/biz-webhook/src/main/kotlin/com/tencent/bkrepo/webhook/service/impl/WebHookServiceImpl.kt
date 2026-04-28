@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.webhook.constant.AssociationType
+import com.tencent.bkrepo.webhook.cache.WebHookCache
 import com.tencent.bkrepo.webhook.constant.WebHookRequestStatus
 import com.tencent.bkrepo.webhook.dao.WebHookDao
 import com.tencent.bkrepo.webhook.dao.WebHookLogDao
@@ -60,7 +61,8 @@ class WebHookServiceImpl(
     private val webHookLogDao: WebHookLogDao,
     private val webHookExecutor: WebHookExecutor,
     private val permissionManager: PermissionManager,
-    private val eventPayloadFactory: EventPayloadFactory
+    private val eventPayloadFactory: EventPayloadFactory,
+    private val webHookCache: WebHookCache,
 ) : WebHookService {
 
     override fun createWebHook(userId: String, request: CreateWebHookRequest): WebHook {
@@ -80,6 +82,7 @@ class WebHookServiceImpl(
                 lastModifiedDate = LocalDateTime.now()
             )
             val tWebHook = webHookDao.insert(webHook)
+            webHookCache.invalidate(associationType, associationId)
             return transferWebHook(tWebHook)
         }
     }
@@ -95,6 +98,7 @@ class WebHookServiceImpl(
         webHook.lastModifiedBy = userId
         webHook.lastModifiedDate = LocalDateTime.now()
         val tWebHook = webHookDao.save(webHook)
+        webHookCache.invalidate(webHook.associationType, webHook.associationId)
         return transferWebHook(tWebHook)
     }
 
@@ -103,6 +107,7 @@ class WebHookServiceImpl(
         val webHook = findWebHookById(id)
         checkPermission(userId, webHook.associationType, webHook.associationId)
         webHookDao.removeById(id)
+        webHookCache.invalidate(webHook.associationType, webHook.associationId)
     }
 
     override fun getWebHook(userId: String, id: String): WebHook {
