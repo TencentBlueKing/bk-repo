@@ -239,7 +239,7 @@ class StreamService(
 
         // 处理同步元数据：优先从 AV 分块合并，若无分块则从 syncCollectorState 构造
         val avArtifactInfo = handleSyncMetadata(
-            projectId, repoName, uploadId, fileConsumer, syncCollectorState
+            projectId, repoName, uploadId, fileConsumer, syncCollectorState, videoEndTime
         )
         if (avArtifactInfo != null) {
             extraArtifactInfos.add(avArtifactInfo)
@@ -335,7 +335,8 @@ class StreamService(
         repoName: String,
         uploadId: String,
         fileConsumer: MediaArtifactFileConsumer,
-        syncCollectorState: String?
+        syncCollectorState: String?,
+        endTime: Long
     ): ArtifactInfo? {
         val avArtifactInfo = buildArtifactInfo(projectId, repoName, uploadId, MediaType.JSON, "AV")
         val avUploadId = "${uploadId}_AV_$uploadId"
@@ -345,7 +346,7 @@ class StreamService(
 
         // 优先从已有分块合并（正常关闭时 dispatch 产生的完整 AV JSON）
         if (avBlocks.isNotEmpty()) {
-            fileConsumer.completeBlockNode(avArtifactInfo, avUploadId)
+            fileConsumer.completeBlockNode(avArtifactInfo, avUploadId, endTime)
             logger.info("handleSyncMetadata: AV file merged from blocks for uploadId=$uploadId")
             return avArtifactInfo
         }
@@ -354,13 +355,25 @@ class StreamService(
         if (!syncCollectorState.isNullOrEmpty()) {
             val metadataJson = convertSyncStateToMetadataJson(syncCollectorState)
             if (metadataJson != null) {
-                storageService.store(
-                    projectId, repoName, avArtifactInfo.getArtifactFullPath(),
-                    metadataJson.toByteArray().inputStream(),
-                    metadataJson.toByteArray().size.toLong(),
-                    storageProperties.defaultStorageCredentials()
+                val repo = repositoryService.getRepoDetail(projectId, repoName) ?: return null
+                val credentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
+                val artifactFile = ArtifactFileFactory.build(metadataJson.toByteArray().inputStream())
+                storageManager.storeArtifactFile(
+                    NodeCreateRequest(
+                        projectId = projectId,
+                        repoName = repoName,
+                        fullPath = avArtifactInfo.getArtifactFullPath(),
+                        folder = false,
+                        overwrite = true,
+                        size = metadataJson.length.toLong(),
+                    ),
+                    artifactFile,
+                    credentials
                 )
-                logger.info("handleSyncMetadata: AV file constructed from syncCollectorState for uploadId=$uploadId")
+                logger.info(
+                    "handleSyncMetadata: AV file created from syncCollectorState " +
+                        "for uploadId=$uploadId (${metadataJson.length} bytes)"
+                )
                 return avArtifactInfo
             }
         }
