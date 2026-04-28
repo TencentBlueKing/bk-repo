@@ -13,7 +13,7 @@ class DriveProperties {
      * 同一仓库下两次快照创建的最小间隔时间，默认10秒。
      * 设置为 Duration.ZERO 表示不限制。
      */
-    var snapshotCreateInterval: Duration = Duration.ofSeconds(10)
+    var snapshotCreateInterval: Duration = Duration.ofSeconds(5)
 
     /**
      * Drive block write并发请求数限制，<= 0 表示不限制。
@@ -26,7 +26,7 @@ class DriveProperties {
     /**
      * 快照序列号缓存异步刷新间隔，默认5秒。
      */
-    var snapSeqCacheRefreshDuration: Duration = Duration.ofSeconds(5)
+    var snapSeqCacheRefreshDuration: Duration = Duration.ofSeconds(3)
 
     /**
      * 快照序列号缓存强制过期时间，默认300秒。
