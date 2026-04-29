@@ -137,7 +137,8 @@ class StreamService(
         remux: Boolean = false,
         saveType: MediaType = MediaType.MP4,
         transcodeExtraParams: String? = null,
-        uploadId: String? = null
+        uploadId: String? = null,
+        videoStartTime: Long? = null
     ): ClientStream {
         val repoId = RepositoryId(projectId, repoName)
         val repo = ArtifactContextHolder.getRepoDetail(repoId)
@@ -160,7 +161,8 @@ class StreamService(
             streamTranscodeConfig,
             storageService,
             blockNodeService,
-            nodeService
+            nodeService,
+            videoStartTime ?: System.currentTimeMillis()
         )
         val recordingListener = if (remux) {
             RemuxRecordingListener(credentials.upload.location, scheduler, saveType, fileConsumer)
@@ -199,6 +201,7 @@ class StreamService(
         repoName: String,
         uploadId: String,
         transcodeExtraParams: String? = null,
+        persistedStartTime: Long? = null,
     ) {
         val repo = repositoryService.getRepoDetail(projectId, repoName)
             ?: run {
@@ -216,18 +219,20 @@ class StreamService(
             return
         }
 
-        // 从分块元信息推算 author 和视频起止时间
+        // 从分块元信息推算 author 和视频结束时间
         // storeBlockNode 中 createdBy 存的是 author（真实录制者）
         val author = videoBlocks.first().createdBy
         val sortedBlocks = videoBlocks.sortedBy { it.createdDate }
-        val videoStartTime = sortedBlocks.first().createdDate
-            .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        // 开始时间优先使用插件侧持久化的精确时间
+        val videoStartTime = persistedStartTime
+            ?: sortedBlocks.first().createdDate
+                .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
         val videoEndTime = sortedBlocks.last().createdDate
             .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
         // 获取转码配置，并将 transcodeExtraParams (sktoken) 设置到配置中
         val transcodeConfig = getTranscodeConfig(projectId)?.copy(extraParams = transcodeExtraParams)
-        val fileConsumer = buildFileConsumer(repo, author, transcodeConfig)
+        val fileConsumer = buildFileConsumer(repo, author, transcodeConfig, persistedStartTime)
 
         // 合并视频主文件分块
         fileConsumer.completeBlockNode(videoArtifactInfo, uploadId, videoEndTime)
@@ -278,15 +283,18 @@ class StreamService(
     /**
      * 构建 MediaArtifactFileConsumer 实例
      * @param author 真实录制者（从分块 createdBy 获取）
+     * @param persistedStartTime 插件侧持久化的录屏开始时间（用于重连场景恢复首次连接时间）
      */
     private fun buildFileConsumer(
         repo: com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail,
         author: String,
-        transcodeConfig: TranscodeConfig?
+        transcodeConfig: TranscodeConfig?,
+        persistedStartTime: Long? = null
     ): MediaArtifactFileConsumer {
         return MediaArtifactFileConsumer(
             storageManager, transcodeService, repo, author, author,
-            STREAM_PATH, transcodeConfig, storageService, blockNodeService, nodeService
+            STREAM_PATH, transcodeConfig, storageService, blockNodeService, nodeService,
+            persistedStartTime ?: System.currentTimeMillis()
         )
     }
 
