@@ -492,7 +492,9 @@ abstract class NodeBaseService(
                 logger.info("Delete block base node[$fullPath] by [$operator] success: $oldNodeId.")
 
             } else {
-                deleteByFullPathWithoutDecreaseVolume(projectId, repoName, fullPath, operator, source)
+                deleteByFullPathWithoutDecreaseVolume(
+                    projectId, repoName, fullPath, operator, source, isFile = !existNode.folder
+                )
             }
 
             // 更新配额使用量

@@ -15,6 +15,7 @@ data class DriveNode(
     @get:JsonFormat(pattern = DATE_TIME_FORMAT)
     val createdDate: LocalDateTime,
     val lastModifiedBy: String,
+    val lastModifiedClientId: String? = null,
     @get:JsonFormat(pattern = DATE_TIME_FORMAT)
     val lastModifiedDate: LocalDateTime,
     val mtime: Long,
@@ -40,12 +41,13 @@ data class DriveNode(
     val deleted: LocalDateTime? = null,
 )
 
-fun TDriveNode.toDriveNode(): DriveNode {
+fun TDriveNode.toDriveNode(snap: Boolean = false): DriveNode {
     return DriveNode(
         id = id!!,
         createdBy = createdBy,
         createdDate = createdDate,
         lastModifiedBy = lastModifiedBy,
+        lastModifiedClientId = lastModifiedClientId,
         lastModifiedDate = lastModifiedDate,
         mtime = mtime,
         ctime = ctime,
@@ -66,6 +68,6 @@ fun TDriveNode.toDriveNode(): DriveNode {
         rdev = rdev,
         flags = flags,
         symlinkTarget = symlinkTarget,
-        deleted = deleted,
+        deleted = if (snap) null else deleted,
     )
 }
