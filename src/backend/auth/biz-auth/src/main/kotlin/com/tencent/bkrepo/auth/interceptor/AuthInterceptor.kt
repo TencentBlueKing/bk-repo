@@ -49,6 +49,7 @@ import com.tencent.bkrepo.auth.constant.PLATFORM_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.service.AccountService
+import com.tencent.bkrepo.auth.service.OauthAuthorizationService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.constant.ADMIN_USER
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
@@ -62,7 +63,6 @@ import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
-import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.service.util.HttpSigner
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -82,7 +82,7 @@ class AuthInterceptor(
 
     private val userService: UserService by lazy { SpringContextUtils.getBean() }
 
-    private val authenticationManager: AuthenticationManager by lazy { SpringContextUtils.getBean() }
+    private val oauthAuthorizationService: OauthAuthorizationService by lazy { SpringContextUtils.getBean() }
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val authHeader = request.getHeader(AUTHORIZATION).orEmpty()
@@ -222,7 +222,8 @@ class AuthInterceptor(
     private fun checkOauthToken(request: HttpServletRequest, authHeader: String): Boolean {
         return try {
             val userAccess = userAccessApiSet.any { request.requestURI.contains(it) }
-            val userId = authenticationManager.checkOauthToken(authHeader.removePrefix(BEARER_AUTH_PREFIX))
+            val userId = oauthAuthorizationService.validateToken(authHeader.removePrefix(BEARER_AUTH_PREFIX))
+                ?: throw AuthenticationException()
             val user = userService.getUserInfoById(userId)
             val isAdmin = user?.admin ?: false
             request.setAttribute(USER_KEY, userId)
@@ -233,12 +234,12 @@ class AuthInterceptor(
             }
             true
         } catch (e: AuthenticationException) {
-            false
+            throw e
         } catch (e: IllegalArgumentException) {
             throw e
         } catch (e: Exception) {
             logger.error("check oauth token error: ", e)
-            false
+            throw AuthenticationException()
         }
     }
 
