@@ -101,6 +101,7 @@ class AuthInterceptor(
 
             // oauth认证
             if (authHeader.startsWith(BEARER_AUTH_PREFIX)) {
+                authFailStr = String.format(AUTH_FAILED_RESPONSE, "illegal oauth token")
                 return checkOauthToken(request, authHeader)
             }
 
@@ -109,6 +110,7 @@ class AuthInterceptor(
             val appId = request.getParameter(HttpSigner.APP_ID)
             val accessKey = request.getParameter(HttpSigner.ACCESS_KEY)
             if (sig != null && appId != null && accessKey != null) {
+                authFailStr = String.format(AUTH_FAILED_RESPONSE, "illegal sign")
                 return checkUserFromSign(request)
             }
 
