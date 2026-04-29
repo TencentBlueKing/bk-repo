@@ -221,11 +221,21 @@ class AuthInterceptor(
 
     private fun checkOauthToken(request: HttpServletRequest, authHeader: String): Boolean {
         return try {
+            val userAccess = userAccessApiSet.any { request.requestURI.contains(it) }
             val userId = authenticationManager.checkOauthToken(authHeader.removePrefix(BEARER_AUTH_PREFIX))
+            val user = userService.getUserInfoById(userId)
+            val isAdmin = user?.admin ?: false
             request.setAttribute(USER_KEY, userId)
+            request.setAttribute(ADMIN_USER, isAdmin)
+            if (!isAdmin && !userAccess) {
+                logger.warn("user [$userId] can not access this endpoint [${request.requestURI}]")
+                throw IllegalArgumentException("user has no permission")
+            }
             true
         } catch (e: AuthenticationException) {
             false
+        } catch (e: IllegalArgumentException) {
+            throw e
         } catch (e: Exception) {
             logger.error("check oauth token error: ", e)
             false
