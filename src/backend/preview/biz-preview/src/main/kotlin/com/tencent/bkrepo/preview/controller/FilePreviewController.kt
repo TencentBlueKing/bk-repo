@@ -36,6 +36,8 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.preview.artifact.PreviewArtifactInfo
 import com.tencent.bkrepo.preview.artifact.PreviewArtifactInfo.Companion.PREVIEW_BKREPO_MAPPING_URI
@@ -69,6 +71,7 @@ class FilePreviewController(
      * 远程文件预览属性
      */
     @GetMapping(PREVIEW_INFO_REMOTE_MAPPING_URI)
+    @Principal(PrincipalType.GENERAL)
     @CrossOrigin
     fun getPreviewInfo(
         @RequestParam("extraParam") extraParams: String
@@ -119,6 +122,7 @@ class FilePreviewController(
      * 远程文件
      */
     @GetMapping(PREVIEW_REMOTE_MAPPING_URI)
+    @Principal(PrincipalType.GENERAL)
     @CrossOrigin
     fun onlinePreview(
         @RequestParam("extraParam") extraParam: String
