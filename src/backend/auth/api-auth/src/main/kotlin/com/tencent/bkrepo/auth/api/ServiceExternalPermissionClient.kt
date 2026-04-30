@@ -33,7 +33,11 @@ import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
 @Tag(name = "SERVICE_EXTERNAL_PERMISSION", description = "服务-外部权限接口")
@@ -44,4 +48,18 @@ interface ServiceExternalPermissionClient {
     @GetMapping
     fun listExternalPermission(): Response<List<ExternalPermission>>
 
+    @PostMapping("/federation/create")
+    fun createExternalPermission(
+        @RequestBody permission: ExternalPermission
+    ): Response<Boolean>
+
+    @PostMapping("/federation/update")
+    fun updateExternalPermission(
+        @RequestBody permission: ExternalPermission
+    ): Response<Boolean>
+
+    @DeleteMapping("/federation/delete/{id}")
+    fun deleteExternalPermission(
+        @PathVariable id: String
+    ): Response<Boolean>
 }

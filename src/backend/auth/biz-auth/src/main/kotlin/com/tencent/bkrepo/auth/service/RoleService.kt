@@ -45,6 +45,8 @@ interface RoleService {
 
     fun listRoleByProject(projectId: String, repoName: String? = null): List<Role>
 
+    fun listRoleByProjectPage(projectId: String, pageNumber: Int, pageSize: Int): List<Role>
+
     fun listRoleBySource(source: RoleSource): List<Role>
 
     fun detail(id: String): Role?

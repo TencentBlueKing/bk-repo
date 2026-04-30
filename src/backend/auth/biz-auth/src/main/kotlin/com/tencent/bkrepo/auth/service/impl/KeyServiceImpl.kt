@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.auth.service.impl
 
+import com.tencent.bkrepo.auth.config.AuthProperties
+import com.tencent.bkrepo.auth.context.FederationWriteContext
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TKey
 import com.tencent.bkrepo.auth.pojo.Key
@@ -34,7 +36,10 @@ import com.tencent.bkrepo.auth.dao.repository.KeyRepository
 import com.tencent.bkrepo.auth.service.KeyService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.apache.commons.codec.binary.Hex
 import org.springframework.stereotype.Service
 import java.security.MessageDigest
@@ -43,7 +48,9 @@ import java.util.Base64
 
 @Service
 class KeyServiceImpl(
-    private val keyRepository: KeyRepository
+    private val keyRepository: KeyRepository,
+    private val messageSupplier: MessageSupplier,
+    private val authProperties: AuthProperties
 ) : KeyService {
     override fun createKey(name: String, key: String) {
         Preconditions.checkArgument(validateKeyFormat(key), "key")
@@ -60,10 +67,15 @@ class KeyServiceImpl(
             createAt = LocalDateTime.now()
         )
         keyRepository.save(tKey)
+        publishEvent(EventType.KEYS_CREATE, fingerprint, userId)
     }
 
     override fun listKey(): List<Key> {
         val userId = SecurityUtils.getUserId()
+        return keyRepository.findByUserId(userId).map { transfer(it) }
+    }
+
+    override fun listKeyByUserId(userId: String): List<Key> {
         return keyRepository.findByUserId(userId).map { transfer(it) }
     }
 
@@ -74,6 +86,7 @@ class KeyServiceImpl(
             throw ErrorCodeException(AuthMessageCode.AUTH_DELETE_KEY_FAILED)
         }
         keyRepository.delete(key)
+        publishEvent(EventType.KEYS_DELETE, key.fingerprint, key.userId)
     }
 
     private fun transfer(tKey: TKey): Key {
@@ -130,7 +143,22 @@ class KeyServiceImpl(
         return toRet.toString()
     }
 
+    private fun publishEvent(type: EventType, resourceKey: String, keyUserId: String) {
+        if (!authProperties.eventEnabled || FederationWriteContext.isFederationWrite()) return
+        val event = ArtifactEvent(
+            type = type,
+            projectId = "",
+            repoName = "",
+            resourceKey = resourceKey,
+            userId = runCatching { SecurityUtils.getUserId() }.getOrDefault(""),
+            data = mapOf("userId" to keyUserId),
+            eventId = ArtifactEvent.generateEventId()
+        )
+        messageSupplier.delegateToSupplier(event, topic = BINDING_OUT_NAME)
+    }
+
     companion object {
+        private const val BINDING_OUT_NAME = "artifactEvent-out-0"
         private val KEY_TYPES = listOf(
             "ecdsa-sha2-nistp256", "ecdsa-sha2-nistp384", "ecdsa-sha2-nistp521",
             "ssh-ed25519", "ssh-dss", "ssh-rsa"

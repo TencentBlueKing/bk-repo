@@ -27,14 +27,18 @@
 
 package com.tencent.bkrepo.auth.api
 
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyKey
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
 @Tag(name = "SERVICE_PROXY", description = "服务Proxy接口")
@@ -48,4 +52,29 @@ interface ServiceProxyClient {
         @PathVariable projectId: String,
         @PathVariable name: String
     ): Response<ProxyKey>
+
+    @Operation(summary = "查询项目下所有Proxy（联邦同步）")
+    @GetMapping("/federation/list/{projectId}")
+    fun listProxyByProject(
+        @PathVariable projectId: String
+    ): Response<List<ProxyInfo>>
+
+    @Operation(summary = "创建Proxy（联邦同步）")
+    @PostMapping("/federation/create")
+    fun createProxyForFederation(
+        @RequestBody proxyInfo: ProxyInfo
+    ): Response<Boolean>
+
+    @Operation(summary = "更新Proxy（联邦同步）")
+    @PostMapping("/federation/update")
+    fun updateProxyForFederation(
+        @RequestBody proxyInfo: ProxyInfo
+    ): Response<Boolean>
+
+    @Operation(summary = "删除Proxy（联邦同步）")
+    @DeleteMapping("/federation/delete/{projectId}/{name}")
+    fun deleteProxyForFederation(
+        @PathVariable projectId: String,
+        @PathVariable name: String
+    ): Response<Boolean>
 }

@@ -33,6 +33,7 @@ package com.tencent.bkrepo.auth.dao
 
 import com.tencent.bkrepo.auth.model.TTemporaryToken
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -64,6 +65,35 @@ class AuthTemporaryTokenDao : SimpleMongoDao<TTemporaryToken>() {
         }
         val query = Query(TTemporaryToken::token.isEqualTo(token))
         this.remove(query)
+    }
+
+    /**
+     * 查询项目下仍有效的临时token（未过期或无过期限制）
+     */
+    fun listActiveByProject(projectId: String): List<TTemporaryToken> {
+        val now = java.time.LocalDateTime.now()
+        val projectCriteria = Criteria.where(TTemporaryToken::projectId.name).`is`(projectId)
+        val expireCriteria = Criteria().orOperator(
+            Criteria.where(TTemporaryToken::expireDate.name).`is`(null),
+            Criteria.where(TTemporaryToken::expireDate.name).gt(now)
+        )
+        val query = Query(Criteria().andOperator(projectCriteria, expireCriteria))
+        return this.find(query)
+    }
+
+    /**
+     * 分页查询项目下仍有效的临时token
+     */
+    fun listActiveByProjectPage(projectId: String, pageNumber: Int, pageSize: Int): List<TTemporaryToken> {
+        val now = java.time.LocalDateTime.now()
+        val projectCriteria = Criteria.where(TTemporaryToken::projectId.name).`is`(projectId)
+        val expireCriteria = Criteria().orOperator(
+            Criteria.where(TTemporaryToken::expireDate.name).`is`(null),
+            Criteria.where(TTemporaryToken::expireDate.name).gt(now)
+        )
+        val query = Query(Criteria().andOperator(projectCriteria, expireCriteria))
+            .with(org.springframework.data.domain.PageRequest.of(pageNumber - 1, pageSize))
+        return this.find(query)
     }
 
     /**

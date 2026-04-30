@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.auth.api
 
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ACCOUNT_PREFIX
+import com.tencent.bkrepo.auth.pojo.account.AccountInfo
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -40,9 +41,11 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
@@ -79,4 +82,38 @@ interface ServiceAccountClient {
         @Parameter @PathVariable appId: String,
         @Parameter @PathVariable accessKey: String
     ): Response<String?>
+
+    @Operation(summary = "查询所有账号（联邦同步）")
+    @GetMapping("/federation/list")
+    fun listAccountsForFederation(): Response<List<AccountInfo>>
+
+    @Operation(summary = "按 appId 查询单个账号（联邦同步）")
+    @GetMapping("/federation/detail/{appId}")
+    fun getAccountForFederation(
+        @PathVariable appId: String
+    ): Response<AccountInfo?>
+
+    @Operation(summary = "创建账号（联邦同步）")
+    @PostMapping("/federation/create")
+    fun createAccountForFederation(
+        @RequestBody accountInfo: AccountInfo
+    ): Response<Boolean>
+
+    @Operation(summary = "更新账号（联邦同步）")
+    @PostMapping("/federation/update")
+    fun updateAccountForFederation(
+        @RequestBody accountInfo: AccountInfo
+    ): Response<Boolean>
+
+    @Operation(summary = "删除账号（联邦同步）")
+    @DeleteMapping("/federation/delete/{appId}")
+    fun deleteAccountForFederation(
+        @PathVariable appId: String
+    ): Response<Boolean>
+
+    @Operation(summary = "创建或更新账号（联邦同步，含真实credentials）")
+    @PostMapping("/federation/upsert")
+    fun upsertAccountForFederation(
+        @RequestBody accountInfo: AccountInfo
+    ): Response<Void>
 }
