@@ -254,7 +254,7 @@ class OauthAuthorizationServiceImpl(
 
     override fun validateToken(accessToken: String): String? {
         val claims = JwtUtils.validateToken(
-            signingKey = RsaUtils.stringToPrivateKey(cryptoProperties.privateKeyStr2048PKCS8),
+            signingKey = RsaUtils.stringToPublicKey(cryptoProperties.publicKeyStr2048PKCS8),
             token = accessToken
         )
         return claims.body.subject
