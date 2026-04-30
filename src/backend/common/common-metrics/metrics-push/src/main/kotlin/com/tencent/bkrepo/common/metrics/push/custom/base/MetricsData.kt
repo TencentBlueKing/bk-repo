@@ -52,7 +52,7 @@ class MetricsData(
         initialize()
     }
 
-    fun setLabelValue(labels: MutableMap<String, String>) {
+    fun setLabelValue(labels: Map<String, String>) {
         labels.forEach(this::setLabelValue)
     }
 
