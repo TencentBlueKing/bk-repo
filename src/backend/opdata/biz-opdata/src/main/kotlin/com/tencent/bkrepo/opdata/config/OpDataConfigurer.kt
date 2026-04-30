@@ -37,12 +37,17 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import com.tencent.bkrepo.opdata.security.ResilientPlatformAuthHandler
+import org.springframework.beans.factory.annotation.Autowired
+import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 
 @Component
 @Order(1)
-class OpDataConfigurer : ArtifactConfigurerSupport() {
+class OpDataConfigurer(
+    @Autowired private val authenticationManager: AuthenticationManager
+) : ArtifactConfigurerSupport() {
 
     override fun getRepositoryType() = RepositoryType.NONE
     override fun getLocalRepository(): LocalRepository = object : LocalRepository() {}
@@ -50,5 +55,12 @@ class OpDataConfigurer : ArtifactConfigurerSupport() {
     override fun getVirtualRepository(): VirtualRepository = object : VirtualRepository() {}
 
     override fun getAuthSecurityCustomizer() =
-        HttpAuthSecurityCustomizer { httpAuthSecurity -> httpAuthSecurity.withPrefix("/opdata") }
+        HttpAuthSecurityCustomizer { httpAuthSecurity ->
+            httpAuthSecurity.withPrefix("/opdata")
+            // 关闭默认 PlatformAuthHandler，改用容错版本：
+            // 当 auth 微服务不可用（Feign 连接/超时/5xx）时降级为匿名，
+            // 避免整个 opdata 因为 auth 故障而不可用。
+            httpAuthSecurity.disablePlatformAuth()
+            httpAuthSecurity.addHttpAuthHandler(ResilientPlatformAuthHandler(authenticationManager))
+        }
 }
