@@ -75,6 +75,16 @@ class WebhookArtifactEventConsumer(
             )
         })
 
+    // key: "$associationType:$associationId", 缓存空结果以消除无效 DB 查询
+    private val projectRepoWebHookCache = CacheBuilder.newBuilder()
+        .maximumSize(20000)
+        .expireAfterWrite(5, TimeUnit.MINUTES)
+        .build<String, List<TWebHook>>()
+
+    fun invalidateWebHookCache(associationType: AssociationType, associationId: String) {
+        projectRepoWebHookCache.invalidate("$associationType:$associationId")
+    }
+
     fun accept(message: Message<ArtifactEvent>) {
         logger.info("accept artifact event: ${message.payload}, header: ${message.headers}")
         val task = Runnable { triggerWebHooks(message.payload) }.trace()
@@ -92,18 +102,22 @@ class WebhookArtifactEventConsumer(
 
         if (event.projectId.isNotBlank()) {
             webHookList.addAll(
-                webHookDao.findByAssociationTypeAndAssociationId(
-                    AssociationType.PROJECT, event.projectId
-                )
+                projectRepoWebHookCache.get("${AssociationType.PROJECT}:${event.projectId}") {
+                    webHookDao.findByAssociationTypeAndAssociationId(
+                        AssociationType.PROJECT, event.projectId
+                    )
+                }
             )
         }
 
         if (event.projectId.isNotBlank() && event.repoName.isNotBlank()) {
             val associationId = "${event.projectId}:${event.repoName}"
             webHookList.addAll(
-                webHookDao.findByAssociationTypeAndAssociationId(
-                    AssociationType.REPO, associationId
-                )
+                projectRepoWebHookCache.get("${AssociationType.REPO}:$associationId") {
+                    webHookDao.findByAssociationTypeAndAssociationId(
+                        AssociationType.REPO, associationId
+                    )
+                }
             )
         }
         val triggerWebHookList = webHookList.filter {

@@ -60,12 +60,15 @@ object OperateLogServiceHelper {
     fun OpLogListOption.buildListQuery(): Query {
         val escapeValue = EscapeUtils.escapeRegexExceptWildcard(resourceKey)
         val regexPattern = escapeValue.replace("*", ".*")
+        val isFullMatch = regexPattern == ".*" || regexPattern.isEmpty()
         val criteria = where(TOperateLog::projectId).isEqualTo(projectId)
             .and(TOperateLog::repoName).isEqualTo(repoName)
             .and(TOperateLog::type).isEqualTo(eventType)
             .and(TOperateLog::createdDate).gte(startTime).lte(endTime)
-            .and(TOperateLog::resourceKey).regex("^$regexPattern")
             .apply {
+                if (!isFullMatch) {
+                    and(TOperateLog::resourceKey).regex("^$regexPattern")
+                }
                 userId?.run { and(TOperateLog::userId).isEqualTo(userId) }
                 sha256?.run { and("${TOperateLog::description.name}.sha256").isEqualTo(sha256) }
                 pipelineId?.run { and("${TOperateLog::description.name}.pipelineId").isEqualTo(pipelineId) }
