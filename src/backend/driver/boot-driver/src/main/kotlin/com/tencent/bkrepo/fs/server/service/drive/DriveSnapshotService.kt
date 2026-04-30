@@ -3,6 +3,7 @@ package com.tencent.bkrepo.fs.server.service.drive
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.RESOURCE_EXISTED
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.RESOURCE_NOT_FOUND
+import com.tencent.bkrepo.common.api.message.CommonMessageCode.TOO_MANY_REQUESTS
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.mongo.util.Pages
@@ -16,6 +17,7 @@ import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
+import java.time.Duration
 import java.time.LocalDateTime
 
 /**
@@ -41,7 +43,10 @@ class DriveSnapshotService(
             TDriveSnapshot::description.name,
             driveProperties.descriptionMaxLength
         )
-        val currentSnapSeq = driveSnapSeqService.getLatestSnapSeq(projectId, repoName, fromCache = false)
+        val snapSeqRecord = driveSnapSeqService.getLatestSnapSeqRecord(projectId, repoName)
+        // 校验两次快照创建的间隔时间
+        checkSnapshotCreateInterval(snapSeqRecord.lastModifiedDate)
+        val currentSnapSeq = snapSeqRecord.snapSeq
         val now = LocalDateTime.now()
         val operator = ReactiveSecurityUtils.getUser()
         val snapshot = TDriveSnapshot(
@@ -138,6 +143,24 @@ class DriveSnapshotService(
             throw ErrorCodeException(RESOURCE_NOT_FOUND, "drive snapshot[$projectId/$repoName/$snapshotId]")
         }
         logger.info("Delete drive snapshot[$projectId/$repoName/$snapshotId] success.")
+    }
+
+    /**
+     * 校验两次快照创建的间隔时间是否满足最小间隔要求
+     */
+    private fun checkSnapshotCreateInterval(lastModifiedDate: LocalDateTime) {
+        val interval = driveProperties.snapshotCreateInterval
+        if (interval == Duration.ZERO) {
+            return
+        }
+        val elapsed = Duration.between(lastModifiedDate, LocalDateTime.now())
+        if (elapsed < interval) {
+            val remainSeconds = (interval - elapsed).seconds
+            throw ErrorCodeException(
+                TOO_MANY_REQUESTS,
+                "snapshot create interval too short, please retry after ${remainSeconds}s"
+            )
+        }
     }
 
     companion object {
