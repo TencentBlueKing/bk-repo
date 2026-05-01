@@ -48,7 +48,8 @@ document.title = i18n.t('webTitle')
 async function setDisplayNamePlugin () {
     if (BK_REPO_ENABLE_MULTI_TENANT_MODE !== 'true') return
     try {
-        const { data } = await axios.get(window.BK_SUBPATH + 'web/auth/api/user/info')
+        // 用户信息查询走 opdata 微服务，避免 auth 不可用导致页面初始化失败
+        const { data } = await axios.get(window.BK_SUBPATH + 'web/opdata/api/user/info')
         BkUserDisplayName.configure({
             tenantId: data.data.tenantId,
             apiBaseUrl: API_BASE_URL,

@@ -1,15 +1,15 @@
 package com.tencent.bkrepo.common.security.manager
 
-import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.security.spi.UserAuthProvider
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.slf4j.LoggerFactory
 
 class PrincipalManager(
-    private val serviceUserClient: ServiceUserClient
+    private val userAuthProvider: UserAuthProvider
 ) {
 
     fun checkPrincipal(userId: String, principalType: PrincipalType) {
@@ -44,7 +44,7 @@ class PrincipalManager(
     }
 
     private fun isAdminUser(userId: String): Boolean {
-        return serviceUserClient.userInfoById(userId).data?.admin == true
+        return userAuthProvider.isAdmin(userId)
     }
 
     companion object {

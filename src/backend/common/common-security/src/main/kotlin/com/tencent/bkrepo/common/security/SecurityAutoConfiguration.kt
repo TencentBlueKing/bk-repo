@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.security
 
+import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.common.security.actuator.ActuatorAuthConfiguration
 import com.tencent.bkrepo.common.security.crypto.CryptoConfiguration
 import com.tencent.bkrepo.common.security.exception.SecurityExceptionHandler
@@ -44,6 +45,8 @@ import com.tencent.bkrepo.common.security.manager.ci.CIPermissionProperties
 import com.tencent.bkrepo.common.security.permission.PermissionConfiguration
 import com.tencent.bkrepo.common.security.proxy.ProxyAuthConfiguration
 import com.tencent.bkrepo.common.security.service.ServiceAuthConfiguration
+import com.tencent.bkrepo.common.security.spi.FeignUserAuthProvider
+import com.tencent.bkrepo.common.security.spi.UserAuthProvider
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
@@ -65,11 +68,27 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
     ActuatorAuthConfiguration::class,
     CryptoConfiguration::class,
     AuthenticationManager::class,
-    CIPermissionManager::class,
-    PrincipalManager::class
+    CIPermissionManager::class
 )
 @EnableConfigurationProperties(DevXProperties::class, CIPermissionProperties::class)
 class SecurityAutoConfiguration {
+
+    /**
+     * 默认 [UserAuthProvider] 实现：通过 Feign 调用 auth 微服务。
+     * 业务模块（如 opdata）可声明自己的 [UserAuthProvider] Bean 以替换默认实现，
+     * 从而避免对 auth 微服务的强同步依赖。
+     */
+    @Bean
+    @ConditionalOnMissingBean(UserAuthProvider::class)
+    fun defaultUserAuthProvider(serviceUserClient: ServiceUserClient): UserAuthProvider {
+        return FeignUserAuthProvider(serviceUserClient)
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun principalManager(userAuthProvider: UserAuthProvider): PrincipalManager {
+        return PrincipalManager(userAuthProvider)
+    }
 
     @Bean
     @ConditionalOnProperty(value = ["devx.enabled"])
