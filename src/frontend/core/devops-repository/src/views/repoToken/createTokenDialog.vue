@@ -13,6 +13,9 @@
                     {{ $t('tokenIs') + token }}
                     <i class="ml10 devops-icon icon-clipboard"></i>
                 </div>
+                <div v-if="basicAuth" class="mt10 mb10 hover-btn flex-align-center">
+                    {{ $t('basicAuthIs') + basicAuth }}
+                </div>
                 <span class="token-tip">{{ $t('tokenCopyTip') }}</span>
             </div>
         </div>
@@ -63,7 +66,8 @@
                         }
                     ]
                 },
-                token: ''
+                token: '',
+                basicAuth: ''
             }
         },
         computed: {
@@ -88,9 +92,10 @@
                     username: this.userName,
                     name: this.tokenFormData.name,
                     expiredAt: this.tokenFormData.expiredAt instanceof Date ? this.tokenFormData.expiredAt.toISOString() : ''
-                }).then(({ id }) => {
-                    this.$emit('token', id)
-                    this.token = id
+                }).then(res => {
+                    this.$emit('token', res.id)
+                    this.token = res.id
+                    this.basicAuth = res.authorization ? res.authorization.basic : ''
                 }).finally(() => {
                     this.loading = false
                 })
