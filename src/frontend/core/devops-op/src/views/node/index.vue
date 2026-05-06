@@ -79,7 +79,7 @@
       <el-form-item>
         <el-button
           v-if="!nodeQuery.useSha256"
-          :disabled="!nodeQuery.path"
+          :disabled="!nodeQuery.path || nodeQuery.path === '/'"
           size="mini"
           type="primary"
           @click="returnToPreviousLevel()"
@@ -300,17 +300,9 @@ export default {
       }) : arr
     },
     returnToPreviousLevel() {
-      if (this.nodeQuery.path === '/') return
-      let target = ''
-      if (!this.nodeQuery.path.endsWith('/')) {
-        const lastIndex = this.nodeQuery.path.lastIndexOf('/')
-        target = this.nodeQuery.path.substring(0, lastIndex)
-      } else {
-        const temp = this.nodeQuery.path.substring(0, this.nodeQuery.path.length - 1)
-        const lastIndex = temp.lastIndexOf('/')
-        target = temp.substring(0, lastIndex)
-      }
-      this.nodeQuery.path = target + '/'
+      const normalized = this.nodeQuery.path.replace(/\/+$/, '')
+      const lastIndex = normalized.lastIndexOf('/')
+      this.nodeQuery.path = (lastIndex <= 0 ? '/' : normalized.substring(0, lastIndex + 1))
       this.changeRouteQueryParams(true)
     },
     changeRouteQueryParams(resetPage = false) {
