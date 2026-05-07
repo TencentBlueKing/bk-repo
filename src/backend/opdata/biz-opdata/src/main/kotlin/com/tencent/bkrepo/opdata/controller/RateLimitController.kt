@@ -7,26 +7,30 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.model.RateLimitCreatOrUpdateRequest
+import com.tencent.bkrepo.common.ratelimiter.model.RateLimiterStatistics
+import com.tencent.bkrepo.common.ratelimiter.model.ResourceRateLimiterStatistics
 import com.tencent.bkrepo.common.ratelimiter.model.TRateLimit
+import com.tencent.bkrepo.common.ratelimiter.service.statistics.RateLimiterStatisticsService
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/rateLimit")
 @Principal(PrincipalType.ADMIN)
 class RateLimitController(
     private val rateLimiterConfigService: RateLimiterConfigService,
-    private val rateLimiterProperties: RateLimiterProperties
+    private val rateLimiterProperties: RateLimiterProperties,
+    private val rateLimiterStatisticsService: RateLimiterStatisticsService
 ) {
 
     @GetMapping("/list")
@@ -62,10 +66,10 @@ class RateLimitController(
             )
             val modules = ArrayList<String>()
             tRateLimits.forEach { tRateLimit ->
-                if(id == null || !tRateLimit.id.equals(id)) {
+                if (id == null || !tRateLimit.id.equals(id)) {
                     modules.addAll(tRateLimit.moduleName)
-                    }
                 }
+            }
             if (modules.isNotEmpty()) {
                 modules.retainAll(moduleName)
                 if (modules.isNotEmpty()) {
@@ -80,7 +84,7 @@ class RateLimitController(
 
     // 新增
     @PostMapping("/create")
-    fun create(@RequestBody request:RateLimitCreatOrUpdateRequest): Response<Void> {
+    fun create(@RequestBody request: RateLimitCreatOrUpdateRequest): Response<Void> {
         checkResource(request)
         rateLimiterConfigService.create(request)
         return ResponseBuilder.success()
@@ -88,7 +92,7 @@ class RateLimitController(
 
     // 删除
     @DeleteMapping("/delete/{id}")
-    fun delete(@PathVariable id:String): Response<Void> {
+    fun delete(@PathVariable id: String): Response<Void> {
         if (!rateLimiterConfigService.checkExist(id)) {
             throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, id)
         }
@@ -105,7 +109,7 @@ class RateLimitController(
 
     // 获取数据库里面的模块名
     @PostMapping("/getExistModule")
-    fun getExistModule(@RequestParam resource:String,@RequestParam limitDimension:String): Response<List<String>> {
+    fun getExistModule(@RequestParam resource: String, @RequestParam limitDimension: String): Response<List<String>> {
         val tRateLimits = rateLimiterConfigService.findByResourceAndLimitDimension(
             resource = resource,
             limitDimension = limitDimension
@@ -113,6 +117,32 @@ class RateLimitController(
         val modules = ArrayList<String>()
         tRateLimits.forEach { tRateLimit -> modules.addAll(tRateLimit.moduleName) }
         return ResponseBuilder.success(modules)
+    }
+
+    @GetMapping("/statistics/overall")
+    fun getOverallStatistics(@RequestParam(required = false) dimension: String?): Response<RateLimiterStatistics> {
+        return ResponseBuilder.success(rateLimiterStatisticsService.getOverallStatistics(dimension))
+    }
+
+    @GetMapping("/statistics/resources")
+    fun getResourceStatistics(
+        @RequestParam(required = false) dimension: String?
+    ): Response<List<ResourceRateLimiterStatistics>> {
+        return ResponseBuilder.success(rateLimiterStatisticsService.getResourceStatistics(dimension))
+    }
+
+    @GetMapping("/statistics/topLimited")
+    fun getTopLimitedResources(
+        @RequestParam(defaultValue = "10") limit: Int
+    ): Response<List<ResourceRateLimiterStatistics>> {
+        return ResponseBuilder.success(rateLimiterStatisticsService.getTopLimitedResources(limit))
+    }
+
+    @GetMapping("/statistics/topRequested")
+    fun getTopRequestedResources(
+        @RequestParam(defaultValue = "10") limit: Int
+    ): Response<List<ResourceRateLimiterStatistics>> {
+        return ResponseBuilder.success(rateLimiterStatisticsService.getTopRequestedResources(limit))
     }
 
 }
