@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.metadata.properties.BlockNodeProperties
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.ARCHIVE_FILE_COLLECTION
@@ -51,6 +52,7 @@ import com.tencent.bkrepo.job.SHA256
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.context.FileJobContext
+import com.tencent.bkrepo.job.batch.utils.DriveUtils
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils.Companion.buildBlockNodeBloomFilter
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
@@ -79,6 +81,7 @@ class FileReferenceCleanupJob(
     private val properties: FileReferenceCleanupJobProperties,
     private val archiveClient: ArchiveClient,
     private val blockNodeProperties: BlockNodeProperties,
+    private val storageProperties: StorageProperties,
 ) : MongoDbBatchJob<FileReferenceCleanupJob.FileReferenceData, FileJobContext>(properties) {
 
     /**
@@ -173,10 +176,16 @@ class FileReferenceCleanupJob(
             // 删除文件
             var successToDeleted = false
             val existsRefOfMappingStorage = existsRefOfMappingStorage(row, collectionName)
-            if (!existsRefOfMappingStorage) {
+            // drive专用存储有独立清理任务[DriveFileReferenceCleanupJob]
+            val notDriveType = DriveUtils.notAllowDriveRepository(
+                storageCredentials ?: storageProperties.defaultStorageCredentials()
+            )
+            if (!existsRefOfMappingStorage && notDriveType) {
                 successToDeleted = cleanupRelatedResources(sha256, credentialsKey)
             }
-            if (!existsRefOfMappingStorage && storageService.exist(sha256, storageCredentials)) {
+            val shouldDelete =
+                !existsRefOfMappingStorage && notDriveType && storageService.exist(sha256, storageCredentials)
+            if (shouldDelete) {
                 storageService.delete(sha256, storageCredentials)
                 successToDeleted = true
             }
