@@ -97,6 +97,8 @@ class StorageReconcileJobTest @Autowired constructor(
             storageService.store(file.getFileSha256(), file, null)
         }
         storageReconcileJob.start()
+        // 等待job锁过期
+        Thread.sleep(1000L)
         Assertions.assertEquals(10, checked)
     }
 
@@ -159,7 +161,8 @@ class StorageReconcileJobTest @Autowired constructor(
         }
 
         storageReconcileJob.start()
-
+        // 等待job锁过期
+        Thread.sleep(1000L)
         // 验证非Drive存储被对账（5个文件）
         Assertions.assertEquals(5, nonDriveChecked)
         // 验证Drive存储未被对账（driveCredentials中的文件不应被处理）
