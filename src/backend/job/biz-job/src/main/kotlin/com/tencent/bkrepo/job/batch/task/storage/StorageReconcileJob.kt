@@ -3,7 +3,6 @@ package com.tencent.bkrepo.job.batch.task.storage
 import com.google.common.hash.BloomFilter
 import com.google.common.hash.Funnels
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
@@ -15,6 +14,7 @@ import com.tencent.bkrepo.job.CREDENTIALS
 import com.tencent.bkrepo.job.SHA256
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.batch.utils.DriveUtils.notAllowDriveRepository
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.config.properties.StorageReconcileJobProperties
@@ -113,12 +113,6 @@ class StorageReconcileJob(
         val fpp = bf.expectedFpp()
         logger.info("Build bloom filter successful,key: ${storageCredentials.key},count: $count,fpp: $fpp")
         return bf
-    }
-
-    private fun notAllowDriveRepository(credentials: StorageCredentials): Boolean {
-        val allowRepoTypes = credentials.allowRepoTypes
-        return allowRepoTypes?.isNotEmpty() == true && !allowRepoTypes.contains(RepositoryType.DRIVE.name) ||
-                credentials.notAllowRepoTypes?.contains(RepositoryType.DRIVE.name) == true
     }
 
     companion object {
