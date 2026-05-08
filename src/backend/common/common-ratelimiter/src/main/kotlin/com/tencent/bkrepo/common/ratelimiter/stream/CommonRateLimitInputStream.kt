@@ -36,6 +36,10 @@ import com.tencent.bkrepo.common.ratelimiter.service.AbstractBandwidthRateLimite
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService.Companion.logger
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.DownloadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.UploadBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.UrlDownloadBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.UrlUploadBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.user.UserDownloadBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.user.UserUploadBandwidthRateLimiterService
 import java.io.InputStream
 
 /**
@@ -294,20 +298,44 @@ class CommonRateLimitInputStream(
 
     // 确保配置变化时能够快速刷新
     private fun initRateLimiter() {
-        rateLimiter = if (rateCheckContext.resourceLimit.limitDimension == LimitDimension.UPLOAD_BANDWIDTH.name) {
-            UploadBandwidthRateLimiterService.getAlgorithmOfRateLimiter(
+        rateLimiter = when (rateCheckContext.resourceLimit.limitDimension) {
+            LimitDimension.UPLOAD_BANDWIDTH.name ->
+                UploadBandwidthRateLimiterService.getAlgorithmOfRateLimiter(
                 rateCheckContext.limitKey,
                 rateCheckContext.resourceLimit,
                 rateCheckContext.resInfo
             )
-        } else if (rateCheckContext.resourceLimit.limitDimension == LimitDimension.DOWNLOAD_BANDWIDTH.name) {
-            DownloadBandwidthRateLimiterService.getAlgorithmOfRateLimiter(
+            LimitDimension.DOWNLOAD_BANDWIDTH.name ->
+                DownloadBandwidthRateLimiterService.getAlgorithmOfRateLimiter(
                 rateCheckContext.limitKey,
                 rateCheckContext.resourceLimit,
                 rateCheckContext.resInfo
             )
-        } else {
-            throw AcquireLockFailedException("Unsupported limitDimension type")
+            LimitDimension.URL_UPLOAD_BANDWIDTH.name ->
+                UrlUploadBandwidthRateLimiterService.getAlgorithmOfRateLimiter(
+                rateCheckContext.limitKey,
+                rateCheckContext.resourceLimit,
+                rateCheckContext.resInfo
+            )
+            LimitDimension.URL_DOWNLOAD_BANDWIDTH.name ->
+                UrlDownloadBandwidthRateLimiterService.getAlgorithmOfRateLimiter(
+                rateCheckContext.limitKey,
+                rateCheckContext.resourceLimit,
+                rateCheckContext.resInfo
+            )
+            LimitDimension.USER_UPLOAD_BANDWIDTH.name ->
+                UserUploadBandwidthRateLimiterService.getAlgorithmOfRateLimiter(
+                rateCheckContext.limitKey,
+                rateCheckContext.resourceLimit,
+                rateCheckContext.resInfo
+            )
+            LimitDimension.USER_DOWNLOAD_BANDWIDTH.name ->
+                UserDownloadBandwidthRateLimiterService.getAlgorithmOfRateLimiter(
+                rateCheckContext.limitKey,
+                rateCheckContext.resourceLimit,
+                rateCheckContext.resInfo
+            )
+            else -> throw AcquireLockFailedException("Unsupported limitDimension type")
         }
         limitPerSecond = rateLimiter!!.getLimitPerSecond()
         rateCheckContext.dryRun = AbstractBandwidthRateLimiterService.getDryRunStatus()

@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.migrate
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration
 import com.tencent.bkrepo.common.storage.config.StorageProperties
@@ -138,6 +139,15 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
         migrateRepoStorageService.createTask(request)
         // 创建重复任务失败
         assertThrows<ErrorCodeException> { migrateRepoStorageService.createTask(request) }
+    }
+
+    @Test
+    fun testCreateMigrateDriveRepoFailed() {
+        whenever(repositoryService.getRepoDetail(anyString(), anyString(), anyOrNull()))
+            .thenReturn(buildRepo().copy(type = RepositoryType.DRIVE))
+        val request = buildCreateRequest()
+        assertThrows<ErrorCodeException> { migrateRepoStorageService.createTask(request) }
+        assertNull(migrateRepoStorageService.findTask(UT_PROJECT_ID, UT_REPO_NAME))
     }
 
     @Test

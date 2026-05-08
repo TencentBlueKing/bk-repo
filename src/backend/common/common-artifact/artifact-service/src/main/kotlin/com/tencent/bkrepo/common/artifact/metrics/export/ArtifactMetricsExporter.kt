@@ -62,8 +62,16 @@ class ArtifactMetricsExporter(
             val labels = convertRecordToMap(item)
             val rateMetrics = TypeOfMetricsItem.ARTIFACT_TRANSFER_RATE
             val rateMetricItem = MetricsItem(
-                rateMetrics.displayName, rateMetrics.help,
-                rateMetrics.dataModel, rateMetrics.keepHistory, item.average.toDouble(), labels
+                name = rateMetrics.displayName,
+                help = rateMetrics.help,
+                dataModel = rateMetrics.dataModel,
+                keepHistory = rateMetrics.keepHistory,
+                value = item.average.toDouble(),
+                labels = labels,
+                eventExtra = mapOf(
+                    "elapsed" to item.elapsed,
+                    "bytes" to item.bytes,
+                ),
             )
             customMetricsExporter?.reportMetrics(rateMetricItem)
 

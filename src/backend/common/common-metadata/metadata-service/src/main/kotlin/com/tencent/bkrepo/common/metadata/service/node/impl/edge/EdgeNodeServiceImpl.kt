@@ -162,10 +162,10 @@ class EdgeNodeServiceImpl(
     }
 
     override fun deleteByFullPathWithoutDecreaseVolume(
-        projectId: String, repoName: String, fullPath: String, operator: String, source: String?
+        projectId: String, repoName: String, fullPath: String, operator: String, source: String?, isFile: Boolean
     ) {
         return NodeDeleteSupport(this).deleteByFullPathWithoutDecreaseVolume(
-            projectId, repoName, fullPath, operator, source
+            projectId, repoName, fullPath, operator, source, isFile
         )
     }
 

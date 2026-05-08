@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.dao.repo.StorageCredentialsDao
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
@@ -136,6 +137,15 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         assertEquals(Duration.ofHours(10), updatedStorageCredentials.cache.expireDuration)
         assertEquals(localPath, updatedStorageCredentials.upload.localPath)
         assertEquals(UT_STORAGE_CREDENTIALS_KEY, updatedStorageCredentials.key)
+
+        updateCredentialsPayload = storageCredentials.apply {
+            allowRepoTypes = setOf(RepositoryType.MAVEN.name)
+            notAllowRepoTypes = emptySet()
+        }
+        updateReq = StorageCredentialsUpdateRequest(updateCredentialsPayload, UT_STORAGE_CREDENTIALS_KEY)
+        updatedStorageCredentials = storageCredentialService.update(UT_USER, updateReq)
+        assertEquals(setOf(RepositoryType.MAVEN.name), updatedStorageCredentials.allowRepoTypes)
+        assertEquals(emptySet<String>(), updatedStorageCredentials.notAllowRepoTypes)
     }
 
     @Test

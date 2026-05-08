@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.metadata.service.node.NodeDeleteOperation
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.router.RouterControllerService
 import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildCriteria
+import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildFileCriteria
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildNodeCleanEvent
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
@@ -52,7 +53,6 @@ import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
-import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import java.time.LocalDateTime
@@ -99,20 +99,21 @@ open class NodeDeleteSupport(
             if (fullPaths.isEmpty()) {
                 return 0L
             }
-            val orOperation = mutableListOf<Criteria>()
-            val normalizedFullPaths = fullPaths.map { PathUtils.normalizeFullPath(it) }
-            orOperation.add(where(TNode::fullPath).inValues(normalizedFullPaths))
-            normalizedFullPaths.forEach {
-                val normalizedPath = PathUtils.toPath(it)
-                val escapedPath = PathUtils.escapeRegex(normalizedPath)
-                orOperation.add(where(TNode::fullPath).regex("^$escapedPath"))
+            return fullPaths.sumOf { fullPath ->
+                val normalizedFullPath = PathUtils.normalizeFullPath(fullPath)
+                val regex = if (PathUtils.isRoot(normalizedFullPath)) {
+                    "^\\/.*"
+                } else {
+                    val escapedFullPath = PathUtils.escapeRegex(normalizedFullPath)
+                    "^$escapedFullPath(/.*)?$"
+                }
+                val criteria = where(TNode::projectId).isEqualTo(projectId)
+                    .and(TNode::repoName).isEqualTo(repoName)
+                    .and(TNode::deleted).isEqualTo(null)
+                    .and(TNode::folder).isEqualTo(isFolder)
+                    .and(TNode::fullPath).regex(regex)
+                nodeDao.count(Query(criteria))
             }
-            val criteria = where(TNode::projectId).isEqualTo(projectId)
-                .and(TNode::repoName).isEqualTo(repoName)
-                .and(TNode::deleted).isEqualTo(null)
-                .and(TNode::folder).isEqualTo(isFolder)
-                .orOperator(*orOperation.toTypedArray())
-            return nodeDao.count(Query(criteria))
         }
     }
 
@@ -121,9 +122,14 @@ open class NodeDeleteSupport(
         repoName: String,
         fullPath: String,
         operator: String,
-        source: String?
+        source: String?,
+        isFile: Boolean
     ) {
-        val criteria = buildCriteria(projectId, repoName, fullPath)
+        val criteria = if (isFile) {
+            buildFileCriteria(projectId, repoName, fullPath)
+        } else {
+            buildCriteria(projectId, repoName, fullPath)
+        }
         val query = Query(criteria)
         delete(query, operator, criteria, projectId, repoName, listOf(fullPath), false, source = source)
     }
@@ -135,7 +141,7 @@ open class NodeDeleteSupport(
         operator: String,
         source: String?,
     ): NodeDeleteResult {
-        val criteria = buildCriteria(projectId, repoName, fullPath)
+        val criteria = buildDeleteCriteria(projectId, repoName, fullPath)
         val query = Query(criteria)
         return delete(query, operator, criteria, projectId, repoName, listOf(fullPath), source = source)
     }
@@ -146,21 +152,30 @@ open class NodeDeleteSupport(
         fullPaths: List<String>,
         operator: String
     ): NodeDeleteResult {
-        val normalizedFullPaths = fullPaths.map { PathUtils.normalizeFullPath(it) }
-        val orOperation = mutableListOf(
-            where(TNode::fullPath).inValues(normalizedFullPaths)
-        )
-        normalizedFullPaths.forEach {
-            val normalizedPath = PathUtils.toPath(it)
-            val escapedPath = PathUtils.escapeRegex(normalizedPath)
-            orOperation.add(where(TNode::fullPath).regex("^$escapedPath"))
+        // 逐条执行，每条使用无 $or 的单 regex 查询，避免 MongoDB $or subplan 策略 plan cache 污染走错索引
+        // 统一 deleteTime 确保所有节点的删除时间一致
+        val deleteTime = LocalDateTime.now()
+        var totalDeletedNum = 0L
+        var totalDeletedSize = 0L
+        val normalizedPaths = fullPaths.map { PathUtils.normalizeFullPath(it) }
+        // 批量查询一次，避免循环内 N 次 findNode
+        val filePathSet = nodeDao.find(NodeQueryHelper.nodeQuery(projectId, repoName, normalizedPaths))
+            .filterNot { it.folder }.map { it.fullPath }.toHashSet()
+        fullPaths.forEach { fullPath ->
+            val normalizedFullPath = PathUtils.normalizeFullPath(fullPath)
+            val criteria = if (normalizedFullPath in filePathSet) {
+                buildFileCriteria(projectId, repoName, fullPath)
+            } else {
+                buildCriteria(projectId, repoName, fullPath)
+            }
+            val query = Query(criteria)
+            val result = delete(
+                query, operator, criteria, projectId, repoName, listOf(fullPath), deleteTime = deleteTime
+            )
+            totalDeletedNum += result.deletedNumber
+            totalDeletedSize += result.deletedSize
         }
-        val criteria = where(TNode::projectId).isEqualTo(projectId)
-            .and(TNode::repoName).isEqualTo(repoName)
-            .and(TNode::deleted).isEqualTo(null)
-            .orOperator(*orOperation.toTypedArray())
-        val query = Query(criteria)
-        return delete(query, operator, criteria, projectId, repoName, fullPaths)
+        return NodeDeleteResult(totalDeletedNum, totalDeletedSize, deleteTime)
     }
 
     override fun deleteBeforeDate(
@@ -227,11 +242,11 @@ open class NodeDeleteSupport(
         repoName: String,
         fullPaths: List<String>? = null,
         decreaseVolume: Boolean = true,
-        source: String? = null
+        source: String? = null,
+        deleteTime: LocalDateTime = LocalDateTime.now()
     ): NodeDeleteResult {
         var deletedNum = 0L
         var deletedSize = 0L
-        val deleteTime = LocalDateTime.now()
         val resourceKey = if (fullPaths == null) {
             "/$projectId/$repoName"
         } else if (fullPaths.size == 1) {
@@ -243,6 +258,7 @@ open class NodeDeleteSupport(
             val updateResult = nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
             deletedNum = updateResult.modifiedCount
             if (deletedNum == 0L) {
+                logger.info("Delete node[$resourceKey] by [$operator] success. No nodes were deleted.")
                 return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
             }
             if (decreaseVolume) {
@@ -271,6 +287,17 @@ open class NodeDeleteSupport(
         return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
     }
 
+
+    // 文件用精确匹配，目录或节点不存在（并发删除场景）退化到正则前缀查询
+    private fun buildDeleteCriteria(projectId: String, repoName: String, fullPath: String): Criteria {
+        val normalizedFullPath = PathUtils.normalizeFullPath(fullPath)
+        val existNode = nodeDao.findNode(projectId, repoName, normalizedFullPath)
+        return if (existNode != null && !existNode.folder) {
+            buildFileCriteria(projectId, repoName, fullPath)
+        } else {
+            buildCriteria(projectId, repoName, fullPath)
+        }
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeDeleteSupport::class.java)

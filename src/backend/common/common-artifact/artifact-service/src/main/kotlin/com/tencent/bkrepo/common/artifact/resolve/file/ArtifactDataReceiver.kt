@@ -246,10 +246,11 @@ class ArtifactDataReceiver(
             var rateLimitFlag = false
             var exp: Exception? = null
             try {
-                val input = requestLimitCheckService?.bandwidthCheck(
+                val bandwidthInput = requestLimitCheckService?.uploadBandwidthStreamCheck(
                     source, receiveProperties.circuitBreakerThreshold, contentLength
                 ) ?: source.rateLimit(receiveProperties.rateLimit.toBytes())
-                rateLimitFlag = input is CommonRateLimitInputStream
+                rateLimitFlag = bandwidthInput is CommonRateLimitInputStream
+                val input = bandwidthInput
                 val buffer = ByteArray(bufferSize)
                 input.use {
                     var bytes = input.read(buffer)
@@ -266,7 +267,7 @@ class ArtifactDataReceiver(
                 handleOverloadException(overloadEx)
             } finally {
                 if (rateLimitFlag) {
-                    requestLimitCheckService?.bandwidthFinish(exp)
+                    requestLimitCheckService?.uploadBandwidthStreamFinish(exp)
                 }
             }
         }

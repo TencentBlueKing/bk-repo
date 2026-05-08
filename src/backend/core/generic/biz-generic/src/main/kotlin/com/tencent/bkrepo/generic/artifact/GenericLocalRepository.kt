@@ -135,7 +135,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
-import java.net.URLDecoder
+import org.springframework.web.util.UriUtils
 import java.time.Duration
 import java.time.LocalDateTime
 import java.util.Base64
@@ -849,8 +849,8 @@ class GenericLocalRepository(
             metadataUrl.split(CharPool.AND).forEach { part ->
                 val pair = part.trim().split(CharPool.EQUAL, limit = 2)
                 if (pair.size > 1 && pair[0].isNotBlank() && pair[1].isNotBlank()) {
-                    val key = URLDecoder.decode(pair[0], StringPool.UTF_8)
-                    val value = URLDecoder.decode(pair[1], StringPool.UTF_8)
+                    val key = UriUtils.decode(pair[0], Charsets.UTF_8)
+                    val value = UriUtils.decode(pair[1], Charsets.UTF_8)
                     metadata[key] = value
                 }
             }

@@ -187,7 +187,7 @@
                                             permission.write && { clickEvent: () => copyRes(row), label: $t('copy') }
                                         ] : []),
                                         ...(!row.folder && row.category !== 'REMOTE' ? [
-                                            !community && { clickEvent: () => handlerShare(row), label: $t('share') },
+                                            !community && projectShareEnabled && { clickEvent: () => handlerShare(row), label: $t('share') },
                                             showRepoScan(row) && { clickEvent: () => handlerScan(row), label: $t('scanArtifact') }
                                         ] : [])
                                     ] : []),
@@ -322,7 +322,8 @@
                 showMultiDelete: false,
                 selectedAll: false,
                 selectCount: 0,
-                multiMode: BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true'
+                multiMode: BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true',
+                projectShareEnabled: true
             }
         },
         computed: {
@@ -381,6 +382,11 @@
         watch: {
             projectId () {
                 this.getRepoListAll({ projectId: this.projectId })
+                this.getProjectShareEnabled({ projectId: this.projectId }).then(res => {
+                    this.projectShareEnabled = res
+                }).catch(() => {
+                    this.projectShareEnabled = true
+                })
             },
             repoName () {
                 this.initTree()
@@ -416,6 +422,11 @@
                     this.pathChange()
                 }
             })
+            this.getProjectShareEnabled({ projectId: this.projectId }).then(res => {
+                this.projectShareEnabled = res
+            }).catch(() => {
+                this.projectShareEnabled = true
+            })
             this.initTree()
             this.debounceClickTreeNode = debounce(this.clickTreeNodeHandler, 100)
             window.repositoryVue.$on('upload-refresh', debounce((path) => {
@@ -450,7 +461,8 @@
                 'forbidMetadata',
                 'refreshSupportFileNameExtList',
                 'getMultiFolderNumOfFolder',
-                'getPermissionUrl'
+                'getPermissionUrl',
+                'getProjectShareEnabled'
             ]),
             updateTableFixedBodyTop () {
                 const el = document.querySelector('.bk-table-fixed-body-wrapper')

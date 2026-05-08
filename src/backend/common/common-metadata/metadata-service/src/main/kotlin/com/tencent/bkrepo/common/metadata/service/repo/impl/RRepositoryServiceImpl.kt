@@ -70,6 +70,7 @@ import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.checkCategory
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.checkConfigType
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.checkInterceptorConfig
+import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.checkStorageCredentialsRepoType
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.convertProxyToProxyChannelSetting
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.convertToDetail
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.convertToInfo
@@ -139,6 +140,10 @@ class RRepositoryServiceImpl(
     ) {
         val repo = checkRepository(projectId, repoName)
         if (repo.credentialsKey != storageCredentialsKey) {
+            // 检查新存储凭据是否允许该仓库类型使用
+            val credentials = storageCredentialService.findByKey(storageCredentialsKey) ?:
+                throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, storageCredentialsKey.orEmpty())
+            checkStorageCredentialsRepoType(credentials, repo.type)
             repo.oldCredentialsKey = repo.credentialsKey
             repo.credentialsKey = storageCredentialsKey
             repositoryDao.save(repo)
@@ -245,12 +250,10 @@ class RRepositoryServiceImpl(
             // 解析存储凭证
             val credentialsKey = determineStorageKey(this, project.credentialsKey)
             // 确保存储凭证Key一定存在
-            credentialsKey?.takeIf { it.isNotBlank() }?.let {
-                storageCredentialService.findByKey(it) ?: throw ErrorCodeException(
-                    CommonMessageCode.RESOURCE_NOT_FOUND,
-                    it,
-                )
-            }
+            val credentials = storageCredentialService.findByKey(credentialsKey)
+                ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, credentialsKey.orEmpty())
+            // 检查存储凭据是否允许该仓库类型使用
+            checkStorageCredentialsRepoType(credentials, type)
             // 初始化仓库配置
             val repoConfiguration = configuration ?: buildRepoConfiguration(this)
             // 创建仓库
@@ -452,7 +455,7 @@ class RRepositoryServiceImpl(
     private suspend fun checkAndRemoveDeletedRepo(projectId: String, repoName: String, credentialsKey: String?) {
         val query = RepositoryServiceHelper.buildDeletedQuery(projectId, repoName)
         repositoryDao.findOne(query)?.let {
-            if (credentialsKey == it.credentialsKey) {
+            if (it.type != RepositoryType.DRIVE && credentialsKey == it.credentialsKey) {
                 repositoryDao.remove(query)
                 logger.info("Retrieved deleted record of Repository[$projectId/$repoName] before creating")
             } else {
