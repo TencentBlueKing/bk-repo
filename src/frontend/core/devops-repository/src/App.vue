@@ -89,10 +89,7 @@
                                     theme: 'error'
                                 })
                                 this.$router.replace({
-                                    name: 'repoToken',
-                                    params: {
-                                        projectId: urlProjectId || localProjectId || 'default'
-                                    }
+                                    name: 'repoToken'
                                 })
                             }
                         }
@@ -114,7 +111,9 @@
                         } else {
                             projectId = (this.projectList[0] || {}).id
                         }
-                        localStorage.setItem('projectId', projectId)
+                        if (projectId) {
+                            localStorage.setItem('projectId', projectId)
+                        }
 
                         projectId && projectId !== urlProjectId && this.$router.replace({
                             name: 'repositories',

@@ -6,7 +6,7 @@
                 :class="{ 'active-link': breadcrumb.find(route => route.name === name) }"
                 v-for="name in menuList.project"
                 :key="name"
-                :to="{ name }">
+                :to="{ name, params: { projectId: currentProjectId } }">
                 <bk-popover class="menu-icon" :content="$t(name)" placement="right" :disabled="!hiddenMenu">
                     <Icon :name="name" size="14" />
                 </bk-popover>
@@ -19,14 +19,15 @@
                     :class="{ 'active-link': breadcrumb.find(route => route.name === name) }"
                     v-for="name in menuList.global"
                     :key="name"
-                    :to="{ name }">
+                    :to="{ name, params: { projectId: currentProjectId } }">
                     <bk-popover class="menu-icon" :content="$t(name)" placement="right" :disabled="!hiddenMenu">
                         <Icon :name="name" size="14" />
                     </bk-popover>
                     <span v-if="!hiddenMenu" class="menu-name text-overflow">{{ $t(name) }}</span>
                 </router-link>
             </template>
-            <Icon class="hidden-menu-btn"
+            <Icon
+                class="hidden-menu-btn"
                 @click.native="hiddenMenu = !hiddenMenu"
                 :size="14" :name="hiddenMenu ? 'dedent' : 'indent'" />
         </div>
@@ -51,12 +52,19 @@
         },
         computed: {
             ...mapState(['userInfo', 'projectList']),
+            currentProjectId () {
+                return this.$route.params.projectId || localStorage.getItem('projectId')
+            },
             menuList () {
                 const routerName = this.$route.name
                 const isFilePreview = routerName === 'filePreview' || routerName === 'outsideFilePreview'
                 const isError = routerName === '440' || routerName === '404'
                 if (isError || isFilePreview) this.routerStatus = false
                 if (!isFilePreview) window.resetWaterMark()
+                // repoToken 页面无 projectId，只显示 repoToken 菜单项
+                if (routerName === 'repoToken' && !this.$route.params.projectId) {
+                    return { project: ['repoToken'], global: [] }
+                }
                 if (MODE_CONFIG === 'ci' || this.projectList.length) {
                     const showRepoScan = RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU
                     return {
@@ -92,8 +100,11 @@
             }
         },
         mounted () {
-            const projectId = this.$route.params.projectId ? this.$route.params.projectId : localStorage.getItem('projectId')
-            this.checkPM({ projectId: projectId })
+            const projectId = this.currentProjectId
+            const isRepoTokenWithoutProject = this.$route.name === 'repoToken' && !this.$route.params.projectId
+            if (projectId && !isRepoTokenWithoutProject) {
+                this.checkPM({ projectId: projectId })
+            }
         },
         methods: {
             ...mapActions([
