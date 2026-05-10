@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileCleanIntercep
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.UploadConfigElement
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.ArtifactFileMapMethodArgumentResolver
+import com.tencent.bkrepo.common.artifact.resolve.file.multipart.ArtifactMultiFileMapMethodArgumentResolver
 import com.tencent.bkrepo.common.artifact.resolve.file.stream.ArtifactFileMethodArgumentResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoMethodArgumentResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
@@ -76,6 +77,9 @@ class ArtifactResolverConfiguration {
     fun artifactFileMapMethodArgumentResolver() = ArtifactFileMapMethodArgumentResolver()
 
     @Bean
+    fun artifactMultiFileMapMethodArgumentResolver() = ArtifactMultiFileMapMethodArgumentResolver()
+
+    @Bean
     fun repoNameConversionInterceptor() = RepoNameConversionInterceptor()
 
     @Bean
@@ -91,6 +95,7 @@ class ArtifactResolverConfiguration {
                 resolvers.add(resolver)
                 resolvers.add(artifactFileMethodArgumentResolver())
                 resolvers.add(artifactFileMapMethodArgumentResolver())
+                resolvers.add(artifactMultiFileMapMethodArgumentResolver())
             }
 
             override fun addInterceptors(registry: InterceptorRegistry) {
