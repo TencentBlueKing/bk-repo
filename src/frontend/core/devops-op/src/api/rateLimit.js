@@ -39,13 +39,14 @@ export function getRateLimitConfig() {
   })
 }
 
-export function getExistModule(resource, limitDimension) {
+export function getExistModule(resource, limitDimension, requestPath) {
   return request({
     url: `${PREFIX_SERVICES}/getExistModule`,
     method: 'post',
     params: {
       resource: resource,
-      limitDimension: limitDimension
+      limitDimension: limitDimension,
+      requestPath: requestPath
     }
   })
 }

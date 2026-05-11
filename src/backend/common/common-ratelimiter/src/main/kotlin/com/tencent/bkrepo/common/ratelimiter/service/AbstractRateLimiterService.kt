@@ -64,6 +64,10 @@ import com.tencent.bkrepo.common.ratelimiter.rule.common.ResLimitInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.connection.ServiceInstanceConnectionRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.ip.IpRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlPrefixDownloadBandwidthRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlPrefixDownloadRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlPrefixUploadBandwidthRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlPrefixUploadRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlRepoRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.url.user.UserUrlRateLimitRule
@@ -142,8 +146,8 @@ abstract class AbstractRateLimiterService(
         return try {
             // 构建资源信息
             val resInfo = ResInfo(
-                resource = buildResource(request),
-                extraResource = buildExtraResource(request)
+                resource = buildRateLimitResource(request),
+                extraResource = buildRateLimitExtraResource(request)
             )
             Pair(rateLimitRule?.getRateLimitRule(resInfo), resInfo)
         } catch (e: InvalidResourceException) {
@@ -217,6 +221,14 @@ abstract class AbstractRateLimiterService(
      */
     abstract fun buildExtraResource(request: HttpServletRequest): List<String>
 
+    open fun buildRateLimitResource(request: HttpServletRequest): String {
+        return buildResource(request)
+    }
+
+    open fun buildRateLimitExtraResource(request: HttpServletRequest): List<String> {
+        return buildExtraResource(request)
+    }
+
     /**
      * 根据请求获取需要申请的许可数
      */
@@ -253,6 +265,11 @@ abstract class AbstractRateLimiterService(
             throw InvalidResourceException("Could not find projectId from request ${request.requestURI}")
         }
         return Pair(projectId, repoName)
+    }
+
+    fun getRequestPath(request: HttpServletRequest): String {
+        val requestPattern = request.getAttribute(BEST_MATCHING_PATTERN_ATTRIBUTE) as? String
+        return requestPattern ?: request.requestURI
     }
 
     fun getRepoInfoFromBody(request: HttpServletRequest): Pair<String?, String?> {
@@ -344,6 +361,7 @@ abstract class AbstractRateLimiterService(
                 scope = tRateLimit.scope,
                 targets = tRateLimit.targets,
                 priority = tRateLimit.priority,
+                requestPath = tRateLimit.requestPath,
             )
         })
         // 配置规则变更后需要清理缓存的限流算法实现
@@ -387,6 +405,10 @@ abstract class AbstractRateLimiterService(
             UserConcurrentConnectionRateLimitRule::class.java -> UserConcurrentConnectionRateLimitRule()
             UrlConcurrentRequestRateLimitRule::class.java -> UrlConcurrentRequestRateLimitRule()
             UserUrlConcurrentRequestRateLimitRule::class.java -> UserUrlConcurrentRequestRateLimitRule()
+            UrlPrefixUploadRateLimitRule::class.java -> UrlPrefixUploadRateLimitRule()
+            UrlPrefixDownloadRateLimitRule::class.java -> UrlPrefixDownloadRateLimitRule()
+            UrlPrefixUploadBandwidthRateLimitRule::class.java -> UrlPrefixUploadBandwidthRateLimitRule()
+            UrlPrefixDownloadBandwidthRateLimitRule::class.java -> UrlPrefixDownloadBandwidthRateLimitRule()
             else -> null
         }
     }

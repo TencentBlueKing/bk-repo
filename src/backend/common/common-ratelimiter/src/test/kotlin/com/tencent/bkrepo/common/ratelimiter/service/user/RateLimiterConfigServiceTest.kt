@@ -102,6 +102,18 @@ class RateLimiterConfigServiceTest {
         Assertions.assertEquals(sampleRequest.limit, inserted.limit)
         Assertions.assertEquals(Duration.ofSeconds(sampleRequest.duration), inserted.duration)
         Assertions.assertEquals(sampleRequest.scope, inserted.scope)
+        Assertions.assertEquals(sampleRequest.priority, inserted.priority)
+    }
+
+    @Test
+    fun `create — maps custom priority to entity`() {
+        val captor = argumentCaptor<TRateLimit>()
+        val request = sampleRequest.copy(priority = 10)
+
+        svc.create(request)
+
+        verify(repo).insert(captor.capture())
+        Assertions.assertEquals(10, captor.firstValue.priority)
     }
 
     // ─── checkExist (id) ─────────────────────────────────────────────────────────
@@ -223,12 +235,12 @@ class RateLimiterConfigServiceTest {
     fun `findByModuleNameAndLimitDimensionAndResource — delegates to repository`() {
         val modules = listOf("generic", "npm")
         whenever(
-            repo.findByModuleNameAndLimitDimensionAndResource("/proj/repo", modules, "URL")
+            repo.findByModuleNameAndLimitDimensionAndResource("/proj/repo", modules, "URL", null)
         ).thenReturn(sampleEntity)
 
-        val result = svc.findByModuleNameAndLimitDimensionAndResource("/proj/repo", modules, "URL")
+        val result = svc.findByModuleNameAndLimitDimensionAndResource("/proj/repo", modules, "URL", null)
 
-        verify(repo).findByModuleNameAndLimitDimensionAndResource("/proj/repo", modules, "URL")
+        verify(repo).findByModuleNameAndLimitDimensionAndResource("/proj/repo", modules, "URL", null)
         Assertions.assertNotNull(result)
     }
 }

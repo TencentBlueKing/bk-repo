@@ -50,4 +50,8 @@ enum class LimitDimension {
     IP, // 针对IP地址进行限流（防止单个IP恶意请求）
     URL_CONCURRENT_REQUEST, // 针对特定URL的并发请求数进行限流（防止数据库高负载）
     USER_URL_CONCURRENT_REQUEST, // 针对用户+URL的并发请求数进行限流
+    URL_PREFIX_UPLOAD_RATE, // 针对上传请求(POST/PUT/PATCH)指定URL前缀进行限频
+    URL_PREFIX_DOWNLOAD_RATE, // 针对下载请求(GET)指定URL前缀进行限频
+    URL_PREFIX_UPLOAD_BANDWIDTH, // 针对上传请求(POST/PUT/PATCH)指定URL前缀进行限速
+    URL_PREFIX_DOWNLOAD_BANDWIDTH, // 针对下载请求(GET)指定URL前缀进行限速
 }

@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.url.user.UserUrlRepoRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
+import com.tencent.bkrepo.common.ratelimiter.utils.ResourcePathUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.data.redis.core.RedisTemplate
@@ -67,7 +68,10 @@ class UserUrlRepoRateLimiterService(
         if (rateLimiterProperties.specialUrls.contains(StringPool.POUND)) {
             return false
         }
-        return !rateLimiterProperties.specialUrls.contains(request.getAttribute(BEST_MATCHING_PATTERN_ATTRIBUTE))
+        if (rateLimiterProperties.specialUrls.contains(request.getAttribute(BEST_MATCHING_PATTERN_ATTRIBUTE))) {
+            return false
+        }
+        return (rateLimitRule as? UserUrlRepoRateLimitRule)?.containsRequestPath(getRequestPath(request)) != true
     }
 
     override fun buildResource(request: HttpServletRequest): String {
@@ -96,6 +100,28 @@ class UserUrlRepoRateLimiterService(
             result.add("$userId:/$projectId/")
         }
         result.add("$userId:")
+        return result
+    }
+
+    override fun buildRateLimitResource(request: HttpServletRequest): String {
+        val userId = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
+        val resource = buildResource(request).substringAfter(StringPool.COLON)
+        return "$userId:${ResourcePathUtils.buildRequestPathResource(getRequestPath(request), resource)}"
+    }
+
+    override fun buildRateLimitExtraResource(request: HttpServletRequest): List<String> {
+        val requestPath = getRequestPath(request)
+        val result = buildExtraResource(request).mapNotNull {
+            val userId = it.substringBefore(StringPool.COLON)
+            val resource = it.substringAfter(StringPool.COLON)
+            if (resource.isEmpty()) {
+                null
+            } else {
+                "$userId:${ResourcePathUtils.buildRequestPathResource(requestPath, resource)}"
+            }
+        }.toMutableList()
+        result.add(buildResource(request))
+        result.addAll(buildExtraResource(request))
         return result
     }
 
