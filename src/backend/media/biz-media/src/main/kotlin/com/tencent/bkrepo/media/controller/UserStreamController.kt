@@ -5,14 +5,12 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo.Companion.DEFAULT_STREAM_MAPPING_URI
 import com.tencent.bkrepo.media.service.StreamService
-import com.tencent.bkrepo.media.service.TokenService
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -30,8 +28,6 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/user/stream")
 class UserStreamController(
     private val streamService: StreamService,
-    private val permissionManager: PermissionManager,
-    private val tokenService: TokenService,
 ) {
 
     /**
@@ -44,10 +40,6 @@ class UserStreamController(
         @RequestParam(required = false, defaultValue = "true") display: Boolean = true,
         @RequestParam(required = false) mediaMod: String? = null,
     ): Response<String> {
-        permissionManager.checkProjectPermission(
-            action = PermissionAction.MANAGE,
-            projectId = projectId,
-        )
         return ResponseBuilder.success(streamService.createStream(projectId, repoName, display, mediaMod))
     }
 
