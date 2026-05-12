@@ -42,7 +42,7 @@
                 :list="[
                     { label: $t('detail'), clickEvent: () => detail() },
                     !(cardData.metadata || {}).forbidStatus && { label: $t('download'), clickEvent: () => download() },
-                    !community && !(cardData.metadata || {}).forbidStatus && { label: $t('share'), clickEvent: () => share() }
+                    !community && shareEnabled && !(cardData.metadata || {}).forbidStatus && { label: $t('share'), clickEvent: () => share() }
                 ]"></operation-list>
         </div>
     </div>
@@ -65,6 +65,10 @@
             readonly: {
                 type: Boolean,
                 default: false
+            },
+            shareEnabled: {
+                type: Boolean,
+                default: true
             }
         },
         computed: {

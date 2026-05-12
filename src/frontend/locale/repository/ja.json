@@ -971,5 +971,15 @@
   "targetPath": "ターゲットパス",
   "targetPathPlaceholder": "ターゲットパスを入力してください",
   "model": "モデル",
-  "dataset": "データセット"
+  "dataset": "データセット",
+  "localRepo": "ローカルリポジトリ",
+  "localRepoDesc": "自分のアーティファクトをアップロード・管理",
+  "remoteRepo": "リモートリポジトリ",
+  "remoteRepoDesc": "リモートホストのアーティファクトをプロキシ・キャッシュ",
+  "createLocalRepository": "ローカルリポジトリを作成",
+  "createRemoteRepository": "リモートリポジトリを作成",
+  "remoteUrl": "リモートアドレス",
+  "remoteUrlPlaceholder": "リモートアドレスを入力してください",
+  "accessToken": "アクセストークン",
+  "accessTokenInputPlaceholder": "アクセストークンを入力してください"
 }

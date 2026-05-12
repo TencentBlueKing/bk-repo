@@ -30,11 +30,13 @@ package com.tencent.bkrepo.oci.controller.user
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.oci.constant.DOCKER_LINK
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.TAGS_LIST_URL
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
 import com.tencent.bkrepo.oci.pojo.tags.TagsInfo
 import com.tencent.bkrepo.oci.service.OciTagService
+import com.tencent.bkrepo.oci.util.OciNameAliasCodec
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -65,10 +67,27 @@ class OciTagController(private val ociTagService: OciTagService) {
         val httpHeaders = HttpHeaders()
         val left = result.left
         if (left > 0) {
+            val request = HttpContextHolder.getRequestOrNull()
+            val encodedProject = request
+                ?.getAttribute(OciNameAliasCodec.REQUEST_ATTR_PROJECT_ID_ENCODED) as? Boolean ?: false
+            val encodedRepo = request
+                ?.getAttribute(OciNameAliasCodec.REQUEST_ATTR_REPO_NAME_ENCODED) as? Boolean ?: false
+            val projectId = if (encodedProject) {
+                OciNameAliasCodec.encodeSegment(artifactInfo.projectId)
+            } else {
+                artifactInfo.projectId
+            }
+            val repoName = if (encodedRepo) {
+                OciNameAliasCodec.encodeSegment(artifactInfo.repoName)
+            } else {
+                artifactInfo.repoName
+            }
             val lastTag = result.tags.last()
             httpHeaders.set(
                 DOCKER_LINK,
-                "</v2/${artifactInfo.projectId}/${artifactInfo.repoName}/${artifactInfo.packageName}/tags/list" +
+                "</v2/$projectId/" +
+                    "$repoName/" +
+                    "${artifactInfo.packageName}/tags/list" +
                     "?last=$lastTag&n=$left>; rel=\"next\""
             )
         }

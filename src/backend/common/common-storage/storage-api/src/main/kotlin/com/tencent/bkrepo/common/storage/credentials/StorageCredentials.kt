@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.storage.credentials
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.storage.config.CacheProperties
 import com.tencent.bkrepo.common.storage.config.CompressProperties
 import com.tencent.bkrepo.common.storage.config.EncryptProperties
@@ -53,4 +54,13 @@ open class StorageCredentials(
     open var upload: UploadProperties,
     open var encrypt: EncryptProperties,
     open var compress: CompressProperties,
+    /**
+     * 允许使用该存储的仓库类型，为null时表示所有类型都允许使用
+     */
+    open var allowRepoTypes: Set<String>? = null,
+    /**
+     * 不允许使用该存储的仓库类型，默认不允许DRIVE类型仓库使用
+     * DRIVE仓库由于使用DriveFileReference管理存储，与其他类型仓库使用同存储时可能由于使用不同定时清理任务导致误删
+     */
+    open var notAllowRepoTypes: Set<String>? = setOf(RepositoryType.DRIVE.name),
 )

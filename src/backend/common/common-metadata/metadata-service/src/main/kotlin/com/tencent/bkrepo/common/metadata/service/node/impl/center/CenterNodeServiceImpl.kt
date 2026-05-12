@@ -126,14 +126,15 @@ class CenterNodeServiceImpl(
     }
 
     override fun deleteByFullPathWithoutDecreaseVolume(
-        projectId: String, repoName: String, fullPath: String, operator: String, source: String?
+        projectId: String, repoName: String, fullPath: String, operator: String, source: String?, isFile: Boolean
     ) {
         return CenterNodeDeleteSupport(this, clusterProperties).deleteByFullPathWithoutDecreaseVolume(
             projectId,
             repoName,
             fullPath,
             operator,
-            source
+            source,
+            isFile
         )
     }
 

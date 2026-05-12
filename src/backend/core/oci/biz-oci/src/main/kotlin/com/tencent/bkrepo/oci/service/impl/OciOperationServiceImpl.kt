@@ -1147,7 +1147,10 @@ class OciOperationServiceImpl(
             val lastModifiedBy = it.lastModifiedBy
             val lastModifiedDate = it.lastModifiedDate.toString()
             val downLoadCount = it.downloads
-            val registryUrl = "${ociProperties.domain}/$projectId/$repoName/$packageName:$name"
+            val registryUrl = "${ociProperties.domain}/" +
+                "$projectId/" +
+                "$repoName/" +
+                "$packageName:$name"
             data.add(
                 OciTag(name, stageTag, size, lastModifiedBy, lastModifiedDate, downLoadCount, registryUrl)
             )

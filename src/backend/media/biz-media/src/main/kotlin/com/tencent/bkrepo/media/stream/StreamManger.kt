@@ -1,7 +1,9 @@
 package com.tencent.bkrepo.media.stream
 
 import com.tencent.bkrepo.common.service.shutdown.ServiceShutdownHook
+import com.tencent.bkrepo.media.service.StreamService
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Service
 
 /**
@@ -9,7 +11,9 @@ import org.springframework.stereotype.Service
  * 负责流的监控与管理
  * */
 @Service
-class StreamManger : StreamAwareHandler {
+class StreamManger(
+    private val streamServiceProvider: ObjectProvider<StreamService>,
+) : StreamAwareHandler {
     val streams: MutableMap<String, ClientStream> = mutableMapOf()
 
     init {
@@ -40,7 +44,16 @@ class StreamManger : StreamAwareHandler {
                 stream.stop(endTime)
             }
             streams.remove(id)
+            syncActiveStream(id) { it.deleteActiveStream(id) }
             logger.info("Delete stream $id")
+        }
+    }
+
+    private fun syncActiveStream(streamId: String, action: (StreamService) -> Unit) {
+        runCatching {
+            streamServiceProvider.getIfAvailable()?.let { action(it) }
+        }.onFailure {
+            logger.warn("Sync active stream failed: streamId=$streamId", it)
         }
     }
 

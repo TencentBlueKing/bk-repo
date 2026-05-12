@@ -30,18 +30,22 @@ package com.tencent.bkrepo.fs.server.handler
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryVisibility
 import com.tencent.bkrepo.common.metadata.client.RAuthClient
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXWorkSpace
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
+import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 import com.tencent.bkrepo.fs.server.pojo.DevxLoginResponse
 import com.tencent.bkrepo.fs.server.request.DevxLoginRequest
 import com.tencent.bkrepo.fs.server.request.IoaLoginRequest
@@ -49,6 +53,7 @@ import com.tencent.bkrepo.fs.server.service.PermissionService
 import com.tencent.bkrepo.fs.server.utils.DevxWorkspaceUtils
 import com.tencent.bkrepo.fs.server.utils.IoaUtils
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.bearerToken
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import kotlinx.coroutines.reactor.awaitSingle
@@ -87,6 +92,31 @@ class LoginHandler(
             throw AuthenticationException()
         }
         val token = createToken(projectId, repoName, username)
+        return ReactiveResponseBuilder.success(token)
+    }
+
+    /**
+     * 使用个人身份的jwt token登录，获取带仓库权限的token
+     */
+    suspend fun tokenLogin(request: ServerRequest): ServerResponse {
+        val projectId = request.pathVariable(PROJECT_ID)
+        val repoName = request.pathVariable(REPO_NAME)
+        val userId = ReactiveSecurityUtils.getUser()
+        if (userId == ANONYMOUS_USER) {
+            throw AuthenticationException()
+        }
+        return ReactiveResponseBuilder.success(createToken(projectId, repoName, userId))
+    }
+
+    /**
+     * 用户态登录，客户端页面登录后用ticket/token换取个人身份的jwt token，没有仓库权限
+     */
+    suspend fun userLogin(request: ServerRequest): ServerResponse {
+        val userId = ReactiveSecurityUtils.getUser()
+        if (userId == ANONYMOUS_USER) {
+            throw AuthenticationException()
+        }
+        val token = createToken(userId)
         return ReactiveResponseBuilder.success(token)
     }
 
@@ -180,13 +210,25 @@ class LoginHandler(
         }
     }
 
+    private suspend fun createToken(userId: String): String {
+        createUser(userId)
+        return securityManager.generateToken(subject = userId)
+    }
+
     private suspend fun createToken(projectId: String, repoName: String, username: String): String {
+        val attributes = ReactiveRequestContextHolder.getWebExchange().attributes
+        attributes[PROJECT_ID] = projectId
+        attributes[REPO_NAME] = repoName
         val claims = mutableMapOf(JWT_CLAIMS_REPOSITORY to "$projectId/$repoName")
+        val repoDetail = ReactiveArtifactContextHolder.getRepoDetail()
+        // 个人仓库仅允许 owner 本人访问
+        if (repoDetail.visibility == RepositoryVisibility.PERSONAL && repoDetail.owner != username) {
+            throw PermissionException("no permission to access personal repository")
+        }
         val writePermit = permissionService.checkPermission(projectId, repoName, PermissionAction.WRITE, username)
         if (writePermit) {
             claims[JWT_CLAIMS_PERMIT] = PermissionAction.WRITE.name
         } else {
-            val repoDetail = ReactiveArtifactContextHolder.getRepoDetail()
             val readPermit = repoDetail.public ||
                 permissionService.checkPermission(projectId, repoName, PermissionAction.READ, username)
             if (readPermit) {
