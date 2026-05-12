@@ -1,20 +1,21 @@
 <template>
     <canway-dialog
         v-model="show"
-        width="540"
+        width="680"
         height-num="245"
         :title="$t('createAccessToken')"
         @cancel="cancel">
         <div v-if="token" class="flex-align-center">
             <i class="flex-center devops-icon icon-check-1"></i>
-            <div style="width: 400px">
+            <div style="width: 600px">
                 <span class="token-title">{{ $t('create') + $t('space') + $t('success') }}</span>
                 <div @click="copyToken(token)" class="mt10 mb10 hover-btn flex-align-center">
                     {{ $t('tokenIs') + token }}
                     <i class="ml10 devops-icon icon-clipboard"></i>
                 </div>
-                <div v-if="basicAuth" class="mt10 mb10 hover-btn flex-align-center">
-                    {{ $t('basicAuthIs') + basicAuth }}
+                <div v-if="basicAuth" @click="copyToken(basicAuth)" class="mt10 mb10 hover-btn flex-align-center">
+                    <span style="white-space: nowrap;">{{ $t('basicAuthIs') + basicAuth }}</span>
+                    <i class="ml10 devops-icon icon-clipboard"></i>
                 </div>
                 <span class="token-tip">{{ $t('tokenCopyTip') }}</span>
             </div>
