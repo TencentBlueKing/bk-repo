@@ -45,5 +45,7 @@ data class PackageMetadataDeleteRequest(
     @get:Schema(title = "待删除的元数据key列表", required = true)
     val keysToDelete: Set<String>,
     @get:Schema(title = "操作用户")
-    override val operator: String = SYSTEM_USER
+    override val operator: String = SYSTEM_USER,
+    @get:Schema(title = "操作来源,联邦仓库同步时源集群name", required = false)
+    val source: String? = null,
 ) : PackageVersionRequest, ServiceRequest

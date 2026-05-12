@@ -109,6 +109,12 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
     protected lateinit var mongoTemplate: MongoTemplate
 
     /**
+     * 当前任务执行批量扫描时使用的MongoTemplate，默认使用主库模板。
+     * drive等独立库任务可覆盖该方法返回对应模板。
+     */
+    protected open fun batchQueryMongoTemplate(): MongoTemplate = mongoTemplate
+
+    /**
      * job批处理执行器
      * */
     @Autowired
@@ -167,7 +173,7 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
                     entityClass().declaredMemberProperties.forEach {
                         fields.include(it.name)
                     }
-                    val data = mongoTemplate.find<Map<String, Any?>>(
+                    val data = batchQueryMongoTemplate().find<Map<String, Any?>>(
                         query,
                         collectionName,
                     )

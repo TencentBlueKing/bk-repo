@@ -7,6 +7,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import kotlin.math.abs
 
 /**
  * 时区上下文
@@ -76,7 +77,7 @@ object ZoneIdContext {
      * 支持的格式：
      * - 标准时区ID: "Asia/Shanghai", "America/New_York", "UTC"
      * - UTC偏移量: "+08:00", "-05:00", "Z"
-     * - 小时偏移: "+8", "-5"
+     * - 小时偏移: "+8", "-5", "+8.5", "-5.5", "8", "8.5"（无符号时默认当作 + 号处理）
      */
     fun parseZoneId(zoneStr: String?): ZoneId? {
         if (zoneStr.isNullOrBlank()) {
@@ -128,12 +129,21 @@ object ZoneIdContext {
     }
     
     /**
-     * 解析小时偏移（如 "+8", "-5"）
+     * 解析小时偏移（如 "+8", "-5", "+8.5", "-5.5", "8", "8.5"）
+     * 如果没有 + 或 - 号，默认当作 + 号处理
      */
     private fun parseHourOffset(zoneStr: String): ZoneOffset? {
-        val hours = zoneStr.toIntOrNull() ?: return null
+        val (sign, numberStr) = when {
+            zoneStr.startsWith("+") -> 1 to zoneStr.substring(1)
+            zoneStr.startsWith("-") -> -1 to zoneStr.substring(1)
+            else -> 1 to zoneStr  // 没有符号时，默认当作 + 号处理
+        }
+        
+        val hours = numberStr.toDoubleOrNull() ?: return null
+        val totalSeconds = (sign * hours * 3600).toInt()
+        
         return try {
-            ZoneOffset.ofHours(hours)
+            ZoneOffset.ofTotalSeconds(totalSeconds)
         } catch (_: Exception) {
             null
         }
@@ -160,6 +170,32 @@ object ZoneIdContext {
         val instant = sourceLocalDateTime.atZone(sourceZoneId).toInstant()
         // 转换为服务端时区的本地时间
         return instant.atZone(targetZoneId).toLocalDateTime()
+    }
+
+    /**
+     * 将 ZoneId 格式化为 +HHMM 格式的字符串
+     * 例如：Asia/Shanghai -> +0800, UTC -> +0000, America/New_York -> -0500
+     * 支持任意分钟数，如 +0850（8小时50分钟）、+0530（5小时30分钟）
+     *
+     * @param zoneId 时区ID
+     * @return 格式化的时区字符串，格式为 +HHMM 或 -HHMM
+     */
+    fun formatZoneId(zoneId: ZoneId): String {
+        val offset = zoneId.rules.getOffset(java.time.Instant.now())
+        val totalSeconds = offset.totalSeconds
+        val hours = totalSeconds / 3600
+        val minutes = abs((totalSeconds % 3600) / 60)
+        return String.format("%+03d%02d", hours, minutes)
+    }
+
+    /**
+     * 获取当前时区并格式化为 +HHMM 格式的字符串
+     * 支持任意分钟数，如 +0850（8小时50分钟）、+0530（5小时30分钟）
+     *
+     * @return 格式化的时区字符串，格式为 +HHMM 或 -HHMM
+     */
+    fun getZoneIdAsOffsetString(): String {
+        return formatZoneId(getZoneId())
     }
 
 }

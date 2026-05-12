@@ -74,4 +74,8 @@ class PermissionService(
         ).awaitSingle().data
         return appId ?: throw AuthenticationException("AccessKey/SecretKey check failed.")
     }
+
+    suspend fun checkAdmin(uid: String): Boolean {
+        return rAuthClient.detail(uid).awaitSingle().data?.admin == true
+    }
 }

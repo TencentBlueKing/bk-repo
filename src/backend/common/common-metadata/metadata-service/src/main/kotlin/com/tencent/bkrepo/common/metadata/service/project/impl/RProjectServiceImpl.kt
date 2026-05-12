@@ -116,7 +116,7 @@ class RProjectServiceImpl(
     override suspend fun listPermissionProject(userId: String, option: ProjectListOption?): List<ProjectInfo> {
         var names = rAuthClient.listPermissionProject(userId).awaitSingle().data.orEmpty()
         option?.names?.let { names = names.intersect(option.names!!).toList() }
-        val query = buildListQuery(names, option)
+        val query = buildListQuery(names, option, false)
         val projectList = if (option?.pageNumber == null && option?.pageSize == null) {
             projectDao.find(query)
         } else {

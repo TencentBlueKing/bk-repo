@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.auth.controller.user
 
-import com.tencent.bkrepo.auth.constant.PathConstants
+import com.tencent.bkrepo.auth.constant.PathConstants.AUTH_API_EXT_PERMISSION_PREFIX
 import com.tencent.bkrepo.auth.pojo.externalPermission.CreateExtPermissionRequest
 import com.tencent.bkrepo.auth.pojo.externalPermission.ExternalPermission
 import com.tencent.bkrepo.auth.pojo.externalPermission.ListExtPermissionOption
@@ -36,6 +36,8 @@ import com.tencent.bkrepo.auth.service.ExternalPermissionService
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.metadata.annotation.LogOperate
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -50,7 +52,8 @@ import org.springframework.web.bind.annotation.RestController
 
 @Tag(name = "用户-外部权限接口")
 @RestController
-@RequestMapping(PathConstants.AUTH_API_EXT_PERMISSION_PREFIX)
+@RequestMapping(AUTH_API_EXT_PERMISSION_PREFIX)
+@Principal(PrincipalType.ADMIN)
 class ExternalPermissionController(
     private val externalPermissionService: ExternalPermissionService
 ) {

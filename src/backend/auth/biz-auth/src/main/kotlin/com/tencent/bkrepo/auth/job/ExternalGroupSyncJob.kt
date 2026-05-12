@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.auth.job
 
+import com.tencent.bkrepo.auth.pojo.DeptInfo
 import com.tencent.bkrepo.auth.pojo.role.Role
 import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.pojo.role.UpdateRoleRequest
@@ -54,9 +55,10 @@ class ExternalGroupSyncJob(
         val indexIdMap = mutableMapOf<String, String>()
         val projectIdMap = mutableMapOf<String, String>()
         roleList.forEach {
-            projectIdSet.add(it.projectId!!)
+            val projectId = it.projectId!!
+            projectIdSet.add(projectId)
             indexIdMap[it.roleId] = it.id!!
-            projectIdMap[it.roleId] = it.projectId
+            projectIdMap[it.roleId] = projectId
         }
 
         projectIdSet.forEach { project ->
@@ -72,15 +74,19 @@ class ExternalGroupSyncJob(
         indexIdMap: Map<String, String>
     ) {
         val roleUserMap = mutableMapOf<String, List<String>>()
+        val roleDeptMap =  mutableMapOf<String, List<DeptInfo>>()
         permissionService.listExternalRoleByProject(projectId, RoleSource.DEVOPS).forEach { externalRole ->
             roleUserMap[externalRole.roleId] = externalRole.userList
+            roleDeptMap[externalRole.roleId] = externalRole.deptInfoList
         }
         roleList.forEach { role ->
             if (projectIdMap[role.roleId] == projectId) {
                 val userIds = roleUserMap[role.roleId]!!
                 val updateRequest = UpdateRoleRequest(
+                    userIds = roleUserMap[role.roleId]!!.toSet(),
                     description = null,
-                    name = null
+                    name = null,
+                    deptInfoList = roleDeptMap[role.roleId]
                 )
                 logger.info("to update external role [${role.roleId}] ")
                 roleService.updateRoleInfo(indexIdMap[role.roleId]!!, updateRequest)

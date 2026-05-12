@@ -60,4 +60,6 @@ data class BasicInfo(
     val lastModifiedDate: String,
     @get:Schema(title = "操作系统和架构信息")
     val platform: List<String> = emptyList(),
+    @get:Schema(title = "联邦仓库同步来源")
+    val federatedSource: String?,
 )

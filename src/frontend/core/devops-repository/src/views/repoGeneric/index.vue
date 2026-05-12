@@ -155,7 +155,7 @@
                             {{ row.clusterNames ? row.clusterNames.join() : row.clusterNames }}
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="150" :render-header="renderHeader">
+                    <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="200" :render-header="renderHeader">
                         <template #default="{ row }">{{ formatDate(row.lastModifiedDate) }}</template>
                     </bk-table-column>
                     <bk-table-column :label="$t('lastModifiedBy')" width="150" show-overflow-tooltip>
@@ -167,9 +167,11 @@
                     <bk-table-column :label="$t('createdBy')" width="150" show-overflow-tooltip>
                         <template #default="{ row }">
                             <bk-user-display-name v-if="multiMode" :user-id="userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy"></bk-user-display-name>
-                            <span v-else> {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}</span>                        </template>
+                            <span v-else> {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
+                            </span>
+                        </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('operation')" width="100">
+                    <bk-table-column :label="$t('operation')" width="100" fixed="right">
                         <template #default="{ row }">
                             <operation-list
                                 :list="[
@@ -185,7 +187,7 @@
                                             permission.write && { clickEvent: () => copyRes(row), label: $t('copy') }
                                         ] : []),
                                         ...(!row.folder && row.category !== 'REMOTE' ? [
-                                            !community && { clickEvent: () => handlerShare(row), label: $t('share') },
+                                            !community && projectShareEnabled && { clickEvent: () => handlerShare(row), label: $t('share') },
                                             showRepoScan(row) && { clickEvent: () => handlerScan(row), label: $t('scanArtifact') }
                                         ] : [])
                                     ] : []),
@@ -233,7 +235,6 @@
         <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>
         <generic-tree-dialog ref="genericTreeDialog" @update="updateGenericTreeNode" @refresh="refreshNodeChange"></generic-tree-dialog>
         <preview-basic-file-dialog ref="previewBasicFileDialog"></preview-basic-file-dialog>
-        <preview-office-file-dialog ref="previewOfficeFileDialog"></preview-office-file-dialog>
         <generic-forbid-dialog ref="genericForbidDialog" @refresh="refreshNodeChange"></generic-forbid-dialog>
         <compressed-file-table ref="compressedFileTable" :data="compressedData" @show-preview="handleShowPreview"></compressed-file-table>
         <loading ref="loading" @closeLoading="closeLoading"></loading>
@@ -262,7 +263,6 @@
     import { mapActions, mapMutations, mapState } from 'vuex'
     import compressedFileTable from './compressedFileTable'
     import previewBasicFileDialog from './previewBasicFileDialog'
-    import previewOfficeFileDialog from '@repository/views/repoGeneric/previewOfficeFileDialog'
     import { Base64 } from 'js-base64'
     import { isOutDisplayType, isText } from '@repository/utils/file'
 
@@ -284,7 +284,6 @@
             compressedFileTable,
             iamDenyDialog,
             genericCleanDialog,
-            previewOfficeFileDialog,
             genericForbidDialog
         },
         data () {
@@ -323,7 +322,8 @@
                 showMultiDelete: false,
                 selectedAll: false,
                 selectCount: 0,
-                multiMode: BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true'
+                multiMode: BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true',
+                projectShareEnabled: true
             }
         },
         computed: {
@@ -382,12 +382,25 @@
         watch: {
             projectId () {
                 this.getRepoListAll({ projectId: this.projectId })
+                this.getProjectShareEnabled({ projectId: this.projectId }).then(res => {
+                    this.projectShareEnabled = res
+                }).catch(() => {
+                    this.projectShareEnabled = true
+                })
             },
             repoName () {
                 this.initTree()
             },
             '$route.query.path' () {
                 this.pathChange()
+            },
+            showMultiDelete: {
+                handler () {
+                    this.$nextTick(() => {
+                        this.updateTableFixedBodyTop()
+                    })
+                },
+                immediate: true
             }
         },
         beforeRouteEnter (to, from, next) {
@@ -403,7 +416,16 @@
         },
         created () {
             this.getRepoListAll({ projectId: this.projectId }).then(_ => {
-                this.pathChange()
+                if (!this.repoListAll.find(repo => repo.name === this.repoName)) {
+                    this.$router.replace({ name: 'repositories', params: { projectId: this.projectId } })
+                } else {
+                    this.pathChange()
+                }
+            })
+            this.getProjectShareEnabled({ projectId: this.projectId }).then(res => {
+                this.projectShareEnabled = res
+            }).catch(() => {
+                this.projectShareEnabled = true
             })
             this.initTree()
             this.debounceClickTreeNode = debounce(this.clickTreeNodeHandler, 100)
@@ -439,8 +461,19 @@
                 'forbidMetadata',
                 'refreshSupportFileNameExtList',
                 'getMultiFolderNumOfFolder',
-                'getPermissionUrl'
+                'getPermissionUrl',
+                'getProjectShareEnabled'
             ]),
+            updateTableFixedBodyTop () {
+                const el = document.querySelector('.bk-table-fixed-body-wrapper')
+                if (el) {
+                    if (this.showMultiDelete) {
+                        el.style.top = '83px'
+                    } else {
+                        el.style.top = '43px'
+                    }
+                }
+            },
             cancelSelect () {
                 sessionStorage.removeItem(this.userInfo.name + 'SelectedPaths')
                 for (let i = 0; i < this.artifactoryList.length; i++) {
@@ -1053,12 +1086,13 @@
             handlerDownload (row) {
                 const transPath = encodeURIComponent(row.fullPath)
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
-                fetch('/web' + url, {
+                fetch(window.BK_SUBPATH + 'web' + url, {
+                    credentials: 'include',
                     headers: { Range: 'bytes=0-1' } // 限制范围
                 }).then(async response => {
                     if (response.ok) {
                         window.open(
-                            '/web' + url + `&x-bkrepo-project-id=${this.projectId}`,
+                            window.BK_SUBPATH + 'web' + url + `&x-bkrepo-project-id=${this.projectId}`,
                             '_self'
                         )
                     } else if (response.status === 451) {
@@ -1118,7 +1152,8 @@
                 if (this.timer) return
                 this.timer = setInterval(async () => {
                     try {
-                        const response = await fetch('/web' + url, {
+                        const response = await fetch(window.BK_SUBPATH + 'web' + url, {
+                            credentials: 'include',
                             headers: { Range: 'bytes=0-1' } // 限制范围
                         })
                         if (!response.ok) {
@@ -1130,7 +1165,7 @@
                         this.timer = null
                         this.$refs.loading.isShow = false
                         window.open(
-                            '/web' + url + `&x-bkrepo-project-id=${this.projectId}`,
+                            window.BK_SUBPATH + 'web' + url + `&x-bkrepo-project-id=${this.projectId}`,
                             '_self'
                         )
                     } catch (e) {

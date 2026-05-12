@@ -45,6 +45,7 @@ import com.tencent.bkrepo.auth.helper.UserHelper
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TPermission
 import com.tencent.bkrepo.auth.model.TPersonalPath
+import com.tencent.bkrepo.auth.model.TRole
 import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode.DEFAULT
 import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode.STRICT
@@ -218,9 +219,7 @@ open class PermissionServiceImpl constructor(
         logger.debug("check permission request : [$request] ")
         with(request) {
             if (uid == ANONYMOUS_USER) return false
-            val user = userDao.findFirstByUserId(uid) ?: run {
-                throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-            }
+            val user = getUserInfo(uid) ?: return false
             // check user locked
             if (user.locked) return false
             // check user admin permission
@@ -350,25 +349,37 @@ open class PermissionServiceImpl constructor(
         return repoList.distinct()
     }
 
-    override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String>? {
+    override fun listNoPermissionPath(
+        userId: String,
+        roles: List<String>?,
+        projectId: String,
+        repoName: String
+    ): List<String>? {
         val user = userDao.findFirstByUserId(userId) ?: return null
-        if (user.admin || isUserLocalProjectAdmin(userId, projectId)) {
-            return emptyList()
-        }
+        if (user.admin || isUserLocalProjectAdmin(userId, projectId)) return emptyList()
+        var userRoles = roles
+        if (roles == null) userRoles = user.roles
         val projectPermission = permissionDao.listByResourceAndRepo(NODE.name, projectId, repoName)
-        val configPath = permHelper.getPermissionPathFromConfig(userId, user.roles, projectPermission, false)
+        val configPath = permHelper.getPermissionPathFromConfig(userId, userRoles, projectPermission, false)
         val personalPath = personalPathDao.listByProjectAndRepoAndExcludeUser(userId, projectId, repoName)
             .map { it.fullPath }
         return (configPath + personalPath).distinct()
     }
 
-    override fun listPermissionPath(userId: String, projectId: String, repoName: String): List<String>? {
+    override fun listPermissionPath(
+        userId: String,
+        roles: List<String>?,
+        projectId: String,
+        repoName: String
+    ): List<String>? {
         val user = userDao.findFirstByUserId(userId) ?: return emptyList()
         if (user.admin || isUserLocalProjectAdmin(userId, projectId)) {
             return null
         }
+        var userRoles = roles
+        if (roles == null) userRoles = user.roles
         val permission = permissionDao.listByResourceAndRepo(NODE.name, projectId, repoName)
-        val configPath = permHelper.getPermissionPathFromConfig(userId, user.roles, permission, true).toMutableList()
+        val configPath = permHelper.getPermissionPathFromConfig(userId, userRoles, permission, true).toMutableList()
         val personalPath = personalPathDao.findOneByProjectAndRepo(userId, projectId, repoName)
         if (personalPath != null) {
             configPath.add(personalPath.fullPath)
@@ -469,6 +480,12 @@ open class PermissionServiceImpl constructor(
 
     fun getUserInfo(userId: String): TUser? {
         return userDao.findFirstByUserId(userId)
+    }
+
+    fun getUserRole(projectId: String, source: RoleSource): List<TRole> {
+        return roleRepository.findByProjectIdAndSource(projectId, source).filter {
+            !it.deptInfoList.isNullOrEmpty()
+        }
     }
 
     fun checkNodeAction(request: CheckPermissionContext, isProjectUser: Boolean): Boolean {

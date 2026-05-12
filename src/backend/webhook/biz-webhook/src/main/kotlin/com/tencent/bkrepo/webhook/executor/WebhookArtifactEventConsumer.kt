@@ -158,6 +158,8 @@ class WebhookArtifactEventConsumer(
             EventType.VERSION_DOWNLOAD,
             EventType.VERSION_UPDATED,
             EventType.VERSION_STAGED,
+            EventType.SCAN_FINISHED,
+            EventType.SCAN_TRIGGERED,
         )
         private val nodeEvents = setOf(
             EventType.NODE_CREATED,
@@ -169,6 +171,8 @@ class WebhookArtifactEventConsumer(
             EventType.NODE_CLEAN,
             EventType.NODE_UPDATE_ACCESS_DATE,
             EventType.NODE_SEPARATION_RECOVERY,
+            EventType.SCAN_FINISHED,
+            EventType.SCAN_TRIGGERED,
         )
     }
 }

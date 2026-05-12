@@ -48,6 +48,16 @@ class ReplicaRecordDao : SimpleMongoDao<TReplicaRecord>() {
             .with(Sort.by(Sort.Direction.DESC, TReplicaRecord::startTime.name))
         return this.find(query)
     }
+    
+    /**
+     * 根据[taskKey]查找最新任务
+     */
+    fun findLatestByTaskKey(taskKey: String): TReplicaRecord? {
+        val query = Query(TReplicaRecord::taskKey.isEqualTo(taskKey))
+            .with(Sort.by(Sort.Direction.DESC, TReplicaRecord::startTime.name))
+            .limit(1)
+        return this.findOne(query)
+    }
 
     /**
      * 根据[taskKey]删除任务

@@ -3,6 +3,7 @@ package com.tencent.bkrepo.replication.service.impl
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.replication.dao.EventRecordDao
+import com.tencent.bkrepo.replication.metrics.FederationMetricsCollector
 import com.tencent.bkrepo.replication.model.TEventRecord
 import com.tencent.bkrepo.replication.pojo.event.EventRecordDeleteRequest
 import com.tencent.bkrepo.replication.pojo.event.EventRecordListOption
@@ -25,7 +26,8 @@ class EventRecordServiceImpl(
     private val eventRecordDao: EventRecordDao,
     private val replicaTaskService: ReplicaTaskService,
     private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor,
-    private val federationEventBasedReplicaJobExecutor: FederationEventBasedReplicaJobExecutor
+    private val federationEventBasedReplicaJobExecutor: FederationEventBasedReplicaJobExecutor,
+    protected val metricsCollector: FederationMetricsCollector?
 ) : EventRecordService {
 
     private val executors = EventConsumerThreadPoolExecutor.instance
@@ -91,6 +93,7 @@ class EventRecordServiceImpl(
                         Runnable {
                             val task = replicaTaskService.getDetailByTaskKey(taskKey)
                             federationEventBasedReplicaJobExecutor.execute(task, event, eventId)
+                            metricsCollector?.recordRetryEvent(eventType)
                         }.trace()
                     )
                 }

@@ -61,8 +61,9 @@ class UserRoleController @Autowired constructor(
     @PostMapping("/role/{uid}/{rid}")
     fun addUserRole(@PathVariable uid: String, @PathVariable rid: String): Response<User?> {
         val role = roleService.detail(rid)
-        if (role != null && role.projectId != null) {
-            preCheckProjectAdmin(role.projectId)
+        val projectId = role?.projectId
+        if (projectId != null) {
+            preCheckProjectAdmin(projectId)
         } else {
             preCheckUserAdmin()
         }

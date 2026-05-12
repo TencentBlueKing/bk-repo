@@ -74,5 +74,7 @@ data class PackageVersion(
     @get:Schema(title = "清单文件路径")
     val manifestPath: String? = null,
     @get:Schema(title = "集群名")
-    val clusterNames: Set<String>? = null
+    val clusterNames: Set<String>? = null,
+    @get:Schema(title = "联邦仓库同步来源")
+    val federatedSource: String? = null,
 )

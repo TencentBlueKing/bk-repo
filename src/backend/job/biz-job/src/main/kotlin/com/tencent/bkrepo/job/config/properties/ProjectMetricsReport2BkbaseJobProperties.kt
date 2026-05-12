@@ -36,4 +36,6 @@ import org.springframework.stereotype.Component
 class ProjectMetricsReport2BkbaseJobProperties: MongodbJobProperties() {
     override var enabled: Boolean = false
     override var cron: String = Scheduled.CRON_DISABLED
+    // 计算项目用量时需要排除的仓库名列表
+    var excludeRepoNames: MutableList<String> = mutableListOf()
 }

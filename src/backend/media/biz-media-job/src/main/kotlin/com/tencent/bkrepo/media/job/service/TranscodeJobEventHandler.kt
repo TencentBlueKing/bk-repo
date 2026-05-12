@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.media.common.dao.MediaTranscodeJobDao
 import com.tencent.bkrepo.media.common.pojo.transcode.MediaTranscodeJobStatus
+import com.tencent.bkrepo.media.job.metrics.TranscodeMetrics
 import io.kubernetes.client.informer.ResourceEventHandler
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.ApiException
@@ -146,13 +147,14 @@ class TranscodeJobEventHandler @Autowired constructor(
         try {
             val projectId = labels[TranscodeJobService.TRANSCODE_JOB_PROJECT_ID] ?: return false
             val repoName = labels[TranscodeJobService.TRANSCODE_JOB_REPO_NAME] ?: return false
-            var fileName = labels[TranscodeJobService.TRANSCODE_JOB_FILE_NAME] ?: return false
-            fileName = "/streams/${fileName.replace(".mp4", "_1280x720.mp4")}"
-            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fileName)) ?: run {
-                logger.warn("checkTranscodeFileDone not found: $projectId|$repoName|$fileName")
+            val fileName = labels[TranscodeJobService.TRANSCODE_JOB_FILE_NAME] ?: return false
+            val fullPath = "/streams/${fileName.replace(".mp4", "_1280x720.mp4")}"
+            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath)) ?: run {
+                logger.warn("checkTranscodeFileDone not found: $projectId|$repoName|$fullPath")
                 return false
             }
             mediaTranscodeJobDao.updateStatus(projectId, repoName, fileName, MediaTranscodeJobStatus.DONE)
+            TranscodeMetrics.recordStatusChange(projectId, MediaTranscodeJobStatus.DONE)
             logger.info("checkTranscodeFileDone found: $projectId|$repoName|$fileName")
             return true
         } catch (e: Exception) {

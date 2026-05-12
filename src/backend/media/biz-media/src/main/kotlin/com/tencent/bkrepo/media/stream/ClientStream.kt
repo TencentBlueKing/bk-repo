@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.media.stream
 
+import org.slf4j.LoggerFactory
 import java.lang.IllegalStateException
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -26,14 +27,33 @@ class ClientStream(
         startTime = System.currentTimeMillis()
     }
 
-    override fun stop() {
-        close()
+    override fun stop(endTime: Long) {
+        close(endTime)
     }
 
-    override fun close() {
+    /**
+     * 停止流
+     * @param endTime 结束时间
+     * @param isComplete 是否正常完成
+     */
+    fun stop(endTime: Long, isComplete: Boolean) {
+        close(endTime, isComplete)
+    }
+
+    override fun close(endTime: Long) {
         if (closed.compareAndSet(false, true)) {
-            recordingListener?.stop()
-            listeners.forEach { it.streamStop(this) }
+            recordingListener?.stop(endTime)
+            listeners.forEach { it.streamStop(this, endTime) }
+        }
+    }
+
+    /**
+     * 关闭流
+     */
+    fun close(endTime: Long, isComplete: Boolean) {
+        if (closed.compareAndSet(false, true)) {
+            recordingListener?.stop(endTime, isComplete)
+            listeners.forEach { it.streamStop(this, endTime) }
         }
     }
 
@@ -45,7 +65,8 @@ class ClientStream(
         if (!closed.get()) {
             bytesReceived += packet.getData().size
             if (bytesReceived > maxFileSize) {
-                stop()
+                stop(packet.getTimestamp())
+                logger.error("$name|$id except max record file size")
                 throw IllegalStateException("except max record file size")
             }
             recordingListener?.packetReceived(packet)
@@ -61,5 +82,9 @@ class ClientStream(
             recordingListener.init(name)
             recordingListener.start()
         }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ClientStream::class.java)
     }
 }

@@ -162,6 +162,7 @@ import { listRepositories, pageRepositories } from '@/api/repository'
 import { formatNormalDate } from '@/utils/date'
 import { convertFileSize } from '@/utils/file'
 import EditRepoConfigDialog from '@/views/repoConfig/components/EditRepoConfigDialog'
+import { ROUTER_NAME_REPO_CONFIG } from '@/router'
 
 export default {
   name: 'RepoConfig',
@@ -247,7 +248,7 @@ export default {
       query.projectId = this.clientQuery.projectId
       query.repoName = this.clientQuery.repoName
       query.type = this.clientQuery.type
-      this.$router.push({ path: '/repo-config', query: query })
+      this.$router.push({ name: ROUTER_NAME_REPO_CONFIG, query: query })
     },
     onRouteUpdate(route) {
       const query = route.query

@@ -1,6 +1,6 @@
 <template>
     <bk-dialog v-model="showItsmDialog" :visible.sync="showItsmDialog" :before-close="close" style="text-align: center">
-        <img src="/ui/no-permission.svg" />
+        <img :src="imgUrl" />
         <p>{{ $t('itsmTip') }}</p>
         <div slot="footer">
             <bk-button @click="open" theme="primary" class="mr10">{{ $t('viewApproval') }}</bk-button>
@@ -22,7 +22,8 @@
         data () {
             return {
                 showItsmDialog: this.visible,
-                formData: []
+                formData: [],
+                imgUrl: window.BK_STATIC_URL + 'no-permission.svg'
             }
         },
         watch: {

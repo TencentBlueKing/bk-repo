@@ -8,6 +8,7 @@ import com.tencent.bkrepo.media.common.pojo.transcode.MediaTranscodeJobStatus
 import org.bson.types.ObjectId
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.FindAndModifyOptions
+import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
@@ -15,7 +16,9 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Repository
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.temporal.ChronoUnit
 import org.springframework.data.mongodb.core.query.Criteria.where as strWhere
 
@@ -37,20 +40,50 @@ class MediaTranscodeJobDao : SimpleMongoDao<TMediaTranscodeJob>() {
         return updateFirst(query, update)
     }
 
-    fun queueAndRunningJobCount(): Long {
-        return count(
-            Query(
-                where(TMediaTranscodeJob::status).`in`(
-                    MediaTranscodeJobStatus.QUEUE,
-                    MediaTranscodeJobStatus.INIT,
-                    MediaTranscodeJobStatus.RUNNING
-                )
+    /**
+     * 按项目ID分组统计队列和运行中的任务数
+     */
+    fun queueAndRunningJobCountGroupByProject(): Map<String, Long> {
+        val matchOperation = Aggregation.match(
+            where(TMediaTranscodeJob::status).`in`(
+                MediaTranscodeJobStatus.QUEUE,
+                MediaTranscodeJobStatus.INIT,
+                MediaTranscodeJobStatus.RUNNING
             )
         )
+        val groupOperation = Aggregation.group(TMediaTranscodeJob::projectId.name)
+            .count().`as`("count")
+        val aggregation = Aggregation.newAggregation(matchOperation, groupOperation)
+        val results = aggregate(aggregation, org.bson.Document::class.java)
+        return results.mappedResults.associate { doc ->
+            (doc.getString("_id") ?: "") to (doc.getInteger("count", 0).toLong())
+        }
     }
 
-    fun findAndQueueOldestWaitingJob(): TMediaTranscodeJob? {
-        val query: Query = Query(where(TMediaTranscodeJob::status).isEqualTo(MediaTranscodeJobStatus.WAITING))
+    /**
+     * 按时间顺序取指定项目最旧的 WAITING 任务并将其状态改为 QUEUE
+     */
+    fun findAndQueueOldestWaitingJob(projectId: String): TMediaTranscodeJob? {
+        val query: Query = Query(
+            where(TMediaTranscodeJob::status).isEqualTo(MediaTranscodeJobStatus.WAITING)
+                .and(TMediaTranscodeJob::projectId).isEqualTo(projectId)
+        ).with(Sort.by(Sort.Direction.ASC, TMediaTranscodeJob::createdTime.name))
+        val update = Update()
+            .set(TMediaTranscodeJob::status.name, MediaTranscodeJobStatus.QUEUE)
+            .currentDate(TMediaTranscodeJob::updateTime.name)
+        val options = FindAndModifyOptions().returnNew(true)
+        return findAndModify(query, update, options, TMediaTranscodeJob::class.java)
+    }
+
+    /**
+     * 按时间顺序取不在指定项目列表中的最旧 WAITING 任务并将其状态改为 QUEUE（用于默认配置）
+     */
+    fun findAndQueueOldestWaitingJobExcludeProjects(excludeProjectIds: Set<String>): TMediaTranscodeJob? {
+        val criteria = where(TMediaTranscodeJob::status).isEqualTo(MediaTranscodeJobStatus.WAITING)
+        if (excludeProjectIds.isNotEmpty()) {
+            criteria.and(TMediaTranscodeJob::projectId).nin(excludeProjectIds)
+        }
+        val query: Query = Query(criteria)
             .with(Sort.by(Sort.Direction.ASC, TMediaTranscodeJob::createdTime.name))
         val update = Update()
             .set(TMediaTranscodeJob::status.name, MediaTranscodeJobStatus.QUEUE)
@@ -87,4 +120,47 @@ class MediaTranscodeJobDao : SimpleMongoDao<TMediaTranscodeJob>() {
         val deleteResult = remove(query)
         return deleteResult
     }
+
+    /**
+     * 查询失败的任务
+     */
+    fun findFailedJobs(limit: Int = 100): List<TMediaTranscodeJob> {
+        val query = Query(
+            where(TMediaTranscodeJob::status).isEqualTo(MediaTranscodeJobStatus.FAIL)
+        ).limit(limit)
+        return find(query)
+    }
+
+    /**
+     * 按项目和状态分组统计指定日期创建的转码任务数量
+     * @param lookbackDays 回看天数，0表示今天，1表示昨天
+     */
+    fun jobCountByProjectAndStatus(lookbackDays: Long = 1): List<ProjectStatusCount> {
+        val targetDate = LocalDate.now().minusDays(lookbackDays)
+        val startTime = LocalDateTime.of(targetDate, LocalTime.MIN)
+        val endTime = LocalDateTime.of(targetDate.plusDays(1), LocalTime.MIN)
+        val matchOperation = Aggregation.match(
+            where(TMediaTranscodeJob::createdTime).gte(startTime).lt(endTime)
+        )
+        val groupOperation = Aggregation.group(
+            TMediaTranscodeJob::projectId.name,
+            TMediaTranscodeJob::status.name,
+        ).count().`as`("count")
+        val aggregation = Aggregation.newAggregation(matchOperation, groupOperation)
+        val results = aggregate(aggregation, org.bson.Document::class.java)
+        return results.mappedResults.map { doc ->
+            val idDoc = doc.get("_id", org.bson.Document::class.java)
+            ProjectStatusCount(
+                projectId = idDoc?.getString(TMediaTranscodeJob::projectId.name).orEmpty(),
+                status = idDoc?.getString(TMediaTranscodeJob::status.name).orEmpty(),
+                count = doc.getInteger("count", 0).toLong(),
+            )
+        }
+    }
+
+    data class ProjectStatusCount(
+        val projectId: String,
+        val status: String,
+        val count: Long,
+    )
 }

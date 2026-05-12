@@ -72,7 +72,8 @@ class HfExtService(
                 createdBy = packageVersion.createdBy,
                 createdDate = packageVersion.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = packageVersion.lastModifiedBy,
-                lastModifiedDate = packageVersion.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
+                lastModifiedDate = packageVersion.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                federatedSource = packageVersion.federatedSource,
             )
             return HfVersionInfo(basic, packageVersion.packageMetadata)
         }

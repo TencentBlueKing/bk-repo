@@ -158,18 +158,22 @@ class MavenRemoteRepository(
             val lastModifiedDate = packageVersion?.lastModifiedDate?.format(DateTimeFormatter.ISO_DATE_TIME)
                 ?: jarNode.lastModifiedDate
             val mavenArtifactMavenBasicInfo = Basic(
-                groupId,
-                artifactId,
-                version,
-                if (type == "jar") null else type,
-                jarNode.size, jarNode.fullPath,
-                jarNode.createdBy, createdDate,
-                jarNode.lastModifiedBy, lastModifiedDate,
-                count,
-                jarNode.sha256!!,
-                jarNode.md5!!,
-                stageTag ?: emptyList(),
-                null
+                groupId = groupId,
+                artifactId = artifactId,
+                version = version,
+                type = if (type == "jar") null else type,
+                size = jarNode.size,
+                fullPath = jarNode.fullPath,
+                createdBy = jarNode.createdBy,
+                createdDate = createdDate,
+                lastModifiedBy = jarNode.lastModifiedBy,
+                lastModifiedDate = lastModifiedDate,
+                downloadCount = count,
+                sha256 = jarNode.sha256!!,
+                md5 = jarNode.md5!!,
+                stageTag = stageTag ?: emptyList(),
+                description = null,
+                federatedSource = packageVersion?.federatedSource,
             )
             return MavenArtifactVersionData(mavenArtifactMavenBasicInfo, packageVersion?.packageMetadata)
         }

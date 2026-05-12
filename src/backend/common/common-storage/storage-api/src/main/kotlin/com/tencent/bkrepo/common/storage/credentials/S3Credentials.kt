@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.storage.credentials
 
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.storage.config.CacheProperties
 import com.tencent.bkrepo.common.storage.config.CompressProperties
 import com.tencent.bkrepo.common.storage.config.EncryptProperties
@@ -45,13 +46,20 @@ data class S3Credentials(
     var endpoint: String = "",
     var region: String = "",
     var bucket: String = "",
+    var download: S3DownloadProperties = S3DownloadProperties(),
     override var key: String? = null,
     override var cache: CacheProperties = CacheProperties(),
     override var upload: UploadProperties = UploadProperties(),
     override var encrypt: EncryptProperties = EncryptProperties(),
     override var compress: CompressProperties = CompressProperties(),
+    override var allowRepoTypes: Set<String>? = null,
+    override var notAllowRepoTypes: Set<String>? = setOf(RepositoryType.DRIVE.name),
 ) : StorageCredentials(key, cache, upload, encrypt, compress) {
     companion object {
         const val type = "s3"
     }
+
+    data class S3DownloadProperties(
+        var lazyLoad: Boolean = false,
+    )
 }

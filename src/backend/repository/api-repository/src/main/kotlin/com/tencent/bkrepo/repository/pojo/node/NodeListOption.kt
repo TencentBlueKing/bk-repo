@@ -61,4 +61,6 @@ data class NodeListOption(
     var hasPermissionPath: List<String>? = null,
     @get:Schema(title = "操作用户")
     var operator: String = SYSTEM_USER,
+    @get:Schema(title = "是否查询总数")
+    val includeTotalRecords: Boolean = true,
 )

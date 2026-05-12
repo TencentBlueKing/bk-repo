@@ -36,6 +36,10 @@ import io.swagger.v3.oas.annotations.media.Schema
 data class ServiceInfo(
     @get:Schema(title = "服务名")
     val name: String,
+    @get:Schema(title = "在线节点数")
+    val onlineNumber: Int,
+    @get:Schema(title = "离线节点数")
+    val offlineNumber: Int,
     @get:Schema(title = "服务实例信息")
     val instances: List<InstanceInfo>
 )

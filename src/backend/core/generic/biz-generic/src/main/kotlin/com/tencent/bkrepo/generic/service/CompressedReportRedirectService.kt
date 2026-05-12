@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.redirect.DownloadRedirectService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.generic.config.GenericProperties
 import org.springframework.stereotype.Component
 
@@ -44,7 +45,11 @@ class CompressedReportRedirectService(
     private val nodeService: NodeService,
     private val genericProperties: GenericProperties
 ) : DownloadRedirectService {
-    override fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
+    override fun supportedMethods(): Set<HttpMethod> {
+        return setOf(HttpMethod.GET, HttpMethod.HEAD)
+    }
+
+    override fun doShouldRedirect(context: ArtifactDownloadContext): Boolean {
         if (!genericProperties.compressedReport.enabled) {
             return false
         }
@@ -66,13 +71,17 @@ class CompressedReportRedirectService(
     }
 
     override fun redirect(context: ArtifactDownloadContext) {
+        if (context.request.method.uppercase() == HttpMethod.HEAD.name) {
+            return
+        }
         val redirectUrlBuilder = StringBuilder()
         redirectUrlBuilder.append(genericProperties.domain.removeSuffix("/generic"))
         // 判断请求来源是浏览器还是API调用
         if (context.request.getHeader(HEADER_ACCESS_FROM) != ACCESS_FROM_API) {
             redirectUrlBuilder.append("/web")
         }
-        redirectUrlBuilder.append("/preview/api/compressed/report/preview${context.request.requestURI}")
+        redirectUrlBuilder.append("/preview/api/compressed/report/preview/" +
+                "${context.projectId}/${context.repoName}${context.artifactInfo.getArtifactFullPath()}")
         context.request.queryString?.let {
             redirectUrlBuilder.append("?${context.request.queryString}")
         }

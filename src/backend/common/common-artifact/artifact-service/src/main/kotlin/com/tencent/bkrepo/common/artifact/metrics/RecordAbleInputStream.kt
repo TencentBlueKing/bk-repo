@@ -78,7 +78,8 @@ class RecordAbleInputStream(private val delegate: ArtifactInputStream) :
             trafficHandler ?: let {
                 trafficHandler = TrafficHandler(
                     ArtifactMetrics.getDownloadingCounters(delegate),
-                    ArtifactMetrics.getDownloadingTimer(delegate)
+                    ArtifactMetrics.getDownloadingTimer(delegate),
+                    TrafficHandler.TransferType.DOWNLOAD,
                 )
             }
             trafficHandler?.record(size, elapse)

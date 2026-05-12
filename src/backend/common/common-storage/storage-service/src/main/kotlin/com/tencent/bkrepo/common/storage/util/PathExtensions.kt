@@ -48,7 +48,11 @@ fun String.toPath(): Path = Paths.get(this)
 fun Path.createFile(): File {
     if (!Files.isRegularFile(this)) {
         if (this.parent != null) {
-            Files.createDirectories(this.parent)
+            try {
+                Files.createDirectories(this.parent)
+            } catch (ignored: java.nio.file.FileAlreadyExistsException) {
+                // ignore
+            }
         }
         try {
             Files.createFile(this)
@@ -90,7 +94,9 @@ fun Path.delete(): Boolean {
     } catch (e: DirectoryIteratorException) {
         // 子目录已经被其他进程删除时会报该错误
         val cause = e.cause
-        if (cause is FileSystemException && cause.message?.contains("Stale file handle") == true) {
+        if (cause is FileSystemException &&
+            (cause.message?.contains("Stale file handle") == true ||
+                cause.message?.contains("Input/output error") == true)) {
             logger.warn("delete dir[$this] failed", e)
         } else {
             throw e

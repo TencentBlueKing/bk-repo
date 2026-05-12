@@ -33,11 +33,21 @@ package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.stereotype.Component
+import java.time.Duration
 
 @Component
 @ConfigurationProperties("job.fs-client-offline")
 class FsClientOfflineProperties: MongodbJobProperties() {
     override var enabled: Boolean = true
-    override var fixedDelay: Long = 60 * 1000L
+    /**
+     * 定时任务执行间隔
+     * 注意：该值必须大于 heartbeatInterval * 2（离线阈值），否则可能导致未下线的客户端被错误清理
+     */
+    override var fixedDelay: Long = 30 * 60 * 1000L
     override var initialDelay: Long = 60 * 1000L
+    /**
+     * 心跳间隔时间
+     * 超过2倍心跳间隔时间未收到心跳的客户端将被置为下线状态
+     */
+    var heartbeatInterval: Duration = Duration.ofMinutes(10)
 }

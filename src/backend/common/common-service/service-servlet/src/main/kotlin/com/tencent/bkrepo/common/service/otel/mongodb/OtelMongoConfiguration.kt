@@ -47,8 +47,12 @@ class OtelMongoConfiguration {
 
     @Bean
     fun mongoMetricsSynchronousContextProvider(registry: ObservationRegistry): MongoClientSettingsBuilderCustomizer {
-        return MongoClientSettingsBuilderCustomizer { clientSettingsBuilder: MongoClientSettings.Builder? ->
-            clientSettingsBuilder!!.contextProvider(ContextProviderFactory.create(registry))
+        return OtelMongoCustomizer(registry)
+    }
+
+    class OtelMongoCustomizer(private val registry: ObservationRegistry) : MongoClientSettingsBuilderCustomizer {
+        override fun customize(clientSettingsBuilder: MongoClientSettings.Builder) {
+            clientSettingsBuilder.contextProvider(ContextProviderFactory.create(registry))
                 .addCommandListener(MongoObservationCommandListener(registry))
         }
     }

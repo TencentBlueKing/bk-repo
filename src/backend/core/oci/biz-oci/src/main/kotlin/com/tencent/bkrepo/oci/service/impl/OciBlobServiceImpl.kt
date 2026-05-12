@@ -59,6 +59,7 @@ import com.tencent.bkrepo.oci.service.OciBlobService
 import com.tencent.bkrepo.oci.service.OciOperationService
 import com.tencent.bkrepo.oci.util.ObjectBuildUtils
 import com.tencent.bkrepo.oci.util.OciLocationUtils
+import com.tencent.bkrepo.oci.util.OciNameAliasCodec
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import org.slf4j.LoggerFactory
@@ -200,7 +201,11 @@ class OciBlobServiceImpl(
     private fun splitRepoInfo(from: String?): Pair<String, String>? {
         if (from.isNullOrEmpty()) return null
         val values = from.split(CharPool.SLASH)
-        return Pair(values[0], values[1])
+        if (values.size < 2) return null
+        return Pair(
+            OciNameAliasCodec.decodeSegment(values[0]),
+            OciNameAliasCodec.decodeSegment(values[1])
+        )
     }
 
     /**

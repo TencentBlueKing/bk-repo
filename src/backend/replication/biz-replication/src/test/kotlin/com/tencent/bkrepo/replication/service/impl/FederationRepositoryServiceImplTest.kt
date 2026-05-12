@@ -9,13 +9,13 @@ import com.tencent.bkrepo.replication.pojo.federation.FederatedRepositoryInfo
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryCreateRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryUpdateRequest
+import com.tencent.bkrepo.replication.manager.FederationDiffManager
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.impl.federation.FederationSyncManager
 import com.tencent.bkrepo.replication.service.impl.federation.FederationTaskManager
 import com.tencent.bkrepo.replication.service.impl.federation.LocalFederationManager
 import com.tencent.bkrepo.replication.service.impl.federation.RemoteFederationManager
 import io.mockk.every
-import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.just
@@ -48,7 +48,9 @@ class FederationRepositoryServiceImplTest : FederationRepositoryServiceTestBase(
     @MockK
     private lateinit var clusterNodeService: ClusterNodeService
 
-    @InjectMockKs
+    @MockK
+    private lateinit var federationDiffManager: FederationDiffManager
+
     private lateinit var federationRepositoryService: FederationRepositoryServiceImpl
 
     private lateinit var mockClusterNodeInfo: ClusterNodeInfo
@@ -62,6 +64,14 @@ class FederationRepositoryServiceImplTest : FederationRepositoryServiceTestBase(
         mockTFederatedRepository = createTestTFederatedRepository(
             clusterId = TEST_CLUSTER_ID_1,
             federatedClusters = listOf(mockFederatedCluster)
+        )
+        federationRepositoryService = FederationRepositoryServiceImpl(
+            localFederationManager,
+            remoteFederationManager,
+            federationTaskManager,
+            federationSyncManager,
+            clusterNodeService,
+            federationDiffManager
         )
     }
 
