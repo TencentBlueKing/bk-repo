@@ -20,7 +20,6 @@
     "@vue-office/pdf": "^2.0.2",
     "@vue/composition-api": "^1.7.2",
     "axios": "^1.12.0",
-    "bk-magic-vue": "^2.5.10-beta.17",
     "js-base64": "^3.7.7",
     "js-cookie": "^2.2.1",
     "marked": "^4.3.0",
