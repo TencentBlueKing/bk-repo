@@ -33,7 +33,7 @@ import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.pojo.role.UpdateRoleRequest
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
-import com.tencent.bkrepo.auth.service.local.UserServiceImpl
+import com.tencent.bkrepo.auth.service.UserService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
@@ -43,7 +43,7 @@ import org.springframework.stereotype.Component
 class ExternalGroupSyncJob(
     private val roleService: RoleService,
     private val permissionService: PermissionService,
-    private val userService: UserServiceImpl
+    private val userService: UserService
 ) {
 
     @Scheduled(cron = "0 */10 * * * ? ")
