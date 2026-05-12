@@ -37,6 +37,7 @@ import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.helper.UserHelper
 import com.tencent.bkrepo.auth.message.AuthMessageCode
+import com.tencent.bkrepo.auth.pojo.token.Authorization
 import com.tencent.bkrepo.auth.pojo.token.Token
 import com.tencent.bkrepo.auth.pojo.token.TokenResult
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
@@ -62,6 +63,7 @@ import org.springframework.dao.DuplicateKeyException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
+import java.util.Base64
 
 class UserServiceImpl constructor(
     private val roleRepository: RoleRepository,
@@ -254,6 +256,10 @@ class UserServiceImpl constructor(
             val existTokens = existUserInfo!!.tokens
             var id = UserRequestUtil.generateToken()
             var createdTime = LocalDateTime.now()
+            // 标记当前 token 是"新生成的明文"还是"续期时从 DB 复用的 sm3 摘要"。
+            // 仅当 id 仍为明文时，才能为返回值附带可直接使用的 Basic 凭证串；
+            // 续期分支里 id 其实是 sm3 摘要（历史实现），此时不能据此拼接 Authorization。
+            var plaintextToken = true
             existTokens.forEach {
                 // 如果临时token已经存在，尝试更新token的过期时间
                 if (it.name == name && it.expiredAt != null) {
@@ -261,6 +267,7 @@ class UserServiceImpl constructor(
                     removeToken(userId, name)
                     id = it.id
                     createdTime = it.createdAt
+                    plaintextToken = false
                 } else if (it.name == name && it.expiredAt == null) {
                     logger.warn("user token exist [$name]")
                     throw ErrorCodeException(AuthMessageCode.AUTH_USER_TOKEN_EXIST)
@@ -275,7 +282,14 @@ class UserServiceImpl constructor(
                 expiredTime = expiredTime!!.plusHours(8)
             }
             val sm3Id = DataDigestUtils.sm3FromStr(id)
-            val userToken = Token(name = name, id = id, createdAt = createdTime, expiredAt = expiredTime)
+            val authorization = if (plaintextToken) buildAuthorization(userId, id) else null
+            val userToken = Token(
+                name = name,
+                id = id,
+                createdAt = createdTime,
+                expiredAt = expiredTime,
+                authorization = authorization
+            )
             val dataToken = Token(name = name, id = sm3Id, createdAt = createdTime, expiredAt = expiredTime)
             userDao.addUserToken(userId, dataToken)
             val userInfo = userDao.findFirstByUserId(userId)
@@ -418,6 +432,19 @@ class UserServiceImpl constructor(
 
     override fun listAdminUsers(): List<String> {
         return userDao.findAllAdminUsers().map { it.userId }
+    }
+
+    /**
+     * 根据 userId 与明文 token 构造可直接放入 HTTP `Authorization` 头的凭证串。
+     *
+     * 构造规则遵循 RFC 7617（HTTP Basic）：`Basic base64(userId:token)`，其中 base64 采用
+     * 标准字母表并保留填充符 `=`。本方法仅在"创建 token"的成功路径上被调用，调用方需自行确保
+     * 传入的 [plaintextToken] 为明文 token 而非哈希摘要。
+     */
+    private fun buildAuthorization(userId: String, plaintextToken: String): Authorization {
+        val raw = "$userId:$plaintextToken".toByteArray(Charsets.UTF_8)
+        val basic = "Basic " + Base64.getEncoder().encodeToString(raw)
+        return Authorization(basic = basic)
     }
 
     companion object {
