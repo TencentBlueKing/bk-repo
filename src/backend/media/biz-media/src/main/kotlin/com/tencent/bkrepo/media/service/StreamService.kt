@@ -397,7 +397,9 @@ class StreamService(
     private fun convertSyncStateToMetadataJson(stateJson: String): String? {
         return try {
             val state = JsonUtils.objectMapper.readTree(stateJson)
-            val metadata = com.fasterxml.jackson.databind.node.ObjectNode(com.fasterxml.jackson.databind.node.JsonNodeFactory.instance)
+            val metadata = com.fasterxml.jackson.databind.node.ObjectNode(
+                com.fasterxml.jackson.databind.node.JsonNodeFactory.instance
+            )
             metadata.put("version", 1)
 
             // video info
@@ -427,7 +429,9 @@ class StreamService(
                 metadata.set<com.fasterxml.jackson.databind.node.ObjectNode>("syncPoints", state.get("syncPoints"))
             }
             if (state.has("micSyncPoints")) {
-                metadata.set<com.fasterxml.jackson.databind.node.ObjectNode>("micSyncPoints", state.get("micSyncPoints"))
+                metadata.set<
+                    com.fasterxml.jackson.databind.node.ObjectNode
+                >("micSyncPoints", state.get("micSyncPoints"))
             }
 
             // segments
