@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.media.service
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
@@ -13,6 +14,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
@@ -62,6 +64,7 @@ class StreamService(
     private val storageService: StorageService,
     private val blockNodeService: BlockNodeService,
     private val mediaActiveStreamDao: MediaActiveStreamDao,
+    private val permissionManager: PermissionManager,
 ) : ArtifactService() {
 
     /**
@@ -77,6 +80,10 @@ class StreamService(
         }
         // 如果是纯直播则不创建节点
         if (mediaMod == MediaMod.LIVE.name) {
+            permissionManager.checkProjectPermission(
+                action = PermissionAction.VIEW,
+                projectId = projectId,
+            )
             val expireAt = System.currentTimeMillis() + 24 * 60 * 60 * 1000
             val token: String = generateToken("$projectId-${repoName}", expireAt)
             return "$serverAddress/$projectId/$repoName$STREAM_PATH?token=$token"
@@ -86,6 +93,10 @@ class StreamService(
         * 2. 创建streams目录
         * 3. 创建streams目录写权限url =》 推流地址/{projectId}/{pushId}/streams
         * */
+        permissionManager.checkProjectPermission(
+            action = PermissionAction.MANAGE,
+            projectId = projectId,
+        )
         repositoryService.getRepoDetail(projectId, repoName) ?: let {
             val createRepoRequest = RepoCreateRequest(
                 projectId = projectId,
