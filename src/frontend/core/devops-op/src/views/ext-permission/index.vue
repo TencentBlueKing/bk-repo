@@ -79,6 +79,7 @@ import { formatDate } from '@/utils/file'
 import PermissionCreateDialog from '@/views/ext-permission/components/PermissionCreateDialog'
 import PermissionDetailDialog from '@/views/ext-permission/components/PermissionDetailDialog'
 import PermissionDeleteDialog from '@/views/ext-permission/components/PermissionDeleteDialog'
+import { ROUTER_NAME_EXT_PERMISSION } from '@/router'
 
 export default {
   name: 'ExtPermission',
@@ -125,7 +126,7 @@ export default {
       this.$refs['form'].clearValidate()
     },
     changeRouteQueryParams() {
-      this.$router.push({ path: '/ext-permission', query: this.permissionQuery })
+      this.$router.push({ name: ROUTER_NAME_EXT_PERMISSION, query: this.permissionQuery })
     },
     onRouteUpdate(route) {
       this.$nextTick(() => {

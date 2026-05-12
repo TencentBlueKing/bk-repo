@@ -47,8 +47,10 @@ import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.artifact.metrics.ChunkArtifactTransferMetrics
 import com.tencent.bkrepo.common.artifact.router.Router
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
@@ -95,12 +97,16 @@ class TemporaryAccessController(
     private val permissionManager: PermissionManager,
     private val uploadService: UploadService,
     private val genericProperties: GenericProperties,
+    private val projectService: ProjectService,
 ) {
 
     @PostMapping("/token/create")
     @Principal(PrincipalType.GENERAL)
     fun createToken(@RequestBody request: TemporaryTokenCreateRequest): Response<List<TemporaryAccessToken>> {
-        return ResponseBuilder.success(temporaryAccessService.createToken(request))
+        projectService.checkProjectShareEnabled(request.projectId)
+        return ResponseBuilder.success(
+            temporaryAccessService.createToken(request.copy(createdBy = SecurityUtils.getUserId()))
+        )
     }
 
     @PostMapping("/url/create")
@@ -109,6 +115,7 @@ class TemporaryAccessController(
             fullPathSet.forEach {
                 permissionManager.checkNodePermission(PermissionAction.WRITE, projectId, repoName, it)
             }
+            projectService.checkProjectShareEnabled(projectId, respectBypass = false)
             return ResponseBuilder.success(temporaryAccessService.createUrl(request))
         }
     }

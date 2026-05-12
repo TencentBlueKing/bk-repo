@@ -31,6 +31,9 @@
 
 package com.tencent.bkrepo.cargo.controller.api
 
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bk.audit.annotations.ActionAuditRecord
 import com.tencent.bk.audit.annotations.AuditAttribute
 import com.tencent.bk.audit.annotations.AuditEntry
@@ -38,10 +41,14 @@ import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.cargo.pojo.CargoDomainInfo
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.CARGO_PACKAGE_DELETE_URL
+import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.CARGO_VERSION_DEPS
+import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.CARGO_VERSION_DEPTS
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.CARGO_VERSION_DELETE_URL
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.CARGO_VERSION_DETAIL
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.FIX_INDEX
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoDeleteArtifactInfo
+import com.tencent.bkrepo.cargo.pojo.user.CargoDependencyInfo
+import com.tencent.bkrepo.cargo.pojo.user.CargoDependentInfo
 import com.tencent.bkrepo.cargo.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.cargo.service.CargoExtService
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -49,6 +56,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.artifact.audit.REPO_EDIT_ACTION
 import com.tencent.bkrepo.common.artifact.audit.REPO_RESOURCE
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -82,6 +90,40 @@ class UserCargoController(
         @RequestParam version: String
     ): Response<PackageVersionInfo> {
         return ResponseBuilder.success(cargoExtService.detailVersion(userId, artifactInfo, packageKey, version))
+    }
+
+    @Operation(summary = "查询版本依赖(deps)")
+    @GetMapping(CARGO_VERSION_DEPS)
+    fun queryDeps(
+        @RequestAttribute
+        userId: String,
+        @ArtifactPathVariable artifactInfo: CargoArtifactInfo,
+        @Parameter(name = "包唯一Key", required = true)
+        @RequestParam packageKey: String,
+        @Parameter(name = "包版本", required = true)
+        @RequestParam version: String
+    ): Response<List<CargoDependencyInfo>> {
+        return ResponseBuilder.success(cargoExtService.queryDeps(userId, artifactInfo, packageKey, version))
+    }
+
+    @Operation(summary = "查询依赖当前版本的包(depts)")
+    @GetMapping(CARGO_VERSION_DEPTS)
+    fun queryDependents(
+        @RequestAttribute
+        userId: String,
+        @ArtifactPathVariable artifactInfo: CargoArtifactInfo,
+        @Parameter(name = "包唯一Key", required = true)
+        @RequestParam packageKey: String,
+        @Parameter(name = "包版本", required = true)
+        @RequestParam version: String,
+        @Parameter(name = "当前页", required = true)
+        @RequestParam pageNumber: Int = DEFAULT_PAGE_NUMBER,
+        @Parameter(name = "分页大小", required = true)
+        @RequestParam pageSize: Int = DEFAULT_PAGE_SIZE,
+    ): Response<Page<CargoDependentInfo>> {
+        return ResponseBuilder.success(
+            cargoExtService.queryDependents(userId, artifactInfo, packageKey, version, pageNumber, pageSize)
+        )
     }
 
     @AuditEntry(
@@ -159,6 +201,7 @@ class UserCargoController(
     @PostMapping(FIX_INDEX)
     fun fixIndex(artifactInfo: CargoArtifactInfo): ResponseEntity<Void> {
         cargoExtService.fixIndex(artifactInfo)
+        TraceHeaderUtils.setResponseHeader()
         return ResponseEntity.ok().build()
     }
 }

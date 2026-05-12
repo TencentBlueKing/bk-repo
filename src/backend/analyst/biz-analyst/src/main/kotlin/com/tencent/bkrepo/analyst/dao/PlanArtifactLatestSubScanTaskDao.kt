@@ -254,6 +254,14 @@ class PlanArtifactLatestSubScanTaskDao(
         return determineMongoTemplate().findAllAndRemove(query, TPlanArtifactLatestSubScanTask::class.java)
     }
 
+    fun findTask(
+        projectId: String, repoName: String, fullPath: String, planId: String?, scanner: String
+    ): TPlanArtifactLatestSubScanTask? {
+        val criteria = buildCriteria(projectId, repoName, fullPath, planId)
+            .and(TPlanArtifactLatestSubScanTask::scanner.name).isEqualTo(scanner)
+        return findOne(Query(criteria))
+    }
+
     /**
      * 更新扫描方案预览结果
      */

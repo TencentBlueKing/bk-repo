@@ -25,6 +25,9 @@
   - [简单文件操作](generic/simple.md)
   - [分块文件操作](generic/block.md)
   - [临时访问凭证](generic/temporary-access.md)
+- **Drive仓库**
+  - [文件操作](drive/file.md)
+  - [节点操作](drive/node.md)
 - **认证服务**
   - [用户相关](auth/user.md)
   - [用户token相关](auth/token.md)

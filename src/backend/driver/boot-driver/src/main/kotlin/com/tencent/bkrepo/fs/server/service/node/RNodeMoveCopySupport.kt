@@ -100,15 +100,15 @@ open class RNodeMoveCopySupport(
                     )
                 )!!
             }
-            if (srcNode.folder) {
+            val dstRootNodeFullPath = if (srcNode.folder) {
                 moveCopyFolder(this)
             } else {
                 moveCopyFile(this)
             }
             if (move) {
-                publishEvent(NodeEventFactory.buildMovedEvent(request))
+                publishEvent(NodeEventFactory.buildMovedEvent(request, dstRootNodeFullPath))
             } else {
-                publishEvent(NodeEventFactory.buildCopiedEvent(request))
+                publishEvent(NodeEventFactory.buildCopiedEvent(request, dstRootNodeFullPath))
             }
             return convertToDetail(
                 nodeBaseService.nodeDao.findNode(
@@ -232,7 +232,7 @@ open class RNodeMoveCopySupport(
     /**
      * 移动/复制目录
      */
-    private suspend fun moveCopyFolder(context: MoveCopyContext) {
+    private suspend fun moveCopyFolder(context: MoveCopyContext): String {
         with(context) {
             // 目录 -> 文件: error
             if (dstNode?.folder == false) {
@@ -262,6 +262,7 @@ open class RNodeMoveCopySupport(
             nodeDao.stream(query).toIterable().forEach {
                 doMoveCopy(this, it, it.path.replaceFirst(srcRootNodePath, dstRootNodePath), it.name)
             }
+            return dstRootNodePath
         }
     }
 
@@ -276,13 +277,14 @@ open class RNodeMoveCopySupport(
     /**
      * 移动/复制文件
      */
-    open suspend fun moveCopyFile(context: MoveCopyContext) {
+    open suspend fun moveCopyFile(context: MoveCopyContext): String {
         with(context) {
             val dstPath = if (dstNode?.folder == true) toPath(dstNode!!.fullPath) else resolveParent(dstFullPath)
             val dstName = if (dstNode?.folder == true) srcNode.name else resolveName(dstFullPath)
             // 创建dst父目录
             nodeBaseService.mkdirs(dstProjectId, dstRepoName, dstPath, operator)
             doMoveCopy(context, srcNode, dstPath, dstName)
+            return combineFullPath(dstPath, dstName)
         }
     }
 

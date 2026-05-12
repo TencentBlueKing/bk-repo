@@ -20,7 +20,23 @@
             <bk-input class="w250" v-model="cleanupStrategy.cleanupValue" :placeholder="$t('pleaseInput')" :disabled="!cleanupStrategy.enable"></bk-input>
         </bk-form-item>
         <bk-form-item :label="$t('retentionDate')" property="cleanupValue" required error-display-type="normal" v-if="cleanupStrategy.cleanupType === 'retentionDate'">
-            <bk-date-picker v-model="cleanupStrategy.cleanupValue" :placeholder="$t('chooseDateTip')" :clearable="false" :type="'datetime'" :disabled="!cleanupStrategy.enable"></bk-date-picker>
+            <bk-date-picker
+                v-model="cleanupStrategy.cleanupValue"
+                :value="value"
+                :clearable="false"
+                :type="'datetime'"
+                @change="changeRetentionDate"
+                :open="open"
+                transfer="true"
+                @pick-success="handleOk"
+                :disabled="!cleanupStrategy.enable"
+                style="margin-top: 10px;"
+            >
+                <a slot="trigger" href="javascript:void(0)" @click="handleClick">
+                    <template v-if="value === ''">{{$t('chooseDateTip')}}</template>
+                    <template v-else>{{value}}</template>
+                </a>
+            </bk-date-picker>
         </bk-form-item>
         <bk-form-item :label="$t('retentionNums')" property="cleanupValue" required error-display-type="normal" v-if="cleanupStrategy.cleanupType === 'retentionNums'">
             <bk-input class="w250" v-model="cleanupStrategy.cleanupValue" :placeholder="$t('pleaseInput')" :disabled="!cleanupStrategy.enable"></bk-input>
@@ -51,8 +67,9 @@
     import genericCleanRule from './genericCleanRule.vue'
     import { mapActions } from 'vuex'
     import moment from 'moment'
+    import { formatDate } from '@repository/utils'
     export default {
-        name: 'cleanConfig',
+        name: 'CleanConfig',
         components: {
             genericCleanRule
         },
@@ -68,6 +85,8 @@
                     cleanTargets: [],
                     cleanupType: 'retentionDays'
                 },
+                open: false,
+                value: '',
                 rules: {
                     cleanupValue: [
                         {
@@ -84,7 +103,7 @@
                             validator: this.asynCheckDays,
                             message: this.$t('daysOverLimit'),
                             trigger: 'blur'
-                        },
+                        }
                     ]
                 }
             }
@@ -222,6 +241,15 @@
             },
             changeTarget (r, ind) {
                 this.cleanupStrategy.cleanTargets.splice(ind, 1, r.path)
+            },
+            changeRetentionDate (time) {
+                this.value = formatDate(time)
+            },
+            handleClick () {
+                this.open = !this.open
+            },
+            handleOk () {
+                this.open = false
             }
         }
     }

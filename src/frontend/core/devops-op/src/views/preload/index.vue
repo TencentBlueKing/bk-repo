@@ -140,6 +140,7 @@ import { convertFileSize } from '@/utils/file'
 import editPlanConfigDialog from '@/views/preload/components/EditPlanConfigDialog'
 import editStrategyConfigDialog from '@/views/preload/components/EditStrategyConfigDialog'
 import { deletePlan, deletePlans, deleteStrategy, queryPlans, queryStrategies } from '@/api/preload'
+import { ROUTER_NAME_PRELOAD_CONFIG } from '@/router'
 
 export default {
   name: 'PreloadConfig',
@@ -228,7 +229,7 @@ export default {
       query.projectId = this.clientQuery.projectId
       query.repoName = this.clientQuery.repoName
       query.type = this.clientQuery.type
-      this.$router.push({ path: '/fileCache/preloadConfig', query: query })
+      this.$router.push({ name: ROUTER_NAME_PRELOAD_CONFIG, query: query })
     },
     onRouteUpdate(route) {
       const query = route.query

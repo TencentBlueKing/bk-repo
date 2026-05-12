@@ -80,5 +80,10 @@ data class ProjectMetadata(
          * 是否启用
          */
         const val KEY_ENABLED = "enabled"
+
+        /**
+         * 是否启用分享制品功能
+         */
+        const val KEY_SHARE_ENABLED = "enableShareArtifact"
     }
 }

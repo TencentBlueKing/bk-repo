@@ -1,7 +1,9 @@
 package com.tencent.bkrepo.media.stream
 
 import com.tencent.bkrepo.common.service.shutdown.ServiceShutdownHook
+import com.tencent.bkrepo.media.service.StreamService
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Service
 
 /**
@@ -9,19 +11,21 @@ import org.springframework.stereotype.Service
  * 负责流的监控与管理
  * */
 @Service
-class StreamManger : StreamAwareHandler {
+class StreamManger(
+    private val streamServiceProvider: ObjectProvider<StreamService>,
+) : StreamAwareHandler {
     val streams: MutableMap<String, ClientStream> = mutableMapOf()
 
     init {
-        ServiceShutdownHook.add { this.close() }
+        ServiceShutdownHook.add { this.close(System.currentTimeMillis()) }
     }
 
     override fun streamPublishStart(stream: ClientStream) {
         addStream(stream)
     }
 
-    override fun streamStop(stream: ClientStream) {
-        deleteStream(stream)
+    override fun streamStop(stream: ClientStream, endTime: Long) {
+        deleteStream(stream, endTime)
     }
 
     private fun addStream(stream: ClientStream): ClientStream {
@@ -33,22 +37,31 @@ class StreamManger : StreamAwareHandler {
         return stream
     }
 
-    private fun deleteStream(stream: ClientStream) {
+    private fun deleteStream(stream: ClientStream, endTime: Long) {
         val id = stream.id
         if (streams[id] != null) {
             if (!stream.closed.get()) {
-                stream.stop()
+                stream.stop(endTime)
             }
             streams.remove(id)
+            syncActiveStream(id) { it.deleteActiveStream(id) }
             logger.info("Delete stream $id")
         }
     }
 
-    fun close() {
+    private fun syncActiveStream(streamId: String, action: (StreamService) -> Unit) {
+        runCatching {
+            streamServiceProvider.getIfAvailable()?.let { action(it) }
+        }.onFailure {
+            logger.warn("Sync active stream failed: streamId=$streamId", it)
+        }
+    }
+
+    fun close(endTime: Long) {
         logger.info("Closing stream manager")
         streams.map { it.value }.forEach {
             logger.info("Stopping stream ${it.id}")
-            it.stop()
+            it.stop(endTime)
         }
         streams.clear()
     }

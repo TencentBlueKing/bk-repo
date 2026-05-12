@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.metadata.service.node.impl.center
 
+import com.tencent.bkrepo.common.artifact.path.PathUtils.combineFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveName
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveParent
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
@@ -56,7 +57,7 @@ class CenterNodeMoveCopySupport(
         existNode?.let { ClusterUtils.checkIsSrcCluster(it.clusterNames) }
     }
 
-    override fun moveCopyFile(context: MoveCopyContext) {
+    override fun moveCopyFile(context: MoveCopyContext): String {
         with(context) {
             val dstPath = if (dstNode?.folder == true || dstNodeFolder == true) {
                 toPath(dstFullPath)
@@ -71,6 +72,7 @@ class CenterNodeMoveCopySupport(
             // 创建dst父目录
             nodeBaseService.mkdirs(dstProjectId, dstRepoName, dstPath, operator)
             doMoveCopy(context, srcNode, dstPath, dstName)
+            return combineFullPath(dstPath, dstName)
         }
     }
 

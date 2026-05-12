@@ -61,27 +61,33 @@ abstract class AbstractFileReplicator(
                 else -> throw IllegalArgumentException("Unsupported node type: ${node!!::class.simpleName}")
             }
 
-            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
-                if (preCheck(this, sha256!!, storageCredentialsKey, remoteRepoType)) {
-                    logger.info(
-                        "${logPrefix}The file [$fullPath] with sha256 [$sha256] " +
-                            "will be pushed to the remote server ${cluster.name}, try the $retry time!"
-                    )
+            try {
+                retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
+                    if (preCheck(this, sha256!!, storageCredentialsKey, remoteRepoType)) {
+                        logger.info(
+                            "${logPrefix}The file [$fullPath] with sha256 [$sha256] " +
+                                "will be pushed to the remote server ${cluster.name}, try the $retry time!"
+                        )
 
-                    try {
-                        performFilePush(context, node, type, downGrade)
-                        postPush(context, node)
-                    } catch (throwable: Throwable) {
-                        handlePushException(throwable, logPrefix)
-                        // 处理降级逻辑
-                        if (shouldDowngrade(throwable)) {
-                            type = WayOfPushArtifact.PUSH_WITH_DEFAULT.value
-                            downGrade = true
+                        try {
+                            performFilePush(context, node, type, downGrade)
+                            context.replicaProgress.fileSuccess++
+                            postPush(context, node)
+                        } catch (throwable: Throwable) {
+                            handlePushException(throwable, logPrefix)
+                            // 处理降级逻辑
+                            if (shouldDowngrade(throwable)) {
+                                type = WayOfPushArtifact.PUSH_WITH_DEFAULT.value
+                                downGrade = true
+                            }
+                            throw throwable
                         }
-                        throw throwable
                     }
+                    afterCompletion(context, node)
                 }
-                afterCompletion(context, node)
+            } catch (throwable: Throwable) {
+                context.replicaProgress.fileFailed++
+                throw throwable
             }
         }
     }

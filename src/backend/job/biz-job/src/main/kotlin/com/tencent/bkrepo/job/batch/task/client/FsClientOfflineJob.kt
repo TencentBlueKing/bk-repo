@@ -43,14 +43,16 @@ import java.time.LocalDateTime
 
 @Component
 class FsClientOfflineJob(
-    properties: FsClientOfflineProperties,
+    private val properties: FsClientOfflineProperties,
     private val mongoTemplate: MongoTemplate
 ): DefaultContextJob(properties) {
     override fun doStart0(jobContext: JobContext) {
         val batchSize = 1000
+        // 超过2倍心跳间隔时间未收到心跳的客户端置为下线
+        val offlineThreshold = properties.heartbeatInterval.multipliedBy(OFFLINE_THRESHOLD_MULTIPLIER)
         val query = Query(
             Criteria.where(Client::online.name).isEqualTo(true)
-                .and(Client::heartbeatTime.name).lt(LocalDateTime.now().minusMinutes(2))
+                .and(Client::heartbeatTime.name).lt(LocalDateTime.now().minus(offlineThreshold))
         ).limit(batchSize)
         val update = Update.update(Client::online.name, false)
 
@@ -85,5 +87,11 @@ class FsClientOfflineJob(
         private val logger = LoggerFactory.getLogger(FsClientOfflineJob::class.java)
         private const val COLLECTION = "client"
         private const val DAILY_COLLECTION = "daily_client"
+
+        /**
+         * 离线阈值乘数
+         * 使用2倍乘数是为了容忍一次心跳丢失，避免因网络抖动导致客户端被误判为离线
+         */
+        private const val OFFLINE_THRESHOLD_MULTIPLIER = 2L
     }
 }

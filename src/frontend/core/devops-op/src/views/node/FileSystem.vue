@@ -122,6 +122,7 @@ import { listRepositories } from '@/api/repository'
 import { formatNormalDate } from '@/utils/date'
 import { copyToClipboard } from '@/utils/copy'
 import FileSystemStatusRecordDialog from '@/views/node/components/FileSystemStatusRecordDialog'
+import { ROUTER_NAME_FILE_SYSTEM } from '@/router'
 
 export default {
   name: 'FileSystem',
@@ -213,7 +214,7 @@ export default {
       query.ip = this.clientQuery.ip
       query.version = this.clientQuery.version
       query.pageSize = this.clientQuery.pageSize
-      this.$router.push({ path: '/nodes/FileSystem', query: query })
+      this.$router.push({ name: ROUTER_NAME_FILE_SYSTEM, query: query })
     },
     onRouteUpdate(route) {
       const query = route.query

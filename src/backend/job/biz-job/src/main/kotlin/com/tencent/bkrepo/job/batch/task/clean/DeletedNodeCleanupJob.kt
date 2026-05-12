@@ -46,6 +46,7 @@ import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.DeletedNodeCleanupJobContext
+import com.tencent.bkrepo.job.batch.utils.DriveUtils.notAllowDriveRepository
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.DeletedNodeCleanupJobProperties
@@ -264,10 +265,12 @@ class DeletedNodeCleanupJob(
         val defaultCredentials = storageCredentialService.findByKey(null)
         if (credentials.isNullOrEmpty() && defaultCredentials == null) return
         val keySet = mutableSetOf<String?>()
-        if (!credentials.isNullOrEmpty()) {
-            keySet.addAll(credentials.map { it.key })
+        credentials.forEach {
+            if (notAllowDriveRepository(it)) {
+                keySet.add(it.key)
+            }
         }
-        if (defaultCredentials != null) {
+        if (defaultCredentials != null && notAllowDriveRepository(defaultCredentials)) {
             keySet.add(defaultCredentials.key)
         }
         keySet.forEach {

@@ -1,12 +1,17 @@
 package com.tencent.bkrepo.common.metadata.util
 
+import com.tencent.bkrepo.common.artifact.event.metadata.PackageMetadataDeletedEvent
+import com.tencent.bkrepo.common.artifact.event.metadata.PackageMetadataSavedEvent
 import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.packages.VersionDeletedEvent
 import com.tencent.bkrepo.common.artifact.event.packages.VersionDownloadEvent
 import com.tencent.bkrepo.common.artifact.event.packages.VersionUpdatedEvent
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
+import kotlin.collections.orEmpty
 
 /**
  * 包版本事件构造类
@@ -127,5 +132,39 @@ object PackageEventFactory {
             realIpAddress = realIpAddress,
             deletedDate = deletedDate
         )
+    }
+
+    /**
+     * 包版本元数据保存事件
+     */
+    fun buildPackageMetadataSavedEvent(request: PackageMetadataSaveRequest): PackageMetadataSavedEvent {
+        with(request) {
+            return PackageMetadataSavedEvent(
+                projectId = projectId,
+                repoName = repoName,
+                userId = operator,
+                source = source,
+                packageKey = packageKey,
+                packageVersion = version,
+                metadata = versionMetadata?.associate { it.key to it }.orEmpty(),
+            )
+        }
+    }
+
+    /**
+     * 包版本元数据删除事件
+     */
+    fun buildPackageMetadataDeletedEvent(request: PackageMetadataDeleteRequest): PackageMetadataDeletedEvent {
+        with(request) {
+            return PackageMetadataDeletedEvent(
+                projectId = projectId,
+                repoName = repoName,
+                userId = operator,
+                source = source,
+                packageKey = packageKey,
+                packageVersion = version,
+                keys = keysToDelete,
+            )
+        }
     }
 }

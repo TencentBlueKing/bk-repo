@@ -76,6 +76,15 @@
           @click="changeRouteQueryParams(true)"
         >查询</el-button>
       </el-form-item>
+      <el-form-item>
+        <el-button
+          v-if="!nodeQuery.useSha256"
+          :disabled="!nodeQuery.path || nodeQuery.path === '/'"
+          size="mini"
+          type="primary"
+          @click="returnToPreviousLevel()"
+        >返回上一级</el-button>
+      </el-form-item>
     </el-form>
     <el-table v-loading="loading" :data="nodes" style="width: 100%" :row-class-name="tableRowClassName">
       <el-table-column prop="name" label="文件名" width="430px">
@@ -167,6 +176,7 @@ import { listRepositories } from '@/api/repository'
 import FileScanDialog from '@/views/node/components/FileScanDialog'
 import ShareDialog from '@/views/node/components/ShareDialog'
 import FileOperationDialog from '@/views/node/components/FileOperationDialog'
+import { ROUTER_NAME_NODE } from '@/router'
 
 export default {
   name: 'Node',
@@ -289,6 +299,12 @@ export default {
         return obj.name.toLowerCase().indexOf(queryStr.toLowerCase()) !== -1
       }) : arr
     },
+    returnToPreviousLevel() {
+      const normalized = this.nodeQuery.path.replace(/\/+$/, '')
+      const lastIndex = normalized.lastIndexOf('/')
+      this.nodeQuery.path = (lastIndex <= 0 ? '/' : normalized.substring(0, lastIndex + 1))
+      this.changeRouteQueryParams(true)
+    },
     changeRouteQueryParams(resetPage = false) {
       const query = {
         page: resetPage ? '1' : String(this.nodeQuery.pageNumber),
@@ -296,12 +312,12 @@ export default {
       }
       if (this.nodeQuery.useSha256) {
         query.sha256 = this.nodeQuery.sha256
-        this.$router.push({ path: '/nodes', query: query })
+        this.$router.push({ name: ROUTER_NAME_NODE, query: query })
       } else {
         query.projectId = this.nodeQuery.projectId
         query.repoName = this.nodeQuery.repoName
         query.path = this.nodeQuery.path
-        this.$router.push({ path: '/nodes', query: query })
+        this.$router.push({ name: ROUTER_NAME_NODE, query: query })
       }
     },
     onRouteUpdate(route) {

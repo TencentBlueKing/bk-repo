@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.common.artifact.repository.redirect
 
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -44,10 +43,6 @@ class DownloadRedirectManager(
      * @return true 已重定向请求， false 未重定向请求
      */
     fun redirect(context: ArtifactDownloadContext): Boolean {
-        if (!context.request.method.equals(HttpMethod.GET.name, true)) {
-            // 只重定向GET请求
-            return false
-        }
         redirectServices.forEach {
             try {
                 if (it.shouldRedirect(context)) {

@@ -43,9 +43,7 @@ import org.springframework.stereotype.Service
 class CommitEdgeTemporaryTokenServiceImpl(
     temporaryTokenRepository: AuthTemporaryTokenDao,
     private val clusterProperties: ClusterProperties
-) : TemporaryTokenServiceImpl(
-    temporaryTokenRepository
-) {
+) : TemporaryTokenServiceImpl(temporaryTokenRepository) {
 
     private val centerTemporaryTokenClient: ClusterTemporaryTokenClient by lazy {
         FeignClientFactory.create(

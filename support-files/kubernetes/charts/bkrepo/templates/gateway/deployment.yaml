@@ -129,6 +129,8 @@ spec:
               value: {{ .Values.gateway.appToken }}
             - name: BK_REPO_EXT_IP
               value: {{ default "[::]" .Values.gateway.extIp | quote }}
+            - name: BK_REPO_SUBPATH
+              value: {{ include "bkrepo.webSubPath" . }}
           ports:
             - name: http
               containerPort: 80

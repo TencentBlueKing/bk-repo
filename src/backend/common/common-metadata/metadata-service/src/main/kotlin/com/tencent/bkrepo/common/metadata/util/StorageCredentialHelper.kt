@@ -76,6 +76,8 @@ class StorageCredentialHelper(
                     path = request.credentials.compress.path,
                     ratio = request.credentials.compress.ratio
                 )
+                allowRepoTypes = request.credentials.allowRepoTypes
+                notAllowRepoTypes = request.credentials.notAllowRepoTypes
                 credentialUpdaters[StorageCredentialsUpdater.name(this::class.java)]?.update(this, request)
             }
 

@@ -90,45 +90,57 @@ export const constantRoutes = [
  * the routes that need to be dynamically loaded based on user roles
  */
 export const asyncRoutes = [
+  // 系统管理
   {
-    path: '/account',
+    path: '/system',
     component: Layout,
+    alwaysShow: true,
+    redirect: '/system/account',
+    meta: { title: '系统管理', icon: 'setting' },
     children: [
       {
-        path: '/',
+        path: 'account',
         name: ROUTER_NAME_ACCOUNT,
         meta: { title: '平台账户管理', icon: 'user' },
         component: () => import('@/views/account/index')
-      }
-    ]
-  },
-  {
-    path: '/grayscale-config',
-    component: Layout,
-    children: [
+      },
       {
-        path: '/',
+        path: 'grayscale-config',
         name: ROUTER_NAME_MIGRATE_PROJECT_GRAYSCALE_CONFIG,
         meta: { title: '项目灰度管理', icon: 'permission' },
         component: () => import('@/views/grayscaleConfig/index')
-      }
-    ]
-  },
-  {
-    path: '/shed-lock',
-    component: Layout,
-    children: [
+      },
       {
-        path: '/',
+        path: 'shed-lock',
         name: ROUTER_NAME_SHED_LOCK,
         meta: { title: '数据库锁管理', icon: 'lock' },
         component: () => import('@/views/shed-lock/index')
+      },
+      {
+        path: 'ext-permission',
+        name: ROUTER_NAME_EXT_PERMISSION,
+        meta: { title: '外部权限管理', icon: 'lock' },
+        component: () => import('@/views/ext-permission/index')
+      },
+      {
+        path: 'plugin',
+        name: ROUTER_NAME_PLUGIN,
+        meta: { title: '插件管理', icon: 'plugin' },
+        component: () => import('@/views/plugin/index')
+      },
+      {
+        path: 'sign-config',
+        name: ROUTER_NAME_SIGN_CONFIG,
+        meta: { title: '水印加固配置', icon: 'lock' },
+        component: () => import('@/views/sign-config/SignConfig')
       }
     ]
   },
+  // 服务管理
   {
     path: '/services',
     component: Layout,
+    alwaysShow: true,
     meta: { title: '服务管理', icon: 'service' },
     redirect: '/services/services',
     hidden: process.env.VUE_APP_RELEASE_MODE === 'community',
@@ -136,14 +148,20 @@ export const asyncRoutes = [
       {
         path: 'services',
         name: ROUTER_NAME_SERVICE,
-        meta: { title: '服务管理', icon: 'service' },
+        meta: { title: '服务列表', icon: 'service' },
         component: () => import('@/views/service/index')
       },
       {
         path: 'configs',
         name: ROUTER_NAME_SERVICE_CONFIG,
-        meta: { title: '配置管理', icon: 'service' },
+        meta: { title: '配置管理', icon: 'service-config' },
         component: () => import('@/views/serviceConfig/index')
+      },
+      {
+        path: 'server-log',
+        name: ROUTER_NAME_SERVER_LOG,
+        meta: { title: '服务端日志', icon: 'server-log' },
+        component: () => import('@/views/server-log/index')
       },
       {
         path: ':serviceName/instances',
@@ -155,50 +173,53 @@ export const asyncRoutes = [
       }
     ]
   },
+  // 文件管理
   {
     path: '/nodes',
     component: Layout,
+    alwaysShow: true,
     meta: { title: '文件管理', icon: 'file' },
     redirect: '/nodes/nodes',
     children: [
       {
         path: 'nodes',
         name: ROUTER_NAME_NODE,
-        meta: { title: '文件管理', icon: 'file' },
+        meta: { title: '文件列表', icon: 'file' },
         component: () => import('@/views/node/index')
       },
       {
         path: 'fileSystem',
         name: ROUTER_NAME_FILE_SYSTEM,
-        meta: { title: '客户端管理', icon: 'file' },
+        meta: { title: '客户端管理', icon: 'file-blue' },
         component: () => import('@/views/node/FileSystem')
       },
       {
         path: 'fileSystemRecord',
         name: ROUTER_NAME_FILE_SYSTEM_RECORD,
-        meta: { title: '客户端统计', icon: 'file' },
+        meta: { title: '客户端统计', icon: 'file-blue' },
         component: () => import('@/views/node/FileSystemRecord')
       },
       {
         path: 'emptyFolder',
         name: ROUTER_NAME_EMPTY_FOLDER,
-        meta: { title: '清理空目录', icon: 'file' },
+        meta: { title: '清理空目录', icon: 'folder-yellow' },
         component: () => import('@/views/node/EmptyFolder')
       },
       {
         path: 'firstLevelFolder',
         name: ROUTER_NAME_FIRST_LEVEL_FOLDER,
-        meta: { title: '一级目录统计', icon: 'file' },
+        meta: { title: '一级目录统计', icon: 'folder-yellow' },
         component: () => import('@/views/node/FirstLevelFolder')
       },
       {
         path: 'projectMetrics',
         name: ROUTER_NAME_PROJECT_METRICS,
-        meta: { title: '仓库大小统计', icon: 'file' },
+        meta: { title: '仓库大小统计', icon: 'file-blue' },
         component: () => import('@/views/node/ProjectMetrics')
       }
     ]
   },
+  // 存储管理
   {
     path: '/storage',
     alwaysShow: true,
@@ -210,67 +231,58 @@ export const asyncRoutes = [
         path: 'credentials',
         name: ROUTER_NAME_STORAGE_CREDENTIALS,
         component: () => import('@/views/storage/Credential'),
-        meta: { title: '凭据', icon: 'credentials' }
+        meta: { title: '存储凭据', icon: 'credentials' }
       },
       {
         path: 'metrics',
         name: ROUTER_NAME_STORAGE_METRICS,
         component: () => import('@/views/storage/Metrics'),
-        meta: { title: '挂载存储节点统计', icon: 'credentials' }
+        meta: { title: '存储节点统计', icon: 'storage' }
       },
       {
         path: 'metricsDetail',
         name: ROUTER_NAME_STORAGE_METRIC_DETAIL,
         component: () => import('@/views/storage/MetricDetail'),
-        meta: { title: '挂载存储节点详情', icon: 'credentials' }
+        meta: { title: '存储节点详情', icon: 'storage' }
       }
     ]
   },
+  // 缓存管理
   {
-    path: '/ext-permission',
+    path: '/cache',
     component: Layout,
+    alwaysShow: true,
+    meta: { title: '缓存管理', icon: 'file' },
+    redirect: '/cache/fileCache',
     children: [
       {
-        path: '/',
-        name: ROUTER_NAME_EXT_PERMISSION,
-        meta: { title: '外部权限管理', icon: 'lock' },
-        component: () => import('@/views/ext-permission/index')
-      }
-    ]
-  },
-  {
-    path: '/webhook',
-    component: Layout,
-    hidden: process.env.VUE_APP_RELEASE_MODE === 'community',
-    meta: { title: 'WebHook管理', icon: 'webhook' },
-    children: [
-      {
-        path: 'list',
-        name: ROUTER_NAME_WEBHOOK,
-        meta: { title: 'WebHook', icon: 'webhook' },
-        component: () => import('@/views/webhook/index')
+        path: 'fileCache',
+        name: ROUTER_NAME_FILE_CACHE,
+        meta: { title: '文件缓存', icon: 'file' },
+        component: () => import('@/views/node/FileCache')
       },
       {
-        path: 'log',
-        name: ROUTER_NAME_WEBHOOK,
-        meta: { title: 'WebHook日志', icon: 'file' },
-        component: () => import('@/views/webhook/log/index')
+        path: 'preloadConfig',
+        name: ROUTER_NAME_PRELOAD_CONFIG,
+        meta: { title: '制品预加载配置', icon: 'service-config' },
+        component: () => import('@/views/preload/index')
       }
     ]
   },
+  // 制品分析
   {
     path: '/scan',
     hidden: process.env.VUE_APP_RELEASE_MODE === 'community',
     alwaysShow: true,
     redirect: '/scan/scanners',
     component: Layout,
-    meta: { title: '制品分析管理', icon: 'scan' },
+    meta: { title: '制品分析', icon: 'scan' },
     children: [
       {
         path: 'scanners',
         name: ROUTER_NAME_SCANNERS,
         component: () => import('@/views/scan/Scanner'),
-        meta: { title: '扫描器', icon: 'scanner' }
+        meta: { title: '扫描器管理', icon: 'scanner' }
       },
       {
         path: 'rules',
@@ -282,16 +294,73 @@ export const asyncRoutes = [
         path: 'configurations',
         name: ROUTER_NAME_PROJECT_SCAN_CONFIGURATIONS,
         component: () => import('@/views/scan/ProjectScanConfiguration'),
-        meta: { title: '项目配置', icon: 'setting' }
+        meta: { title: '项目扫描配置', icon: 'setting' }
       },
       {
         path: 'executionClustersConfig',
         name: ROUTER_NAME_EXECUTION_CLUSTERS_CONFIG,
-        meta: { title: '扫描执行集群配置', icon: 'service-config' },
+        meta: { title: '扫描执行集群', icon: 'service-config' },
         component: () => import('@/views/execution-clusters/index')
       }
     ]
   },
+  // 任务管理
+  {
+    path: '/tasks',
+    component: Layout,
+    alwaysShow: true,
+    redirect: '/tasks/job',
+    meta: { title: '任务管理', icon: 'cc-process' },
+    children: [
+      {
+        path: 'job',
+        name: ROUTER_NAME_JOB,
+        meta: { title: '定时任务', icon: 'cc-process' },
+        component: () => import('@/views/job/index')
+      },
+      {
+        path: 'separation',
+        name: ROUTER_NAME_SEPARATION_CONFIG,
+        meta: { title: '降冷任务', icon: 'separate' },
+        component: () => import('@/views/separation/index')
+      },
+      {
+        path: 'separation-data',
+        name: ROUTER_NAME_SEPARATION_RECORD,
+        meta: { title: '降冷数据查询', icon: 'separate' },
+        component: () => import('@/views/separation/ShowData')
+      },
+      {
+        path: 'migration',
+        name: ROUTER_NAME_MIGRATE_REPO_STORAGE_CONFIG,
+        meta: { title: '迁移任务', icon: 'separate' },
+        component: () => import('@/views/migration/index')
+      }
+    ]
+  },
+  // 配置管理
+  {
+    path: '/config',
+    component: Layout,
+    alwaysShow: true,
+    redirect: '/config/repo',
+    meta: { title: '配置管理', icon: 'service-config' },
+    children: [
+      {
+        path: 'repo',
+        name: ROUTER_NAME_REPO_CONFIG,
+        meta: { title: 'REPO配置', icon: 'permission' },
+        component: () => import('@/views/repoConfig/index')
+      },
+      {
+        path: 'rateLimiter',
+        name: ROUTER_NAME_RATE_LIMITER_CONFIG,
+        meta: { title: '限流配置', icon: 'permission' },
+        component: () => import('@/views/rateLimitConfg/RateLimiter')
+      }
+    ]
+  },
+  // 通知管理
   {
     path: '/notify',
     alwaysShow: true,
@@ -303,131 +372,30 @@ export const asyncRoutes = [
         path: 'credentials',
         name: ROUTER_NAME_NOTIFY_CREDENTIALS,
         component: () => import('@/views/notify/Credential'),
-        meta: { title: '凭据', icon: 'credentials' }
+        meta: { title: '通知凭据', icon: 'credentials' }
       }
     ]
   },
+  // WebHook管理
   {
-    path: '/plugin',
+    path: '/webhook',
     component: Layout,
+    alwaysShow: true,
+    hidden: process.env.VUE_APP_RELEASE_MODE === 'community',
+    redirect: '/webhook/list',
+    meta: { title: 'WebHook管理', icon: 'webhook' },
     children: [
       {
-        path: '/',
-        name: ROUTER_NAME_PLUGIN,
-        meta: { title: '插件管理', icon: 'plugin' },
-        component: () => import('@/views/plugin/index')
-      }
-    ]
-  },
-  {
-    path: '/job',
-    component: Layout,
-    children: [
-      {
-        path: '/',
-        name: ROUTER_NAME_JOB,
-        meta: { title: '任务管理', icon: 'cc-process' },
-        component: () => import('@/views/job/index')
-      }
-    ]
-  },
-  {
-    path: '/repo-config',
-    component: Layout,
-    children: [
-      {
-        path: '/',
-        name: ROUTER_NAME_REPO_CONFIG,
-        meta: { title: 'REPO配置管理', icon: 'permission' },
-        component: () => import('@/views/repoConfig/index')
-      }
-    ]
-  },
-  {
-    path: '/rateLimiter',
-    component: Layout,
-    children: [
-      {
-        path: '/',
-        name: ROUTER_NAME_RATE_LIMITER_CONFIG,
-        meta: { title: '限流管理', icon: 'permission' },
-        component: () => import('@/views/rateLimitConfg/RateLimiter')
-      }
-    ]
-  },
-  {
-    path: '/fileCache',
-    component: Layout,
-    meta: { title: '文件缓存', icon: 'file' },
-    redirect: '/fileCache/fileCacheManage',
-    children: [
-      {
-        path: 'fileCacheManage',
-        name: ROUTER_NAME_FILE_CACHE,
-        meta: { title: '缓存管理', icon: 'file' },
-        component: () => import('@/views/node/FileCache')
+        path: 'list',
+        name: ROUTER_NAME_WEBHOOK,
+        meta: { title: 'WebHook列表', icon: 'webhook' },
+        component: () => import('@/views/webhook/index')
       },
       {
-        path: 'preloadConfig',
-        name: ROUTER_NAME_PRELOAD_CONFIG,
-        meta: { title: '制品预加载配置', icon: 'service-config' },
-        component: () => import('@/views/preload/index')
-      }
-    ]
-  },
-  {
-    path: '/separation-config',
-    component: Layout,
-    meta: { title: '降冷任务配置', icon: 'separate' },
-    redirect: '/separation-config/task',
-    children: [
-      {
-        path: 'task',
-        name: ROUTER_NAME_SEPARATION_CONFIG,
-        meta: { title: '降冷任务', icon: 'separate' },
-        component: () => import('@/views/separation/index')
-      },
-      {
-        path: 'infos',
-        name: ROUTER_NAME_SEPARATION_RECORD,
-        meta: { title: '数据查询', icon: 'separate' },
-        component: () => import('@/views/separation/ShowData')
-      }
-    ]
-  },
-  {
-    path: '/migration-config',
-    component: Layout,
-    children: [
-      {
-        path: '/',
-        name: ROUTER_NAME_MIGRATE_REPO_STORAGE_CONFIG,
-        meta: { title: '迁移任务管理', icon: 'separate' },
-        component: () => import('@/views/migration/index')
-      }
-    ]
-  },
-  {
-    path: '/sign-config',
-    component: Layout,
-    children: [
-      {
-        path: '/',
-        name: ROUTER_NAME_SIGN_CONFIG,
-        meta: { title: '水印加固配置管理', icon: 'lock' },
-        component: () => import('@/views/sign-config/SignConfig')
-      }
-    ]
-  },
-  {
-    path: '/server-log',
-    component: Layout,
-    children: [
-      {
-        path: '/',
-        name: ROUTER_NAME_SERVER_LOG,
-        meta: { title: '服务端日志', icon: 'server-log' },
-        component: () => import('@/views/server-log/index')
+        path: 'log',
+        name: ROUTER_NAME_WEBHOOK,
+        meta: { title: 'WebHook日志', icon: 'file' },
+        component: () => import('@/views/webhook/log/index')
       }
     ]
   },

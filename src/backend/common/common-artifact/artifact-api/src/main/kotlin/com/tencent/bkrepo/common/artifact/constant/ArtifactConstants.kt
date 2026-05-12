@@ -167,8 +167,15 @@ const val FORBID_REASON = "forbidReason"
 // 制品扫描状态
 const val SCAN_STATUS = "scanStatus"
 
-const val METADATA_KEY_PACKAGE_NAME = "packageName"
-const val METADATA_KEY_PACKAGE_VERSION = "packageVersion"
+// 制品包相关
+const val PACKAGE_KEY = "packageKey"
+const val PACKAGE_NAME = "packageName"
+const val PACKAGE_VERSION = "packageVersion"
+
+const val METADATA = "metadata"
+const val METADATA_KEY_PACKAGE_KEY = PACKAGE_KEY
+const val METADATA_KEY_PACKAGE_NAME = PACKAGE_NAME
+const val METADATA_KEY_PACKAGE_VERSION = PACKAGE_VERSION
 
 /**
  * 节点链接的目标项目
@@ -192,3 +199,8 @@ const val SHA256_STR_LENGTH = 64
  * 下载请求参数，用于指示从远程仓库下载时是否读取缓存
  */
 const val FLAG_QUERY_CACHE = "queryCacheFlag"
+
+/**
+ * 制品加解密key请求头
+ */
+const val HEADER_CRYPT_KEY = "X-BKREPO-CRYPT-KEY"

@@ -92,7 +92,8 @@ interface BlockNodeService {
         projectId: String,
         repoName: String,
         fullPath: String,
-        uploadId: String? = null
+        uploadId: String? = null,
+        createdBeforeOrAt: LocalDateTime? = null
     )
 
     /**

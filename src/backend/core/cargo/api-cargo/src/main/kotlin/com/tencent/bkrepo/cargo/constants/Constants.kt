@@ -57,11 +57,15 @@ const val CARGO_NODE_PREFIX = "/crates/"
 
 const val CARGO_JSON_PREFIX = "/.cargo/crates/"
 
+const val CARGO_METADATA_PREFIX = "/.cargo/metadata/"
+
 const val CARGO_INDEX_PREFIX = "/index/"
 
 const val CARGO_NODE_SUFFIX = ".crate"
 
 const val CARGO_JSON_SUFFIX = ".json"
+
+const val CARGO_METADATA_SUFFIX = ".metadata.json"
 
 const val CRATE_NAME = "crateName"
 

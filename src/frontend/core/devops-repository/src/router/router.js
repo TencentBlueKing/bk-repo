@@ -40,6 +40,8 @@ const outsideFilePreview = () => import('@repository/components/FilePreview/outs
 
 const share = () => import('@repository/views/share')
 
+const genericView = () => import('@repository/views/repoGeneric/genericView')
+
 const routes = [
     {
         path: '/:projectId/preview',
@@ -58,6 +60,11 @@ const routes = [
     {
         path: '/:projectId/share/:shareId',
         component: share
+    },
+    {
+        path: '/:projectId/generic/view',
+        name: 'genericView',
+        component: genericView
     },
     {
         path: '/:projectId',

@@ -57,6 +57,7 @@ import com.tencent.bkrepo.common.artifact.util.PipelineRepoUtils
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.security.crypto.CryptoProperties
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
@@ -94,6 +95,7 @@ class GenericController(
     private val downloadService: DownloadService,
     private val permissionManager: PermissionManager,
     private val compressedFileService: CompressedFileService,
+    private val cryptoProperties: CryptoProperties
 ) {
 
     @AuditEntry(
@@ -314,5 +316,11 @@ class GenericController(
         val pageRequest = Pages.ofRequest(queryModel.page.pageNumber, queryModel.page.pageSize)
         val page = Pages.ofResponse(pageRequest, 0L, downloadService.search(queryModel))
         return ResponseBuilder.success(page)
+    }
+
+    @Operation(summary = "获取加密公钥")
+    @GetMapping("/publicKey")
+    fun publicKey(): Response<String> {
+        return ResponseBuilder.success(cryptoProperties.publicKeyStr2048PKCS1)
     }
 }

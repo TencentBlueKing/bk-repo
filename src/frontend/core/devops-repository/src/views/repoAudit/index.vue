@@ -50,7 +50,7 @@
             <bk-table-column :label="$t('project')" show-overflow-tooltip>
                 <template #default="{ row }">{{ getProjectName(row.content.projectId) }}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('operatingTime')" width="150">
+            <bk-table-column :label="$t('operatingTime')" width="200">
                 <template #default="{ row }">{{ formatDate(row.createdDate) }}</template>
             </bk-table-column>
             <bk-table-column :label="$t('operator')" show-overflow-tooltip>

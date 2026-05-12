@@ -37,6 +37,4 @@ import org.springframework.stereotype.Service
 @Conditional(CommitEdgeCenterCondition::class)
 class CommitEdgeCenterTemporaryTokenServiceImpl(
     temporaryTokenRepository: AuthTemporaryTokenDao
-) : TemporaryTokenServiceImpl(
-    temporaryTokenRepository
-)
+) : TemporaryTokenServiceImpl(temporaryTokenRepository)

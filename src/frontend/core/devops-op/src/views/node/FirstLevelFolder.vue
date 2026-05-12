@@ -64,6 +64,7 @@ import { searchProjects } from '@/api/project'
 import { listRepositories } from '@/api/repository'
 import { statisticalFirstLevelFolder } from '@/api/node'
 import { convertFileSize } from '@/utils/file'
+import { ROUTER_NAME_FIRST_LEVEL_FOLDER } from '@/router'
 
 export default {
   beforeRouteUpdate(to, from, next) {
@@ -125,7 +126,7 @@ export default {
       }
       query.projectId = this.folderQuery.projectId
       query.repoName = this.folderQuery.repoName
-      this.$router.push({ path: '/nodes/firstLevelFolder', query: query })
+      this.$router.push({ name: ROUTER_NAME_FIRST_LEVEL_FOLDER, query: query })
     },
     onRouteUpdate(route) {
       const query = route.query
