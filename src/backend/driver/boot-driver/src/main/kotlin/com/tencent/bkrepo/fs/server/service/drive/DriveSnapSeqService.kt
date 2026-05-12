@@ -7,6 +7,7 @@ import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
+import com.tencent.bkrepo.fs.server.config.properties.drive.DriveProperties
 import com.tencent.bkrepo.fs.server.model.drive.TDriveSnapSeq
 import com.tencent.bkrepo.fs.server.repository.drive.RDriveSnapSeqDao
 import com.tencent.bkrepo.fs.server.utils.DriveServiceUtils
@@ -24,7 +25,6 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import reactor.kotlin.core.publisher.toMono
-import java.time.Duration
 import java.time.LocalDateTime
 import java.util.concurrent.Executors
 
@@ -36,6 +36,7 @@ import java.util.concurrent.Executors
 class DriveSnapSeqService(
     private val driveSnapSeqDao: RDriveSnapSeqDao,
     private val driveRepositoryInitService: DriveRepositoryInitService,
+    private val driveProperties: DriveProperties,
 ) {
     private val refreshExecutor = Executors.newFixedThreadPool(
         1,
@@ -45,13 +46,22 @@ class DriveSnapSeqService(
 
     private val snapSeqCache: AsyncLoadingCache<SnapSeqCacheKey, Long> = Caffeine.newBuilder()
         .executor(refreshExecutor)
-        // 10秒后触发异步刷新，读取可先返回旧值；5分钟后强制过期，避免异常场景下长期持有陈旧数据。
-        .refreshAfterWrite(Duration.ofSeconds(CACHE_REFRESH_SECONDS))
-        .expireAfterWrite(Duration.ofSeconds(CACHE_EXPIRE_SECONDS))
-        .maximumSize(MAXIMUM_CACHE_SIZE)
+        // 刷新后触发异步刷新，读取可先返回旧值；过期后强制过期，避免异常场景下长期持有陈旧数据。
+        .refreshAfterWrite(driveProperties.snapSeqCacheRefreshDuration)
+        .expireAfterWrite(driveProperties.snapSeqCacheExpireDuration)
+        .maximumSize(driveProperties.snapSeqCacheMaximumSize)
         .buildAsync { key, _ ->
             mono(refreshDispatcher) { getOrInitLatestSnapSeq(key.projectId, key.repoName).snapSeq }.toFuture()
         }
+
+    /**
+     * 查询仓库当前快照序列号记录。
+     * 若仓库尚未完成 Drive 资源初始化，则自动初始化后返回快照序列号记录。
+     */
+    suspend fun getLatestSnapSeqRecord(projectId: String, repoName: String): TDriveSnapSeq {
+        DriveServiceUtils.validateProjectRepo(projectId, repoName)
+        return getOrInitLatestSnapSeq(projectId, repoName)
+    }
 
     /**
      * 查询仓库当前快照序列号。
@@ -92,16 +102,14 @@ class DriveSnapSeqService(
     }
 
     /**
-     * 增加仓库快照序列号并返回增加后的值，两次增加的间隔不能少于[MIN_INC_INTERVAL_SECONDS],避免频繁创建快照或异常原因连续创建快照
+     * 增加仓库快照序列号并返回增加后的值
      */
     suspend fun incSnapSeq(projectId: String, repoName: String, oldSeq: Long): Long {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
-        val requiredInterval = LocalDateTime.now().minusSeconds(MIN_INC_INTERVAL_SECONDS)
         val now = LocalDateTime.now()
         val criteria = where(TDriveSnapSeq::projectId).isEqualTo(projectId)
             .and(TDriveSnapSeq::repoName.name).isEqualTo(repoName)
             .and(TDriveSnapSeq::snapSeq.name).isEqualTo(oldSeq)
-            .and(TDriveSnapSeq::lastModifiedDate.name).lte(requiredInterval)
         val update = Update()
             .set(TDriveSnapSeq::lastModifiedDate.name, now)
             .set(TDriveSnapSeq::lastModifiedBy.name, DriveServiceUtils.getUserOrSystem())
@@ -142,13 +150,6 @@ class DriveSnapSeqService(
     )
 
     companion object {
-        /**
-         * 两次创建快照的最小间隔
-         */
-        private const val MIN_INC_INTERVAL_SECONDS = 60L
-        private const val CACHE_REFRESH_SECONDS = 3L
-        private const val CACHE_EXPIRE_SECONDS = 300L
-        private const val MAXIMUM_CACHE_SIZE = 10_000L
         private val logger = LoggerFactory.getLogger(DriveSnapSeqService::class.java)
     }
 }
