@@ -409,6 +409,8 @@ repository:
   config:
     # 节点被删除后多久清理数据
     deletedNodeReserveDays: 15
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -480,6 +482,8 @@ auth:
   bcs:
     accessKey: ""
     secretKey: ""
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -524,6 +528,8 @@ generic:
       projectId:
       repoName:
       fullPath:
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -564,6 +570,8 @@ generic:
 s3:
   enabled: true
   config: {}
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -617,6 +625,8 @@ preview:
     # 默认水印
     watermark:
       txt: ""
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -657,6 +667,8 @@ preview:
 maven:
   enabled: true
   config: {}
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -737,6 +749,8 @@ routercontroller:
 replication:
   enabled: true
   config: {}
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -777,6 +791,8 @@ replication:
 opdata:
   enabled: true
   config: {}
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -817,6 +833,8 @@ opdata:
 docker:
   enabled: false
   config: {}
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -857,6 +875,8 @@ docker:
 npm:
   enabled: false
   config: {}
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -897,6 +917,8 @@ npm:
 pypi:
   enabled: false
   config: {}
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -937,6 +959,8 @@ pypi:
 helm:
   enabled: false
   config: {}
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -976,6 +1000,8 @@ helm:
 job:
   enabled: true
   config: {}
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
