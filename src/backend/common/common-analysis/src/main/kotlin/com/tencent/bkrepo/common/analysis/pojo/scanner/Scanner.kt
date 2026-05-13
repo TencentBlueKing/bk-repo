@@ -100,7 +100,7 @@ open class Scanner(
      */
     open fun maxScanDuration(size: Long): Long {
         // 向上取整，确保小文件至少按1MiB计算扫描时长
-        val sizeMib = (size + 1024L * 1024L - 1L) / (1024L * 1024L)
+        val sizeMib = max(size / 1024L / 1024L, 1L)
         val maxScanDuration = if (Long.MAX_VALUE / sizeMib > maxScanDurationPerMb) {
             maxScanDurationPerMb * sizeMib
         } else {
