@@ -173,4 +173,26 @@ class UserDao : SimpleMongoDao<TUser>() {
         return this.find(query)
     }
 
+    /**
+     * 清空指定用户的所有角色（覆盖式绑定全局预览角色前置步骤）
+     */
+    fun removeAllRolesFromUser(userId: String) {
+        val query = Query(Criteria.where(TUser::userId.name).`is`(userId))
+        val update = Update().set(TUser::roles.name, emptyList<String>())
+        this.updateFirst(query, update)
+    }
+
+    /**
+     * 在给定用户ID列表中，找出当前持有指定角色的用户（用于全局预览角色冲突检测）
+     */
+    fun findByUserIdInAndRolesContains(userIdList: List<String>, roleId: String): List<TUser> {
+        val query = Query(
+            Criteria().andOperator(
+                Criteria.where(TUser::userId.name).`in`(userIdList),
+                Criteria.where(TUser::roles.name).`is`(roleId)
+            )
+        )
+        return this.find(query)
+    }
+
 }

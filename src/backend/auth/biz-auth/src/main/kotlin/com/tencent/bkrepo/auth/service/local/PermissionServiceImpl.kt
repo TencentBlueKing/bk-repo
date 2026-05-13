@@ -34,6 +34,7 @@ package com.tencent.bkrepo.auth.service.local
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_ADMIN
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_USER
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_VIEWER
+import com.tencent.bkrepo.auth.constant.GLOBAL_PREVIEW_ROLE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
 import com.tencent.bkrepo.auth.constant.REPLICATION_MANAGE_ID
@@ -53,9 +54,11 @@ import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode.DEFAULT
 import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode.STRICT
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.DELETE
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.DOWNLOAD
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.UPDATE
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.VIEW
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
@@ -201,6 +204,20 @@ open class PermissionServiceImpl constructor(
                     return true
                 }
 
+                GLOBAL_PREVIEW_ROLE_ID -> {
+                    if (!projectId.isNullOrEmpty()) {
+                        throw ErrorCodeException(AuthMessageCode.AUTH_CREATE_ROLE_INVALID_WITHOUT_PROJECT)
+                    }
+                    val globalPreviewRequest = RequestUtil.buildGlobalPreviewRoleRequest()
+                    val globalPreviewRoleId = userHelper.createRoleCommon(globalPreviewRequest)
+                    val serviceUsers = permHelper.getServiceUser(GLOBAL_PREVIEW_ROLE_ID)
+                    val addRoleUserList = userId.filter { !serviceUsers.contains(it) }
+                    val removeRoleUserList = serviceUsers.filter { !userId.contains(it) }
+                    userHelper.addUserToRoleBatchCommon(addRoleUserList, globalPreviewRoleId!!)
+                    permHelper.removeUserFromRoleBatchCommon(removeRoleUserList, globalPreviewRoleId)
+                    return true
+                }
+
                 else -> {
                     permHelper.checkPermissionExist(permissionId)
                     return permHelper.updatePermissionById(permissionId, TPermission::users.name, userId)
@@ -216,6 +233,8 @@ open class PermissionServiceImpl constructor(
             val user = getUserInfo(uid) ?: return false
             // check user locked
             if (user.locked) return false
+            // 全局预览角色拦截（优先于 admin / project admin 判断）
+            checkGlobalPreviewRole(user, action, projectId, repoName)?.let { return it }
             // check user admin permission
             if (user.admin) return true
             if (projectId == null) {
@@ -238,6 +257,48 @@ open class PermissionServiceImpl constructor(
             }
         }
         return false
+    }
+
+    /**
+     * 全局预览角色拦截：
+     * - 未持有全局预览角色 -> 返回 null 交由后续逻辑处理
+     * - 持有 + 只读动作 -> 放行（DEBUG 日志）
+     * - 持有 + 非只读动作 -> 拒绝（INFO 日志）
+     */
+    protected open fun checkGlobalPreviewRole(
+        user: TUser,
+        action: String,
+        projectId: String?,
+        repoName: String?
+    ): Boolean? {
+        val globalPreviewObjId = roleRepository
+            .findFirstByTypeAndRoleId(RoleType.SERVICE, GLOBAL_PREVIEW_ROLE_ID)?.id
+            ?: return null
+        if (!user.roles.contains(globalPreviewObjId)) return null
+
+        // 历史脏数据提示：同时持有其它角色
+        val otherRoles = user.roles.filter { it != globalPreviewObjId }
+        if (otherRoles.isNotEmpty()) {
+            logger.warn(
+                "uid=${user.userId} role=global_preview holds dirty roles=$otherRoles, " +
+                    "prefer global preview restriction"
+            )
+        }
+
+        return if (isReadOnlyAction(action)) {
+            logger.debug("uid=${user.userId} role=global_preview allowAction=$action")
+            true
+        } else {
+            logger.info(
+                "uid=${user.userId} role=global_preview rejectedAction=$action " +
+                    "project=$projectId repo=$repoName"
+            )
+            false
+        }
+    }
+
+    private fun isReadOnlyAction(action: String): Boolean {
+        return action == READ.name || action == VIEW.name || action == DOWNLOAD.name
     }
 
     fun checkLocalRepoOrNodePermission(context: CheckPermissionContext): Boolean {

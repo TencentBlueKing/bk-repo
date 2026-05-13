@@ -361,6 +361,94 @@ class PermissionServiceTest {
         roleService.deleteRoleById(replicationRoleId)
     }
 
+    @DisplayName("全局预览角色 - 持有者READ动作放行")
+    fun globalPreviewRoleAllowReadTest() {
+        userService.createUser(createUserRequest())
+        val previewRoleId = roleService.createRole(RequestUtil.buildGlobalPreviewRoleRequest())!!
+        userService.addUserToRole(userId, previewRoleId)
+
+        val checkRequest = CheckPermissionRequest(
+            uid = userId,
+            resourceType = ResourceType.NODE.toString(),
+            action = PermissionAction.READ.toString(),
+            projectId = "any-project",
+            repoName = "any-repo"
+        )
+        Assertions.assertTrue(permissionService.checkPermission(checkRequest))
+
+        roleService.deleteRoleById(previewRoleId)
+    }
+
+    @DisplayName("全局预览角色 - 持有者WRITE动作被拒")
+    fun globalPreviewRoleRejectWriteTest() {
+        userService.createUser(createUserRequest())
+        val previewRoleId = roleService.createRole(RequestUtil.buildGlobalPreviewRoleRequest())!!
+        userService.addUserToRole(userId, previewRoleId)
+
+        val checkRequest = CheckPermissionRequest(
+            uid = userId,
+            resourceType = ResourceType.NODE.toString(),
+            action = PermissionAction.WRITE.toString(),
+            projectId = "any-project",
+            repoName = "any-repo"
+        )
+        Assertions.assertFalse(permissionService.checkPermission(checkRequest))
+
+        roleService.deleteRoleById(previewRoleId)
+    }
+
+    @DisplayName("全局预览角色 - admin用户写动作仍被拒")
+    fun globalPreviewRoleRejectAdminWriteTest() {
+        userService.createUser(createUserRequest(admin = true))
+        val previewRoleId = roleService.createRole(RequestUtil.buildGlobalPreviewRoleRequest())!!
+        userService.addUserToRole(userId, previewRoleId)
+
+        val checkRequest = CheckPermissionRequest(
+            uid = userId,
+            resourceType = ResourceType.NODE.toString(),
+            action = PermissionAction.DELETE.toString(),
+            projectId = "any-project",
+            repoName = "any-repo"
+        )
+        Assertions.assertFalse(permissionService.checkPermission(checkRequest))
+
+        roleService.deleteRoleById(previewRoleId)
+    }
+
+    @DisplayName("全局预览角色 - 覆盖式绑定：已持有 project_view 的用户绑全局预览成功")
+    fun globalPreviewRoleOverwriteBindingTest() {
+        userService.createUser(createUserRequest())
+        val projectRoleId = roleService.createRole(createRoleRequest())!!
+        userService.addUserToRole(userId, projectRoleId)
+        val previewRoleId = roleService.createRole(RequestUtil.buildGlobalPreviewRoleRequest())!!
+
+        userService.addUserToRole(userId, previewRoleId)
+
+        val user = userService.getUserById(userId)!!
+        Assertions.assertEquals(listOf(previewRoleId), user.roles, "TUser.roles 应仅包含全局预览角色")
+
+        roleService.deleteRoleById(projectRoleId)
+        roleService.deleteRoleById(previewRoleId)
+    }
+
+    @DisplayName("全局预览角色 - 单向锁定：已持全局预览的用户加其它角色被拒")
+    fun globalPreviewRoleOneWayLockTest() {
+        userService.createUser(createUserRequest())
+        val previewRoleId = roleService.createRole(RequestUtil.buildGlobalPreviewRoleRequest())!!
+        userService.addUserToRole(userId, previewRoleId)
+        val projectRoleId = roleService.createRole(createRoleRequest())!!
+
+        assertThrows<ErrorCodeException> { userService.addUserToRole(userId, projectRoleId) }
+
+        val user = userService.getUserById(userId)!!
+        Assertions.assertEquals(listOf(previewRoleId), user.roles, "TUser.roles 应保持不变")
+
+        roleService.deleteRoleById(projectRoleId)
+        roleService.deleteRoleById(previewRoleId)
+    }
+
+
+
     private fun createUserRequest(
         id: String = userId,
         admin: Boolean = false
