@@ -159,7 +159,11 @@ class AccountServiceImpl constructor(
             account.homepageUrl = homepageUrl ?: account.homepageUrl
             account.redirectUri = redirectUri ?: account.redirectUri
             account.scope = scope ?: account.scope
-            account.limit = limit ?: account.limit
+            account.limit = when {
+                clearLimit -> null
+                limit != null -> limit
+                else -> account.limit
+            }
             account.scopeDesc = scopeDesc ?: account.scopeDesc
             account.description = description ?: account.description
             account.lastModifiedDate = LocalDateTime.now()

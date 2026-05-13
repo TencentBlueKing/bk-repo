@@ -52,6 +52,8 @@ data class UpdateAccountRequest(
     val scopeDesc: List<ScopeRule>? = null,
     @get:Schema(title = "账号限制")
     val limit: AccountLimit? = null,
+    @get:Schema(title = "是否清除账号限制设置，true时将忽略limit字段并清空原有限制")
+    val clearLimit: Boolean = false,
     @get:Schema(title = "简要描述")
     val description: String? = null
 )
