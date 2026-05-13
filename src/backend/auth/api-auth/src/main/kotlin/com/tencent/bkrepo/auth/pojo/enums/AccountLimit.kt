@@ -40,10 +40,11 @@ import java.util.Locale.getDefault
 enum class AccountLimit(
     val allowedActions: Set<PermissionAction>
 ) {
+    
     /**
-     * 所有权限：允许所有操作
+     * 管理权限：允许管理、写入、读取等操作
      */
-    ALL(
+    MANAGE(
         setOf(
             PermissionAction.MANAGE,
             PermissionAction.WRITE,
@@ -52,15 +53,6 @@ enum class AccountLimit(
             PermissionAction.VIEW,
             PermissionAction.UPDATE,
             PermissionAction.DELETE
-        )
-    ),
-    
-    /**
-     * 管理权限：允许管理、写入、读取等操作
-     */
-    MANAGE(
-        setOf(
-            PermissionAction.MANAGE
         )
     ),
     
