@@ -115,37 +115,39 @@ class UserHelper constructor(
 
     fun createRoleCommon(request: CreateRoleRequest): String? {
         logger.info("create role request:[$request] ")
+        val requestRoleId = request.roleId
+        val requestSource = request.source
         val role = when (request.type) {
             RoleType.REPO -> {
-                require(request.roleId != null)
+                require(requestRoleId != null)
                 roleRepository.findFirstByTypeAndRoleIdAndProjectIdAndRepoName(
                     type = RoleType.REPO,
-                    roleId = request.roleId,
+                    roleId = requestRoleId,
                     projectId = request.projectId!!,
                     repoName = request.repoName!!
                 )
             }
             RoleType.PROJECT -> {
-                if (request.source == null) {
+                if (requestSource == null) {
                     roleRepository.findFirstByTypeAndProjectIdAndName(
                         type = RoleType.PROJECT,
                         projectId = request.projectId!!,
                         name = request.name
                     )
                 } else {
-                    require(request.roleId != null)
+                    require(requestRoleId != null)
                     roleRepository.findFirstByTypeAndRoleIdAndProjectIdAndSource(
                         type = RoleType.PROJECT,
-                        roleId = request.roleId,
+                        roleId = requestRoleId,
                         projectId = request.projectId!!,
-                        source = request.source
+                        source = requestSource
                     )
                 }
             }
             RoleType.SERVICE -> {
-                require(request.roleId != null && request.projectId == null)
+                require(requestRoleId != null && request.projectId == null)
                 roleRepository.findFirstByTypeAndRoleId(
-                    roleId = request.roleId,
+                    roleId = requestRoleId,
                     type = request.type
                 )
             }
