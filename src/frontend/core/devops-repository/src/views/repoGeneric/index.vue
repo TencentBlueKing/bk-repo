@@ -265,7 +265,7 @@
     import previewBasicFileDialog from './previewBasicFileDialog'
     import { Base64 } from 'js-base64'
     import { isOutDisplayType, isText } from '@repository/utils/file'
-    import ElectronProtocolCheck from '@repository/utils/electronProtocolCheck'
+    import ElectronProtocolCheck from '@repository/utils/ElectronProtocolCheck'
 
     export default {
         name: 'RepoGeneric',
