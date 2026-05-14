@@ -1084,7 +1084,7 @@
                     fullPath
                 })
             },
-            downloadFromWeb () {
+            downloadFromWeb (row) {
                 const transPath = encodeURIComponent(row.fullPath)
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
                 fetch(window.BK_SUBPATH + 'web' + url, {
