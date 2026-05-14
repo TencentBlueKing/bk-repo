@@ -136,6 +136,8 @@
                             + ('__BK_REPO_PAAS_FQDN__').split("://")[1] + '/api/bk-user-web/prod'
         // 是否开启多租户模式
         var BK_REPO_ENABLE_MULTI_TENANT_MODE = '__BK_REPO_ENABLE_MULTI_TENANT_MODE__' || 'false'
+        // 拉起制品服务端的协议
+        var BK_ARTIFACT_SCHEME = '__BK_REPO_ARTIFACT_SCHEME__' || 'bkartifacts://'
     </script>
     <script>
         const inIframe = self !== top

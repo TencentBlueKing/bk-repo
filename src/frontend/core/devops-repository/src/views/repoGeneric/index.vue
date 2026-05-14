@@ -265,6 +265,7 @@
     import previewBasicFileDialog from './previewBasicFileDialog'
     import { Base64 } from 'js-base64'
     import { isOutDisplayType, isText } from '@repository/utils/file'
+    import ElectronProtocolCheck from '@repository/utils/electronProtocolCheck'
 
     export default {
         name: 'RepoGeneric',
@@ -1083,7 +1084,7 @@
                     fullPath
                 })
             },
-            handlerDownload (row) {
+            downloadFromWeb () {
                 const transPath = encodeURIComponent(row.fullPath)
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
                 fetch(window.BK_SUBPATH + 'web' + url, {
@@ -1147,6 +1148,39 @@
                         })
                     }
                 })
+            },
+            buildExeDownloadUrl (row) {
+                let url = ''
+                switch (location.origin) {
+                    case 'https://dl.bkdevops.qq.com':
+                    case 'https://bkrepo.devx.tencent.com':
+                        url = location.origin
+                        break
+                    default:
+                        url = 'https://bkrepo.woa.com'
+                }
+                const transPath = encodeURIComponent(row.fullPath)
+                return `${url}/generic/${this.projectId}/${this.repoName}/${transPath}`
+            },
+            handlerDownload (row) {
+                const target = this.buildExeDownloadUrl(row)
+                ElectronProtocolCheck(
+                    target,
+                    () => {
+                        // 成功回调：客户端已唤起
+                        console.log('callClient->success!')
+                    },
+                    () => {
+                        // 失败回调：未检测到客户端
+                        console.log('callClient->failed!')
+                        this.downloadFromWeb(row)
+                    },
+                    () => {
+                        // 不支持回调：浏览器环境不支持自定义协议
+                        console.log('callClient->unsupported!')
+                        this.downloadFromWeb(row)
+                    }
+                )
             },
             timerDownload (url, fullPath, name) {
                 if (this.timer) return
