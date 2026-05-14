@@ -415,40 +415,6 @@ class PermissionServiceTest {
         roleService.deleteRoleById(previewRoleId)
     }
 
-    @DisplayName("全局预览角色 - 覆盖式绑定：已持有 project_view 的用户绑全局预览成功")
-    fun globalPreviewRoleOverwriteBindingTest() {
-        userService.createUser(createUserRequest())
-        val projectRoleId = roleService.createRole(createRoleRequest())!!
-        userService.addUserToRole(userId, projectRoleId)
-        val previewRoleId = roleService.createRole(RequestUtil.buildGlobalPreviewRoleRequest())!!
-
-        userService.addUserToRole(userId, previewRoleId)
-
-        val user = userService.getUserById(userId)!!
-        Assertions.assertEquals(listOf(previewRoleId), user.roles, "TUser.roles 应仅包含全局预览角色")
-
-        roleService.deleteRoleById(projectRoleId)
-        roleService.deleteRoleById(previewRoleId)
-    }
-
-    @DisplayName("全局预览角色 - 单向锁定：已持全局预览的用户加其它角色被拒")
-    fun globalPreviewRoleOneWayLockTest() {
-        userService.createUser(createUserRequest())
-        val previewRoleId = roleService.createRole(RequestUtil.buildGlobalPreviewRoleRequest())!!
-        userService.addUserToRole(userId, previewRoleId)
-        val projectRoleId = roleService.createRole(createRoleRequest())!!
-
-        assertThrows<ErrorCodeException> { userService.addUserToRole(userId, projectRoleId) }
-
-        val user = userService.getUserById(userId)!!
-        Assertions.assertEquals(listOf(previewRoleId), user.roles, "TUser.roles 应保持不变")
-
-        roleService.deleteRoleById(projectRoleId)
-        roleService.deleteRoleById(previewRoleId)
-    }
-
-
-
     private fun createUserRequest(
         id: String = userId,
         admin: Boolean = false
