@@ -1160,7 +1160,7 @@
                         url = 'https://bkrepo.woa.com'
                 }
                 const transPath = encodeURIComponent(row.fullPath)
-                return `${url}/generic/${this.projectId}/${this.repoName}/${transPath}`
+                return BK_ARTIFACT_SCHEME + 'action=download&url=' + `${url}/generic/${this.projectId}/${this.repoName}/${transPath}`
             },
             handlerDownload (row) {
                 const target = this.buildExeDownloadUrl(row)
