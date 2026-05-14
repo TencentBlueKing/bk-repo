@@ -1150,17 +1150,9 @@
                 })
             },
             buildExeDownloadUrl (row) {
-                let url = ''
-                switch (location.origin) {
-                    case 'https://dl.bkdevops.qq.com':
-                    case 'https://bkrepo.devx.tencent.com':
-                        url = location.origin
-                        break
-                    default:
-                        url = 'https://bkrepo.woa.com'
-                }
+                const url = new URL(window.BK_SUBPATH, location.origin)
                 const transPath = encodeURIComponent(row.fullPath)
-                return BK_ARTIFACT_SCHEME + 'action=download&url=' + `${url}/generic/${this.projectId}/${this.repoName}/${transPath}`
+                return BK_ARTIFACT_SCHEME + 'action=download&url=' + `${url}generic/${this.projectId}/${this.repoName}/${transPath}`
             },
             handlerDownload (row) {
                 const target = this.buildExeDownloadUrl(row)
