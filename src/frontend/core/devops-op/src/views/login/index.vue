@@ -110,7 +110,7 @@ export default {
 </script>
 
 <style lang="scss">
-@import "~@/styles/variables.module.scss";
+@import "@/styles/variables.module.scss";
 
 /* 修复input 背景不协调 和光标变色 */
 /* Detail see https://github.com/PanJiaChen/vue-element-admin/pull/927 */
@@ -159,14 +159,14 @@ $cursor: #fff;
 </style>
 
 <style lang="scss" scoped>
-@import "~@/styles/variables.module.scss";
+@import "@/styles/variables.module.scss";
 
 $bg:$menuBg;
 $dark_gray:#889aa4;
 $light_gray:#eee;
 
 .login-container {
-  min-height: 100%;
+  min-height: 100vh;
   width: 100%;
   background-color: $bg;
   overflow: hidden;

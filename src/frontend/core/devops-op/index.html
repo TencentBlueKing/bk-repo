@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title><%= htmlWebpackPlugin.options.title %></title>
+    <title>制品库Admin</title>
 </head>
 <body>
 <script>
@@ -22,9 +22,11 @@
   // 是否显示制品分析菜单
   var SHOW_ANALYST_MENU = '__BK_REPO_SHOW_ANALYST_MENU__' || 'false'
   SHOW_ANALYST_MENU = SHOW_ANALYST_MENU === 'true'
+  window.SHOW_ANALYST_MENU = SHOW_ANALYST_MENU
   var ADD_FROM_LOGOUT = '__IS_FROM_LOGOUT__' || 'not'
   // 区分社区版与内部版  community -> 社区   tencent -> 内部
   var RELEASE_MODE = '__BK_REPO_RELEASE_MODE__' || 'community'
+  window.RELEASE_MODE = RELEASE_MODE
 </script>
 <script>
   const inIframe = self !== top

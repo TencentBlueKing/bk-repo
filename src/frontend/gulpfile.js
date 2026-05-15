@@ -22,11 +22,14 @@ const { dist, env, lsVersion, mode } = argv
 
 gulp.task('build', cb => {
     const spinner = new Ora(`building bkrepo frontend project, mode: ${mode}`).start()
-    const scopeCli = mode === 'canway-ci' ? '--scope=devops-{repository-ci}' : '--scope=devops-{repository,op}'
     const cp = require('child_process')
     cp.execSync('cd ./core/devops-repository && yarn sprite')
     spinner.succeed('create sprite.svg finished')
-    cp.exec(`lerna run public:${env} ${scopeCli} --parallel -- --env dist=${dist} --env lsVersion=${lsVersion}`, {
+    
+    const repositoryCmd = `lerna run public:${env} --scope=devops-repository -- --env dist=${dist} --env lsVersion=${lsVersion}`
+    const opCmd = `cross-env dist=${dist} lsVersion=${lsVersion} lerna run public:${env} --scope=devops-op`
+    
+    cp.exec(`${repositoryCmd} && ${opCmd}`, {
         maxBuffer: 5000 * 1024
     }, (err, res) => {
         if (err) {

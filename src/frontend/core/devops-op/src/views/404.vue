@@ -20,7 +20,7 @@ export default {
   name: 'Page404',
   data() {
     return {
-      homeUrl: `/${process.env.VUE_APP_BASE_DIR}`
+      homeUrl: `/${import.meta.env.VITE_APP_BASE_DIR}`
     }
   },
   computed: {

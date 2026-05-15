@@ -148,7 +148,7 @@ export default {
   },
   computed: {
     community() {
-      return process.env.VUE_APP_RELEASE_MODE === 'community'
+      return window.RELEASE_MODE === 'community'
     }
   },
   created() {

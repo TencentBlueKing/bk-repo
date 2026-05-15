@@ -15,8 +15,8 @@ $--border-color-light:#F0F1F5;
 $--border-color-lighter:#F5F7FA;
 $--border-color-extra-light:#FAFBFD;
 
-$--font-path: '~element-ui/lib/theme-chalk/fonts';
-@import "~element-ui/packages/theme-chalk/src/index";
+$--font-path: 'element-ui/lib/theme-chalk/fonts';
+@import "element-ui/packages/theme-chalk/src/index";
 
 .el-breadcrumb__inner,
 .el-breadcrumb__inner a {
