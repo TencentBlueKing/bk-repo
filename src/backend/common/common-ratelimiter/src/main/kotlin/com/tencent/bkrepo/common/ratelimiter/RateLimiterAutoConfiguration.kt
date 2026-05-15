@@ -53,6 +53,7 @@ import com.tencent.bkrepo.common.ratelimiter.service.usage.DownloadUsageRateLimi
 import com.tencent.bkrepo.common.ratelimiter.service.usage.UploadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserUploadUsageRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.statistics.RateLimiterStatisticsService
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.beans.factory.ObjectProvider
@@ -77,6 +78,11 @@ class RateLimiterAutoConfiguration {
     @Bean
     fun rateLimitService(rateLimitRepository: RateLimitRepository): RateLimiterConfigService {
         return RateLimiterConfigService(rateLimitRepository)
+    }
+
+    @Bean
+    fun rateLimiterStatisticsService(registry: MeterRegistry): RateLimiterStatisticsService {
+        return RateLimiterStatisticsService(registry)
     }
 
     @Bean
