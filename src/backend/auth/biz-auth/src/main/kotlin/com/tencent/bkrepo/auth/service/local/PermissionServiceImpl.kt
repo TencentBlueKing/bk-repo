@@ -301,6 +301,18 @@ open class PermissionServiceImpl constructor(
         return action == READ.name || action == VIEW.name || action == DOWNLOAD.name
     }
 
+    /**
+     * 是否为全局预览角色用户。
+     * 用于资源列表查询（项目/仓库/路径）时让全局预览用户能看到全量资源；
+     * 实际只读放行仍由 checkPermission/checkGlobalPreviewRole 控制。
+     */
+    protected fun isGlobalPreviewUser(user: TUser): Boolean {
+        val globalPreviewObjId = roleRepository
+            .findFirstByTypeAndRoleId(RoleType.SERVICE, GLOBAL_PREVIEW_ROLE_ID)?.id
+            ?: return false
+        return user.roles.contains(globalPreviewObjId)
+    }
+
     fun checkLocalRepoOrNodePermission(context: CheckPermissionContext): Boolean {
         // check role repo admin
         if (permHelper.checkRepoAdmin(context)) return true
@@ -324,6 +336,10 @@ open class PermissionServiceImpl constructor(
         }
         // 用户为系统管理员
         if (user.admin) {
+            return projectService.listProject().map { it.name }
+        }
+        // 全局预览角色：对所有项目可见（只读放行由 checkPermission 控制）
+        if (isGlobalPreviewUser(user)) {
             return projectService.listProject().map { it.name }
         }
 
@@ -377,6 +393,10 @@ open class PermissionServiceImpl constructor(
         if (user.admin || isUserLocalProjectAdmin(userId, projectId) || isUserLocalProjectUser(userId, projectId)) {
             return getAllRepoByProjectId(projectId)
         }
+        // 全局预览角色：对所有仓库可见（只读放行由 checkPermission 控制）
+        if (isGlobalPreviewUser(user)) {
+            return getAllRepoByProjectId(projectId)
+        }
 
         val repoList = mutableListOf<String>()
 
@@ -412,6 +432,8 @@ open class PermissionServiceImpl constructor(
     ): List<String>? {
         val user = userDao.findFirstByUserId(userId) ?: return null
         if (user.admin || isUserLocalProjectAdmin(userId, projectId)) return emptyList()
+        // 全局预览角色：无禁止路径（只读放行由 checkPermission 控制）
+        if (isGlobalPreviewUser(user)) return emptyList()
         var userRoles = roles
         if (roles == null) userRoles = user.roles
         val projectPermission = permissionDao.listByResourceAndRepo(NODE.name, projectId, repoName)
@@ -429,6 +451,10 @@ open class PermissionServiceImpl constructor(
     ): List<String>? {
         val user = userDao.findFirstByUserId(userId) ?: return emptyList()
         if (user.admin || isUserLocalProjectAdmin(userId, projectId)) {
+            return null
+        }
+        // 全局预览角色：不限制路径（只读放行由 checkPermission 控制）
+        if (isGlobalPreviewUser(user)) {
             return null
         }
         var userRoles = roles
