@@ -105,6 +105,13 @@ class DevopsPermissionServiceImpl constructor(
         // 校验平台账号操作范围
         if (request.appId != null && !checkPlatformPermission(request)) return false
 
+        // 全局预览角色拦截：在 bkiamv3 / devops 流程之前完成判断
+        val previewUser = getUserInfo(request.uid)
+        if (previewUser != null && !previewUser.locked) {
+            checkGlobalPreviewRole(previewUser, request.action, request.projectId, request.repoName)
+                ?.let { return it }
+        }
+
         // bkiamv3权限校验
         if (matchBkiamv3Cond(request)) {
             // 当有v3权限时，返回成功；如没有v3权限则按devops账号体系继续进行判断
