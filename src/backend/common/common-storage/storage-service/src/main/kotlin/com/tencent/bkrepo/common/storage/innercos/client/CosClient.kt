@@ -435,7 +435,8 @@ class CosClient(val credentials: InnerCosCredentials) {
         val httpRequest = buildHttpRequest(cosRequest)
         try {
             return CosHttpClient.execute(httpRequest, VoidResponseHandler())
-        } catch (_: IOException) {
+        } catch (e: IOException) {
+            logger.error("abort multipart upload failed, key[$key], uploadId[$uploadId]", e)
         }
     }
 
@@ -727,7 +728,7 @@ class CosClient(val credentials: InnerCosCredentials) {
                 uploadId = initiateMultipartUpload(key, storageClass, overwrite)
                 doUpload(inputStream)
                 return complete()
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 abort()
                 throw e
             }
@@ -784,7 +785,6 @@ class CosClient(val credentials: InnerCosCredentials) {
             if (aborted || completed) {
                 return
             }
-            aborted = true
             uploadId?.let {
                 try {
                     abortMultipartUpload(key, it)
@@ -793,7 +793,7 @@ class CosClient(val credentials: InnerCosCredentials) {
                     logger.error("Failed to abort multipart upload for key[$key], uploadId[$it]", e)
                 }
             }
-            partETagList.clear()
+            aborted = true
         }
 
         private fun partSize(length: Long): Long {

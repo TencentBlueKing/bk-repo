@@ -64,7 +64,7 @@ class SimpleStorageService : AbstractStorageService() {
                 // 制品已在目标存储，直接重命名即可
                 val fromPath = artifactFile.getPath()
                 val fromName = artifactFile.getName()
-                fileStorage.move(fromPath, fromName, path, filename, credentials, credentials)
+                fileStorage.copy(fromPath, fromName, path, filename, credentials, credentials)
             }
 
             else -> {

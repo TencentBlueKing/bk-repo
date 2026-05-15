@@ -177,7 +177,11 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     ) {
         val fromClient = getClient(fromCredentials)
         val toClient = getClient(toCredentials)
-        copy(fromPath, fromName, toPath, toName, fromClient, toClient)
+        retryTemplate.execute<Unit, Exception> {
+            it.setAttribute(RetryContext.NAME, RETRY_NAME_COPY_FILE)
+            val elapsed = measureTime { copy(fromPath, fromName, toPath, toName, fromClient, toClient) }
+            logger.info("Success to copy file from [$fromPath] [$fromName] to [$toPath] [$toName], elapsed[$elapsed].")
+        }
     }
 
     override fun move(
@@ -190,11 +194,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     ) {
         val fromClient = getClient(fromCredentials)
         val toClient = getClient(toCredentials)
-        retryTemplate.execute<Unit, Exception>{
-            it.setAttribute(RetryContext.NAME, RETRY_NAME_MOVE_FILE)
-            val elapsed = measureTime { move(fromPath, fromName, toPath, toName, fromClient, toClient) }
-            logger.info("Success to move file from [$fromName] to [$toName], elapsed[$elapsed].")
-        }
+        move(fromPath, fromName, toPath, toName, fromClient, toClient)
     }
 
     override fun checkRestore(
@@ -273,6 +273,6 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         private const val RETRY_NAME_STORE_FILE = "FileStorage.storeFile"
         private const val RETRY_NAME_STORE_STREAM = "FileStorage.storeStream"
         private const val RETRY_NAME_LOAD_STREAM = "FileStorage.loadStream"
-        private const val RETRY_NAME_MOVE_FILE = "FileStorage.moveFile"
+        private const val RETRY_NAME_COPY_FILE = "FileStorage.copyFile"
     }
 }
