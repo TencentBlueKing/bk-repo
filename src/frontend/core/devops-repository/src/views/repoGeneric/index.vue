@@ -1152,7 +1152,8 @@
             buildExeDownloadUrl (row) {
                 const url = new URL(window.BK_SUBPATH, location.origin)
                 const transPath = encodeURIComponent(row.fullPath)
-                return BK_ARTIFACT_SCHEME + 'action=download&url=' + `${url}generic/${this.projectId}/${this.repoName}/${transPath}`
+                const downloadUrl = `${url}generic/${this.projectId}/${this.repoName}/${transPath}`
+                return BK_ARTIFACT_SCHEME + 'action=download&url=' + encodeURIComponent(downloadUrl)
             },
             handlerDownload (row) {
                 const target = this.buildExeDownloadUrl(row)
