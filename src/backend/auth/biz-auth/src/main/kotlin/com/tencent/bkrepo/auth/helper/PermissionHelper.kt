@@ -249,6 +249,32 @@ class PermissionHelper constructor(
         }
     }
 
+    /**
+     * 仓库级整仓授权判定（严格模式下用于非 Generic 仓库的短路放行）。
+     *
+     * 基于 TPermission(resourceType=REPO, repos 包含当前 repoName) 的命中记录，
+     * 若 actions 包含 MANAGE 或当前请求 action（READ/WRITE/DOWNLOAD/UPDATE/DELETE）则放行。
+     *
+     * 与 [checkRepoReadAction] 的区别：本方法支持完整 action 集合，仅作为整仓授权判定使用。
+     */
+    fun checkRepoActionInPermission(context: CheckPermissionContext): Boolean {
+        with(context) {
+            if (repoName.isNullOrBlank()) return false
+            val permissions = permissionDao.listPermissionInRepo(projectId, repoName!!, userId, roles)
+            if (permissions.isEmpty()) return false
+            val hit = permissions.any { p ->
+                p.actions.contains(MANAGE.name) || p.actions.contains(action)
+            }
+            if (hit) {
+                logger.info(
+                    "repo-level-strict allow: userId=$userId, projectId=$projectId, " +
+                            "repoName=$repoName, action=$action, reason=repo-level-strict"
+                )
+            }
+            return hit
+        }
+    }
+
     fun getOnePermission(
         projectId: String,
         repoName: String,

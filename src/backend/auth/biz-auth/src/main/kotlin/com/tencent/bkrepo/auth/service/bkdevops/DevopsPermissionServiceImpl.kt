@@ -298,6 +298,10 @@ class DevopsPermissionServiceImpl constructor(
         logger.debug("check repo not in devops request [$context]")
         with(context) {
             val isDevopsProjectMember = isDevopsProjectMember(userId, projectId, action, repoName)
+            // 严格模式 + 非 Generic 仓库：优先尝试仓库级整仓授权（短路放行）
+            if (checkStrictRepoLevelGrant(context)) {
+                return true
+            }
             if (needCheckPathPermission(resourceType, projectId, repoName!!)) {
                 logger.debug("need check path control [$context]")
                 return checkNodeAction(context, isDevopsProjectMember)

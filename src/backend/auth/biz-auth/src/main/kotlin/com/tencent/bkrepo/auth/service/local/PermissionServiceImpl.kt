@@ -80,6 +80,7 @@ import com.tencent.bkrepo.auth.util.request.PermRequestUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.DEVX_ACCESS_FROM_OFFICE
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.slf4j.LoggerFactory
@@ -318,6 +319,8 @@ open class PermissionServiceImpl constructor(
         if (permHelper.checkRepoAdmin(context)) return true
         // check repo read action
         if (permHelper.checkRepoReadAction(context)) return true
+        // 严格模式 + 非 Generic 仓库：尝试仓库级整仓授权短路
+        if (checkStrictRepoLevelGrant(context)) return true
         //  check project user
         val isProjectUser = isUserLocalProjectUser(context.userId, context.projectId)
         if (permHelper.checkProjectReadAction(context, isProjectUser)) return true
@@ -326,6 +329,39 @@ open class PermissionServiceImpl constructor(
             return true
         }
         return false
+    }
+
+    /**
+     * 严格模式 + 非 Generic 仓库下尝试仓库级整仓授权短路。
+     * - 仅在严格模式下生效（避免影响 DEFAULT/DIR_CTRL）；
+     * - 仅对非 Generic 仓库放行（Generic 仓库继续走原路径级授权）；
+     * - 仓库类型查询失败按非整仓授权处理（兜底拒绝）。
+     */
+    protected fun checkStrictRepoLevelGrant(context: CheckPermissionContext): Boolean {
+        if (context.repoName.isNullOrBlank()) return false
+        if (!checkRepoAccessControl(context.projectId, context.repoName!!)) return false
+        val isGeneric = isGenericRepo(context.projectId, context.repoName!!) ?: return false
+        if (isGeneric) return false
+        return permHelper.checkRepoActionInPermission(context)
+    }
+
+    /**
+     * 判定仓库是否为 Generic 类型。
+     * @return true=Generic，false=非 Generic，null=查询失败/仓库不存在（调用方按兜底处理）
+     */
+    protected fun isGenericRepo(projectId: String, repoName: String): Boolean? {
+        return try {
+            val detail = repositoryService.getRepoDetail(projectId, repoName)
+            if (detail == null) {
+                logger.warn("isGenericRepo: repo detail not found, projectId=$projectId, repoName=$repoName")
+                null
+            } else {
+                detail.type == RepositoryType.GENERIC
+            }
+        } catch (e: Exception) {
+            logger.warn("isGenericRepo: get repo detail failed, projectId=$projectId, repoName=$repoName", e)
+            null
+        }
     }
 
 
@@ -581,7 +617,19 @@ open class PermissionServiceImpl constructor(
     fun checkNodeAction(request: CheckPermissionContext, isProjectUser: Boolean): Boolean {
         with(request) {
             if (checkRepoAccessControl(projectId, repoName!!)) {
-                return permHelper.checkNodeActionWithCtrl(request)
+                // 严格模式：非 Generic 仓库优先尝试仓库级整仓授权（短路）
+                val isGeneric = isGenericRepo(projectId, repoName!!)
+                if (isGeneric == false && permHelper.checkRepoActionInPermission(request)) {
+                    return true
+                }
+                val pass = permHelper.checkNodeActionWithCtrl(request)
+                if (!pass) {
+                    logger.debug(
+                        "strict mode reject: userId=$userId, projectId=$projectId, " +
+                            "repoName=$repoName, action=$action, isGeneric=$isGeneric"
+                    )
+                }
+                return pass
             }
             return permHelper.checkNodeActionWithOutCtrl(request, isProjectUser)
         }

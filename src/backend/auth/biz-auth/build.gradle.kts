@@ -42,4 +42,6 @@ dependencies {
     implementation("com.tencent.bk.sdk:crypto-java-sdk")
     implementation("io.micrometer:micrometer-registry-prometheus")
     api(project(":common:common-metadata:metadata-service"))
+    testImplementation("org.mockito.kotlin:mockito-kotlin")
+    testImplementation("io.mockk:mockk")
 }
