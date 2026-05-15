@@ -718,8 +718,9 @@ class CosClient(val credentials: InnerCosCredentials) {
             
             // 空文件直接上传空对象
             if (length == 0L) {
+                val res = putObject(PutObjectRequest(key, StringPool.EMPTY.byteInputStream(), 0, storageClass))
                 completed = true
-                return putObject(PutObjectRequest(key, StringPool.EMPTY.byteInputStream(), 0, storageClass))
+                return res
             }
             
             try {

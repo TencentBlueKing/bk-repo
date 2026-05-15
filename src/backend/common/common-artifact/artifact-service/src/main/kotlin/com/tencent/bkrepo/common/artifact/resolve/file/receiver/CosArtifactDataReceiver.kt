@@ -138,7 +138,7 @@ class CosArtifactDataReceiver(
         }
 
         private fun generateRandomKey(): String {
-            return "${UUID.randomUUID().toString().replace("-", "")}.uploading"
+            return "uploading_${UUID.randomUUID().toString().replace("-", "")}"
         }
     }
 }

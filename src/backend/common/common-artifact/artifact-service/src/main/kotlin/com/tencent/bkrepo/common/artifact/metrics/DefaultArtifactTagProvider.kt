@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.artifact.metrics
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_IN_MEMORY
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_IN_REMOTE
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -103,8 +104,11 @@ class DefaultArtifactTagProvider(
     }
 
     private fun getTagPath(credentials: StorageCredentials?, path: String): String {
-        if (path == SOURCE_IN_MEMORY || path == SOURCE_IN_REMOTE) {
-            return path
+        if (path == SOURCE_IN_MEMORY) {
+            return "$SOURCE_IN_MEMORY:${credentials?.key ?: DEFAULT_STORAGE_KEY}"
+        }
+        if (path == SOURCE_IN_REMOTE) {
+            return "$SOURCE_IN_REMOTE:${credentials?.key ?: DEFAULT_STORAGE_KEY}"
         }
         credentials ?: return StringPool.UNKNOWN
         with(credentials) {
