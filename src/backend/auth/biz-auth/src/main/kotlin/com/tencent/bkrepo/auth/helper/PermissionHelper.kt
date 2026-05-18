@@ -266,7 +266,7 @@ class PermissionHelper constructor(
                 p.actions.contains(MANAGE.name) || p.actions.contains(action)
             }
             if (hit) {
-                logger.info(
+                logger.debug(
                     "repo-level-strict allow: userId=$userId, projectId=$projectId, " +
                             "repoName=$repoName, action=$action, reason=repo-level-strict"
                 )

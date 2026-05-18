@@ -336,17 +336,41 @@ open class PermissionServiceImpl constructor(
      * - 仅在严格模式下生效（避免影响 DEFAULT/DIR_CTRL）；
      * - 仅对非 Generic 仓库放行（Generic 仓库继续走原路径级授权）；
      * - 仓库类型查询失败按非整仓授权处理（兜底拒绝）。
+     * - 同一请求内复用仓库类型与严格模式判定结果（避免重复 DB 查询）。
      */
     protected fun checkStrictRepoLevelGrant(context: CheckPermissionContext): Boolean {
         if (context.repoName.isNullOrBlank()) return false
-        if (!checkRepoAccessControl(context.projectId, context.repoName!!)) return false
-        val isGeneric = isGenericRepo(context.projectId, context.repoName!!) ?: return false
+        if (!resolveStrictMode(context)) return false
+        val isGeneric = resolveIsGenericRepo(context) ?: return false
         if (isGeneric) return false
         return permHelper.checkRepoActionInPermission(context)
     }
 
     /**
-     * 判定仓库是否为 Generic 类型。
+     * 请求级复用：判定仓库是否为 Generic 类型。
+     * @return true=Generic，false=非 Generic，null=查询失败/仓库不存在（调用方按兜底处理）
+     */
+    protected fun resolveIsGenericRepo(context: CheckPermissionContext): Boolean? {
+        context.isGenericRepo?.let { return it }
+        val result = isGenericRepo(context.projectId, context.repoName!!)
+        if (result != null) {
+            context.isGenericRepo = result
+        }
+        return result
+    }
+
+    /**
+     * 请求级复用：判定仓库是否处于严格模式。
+     */
+    protected fun resolveStrictMode(context: CheckPermissionContext): Boolean {
+        context.strictMode?.let { return it }
+        val result = checkRepoAccessControl(context.projectId, context.repoName!!)
+        context.strictMode = result
+        return result
+    }
+
+    /**
+     * 判定仓库是否为 Generic 类型（不带缓存的原始调用）。
      * @return true=Generic，false=非 Generic，null=查询失败/仓库不存在（调用方按兜底处理）
      */
     protected fun isGenericRepo(projectId: String, repoName: String): Boolean? {
@@ -616,9 +640,9 @@ open class PermissionServiceImpl constructor(
 
     fun checkNodeAction(request: CheckPermissionContext, isProjectUser: Boolean): Boolean {
         with(request) {
-            if (checkRepoAccessControl(projectId, repoName!!)) {
-                // 严格模式：非 Generic 仓库优先尝试仓库级整仓授权（短路）
-                val isGeneric = isGenericRepo(projectId, repoName!!)
+            if (resolveStrictMode(request)) {
+                // 严格模式：非 Generic 仓库优先尝试仓库级整仓授权（短路，复用请求级缓存）
+                val isGeneric = resolveIsGenericRepo(request)
                 if (isGeneric == false && permHelper.checkRepoActionInPermission(request)) {
                     return true
                 }

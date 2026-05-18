@@ -297,11 +297,12 @@ class DevopsPermissionServiceImpl constructor(
     private fun checkRepoNotInDevops(context: CheckPermissionContext): Boolean {
         logger.debug("check repo not in devops request [$context]")
         with(context) {
-            val isDevopsProjectMember = isDevopsProjectMember(userId, projectId, action, repoName)
             // 严格模式 + 非 Generic 仓库：优先尝试仓库级整仓授权（短路放行）
+            // 放在 isDevopsProjectMember 之前，避免命中场景下产生不必要的 DevOps 远程调用
             if (checkStrictRepoLevelGrant(context)) {
                 return true
             }
+            val isDevopsProjectMember = isDevopsProjectMember(userId, projectId, action, repoName)
             if (needCheckPathPermission(resourceType, projectId, repoName!!)) {
                 logger.debug("need check path control [$context]")
                 return checkNodeAction(context, isDevopsProjectMember)
