@@ -137,8 +137,7 @@ abstract class AbstractEncryptorFileStorage<Credentials : StorageCredentials, Cl
                     fromCredentials.encrypt.key == toCredentials.encrypt.key
         )
         val newFromName = getEncryptName(fromName, fromCredentials)
-        // 复制前后都是使用源存储的加密算法，因此使用原存储获取加密后文件名
-        val newToName = getEncryptName(toName, fromCredentials)
+        val newToName = getEncryptName(toName, toCredentials)
         super.copy(fromPath, newFromName, toPath, newToName, fromCredentials, toCredentials)
     }
 
