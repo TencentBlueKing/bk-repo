@@ -109,11 +109,11 @@ abstract class AbsArtifactDataReceiver(
             var rateLimitFlag = false
             var exp: Exception? = null
             try {
-                val input = requestLimitCheckService?.bandwidthCheck(
+                val bandwidthInput = requestLimitCheckService?.uploadBandwidthStreamCheck(
                     source, receiveProperties.circuitBreakerThreshold, contentLength
                 ) ?: source.rateLimit(receiveProperties.rateLimit.toBytes())
-                rateLimitFlag = input is CommonRateLimitInputStream
-                doReceiveStream(input)
+                rateLimitFlag = bandwidthInput is CommonRateLimitInputStream
+                doReceiveStream(bandwidthInput)
             } catch (exception: IOException) {
                 exp = exception
                 handleIOException(exception)
@@ -122,7 +122,7 @@ abstract class AbsArtifactDataReceiver(
                 handleOverloadException(overloadEx)
             } finally {
                 if (rateLimitFlag) {
-                    requestLimitCheckService?.bandwidthFinish(exp)
+                    requestLimitCheckService?.uploadBandwidthStreamFinish(exp)
                 }
             }
         }
