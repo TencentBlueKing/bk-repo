@@ -95,7 +95,6 @@ import org.apache.commons.logging.LogFactory
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
-import com.tencent.bkrepo.common.artifact.stream.BoundedInputStream
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.Callable
@@ -750,13 +749,11 @@ class CosClient(val credentials: InnerCosCredentials) {
          * 执行分片上传
          */
         private fun doUpload(inputStream: InputStream) {
-            // 使用 BoundedInputStream 限制每个分片读取的字节数，直接流式上传，不落盘
             var remaining = length
             val partSize = partSize(length)
             while (remaining > 0) {
                 val currentPartSize = minOf(partSize, remaining)
-                val boundedStream = BoundedInputStream(inputStream, currentPartSize)
-                uploadPart(boundedStream, currentPartSize)
+                uploadPart(inputStream, currentPartSize)
                 remaining -= currentPartSize
                 uploaded += currentPartSize
             }

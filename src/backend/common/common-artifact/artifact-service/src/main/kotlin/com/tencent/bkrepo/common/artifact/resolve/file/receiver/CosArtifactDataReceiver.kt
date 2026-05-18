@@ -5,7 +5,9 @@ import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.metrics.TrafficHandler
+import com.tencent.bkrepo.common.artifact.exception.ArtifactInputStreamReadException
 import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
+import com.tencent.bkrepo.common.artifact.stream.SourceMarkerInputStream
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.storage.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
@@ -16,6 +18,7 @@ import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import io.micrometer.observation.ObservationRegistry
 import org.slf4j.LoggerFactory
+import java.io.IOException
 import java.io.InputStream
 import java.util.UUID
 
@@ -68,18 +71,21 @@ class CosArtifactDataReceiver(
     }
 
     override fun doReceiveStream(source: InputStream) {
+        // 用 SourceMarkerInputStream 包装源流，把源流 read 抛出的 IOException 标记成
+        // ArtifactInputStreamReadException，后续可通过类型+cause 链准确识别"源流读取失败"，
+        val markedSource = SourceMarkerInputStream(source)
         try {
-            val res = RecordableDigestInputStream(source, trafficHandler, listener).use { uploadSession.upload(it) }
+            val res = RecordableDigestInputStream(markedSource, trafficHandler, listener)
+                .use { uploadSession.upload(it) }
             crc64ecma = res.crc64ecma
         } catch (e: InnerCosException) {
-            val cause = e.cause
-            val stackStraceOfReadExp = "com.tencent.bkrepo.common.artifact.stream.DelegateInputStream.read"
-            if (cause?.stackTrace?.any { it.toString().startsWith(stackStraceOfReadExp) } == true) {
-                // 可能由于客户端断开连接导致报错，此时需要抛出cause，用于外层判断是否为客户端错误确认日志等级
-                throw cause
-            } else {
-                throw e
+            // 命中标记异常说明是源流（通常是客户端连接）读取失败，
+            // 抛出最原始的 IOException，便于外层根据异常类型/消息判定日志等级。
+            val readEx = ArtifactInputStreamReadException.findIn(e)
+            if (readEx != null) {
+                throw readEx.cause as? IOException ?: readEx
             }
+            throw e
         }
     }
 
