@@ -449,13 +449,17 @@ open class PermissionServiceImpl constructor(
         }
         val roles = user.roles
 
-        // 用户为系统管理员、项目管理员、项目用户
-        if (user.admin || isUserLocalProjectAdmin(userId, projectId) || isUserLocalProjectUser(userId, projectId)) {
+        // 系统管理员 / 项目管理员：全量可见，不参与严格模式过滤
+        if (user.admin || isUserLocalProjectAdmin(userId, projectId)) {
             return getAllRepoByProjectId(projectId)
         }
-        // 全局预览角色：对所有仓库可见（只读放行由 checkPermission 控制）
+        // 项目用户：全量可见，但严格模式仓库需有显式授权才可见
+        if (isUserLocalProjectUser(userId, projectId)) {
+            return filterByStrictMode(projectId, userId, roles, getAllRepoByProjectId(projectId))
+        }
+        // 全局预览角色：对所有仓库可见（只读放行由 checkPermission 控制），但严格模式仓库需有显式授权
         if (isGlobalPreviewUser(user)) {
-            return getAllRepoByProjectId(projectId)
+            return filterByStrictMode(projectId, userId, roles, getAllRepoByProjectId(projectId))
         }
 
         val repoList = mutableListOf<String>()
@@ -482,6 +486,30 @@ open class PermissionServiceImpl constructor(
         repoList.addAll(permHelper.getNoAdminRoleRepo(projectId, noAdminRole))
 
         return repoList.distinct()
+    }
+
+    /**
+     * 对仓库列表做严格模式可见性过滤：
+     * - 项目下没有任何严格模式仓库：直接返回原列表（快速退出，零额外开销）
+     * - 否则：保留 [非严格模式仓库] + [严格模式且当前用户/角色已显式授权的仓库]
+     *
+     * 用于 listPermissionRepo 中对"全量可见"路径（项目用户、Devops 项目成员、
+     * 全局预览角色）做严格模式可见性收紧；普通授权聚合路径无需调用，因其本身
+     * 仅返回已授权仓库。
+     */
+    protected fun filterByStrictMode(
+        projectId: String,
+        userId: String,
+        roles: List<String>,
+        repos: List<String>,
+    ): List<String> {
+        if (repos.isEmpty()) return repos
+        // 一次 Mongo 查询：项目下严格模式仓库集合（命中复合索引）
+        val strictRepos = repoAuthConfigDao.listRepoNamesByMode(projectId, STRICT)
+        if (strictRepos.isEmpty()) return repos
+        // 一次（或两次）Mongo 查询：用户/角色对这些 strict 仓库的已有授权
+        val grantedStrict = permHelper.listGrantedRepos(projectId, userId, roles, strictRepos)
+        return repos.filter { it !in strictRepos || it in grantedStrict }
     }
 
     override fun listNoPermissionPath(

@@ -92,10 +92,16 @@ class DevopsPermissionServiceImpl constructor(
 ) {
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
-        // 用户为系统管理员，或者当前项目管理员
-        if (isUserSystemAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)
-            || isDevopsProjectMember(userId, projectId, READ.name, null)
-        ) return getAllRepoByProjectId(projectId)
+        // 系统管理员 / 项目管理员：全量可见，不过滤
+        if (isUserSystemAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)) {
+            return getAllRepoByProjectId(projectId)
+        }
+        // Devops 项目成员：全量可见，但严格模式仓库需有显式授权才可见
+        if (isDevopsProjectMember(userId, projectId, READ.name, null)) {
+            val user = getUserInfo(userId)
+            val roles = user?.roles.orEmpty()
+            return filterByStrictMode(projectId, userId, roles, getAllRepoByProjectId(projectId))
+        }
 
         return super.listPermissionRepo(projectId, userId, appId)
     }

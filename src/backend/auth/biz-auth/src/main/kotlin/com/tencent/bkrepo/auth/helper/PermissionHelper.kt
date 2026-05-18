@@ -329,6 +329,37 @@ class PermissionHelper constructor(
         return repoList
     }
 
+    /**
+     * 列出当前用户（含其角色）在指定项目下、对给定仓库集合中已显式授权的仓库子集。
+     * 用于 listPermissionRepo 中对严格模式仓库做可见性过滤。
+     *
+     * 实现：复用现有 `listByProjectIdAndUsers` / `listByProjectAndRoles`，
+     * 再在内存里与 [repos] 求交集。strictRepos 集合通常很小，
+     * 且 permission 表已按 (projectId, user/roles) 过滤，扫描量可控。
+     */
+    fun listGrantedRepos(
+        projectId: String,
+        userId: String,
+        roles: List<String>,
+        repos: Set<String>,
+    ): Set<String> {
+        if (repos.isEmpty()) return emptySet()
+        val granted = mutableSetOf<String>()
+        permissionDao.listByProjectIdAndUsers(projectId, userId).forEach { p ->
+            if (p.actions.isNotEmpty()) {
+                p.repos.forEach { if (it in repos) granted.add(it) }
+            }
+        }
+        if (roles.isNotEmpty()) {
+            permissionDao.listByProjectAndRoles(projectId, roles).forEach { p ->
+                if (p.actions.isNotEmpty()) {
+                    p.repos.forEach { if (it in repos) granted.add(it) }
+                }
+            }
+        }
+        return granted
+    }
+
     fun getUserCommonRoleProject(roles: List<String>): List<String> {
         val projectList = mutableListOf<String>()
         roleRepository.findByIdIn(roles).forEach {
