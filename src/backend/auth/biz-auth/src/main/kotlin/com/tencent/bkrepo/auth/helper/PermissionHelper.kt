@@ -345,19 +345,26 @@ class PermissionHelper constructor(
     ): Set<String> {
         if (repos.isEmpty()) return emptySet()
         val granted = mutableSetOf<String>()
-        permissionDao.listByProjectIdAndUsers(projectId, userId).forEach { p ->
-            if (p.actions.isNotEmpty()) {
-                p.repos.forEach { if (it in repos) granted.add(it) }
-            }
-        }
+        collectGrantedRepos(permissionDao.listByProjectIdAndUsers(projectId, userId), repos, granted)
         if (roles.isNotEmpty()) {
-            permissionDao.listByProjectAndRoles(projectId, roles).forEach { p ->
-                if (p.actions.isNotEmpty()) {
-                    p.repos.forEach { if (it in repos) granted.add(it) }
-                }
-            }
+            collectGrantedRepos(permissionDao.listByProjectAndRoles(projectId, roles), repos, granted)
         }
         return granted
+    }
+
+    /**
+     * 从 [permissions] 中筛选出 actions 非空的记录，并把其 repos 与 [candidates] 的交集累加到 [target]。
+     * 抽出该辅助方法用于降低 [listGrantedRepos] 的嵌套层级。
+     */
+    private fun collectGrantedRepos(
+        permissions: List<TPermission>,
+        candidates: Set<String>,
+        target: MutableSet<String>,
+    ) {
+        permissions.asSequence()
+            .filter { it.actions.isNotEmpty() }
+            .flatMap { it.repos.asSequence() }
+            .filterTo(target) { it in candidates }
     }
 
     fun getUserCommonRoleProject(roles: List<String>): List<String> {
