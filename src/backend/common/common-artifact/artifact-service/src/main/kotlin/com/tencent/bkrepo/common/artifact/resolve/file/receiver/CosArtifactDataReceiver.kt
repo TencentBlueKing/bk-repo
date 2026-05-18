@@ -107,7 +107,6 @@ class CosArtifactDataReceiver(
     }
 
     override fun close() {
-        require(uploadSession.completed || uploadSession.aborted)
         if (uploadSession.aborted) {
             logger.info("upload session of obj[${uploadSession.key}] was aborted, skip delete")
         }
