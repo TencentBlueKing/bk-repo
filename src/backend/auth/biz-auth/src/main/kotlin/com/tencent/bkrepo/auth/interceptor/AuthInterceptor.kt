@@ -68,7 +68,6 @@ import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.common.service.util.HttpSigner
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import io.jsonwebtoken.JwtException
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.apache.commons.codec.digest.HmacAlgorithms
@@ -134,7 +133,7 @@ class AuthInterceptor(
         val token = authHeader.removePrefix(BEARER_AUTH_PREFIX)
         val userId = parseInternalJwtUserId(token)
         if (userId != null) {
-            return checkInternalJwtToken(request, userId)
+            return checkUserFromJwt(request, userId)
         }
         return checkOauthToken(request, authHeader)
     }
@@ -142,19 +141,19 @@ class AuthInterceptor(
     private fun parseInternalJwtUserId(token: String): String? {
         return try {
             JwtUtils.validateToken(signingKey, token).body.subject?.takeIf { it.isNotBlank() }
-        } catch (e: JwtException) {
-            logger.debug("validate internal jwt token failed", e)
-            null
-        } catch (e: IllegalArgumentException) {
+        } catch (e: Exception) {
             logger.debug("validate internal jwt token failed", e)
             null
         }
     }
 
-    private fun checkInternalJwtToken(request: HttpServletRequest, userId: String): Boolean {
+    private fun checkUserFromJwt(request: HttpServletRequest, userId: String): Boolean {
         val userAccess = userAccessApiSet.any { request.requestURI.contains(it) }
-        val user = userService.getUserInfoById(userId)
-        val isAdmin = user?.admin ?: false
+        val user = userService.getUserInfoById(userId) ?: run {
+            logger.warn("internal jwt user [$userId] not found")
+            throw IllegalArgumentException("internal jwt user not found")
+        }
+        val isAdmin = user.admin
         request.setAttribute(USER_KEY, userId)
         request.setAttribute(ADMIN_USER, isAdmin)
         if (!isAdmin && !userAccess) {
