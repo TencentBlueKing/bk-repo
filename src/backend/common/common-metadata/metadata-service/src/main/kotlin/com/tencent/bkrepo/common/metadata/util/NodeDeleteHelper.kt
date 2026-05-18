@@ -35,4 +35,15 @@ object NodeDeleteHelper {
             .and(TNode::deleted).isEqualTo(null)
             .and(TNode::fullPath).regex(regex)
     }
+
+    /**
+     * 精确路径匹配，适用于已知是文件节点（非目录）的删除场景，避免正则前缀查询
+     */
+    fun buildFileCriteria(projectId: String, repoName: String, fullPath: String): Criteria {
+        val normalizedFullPath = PathUtils.normalizeFullPath(fullPath)
+        return where(TNode::projectId).isEqualTo(projectId)
+            .and(TNode::repoName).isEqualTo(repoName)
+            .and(TNode::deleted).isEqualTo(null)
+            .and(TNode::fullPath).isEqualTo(normalizedFullPath)
+    }
 }

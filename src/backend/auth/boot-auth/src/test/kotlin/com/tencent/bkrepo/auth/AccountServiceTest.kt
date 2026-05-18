@@ -197,6 +197,7 @@ class AccountServiceTest {
             scope = scope,
             scopeDesc = null,
             avatarUrl = null,
+            limit = null,
             description = null
         )
     }

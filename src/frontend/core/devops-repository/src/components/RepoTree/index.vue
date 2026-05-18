@@ -13,7 +13,14 @@
                         <Icon class="mr5" size="14" :name="openList.includes(item.roadMap) ? 'folder-open' : 'folder'" />
                     </slot>
                     <slot name="text" :item="item">
-                        <div class="mr10 node-text" v-html="DOMPurify.sanitize(importantTransform(item.displayName))" :title="item.displayName.toString().length > 19 && openType === '' ? item.displayName : ''"></div>
+                        <div class="mr10 node-text" :title="getDisplayTitle(item.displayName)">
+                            <span
+                                v-for="(segment, index) in importantTransform(item.displayName)"
+                                :key="index">
+                                <em v-if="segment.important">{{ segment.text }}</em>
+                                <template v-else>{{ segment.text }}</template>
+                            </span>
+                        </div>
                     </slot>
                     <div class="mr10 node-operation flex-align-center">
                         <slot name="operation" :item="item"></slot>
@@ -26,7 +33,6 @@
 </template>
 
 <script>
-    import DOMPurify from 'dompurify'
     import { throttle } from '@repository/utils'
     export default {
         name: 'repo-tree',
@@ -54,7 +60,6 @@
         },
         data () {
             return {
-                DOMPurify,
                 resizeFn: null,
                 size: 0,
                 start: 0
@@ -137,12 +142,40 @@
             itemClickHandler (item) {
                 this.$emit('item-click', item)
             },
+            getDisplayName (displayName) {
+                return displayName == null ? '' : String(displayName)
+            },
+            getDisplayTitle (displayName) {
+                const text = this.getDisplayName(displayName)
+                return text.length > 19 && this.openType === '' ? text : ''
+            },
             importantTransform (displayName) {
-                if (!this.importantSearch) return displayName
-                const normalText = displayName.split(this.importantSearch)
-                return normalText.reduce((a, b) => {
-                    return a + `<em>${this.importantSearch}</em>` + b
+                const text = this.getDisplayName(displayName)
+                const keyword = String(this.importantSearch || '')
+                if (!keyword) {
+                    return [{ text, important: false }]
+                }
+
+                const segments = []
+                let start = 0
+                let index = text.indexOf(keyword)
+                while (index !== -1) {
+                    index > start && segments.push({
+                        text: text.slice(start, index),
+                        important: false
+                    })
+                    segments.push({
+                        text: keyword,
+                        important: true
+                    })
+                    start = index + keyword.length
+                    index = text.indexOf(keyword, start)
+                }
+                start < text.length && segments.push({
+                    text: text.slice(start),
+                    important: false
                 })
+                return segments.length ? segments : [{ text, important: false }]
             }
         }
     }

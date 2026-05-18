@@ -47,6 +47,7 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer
 import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import java.util.function.Consumer
 
 @Configuration
@@ -64,6 +65,13 @@ class WebsocketConfiguration(
     override fun configureMessageBroker(config: MessageBrokerRegistry) {
         config.setCacheLimit(webSocketProperties.cacheLimit)
         config.enableSimpleBroker("/topic")
+            .setTaskScheduler(webSocketHeartbeatTaskScheduler())
+            .setHeartbeatValue(
+                longArrayOf(
+                    webSocketProperties.serverHeartbeatInterval,
+                    webSocketProperties.clientHeartbeatInterval
+                )
+            )
         config.setApplicationDestinationPrefixes("/app")
     }
 
@@ -112,6 +120,15 @@ class WebsocketConfiguration(
             webSocketMetrics = webSocketMetrics,
             registry = registry
         )
+    }
+
+    @Bean
+    fun webSocketHeartbeatTaskScheduler(): ThreadPoolTaskScheduler {
+        return ThreadPoolTaskScheduler().apply {
+            poolSize = webSocketProperties.heartbeatSchedulerPoolSize
+            setThreadNamePrefix("websocket-heartbeat-")
+            setRemoveOnCancelPolicy(true)
+        }
     }
 
     @Bean

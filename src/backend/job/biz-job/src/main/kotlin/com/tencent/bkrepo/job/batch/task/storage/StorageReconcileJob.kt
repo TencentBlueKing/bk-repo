@@ -14,6 +14,7 @@ import com.tencent.bkrepo.job.CREDENTIALS
 import com.tencent.bkrepo.job.SHA256
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.batch.utils.DriveUtils.notAllowDriveRepository
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.config.properties.StorageReconcileJobProperties
@@ -43,11 +44,15 @@ class StorageReconcileJob(
 ) : DefaultContextJob(properties) {
     override fun doStart0(jobContext: JobContext) {
         // 校验默认存储
-        reconcile(storageProperties.defaultStorageCredentials())
+        if (notAllowDriveRepository(storageProperties.defaultStorageCredentials())) {
+            reconcile(storageProperties.defaultStorageCredentials())
+        }
 
         // 校验其他存储
         storageCredentialService.list(clusterProperties.region).forEach {
-            reconcile(it)
+            if (notAllowDriveRepository(it)) {
+                reconcile(it)
+            }
         }
     }
 
