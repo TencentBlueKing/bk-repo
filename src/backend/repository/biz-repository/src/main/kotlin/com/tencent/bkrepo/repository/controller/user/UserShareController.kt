@@ -49,6 +49,7 @@ import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.artifact.audit.NODE_VIEW_ACTION
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.share.BatchShareRecordCreateRequest
@@ -73,7 +74,8 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/share")
 class UserShareController(
     private val permissionManager: PermissionManager,
-    private val shareService: ShareService
+    private val shareService: ShareService,
+    private val projectService: ProjectService,
 ) {
 
     @AuditEntry(
@@ -102,6 +104,7 @@ class UserShareController(
         @RequestBody shareRecordCreateRequest: ShareRecordCreateRequest
     ): Response<ShareRecordInfo> {
         ActionAuditContext.current().setInstance(shareRecordCreateRequest)
+        projectService.checkProjectShareEnabled(artifactInfo.projectId)
         return ResponseBuilder.success(shareService.create(userId, artifactInfo, shareRecordCreateRequest))
     }
 
@@ -136,6 +139,7 @@ class UserShareController(
     ): Response<List<ShareRecordInfo>> {
         with(batchShareRecordCreateRequest) {
             ActionAuditContext.current().setInstance(batchShareRecordCreateRequest)
+            projectService.checkProjectShareEnabled(projectId)
             val shareRecordCreateRequest = ShareRecordCreateRequest(authorizedUserList, authorizedIpList, expireSeconds)
             val recordInfoList = fullPathList.map {
                 val fullPath = PathUtils.normalizeFullPath(it)

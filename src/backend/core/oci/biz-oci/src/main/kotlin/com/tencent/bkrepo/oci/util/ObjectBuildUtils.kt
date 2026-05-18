@@ -228,7 +228,8 @@ object ObjectBuildUtils {
                 createdDate = createdDate,
                 lastModifiedBy = lastModifiedBy,
                 lastModifiedDate = lastModifiedDate,
-                platform = platform
+                platform = platform,
+                federatedSource = packageVersion.federatedSource,
             )
         }
     }

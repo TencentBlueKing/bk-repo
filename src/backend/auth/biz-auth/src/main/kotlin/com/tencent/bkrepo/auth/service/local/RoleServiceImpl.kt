@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.auth.service.local
 
 import com.tencent.bkrepo.auth.dao.UserDao
+import com.tencent.bkrepo.auth.constant.GLOBAL_PREVIEW_ROLE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
 import com.tencent.bkrepo.auth.message.AuthMessageCode
@@ -86,9 +87,10 @@ class RoleServiceImpl constructor(
         logger.info("update role info: [$id, $request]")
         val role = roleRepository.findFirstById(id) ?: return false
         with(request) {
-            if (name != null || description != null) {
+            if (name != null || description != null || deptInfoList != null) {
                 name?.let { role.name = name }
                 description?.let { role.description = description }
+                deptInfoList?.let { role.deptInfoList = deptInfoList }
                 roleRepository.save(role)
             }
             request.userIds?.map { it }?.let { idList ->
@@ -137,6 +139,11 @@ class RoleServiceImpl constructor(
             logger.warn("delete role [$id] not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
         } else {
+            // 系统预置全局预览角色不允许删除
+            if (role.type == RoleType.SERVICE && role.roleId == GLOBAL_PREVIEW_ROLE_ID) {
+                logger.warn("reject delete builtin global preview role [$id]")
+                throw ErrorCodeException(AuthMessageCode.AUTH_BUILTIN_ROLE_NOT_DELETABLE)
+            }
             val users = listUserByRoleId(role.id!!)
             if (users.isNotEmpty()) {
                 userService.removeUserFromRoleBatch(users.map { it.userId }, id)
@@ -158,7 +165,8 @@ class RoleServiceImpl constructor(
             admin = tRole.admin,
             users = users,
             description = tRole.description,
-            source = tRole.source
+            source = tRole.source,
+            deptInfoList = tRole.deptInfoList
         )
     }
 

@@ -216,4 +216,37 @@ class UserProjectController(
     ): Response<Boolean> {
         return ResponseBuilder.success(projectService.isProjectEnabled(projectId))
     }
+
+    @Operation(summary = "设置项目启用/禁用状态")
+    @PutMapping("/{projectId}/enabled")
+    fun setProjectEnabled(
+        @Parameter(name = "项目ID", required = true)
+        @PathVariable projectId: String,
+        @Parameter(name = "是否启用项目", required = true)
+        @RequestParam enabled: Boolean
+    ): Response<Boolean> {
+        permissionManager.checkProjectPermission(PermissionAction.UPDATE, projectId)
+        return ResponseBuilder.success(projectService.setProjectEnabled(projectId, enabled))
+    }
+
+    @Operation(summary = "设置项目分享制品功能启用/禁用状态")
+    @PutMapping("/{projectId}/share/enabled")
+    fun setProjectShareEnabled(
+        @Parameter(name = "项目ID", required = true)
+        @PathVariable projectId: String,
+        @Parameter(name = "是否启用分享制品功能", required = true)
+        @RequestParam enabled: Boolean
+    ): Response<Boolean> {
+        permissionManager.checkProjectPermission(PermissionAction.UPDATE, projectId)
+        return ResponseBuilder.success(projectService.setProjectShareEnabled(projectId, enabled))
+    }
+
+    @Operation(summary = "获取项目分享制品功能启用/禁用状态")
+    @GetMapping("/{projectId}/share/enabled")
+    fun isProjectShareEnabled(
+        @Parameter(name = "项目ID", required = true)
+        @PathVariable projectId: String
+    ): Response<Boolean> {
+        return ResponseBuilder.success(projectService.isProjectShareEnabled(projectId))
+    }
 }

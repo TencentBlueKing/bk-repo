@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.storage.credentials
 
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.annotation.Sensitive
 import com.tencent.bkrepo.common.metadata.handler.MaskPartString
 import com.tencent.bkrepo.common.storage.config.CacheProperties
@@ -55,6 +56,10 @@ data class InnerCosCredentials(
     var slowLogSpeed: Int = MB,
     var slowLogTimeInMillis: Long = 30_000,
     /**
+     * 分片上传/下载阈值，单位 MB
+     */
+    var multipartThreshold: Long = 10,
+    /**
      * 是否启用 COS 直传
      * 默认 false，需要同时开启 ReceiveProperties.enableCosDirectUpload 才生效
      */
@@ -65,6 +70,8 @@ data class InnerCosCredentials(
     override var upload: UploadProperties = UploadProperties(),
     override var encrypt: EncryptProperties = EncryptProperties(),
     override var compress: CompressProperties = CompressProperties(),
+    override var allowRepoTypes: Set<String>? = null,
+    override var notAllowRepoTypes: Set<String>? = setOf(RepositoryType.DRIVE.name),
 ) : StorageCredentials(key, cache, upload, encrypt, compress) {
 
     companion object {
@@ -81,5 +88,6 @@ data class InnerCosCredentials(
         var minimumPartSize: Long = 10,
         var maxDownloadParts: Int = 10000,
         var qps: Int = 10,
+        var lazyLoad: Boolean = false,
     )
 }

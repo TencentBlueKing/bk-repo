@@ -182,7 +182,7 @@ export default {
         ).then(res => {
             commit('SET_DOMAIN', {
                 type: repoType,
-                domain: res.domain || res || `${location.origin}/${repoType}`
+                domain: res.domain || res || `${location.origin}${window.BK_SUBPATH}${repoType}`
             })
         })
     },

@@ -33,11 +33,13 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 
 data class RepoVolumeSyncEvent(
     override val projectId: String,
-    override val repoName: String
-): ArtifactEvent(
+    override val repoName: String,
+    override val eventId: String? = generateEventId(),
+) : ArtifactEvent(
     type = EventType.REPO_VOLUME_SYNC,
     projectId = projectId,
     repoName = repoName,
     resourceKey = StringPool.ROOT,
-    userId = "system"
+    userId = "system",
+    eventId = eventId
 )

@@ -52,6 +52,7 @@ import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.PrincipalManager
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.storage.config.StorageProperties
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -82,7 +83,7 @@ class MetadataAutoConfiguration {
     @Conditional(SyncCondition::class)
     fun permissionManager(
         projectService: ProjectService,
-        repositoryService: RepositoryService,
+        repositoryService: ObjectProvider<RepositoryService>,
         permissionResource: ServicePermissionClient,
         externalPermissionResource: ServiceExternalPermissionClient,
         userResource: ServiceUserClient,
@@ -97,7 +98,7 @@ class MetadataAutoConfiguration {
         ) {
             EdgePermissionManager(
                 projectService = projectService,
-                repositoryService = repositoryService,
+                repositoryService = repositoryService.getObject(),
                 permissionResource = permissionResource,
                 externalPermissionResource = externalPermissionResource,
                 userResource = userResource,
@@ -109,7 +110,7 @@ class MetadataAutoConfiguration {
         } else {
             PermissionManager(
                 projectService = projectService,
-                repositoryService = repositoryService,
+                repositoryService = repositoryService.getObject(),
                 permissionResource = permissionResource,
                 externalPermissionResource = externalPermissionResource,
                 userResource = userResource,
@@ -125,7 +126,7 @@ class MetadataAutoConfiguration {
     @Conditional(SyncCondition::class)
     fun proxyPermissionManager(
         projectService: ProjectService,
-        repositoryService: RepositoryService,
+        repositoryService: ObjectProvider<RepositoryService>,
         permissionResource: ServicePermissionClient,
         externalPermissionResource: ServiceExternalPermissionClient,
         userResource: ServiceUserClient,
@@ -135,7 +136,7 @@ class MetadataAutoConfiguration {
     ): ProxyPermissionManager {
         return ProxyPermissionManager(
             projectService = projectService,
-            repositoryService = repositoryService,
+            repositoryService = repositoryService.getObject(),
             permissionResource = permissionResource,
             externalPermissionResource = externalPermissionResource,
             userResource = userResource,

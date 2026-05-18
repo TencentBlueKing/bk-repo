@@ -5,6 +5,7 @@
             <div class="flex-align-center">
                 <span class="card-name text-overflow" :title="cardData.name">{{ cardData.name }}</span>
                 <span class="ml10 repo-tag" v-if="['MAVEN'].includes(cardData.type)">{{ cardData.key.replace(/^.*\/\/(.+):.*$/, '$1') }}</span>
+                <span class="ml10 repo-tag" v-if="huggingfacePackageType">{{ huggingfacePackageType }}</span>
                 <scan-tag class="ml10"
                     v-if="showRepoScan"
                     :status="(cardData.metadata || {}).scanStatus"
@@ -41,7 +42,7 @@
                 :list="[
                     { label: $t('detail'), clickEvent: () => detail() },
                     !(cardData.metadata || {}).forbidStatus && { label: $t('download'), clickEvent: () => download() },
-                    !community && !(cardData.metadata || {}).forbidStatus && { label: $t('share'), clickEvent: () => share() }
+                    !community && shareEnabled && !(cardData.metadata || {}).forbidStatus && { label: $t('share'), clickEvent: () => share() }
                 ]"></operation-list>
         </div>
     </div>
@@ -64,6 +65,10 @@
             readonly: {
                 type: Boolean,
                 default: false
+            },
+            shareEnabled: {
+                type: Boolean,
+                default: true
             }
         },
         computed: {
@@ -74,6 +79,15 @@
             showRepoScan () {
                 const show = this.isEnterprise && !this.community && !this.cardData.type && /\.(ipa)|(apk)|(jar)$/.test(this.cardData.name)
                 return show || SHOW_ANALYST_MENU
+            },
+            huggingfacePackageType () {
+                if (this.cardData.type === 'HUGGINGFACE' && this.cardData.key) {
+                    const match = this.cardData.key.match(/^huggingface:\/\/(model|dataset)\//)
+                    if (match) {
+                        return match[1] === 'model' ? this.$t('model') : this.$t('dataset')
+                    }
+                }
+                return null
             }
         },
         methods: {
@@ -90,7 +104,7 @@
                 const url = `/generic/${this.cardData.projectId}/${this.cardData.repoName}/${this.cardData.fullPath}?download=true`
                 this.$ajax.head(url).then(() => {
                     window.open(
-                        '/web' + url + `&x-bkrepo-project-id=${this.cardData.projectId}`,
+                        window.BK_SUBPATH + 'web' + url + `&x-bkrepo-project-id=${this.cardData.projectId}`,
                         '_self'
                     )
                 }).catch(e => {

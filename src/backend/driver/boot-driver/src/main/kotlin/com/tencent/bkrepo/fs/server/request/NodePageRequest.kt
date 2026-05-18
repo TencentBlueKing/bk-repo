@@ -46,7 +46,8 @@ class NodePageRequest(request: ServerRequest) : NodeRequest(request) {
             includeFolder = includeFolder,
             pageSize = pageSize,
             pageNumber = pageNum,
-            includeMetadata = true
+            includeMetadata = true,
+            includeTotalRecords = false
         )
     }
 }

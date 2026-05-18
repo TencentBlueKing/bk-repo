@@ -105,6 +105,7 @@
 import { queryProjectMetrics } from '@/api/projectMetrics'
 import { formatNormalDate } from '@/utils/date'
 import { searchProjects } from '@/api/project'
+import { ROUTER_NAME_PROJECT_METRICS } from '@/router'
 
 export default {
   name: 'ProjectMetrics',
@@ -148,7 +149,7 @@ export default {
         pageNumber: String(pageNum)
       }
       query.projectId = this.projectId
-      this.$router.push({ path: '/nodes/ProjectMetrics', query: query })
+      this.$router.push({ name: ROUTER_NAME_PROJECT_METRICS, query: query })
     },
     onRouteUpdate(route) {
       const query = route.query

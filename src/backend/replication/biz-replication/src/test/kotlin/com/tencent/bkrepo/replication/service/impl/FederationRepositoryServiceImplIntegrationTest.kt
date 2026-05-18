@@ -9,6 +9,7 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
 import com.tencent.bkrepo.replication.pojo.federation.FederatedCluster
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryCreateRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryUpdateRequest
+import com.tencent.bkrepo.replication.manager.FederationDiffManager
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.impl.federation.FederationSyncManager
 import com.tencent.bkrepo.replication.service.impl.federation.FederationTaskManager
@@ -46,6 +47,9 @@ class FederationRepositoryServiceImplIntegrationTest {
 
     @MockK
     private lateinit var clusterNodeService: ClusterNodeService
+
+    @MockK
+    private lateinit var federationDiffManager: FederationDiffManager
 
     @InjectMockKs
     private lateinit var federationRepositoryService: FederationRepositoryServiceImpl

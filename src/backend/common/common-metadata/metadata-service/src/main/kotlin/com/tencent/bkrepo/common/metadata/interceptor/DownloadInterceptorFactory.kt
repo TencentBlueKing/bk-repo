@@ -62,6 +62,7 @@ class DownloadInterceptorFactory(
         const val ANDROID_APP_USER_AGENT = "BKCI_APP"
         const val ANDROID_APP_USER_AGENT_NEW = "BK_CI APP"
         const val IOS_APP_USER_AGENT = "com.apple.appstored"
+        const val REPO_CLIENT = "BKDrive"
         private const val INTERCEPTORS = "interceptors"
         private const val TYPE = "type"
         val forbidRule = mapOf(

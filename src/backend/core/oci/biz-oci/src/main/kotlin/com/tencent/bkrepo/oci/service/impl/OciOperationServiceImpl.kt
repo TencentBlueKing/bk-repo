@@ -981,8 +981,7 @@ class OciOperationServiceImpl(
             .projectId(projectId)
             .repoName(repoName)
             .sha256(ociDigest.getDigestHex())
-            .page(DEFAULT_PAGE_NUMBER, 1)
-            .sortByAsc(NODE_FULL_PATH).apply {
+            .page(DEFAULT_PAGE_NUMBER, 1).apply {
                 path?.let {
                     this.path(path, OperationType.PREFIX)
                 }
@@ -1148,7 +1147,10 @@ class OciOperationServiceImpl(
             val lastModifiedBy = it.lastModifiedBy
             val lastModifiedDate = it.lastModifiedDate.toString()
             val downLoadCount = it.downloads
-            val registryUrl = "${ociProperties.domain}/$projectId/$repoName/$packageName:$name"
+            val registryUrl = "${ociProperties.domain}/" +
+                "$projectId/" +
+                "$repoName/" +
+                "$packageName:$name"
             data.add(
                 OciTag(name, stageTag, size, lastModifiedBy, lastModifiedDate, downLoadCount, registryUrl)
             )

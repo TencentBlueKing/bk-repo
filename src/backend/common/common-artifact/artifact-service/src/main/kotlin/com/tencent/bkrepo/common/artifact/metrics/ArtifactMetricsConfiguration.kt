@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.artifact.metrics
 
 import com.tencent.bkrepo.common.artifact.metrics.bandwidth.InstanceBandWidthMetrics
+import com.tencent.bkrepo.common.artifact.metrics.export.ArtifactBandwidthExporter
 import com.tencent.bkrepo.common.artifact.metrics.export.ArtifactMetricsExporter
 import com.tencent.bkrepo.common.metrics.push.custom.CustomMetricsExporter
 import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
@@ -77,5 +78,17 @@ class ArtifactMetricsConfiguration {
         artifactMetricsProperties: ArtifactMetricsProperties,
     ): ArtifactMetricsExporter {
         return ArtifactMetricsExporter(customMetricsExporter, artifactMetricsProperties.allowUnknownProjectExport)
+    }
+
+    /**
+     * 流量聚合导出器
+     * 按维度（项目/仓库/类型）聚合流量数据，定期主动上报后清理内存
+     */
+    @Bean
+    fun artifactBandwidthExporter(
+        customMetricsExporter: CustomMetricsExporter? = null,
+        artifactMetricsProperties: ArtifactMetricsProperties,
+    ): ArtifactBandwidthExporter {
+        return ArtifactBandwidthExporter(customMetricsExporter, artifactMetricsProperties)
     }
 }

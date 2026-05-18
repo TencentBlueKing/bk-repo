@@ -126,10 +126,13 @@ class ClusterNodeController(
         repoName: String,
         fullPath: String,
         date: LocalDateTime,
-        operator: String
+        operator: String,
+        source: String?
     ): Response<NodeDeleteResult> {
         permissionManager.checkNodePermission(PermissionAction.DELETE, projectId, repoName, fullPath)
-        return ResponseBuilder.success(nodeService.deleteBeforeDate(projectId, repoName, date, operator, fullPath))
+        return ResponseBuilder.success(
+            nodeService.deleteBeforeDate(projectId, repoName, date, operator, fullPath, source = source)
+        )
     }
 
     override fun restoreNode(nodeRestoreRequest: NodeRestoreRequest): Response<NodeRestoreResult> {

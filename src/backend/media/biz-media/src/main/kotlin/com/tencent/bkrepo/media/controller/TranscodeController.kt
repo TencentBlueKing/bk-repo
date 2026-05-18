@@ -74,6 +74,6 @@ class TranscodeController(
         @RequestAttribute userId: String,
         @RequestBody transcodeConfig: TranscodeConfig,
     ) {
-        transcodeService.transcode(artifactInfo, transcodeConfig, userId)
+        transcodeService.transcode(artifactInfo, transcodeConfig, userId, null, null, null, null)
     }
 }

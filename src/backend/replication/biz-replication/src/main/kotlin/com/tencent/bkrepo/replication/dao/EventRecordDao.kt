@@ -16,6 +16,39 @@ import java.time.LocalDateTime
 @Repository
 class EventRecordDao : SimpleMongoDao<TEventRecord>() {
 
+
+    /**
+     * 由于历史数据可能没有 messageId 字段，不依赖唯一索引，改为先查询再插入
+     *
+     * 注意：此方法不保证严格的原子性，在高并发场景下可能存在极小概率的重复插入，
+     * 但对于消息重投的幂等场景已足够（同一消息的重投通常有时间间隔）
+     *
+     * @param record 要插入的事件记录
+     * @return 新插入记录的id，如果记录已存在则返回null
+     */
+    fun tryInsertIfAbsent(record: TEventRecord): String? {
+        // 先查询是否已存在相同的 messageId + taskKey 记录
+        val exists = existsByMessageIdAndTaskKey(record.messageId, record.taskKey)
+        if (exists) {
+            return null
+        }
+
+        // 不存在则插入新记录
+        val saved = this.insert(record)
+        return saved.id
+    }
+
+    /**
+     * 检查是否存在相同的 messageId + taskKey 记录
+     */
+    fun existsByMessageIdAndTaskKey(messageId: String?, taskKey: String): Boolean {
+        val query = Query.query(
+            Criteria.where(TEventRecord::messageId.name).isEqualTo(messageId)
+                .and(TEventRecord::taskKey.name).isEqualTo(taskKey)
+        )
+        return this.exists(query)
+    }
+
     /**
      * 根据事件ID查找记录
      */

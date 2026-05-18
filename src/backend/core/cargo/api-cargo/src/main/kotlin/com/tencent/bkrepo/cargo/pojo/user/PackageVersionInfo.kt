@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.cargo.pojo.user
 
+import com.tencent.bkrepo.cargo.pojo.base.CargoMetadata
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -39,7 +40,9 @@ data class PackageVersionInfo(
     @get:Schema(title = "基础信息")
     val basic: BasicInfo,
     @get:Schema(title = "元数据信息")
-    val metadata: List<MetadataModel>
+    val metadata: List<MetadataModel>,
+    @get:Schema(title = "cargo上传metadata")
+    val cargoMetadata: CargoMetadata? = null
 )
 
 @Schema(title = "基础信息")
@@ -69,5 +72,7 @@ data class BasicInfo(
     @get:Schema(title = "修改者")
     val lastModifiedBy: String,
     @get:Schema(title = "修改时间")
-    val lastModifiedDate: String
+    val lastModifiedDate: String,
+    @get:Schema(title = "联邦仓库同步来源")
+    val federatedSource: String?,
 )

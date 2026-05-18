@@ -60,8 +60,16 @@ interface NodeDeleteOperation {
      * 根据fullpath删除对应节点
      * 不会进行已删除节点数据返回
      * 不会进行容量清理，需要自行进行容量清理
+     * @param isFile 若明确节点为文件（非目录），设为 true 以使用精确路径匹配代替正则前缀查询
      */
-    fun deleteByFullPathWithoutDecreaseVolume(projectId: String, repoName: String, fullPath: String, operator: String)
+    fun deleteByFullPathWithoutDecreaseVolume(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        operator: String,
+        source: String? = null,
+        isFile: Boolean = false
+    )
 
     /**
      * 根据全路径删除文件或者目录
@@ -88,7 +96,8 @@ interface NodeDeleteOperation {
         date: LocalDateTime,
         operator: String,
         path: String,
-        decreaseVolume: Boolean = true
+        decreaseVolume: Boolean = true,
+        source: String? = null
     ): NodeDeleteResult
 
     /**
@@ -101,6 +110,7 @@ interface NodeDeleteOperation {
         fullPath: String,
         operator: String,
         nodeId: String,
-        deleteTime: LocalDateTime = LocalDateTime.now()
+        deleteTime: LocalDateTime = LocalDateTime.now(),
+        source: String? = null
     ): NodeDeleteResult
 }

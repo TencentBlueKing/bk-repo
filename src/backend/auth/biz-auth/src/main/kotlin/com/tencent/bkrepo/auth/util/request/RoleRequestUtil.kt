@@ -41,7 +41,8 @@ object RoleRequestUtil {
             repoName = request.repoName,
             admin = request.admin,
             description = request.description,
-            source = request.source
+            source = request.source,
+            deptInfoList = request.deptInfoList
         )
     }
 }

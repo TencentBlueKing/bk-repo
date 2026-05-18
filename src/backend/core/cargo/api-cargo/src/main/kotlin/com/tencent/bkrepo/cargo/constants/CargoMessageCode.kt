@@ -34,6 +34,7 @@ enum class CargoMessageCode(private val key: String) : MessageCode {
     CARGO_FILE_NOT_FOUND("cargo.file.not.found"),
     CARGO_FILE_YANKED("cargo.file.yanked"),
     CARGO_FILE_UPLOAD_FORBIDDEN("cargo.file.upload.forbidden"),
+    CARGO_VERSION_ALREADY_EXISTS("cargo.version.already.exists"),
     ;
     override fun getBusinessCode() = ordinal + 1
     override fun getKey() = key

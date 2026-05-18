@@ -2,10 +2,10 @@ package com.tencent.bkrepo.archive.metrics
 
 import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.CompressStatus
-import com.tencent.bkrepo.archive.core.provider.FileStorageFileProvider
-import com.tencent.bkrepo.archive.core.provider.PriorityFileProvider
 import com.tencent.bkrepo.archive.core.archive.ArchiveManager
 import com.tencent.bkrepo.archive.core.compress.BDZipManager
+import com.tencent.bkrepo.archive.core.provider.FileStorageFileProvider
+import com.tencent.bkrepo.archive.core.provider.PriorityFileProvider
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.model.TCompressFile
 import com.tencent.bkrepo.archive.repository.ArchiveFileDao
@@ -113,6 +113,10 @@ class ArchiveMetrics(
 
     private var fileArchiveSizeTotal = 0L
     private var fileCompressSizeTotal = 0L
+    private val archiveFileStatusCount: MutableMap<ArchiveStatus, Int> =
+        ArchiveStatus.values().associateWithTo(mutableMapOf()) { 0 }
+    private val compressFileStatusCount: MutableMap<CompressStatus, Int> =
+        CompressStatus.values().associateWithTo(mutableMapOf()) { 0 }
 
     override fun bindTo(registry: MeterRegistry) {
         this.registry = registry
@@ -144,7 +148,7 @@ class ArchiveMetrics(
 
         // 归档文件状态
         ArchiveStatus.values().forEach {
-            Gauge.builder(ARCHIVE_FILE_STATUS_COUNTER) { archiveFileRepository.countByStatus(it) }
+            Gauge.builder(ARCHIVE_FILE_STATUS_COUNTER) { archiveFileStatusCount[it] }
                 .description(ARCHIVE_FILE_STATUS_COUNTER_DESC)
                 .tag(TAG_STATUS, it.name)
                 .register(registry)
@@ -155,7 +159,7 @@ class ArchiveMetrics(
 
         // 压缩文件状态
         CompressStatus.values().forEach {
-            Gauge.builder(COMPRESS_FILE_STATUS_COUNTER) { compressFileRepository.countByStatus(it) }
+            Gauge.builder(COMPRESS_FILE_STATUS_COUNTER) { compressFileStatusCount[it] }
                 .description(COMPRESS_FILE_STATUS_COUNTER_DESC)
                 .tag(TAG_STATUS, it.name)
                 .register(registry)
@@ -167,6 +171,12 @@ class ArchiveMetrics(
 
     @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.DAYS)
     fun updateArchiveAndCompressSizeTotal() {
+        ArchiveStatus.values().forEach {
+            archiveFileStatusCount[it] = archiveFileRepository.countByStatus(it)
+        }
+        CompressStatus.values().forEach {
+            compressFileStatusCount[it] = compressFileRepository.countByStatus(it)
+        }
         val aggregation = Aggregation.newAggregation(
             Aggregation.match(where(TArchiveFile::status).isEqualTo(ArchiveStatus.COMPLETED)),
             Aggregation.group().sum(TArchiveFile::size.name).`as`(SizeInfo::size.name),

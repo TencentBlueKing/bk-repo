@@ -85,6 +85,43 @@ data class CryptoProperties(
         "d5mQq2Gt9bQ808Pb7Q+snd/HvN/jafj6VayKvdtxqkziQZtR66mzjyfD0Oxe48KU" +
         "KkOxDLBsCdS+2FTFubm8Ji6nLcHBjaOO1wf03H6dQiEGkw50aE7qkNashpZ3+5Qz" +
         "PQIDAQAB",
+    var privateKeyStr2048PKCS1: String = """
+        MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCyg0rVBmt1qWM9
+        iSilwRXWobCQ94jRqS4cSufekk0ZTt/D9p2CzCNnL40q5EGGjapTrCcE15vQJ/2K
+        1IfVqMbn8mT2z6IsF8J69dkz1nIhVAHBSL4AQ0toJr3/5C154o6NPo54LvyIZSHM
+        3Hcpmvg3yzfJQH1O1zzZOLWl+zAVwXBr3TG4Ospduj3hyonIXkk1y7Zo7IlL3K5j
+        baDpOuazm4LuAQTnYv6AfrqfBrMmyJ9aMi88/qZ7BBCW8ukxIPJHif6EMfYHHznN
+        qisI+2t02+cku8S1FfnHaDWAhvkdTBsFUt7Fvv0NykEVYROe2u/2KGeifsWRSfPh
+        kMjnCUOPAgMBAAECggEAFnHLht03xaN2htYn9i9Av6u0t4Vn/nR3B7ejT6i1aOkx
+        2UG4rCleiirAZRQt6O0G7V5HyaQSQynEByCRs5t05tTjPOT+Tuzt1ufyV0IvN2GI
+        lvS+buoHISE94l6eGSUTJ08mOpYtyjhs94UAtop1iw5SBUvGdZM6Y1VuAWCDuzhR
+        Dnx7LMg5W7TCOuBoHWShEk4M2Su6elYLZ+VXMGDsIvy8jcmDWmdZFrXiK0/aMKqA
+        WnEjc3R5HAssDIJsckTp0a8MP3vOKF7vD5Bi15HDphpVWj3DXgOyCeOKd5mwFz5m
+        AuZ0kpM//HeRHpMFNN9dc7kVoPVgf1czlW4jleKiAQKBgQDtIf1wXAlVuLrU5Rmh
+        doZb9CUw1Vxcjt6YRUBAj9d7pYTHlWmnT+OmVCaeutXz8YaoSCpWrswtilp/hwZP
+        cv/+FfeAuD0JmOv2e26ctoCtFxcX9aO1gS54OQjRwyQKNRBf/Pog7bhc/wILt1jT
+        edLXZT2K82RK+Cf711NIokuZUQKBgQDAt09MwP8PHdky0N2Na8sM2sfaWqD2XghY
+        yqS0rSTkuFBogKq3cWLm5copxc4nFUxfTiHCinirIT5xAozhrLA8kD2Nv8bEiKLg
+        co99LI7GkoXSBjxrysypZe9o3JLpaQagpYk5VopGF/34CObUCA77o5qKWkG0HR5m
+        AD62U3XW3wKBgQDf+vD1xhkTHM9r85GIDvnNtQfD3mPFETVzQkX0NWllYuvN0HTh
+        EfaGzolD+FnKduGn5bIH+kbk5P+h4Rm2xXrCtmD29g7BF+4Y/HF4GHHmDB9GBEDD
+        WedYqxaHevh5o7F52OsxWxh+zmdSRbXi2fiqdvfwXQDoRwkNOU9zFciuYQKBgHvN
+        Bsdi8DdQ0HgBj2JLTgy6+0o9kEvUin4n5/kdhabc9OK9TW49C/ESy3VcWhvnZcGP
+        2sYz2GLvH0LQBZrwKeMuMiy+dz1IHYIcditOlYXhGNCcKvKAPEvSbSMrF8GUM6q9
+        zNKl0nxG62MMrOSnLKDhL+UTKERBtIaIP8E3Cmt3AoGBAOHWQvp7N8y0PaVmHfwb
+        t96safaDoJoFw4YavxaTKiegvic6JzJf5mE0b5MejAN3JqY7qbMFYq4rBblXRilq
+        dAZktLBcn1Wqgx4Cqysbjtu9KqeV42sojqa7grBwH/wqVT1IVMlUxG2/Yj8Mtd0Q
+        Quj28hbWINpHLnF5gegRPGc6
+    """.trimIndent(),
+    var publicKeyStr2048PKCS1: String = """
+        MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsoNK1QZrdaljPYkopcEV
+        1qGwkPeI0akuHErn3pJNGU7fw/adgswjZy+NKuRBho2qU6wnBNeb0Cf9itSH1ajG
+        5/Jk9s+iLBfCevXZM9ZyIVQBwUi+AENLaCa9/+QteeKOjT6OeC78iGUhzNx3KZr4
+        N8s3yUB9Ttc82Ti1pfswFcFwa90xuDrKXbo94cqJyF5JNcu2aOyJS9yuY22g6Trm
+        s5uC7gEE52L+gH66nwazJsifWjIvPP6mewQQlvLpMSDyR4n+hDH2Bx85zaorCPtr
+        dNvnJLvEtRX5x2g1gIb5HUwbBVLexb79DcpBFWETntrv9ihnon7FkUnz4ZDI5wlD
+        jwIDAQAB
+    """.trimIndent(),
 
     // Key长度 16/24/32Bytes
     var aesKey: String = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",

@@ -39,4 +39,5 @@ interface RNodeService :
     RNodeStatsOperation,
     RNodeDeleteOperation,
     RNodeMoveCopyOperation,
-    RNodeRenameOperation
+    RNodeRenameOperation,
+    RNodeRestoreOperation

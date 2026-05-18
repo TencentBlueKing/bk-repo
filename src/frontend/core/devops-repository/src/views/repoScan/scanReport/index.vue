@@ -111,7 +111,7 @@
                             <span class="repo-tag" :class="row.status">{{$t(`scanStatusEnum.${row.status}`)}}</span>
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('scanCompletionTime')" width="150">
+                    <bk-table-column :label="$t('scanCompletionTime')" width="200">
                         <template #default="{ row }">{{formatDate(row.finishTime)}}</template>
                     </bk-table-column>
                     <bk-table-column :label="$t('operation')" width="100">

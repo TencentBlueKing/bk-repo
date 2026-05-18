@@ -33,9 +33,10 @@ package com.tencent.bkrepo.common.metadata.dao.packages
 
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.common.metadata.util.PackageQueryHelper
+import com.tencent.bkrepo.common.metadata.util.TagUtils
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
@@ -122,6 +123,21 @@ class PackageDao : SimpleMongoDao<TPackage>() {
     fun updateLatestVersion(packageId: String, latestVersion: String) {
         val query = Query(Criteria.where(ID).isEqualTo(packageId))
         val update = Update().set(TPackage::latest.name, latestVersion)
+        this.updateFirst(query, update)
+    }
+
+    fun addTag(packageId: String, versionName: String, tag: String) {
+        // tag中包含.$，不在mongodb允许的key值内需要转换
+        val encodeTag = TagUtils.encodeTag(tag)
+        val query = Query(Criteria.where(ID).isEqualTo(packageId))
+        val update = Update().set("${TPackage::versionTag.name}.$encodeTag", versionName)
+        this.updateFirst(query, update)
+    }
+
+    fun removeTag(packageId: String, tag: String) {
+        val encodeTag = TagUtils.encodeTag(tag)
+        val query = Query(Criteria.where(ID).isEqualTo(packageId))
+        val update = Update().unset("${TPackage::versionTag.name}.$encodeTag")
         this.updateFirst(query, update)
     }
 

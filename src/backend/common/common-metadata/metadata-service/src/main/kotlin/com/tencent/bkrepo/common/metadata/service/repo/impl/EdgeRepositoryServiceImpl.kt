@@ -31,6 +31,7 @@ import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
 import com.tencent.bkrepo.common.metadata.service.repo.ResourceClearService
@@ -61,6 +62,7 @@ class EdgeRepositoryServiceImpl(
     servicePermissionClient: ServicePermissionClient,
     resourceClearService: ObjectProvider<ResourceClearService>,
     clusterProperties: ClusterProperties,
+    permissionManager: ObjectProvider<PermissionManager>
 ) : RepositoryServiceImpl(
     repositoryDao,
     projectService,
@@ -68,7 +70,8 @@ class EdgeRepositoryServiceImpl(
     proxyChannelService,
     messageSupplier,
     servicePermissionClient,
-    resourceClearService
+    resourceClearService,
+    permissionManager
 ) {
 
     private val centerRepoClient: ClusterRepositoryClient by lazy {

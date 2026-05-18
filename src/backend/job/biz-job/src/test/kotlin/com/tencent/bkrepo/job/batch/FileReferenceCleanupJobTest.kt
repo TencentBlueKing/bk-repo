@@ -194,8 +194,8 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
     @DisplayName("测试排它执行")
     @Test
     fun exclusiveTest() {
-        Assertions.assertTrue(fileReferenceCleanupJob.start())
-        Assertions.assertFalse(fileReferenceCleanupJob.start())
+        assertTrue(fileReferenceCleanupJob.start())
+        assertFalse(fileReferenceCleanupJob.start())
     }
 
     @DisplayName("测试单表大数据,分页清理")
@@ -261,6 +261,47 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
         assertTrue(mongoTemplate.exists(Query(Criteria.where("sha256").isEqualTo(sha2561)), collectionName))
         assertTrue(mongoTemplate.exists(Query(Criteria.where("sha256").isEqualTo(sha2562)), collectionName))
         assertFalse(mongoTemplate.exists(Query(Criteria.where("sha256").isEqualTo(sha2563)), collectionName))
+    }
+
+    @DisplayName("测试仅清理非Drive存储")
+    @Test
+    fun testNotCleanDriveStorage() {
+        val driveKey = "drive-key"
+        val normalKey = "normal-key"
+        val driveSha256 = "688787d8ff144c502c7f5cffaafe2cc588d86079f9de88304c26b0cb99ce91d1"
+        val normalSha256 = "688787d8ff144c502c7f5cffaafe2cc588d86079f9de88304c26b0cb99ce91d2"
+
+        // Drive专用存储：allowRepoTypes仅包含DRIVE
+        val driveCredentials = InnerCosCredentials(
+            key = driveKey,
+            allowRepoTypes = setOf(RepositoryType.DRIVE.name),
+            notAllowRepoTypes = null,
+        )
+        // 非Drive存储：使用默认配置（notAllowRepoTypes包含DRIVE）
+        val normalCredentials = InnerCosCredentials(key = normalKey)
+
+        whenever(storageCredentialService.findByKey(driveKey)).thenReturn(driveCredentials)
+        whenever(storageCredentialService.findByKey(normalKey)).thenReturn(normalCredentials)
+
+        val collectionName = fileReferenceCleanupJob.collectionNames().first()
+        insertOne(driveSha256, driveKey, 0, collectionName)
+        insertOne(normalSha256, normalKey, 0, collectionName)
+
+        val deleted = HashSet<String>()
+        whenever(storageService.delete(anyString(), any())).then {
+            deleted.add(it.getArgument(0))
+        }
+
+        fileReferenceCleanupJob.start()
+
+        // 只有非Drive存储的文件被删除，Drive专用存储的文件不会被删除（由DriveFileReferenceCleanupJob独立清理）
+        Assertions.assertEquals(1, deleted.size)
+        assertTrue(deleted.contains(normalSha256))
+        assertFalse(deleted.contains(driveSha256))
+
+        // 两个引用记录都会被移除（当前实现无论是否删文件都会移除引用记录）
+        assertFalse(existsRef(driveSha256, driveKey, collectionName))
+        assertFalse(existsRef(normalSha256, normalKey, collectionName))
     }
 
     @Test

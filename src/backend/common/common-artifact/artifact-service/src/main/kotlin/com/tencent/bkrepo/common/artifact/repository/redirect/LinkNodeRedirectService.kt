@@ -52,7 +52,7 @@ class LinkNodeRedirectService(
     private val storageProperties: StorageProperties
 ) : DownloadRedirectService {
 
-    override fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
+    override fun doShouldRedirect(context: ArtifactDownloadContext): Boolean {
         return storageProperties.redirect.enabled
                 && isLinkNode(ArtifactContextHolder.getNodeDetail(context.artifactInfo))
     }

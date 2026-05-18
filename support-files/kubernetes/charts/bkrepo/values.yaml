@@ -47,6 +47,10 @@ forceHttps: false
 ## 蓝鲸文档中心地址
 bkDocsCenterUrl:
 
+bkWebSiteAccess:
+  mode: ""
+  subPath: ""
+
 ## 日志采集配置
 bkLogConfig:
   enabled: false
@@ -111,6 +115,17 @@ redis:
   password: ""
   database: ""
 
+## kafka配置
+## 用于Spring Cloud Stream消息事件处理
+kafka:
+  ## 是否启用kafka，默认为false，设置为true时开启
+  provider: false
+  ## kafka brokers地址，多个地址用逗号分隔
+  url: "localhost:9092"
+  ## SASL认证用户名
+  username: ""
+  ## SASL认证密码
+  password: ""
 
 tls:
   mongodb:
@@ -926,6 +941,46 @@ helm:
   image:
     registry: registry.hub.docker.com
     repository: bkrepo/bkrepo-helm
+    tag: 1.1.0
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  replicaCount: 1
+  hostAliases: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
+  containerSecurityContext:
+    enabled: false
+    runAsUser: 1001
+    runAsNonRoot: true
+  podSecurityContext:
+    enabled: false
+    fsGroup: 1001
+  podAffinityPreset: ""
+  podAntiAffinityPreset: ""
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  podLabels: {}
+  podAnnotations: {}
+  priorityClassName: ""
+
+## huggingface registry服务配置
+huggingface:
+  enabled: false
+  config: {}
+  ## Kubernetes 通用配置
+  image:
+    registry: registry.hub.docker.com
+    repository: bkrepo/bkrepo-huggingface
     tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []

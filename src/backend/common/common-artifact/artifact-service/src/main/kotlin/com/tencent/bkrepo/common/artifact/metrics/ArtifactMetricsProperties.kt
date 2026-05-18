@@ -90,5 +90,12 @@ data class ArtifactMetricsProperties(
     /**
      * 是否开启实例带宽指标上报
      */
-    var enableInstanceBandwidthMetrics: Boolean = false
+    var enableInstanceBandwidthMetrics: Boolean = false,
+
+    /**
+     * 是否开启流量聚合上报
+     * 开启后，将按项目/仓库/类型维度聚合流量数据，定期主动上报后清理内存
+     * 解决维度爆炸导致只能统计部分项目的问题
+     */
+    var enableBandwidthAggregation: Boolean = false,
 )

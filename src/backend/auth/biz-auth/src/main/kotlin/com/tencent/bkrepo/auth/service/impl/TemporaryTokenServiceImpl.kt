@@ -51,7 +51,7 @@ import java.util.UUID
 @Service("authTemporaryTokenServiceImpl")
 @Conditional(DefaultCondition::class)
 class TemporaryTokenServiceImpl(
-    private val temporaryTokenRepository: AuthTemporaryTokenDao
+    private val temporaryTokenRepository: AuthTemporaryTokenDao,
 ) : TemporaryTokenService {
 
     override fun createToken(request: TemporaryTokenCreateRequest): List<TemporaryTokenInfo> {

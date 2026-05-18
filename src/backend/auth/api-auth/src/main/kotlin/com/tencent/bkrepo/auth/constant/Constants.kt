@@ -47,7 +47,7 @@ const val REPO_MANAGE_ID = "repo_manage"
 
 const val REPO_MANAGE_NAME = "仓库管理员"
 
-const val DEFAULT_PASSWORD = "blueking"
+const val DEFAULT_PASSWORD = "password"
 
 const val AUTHORIZATION = "Authorization"
 
@@ -90,3 +90,7 @@ const val AUTH_BUILTIN_VIEWER = "repo_viewer"
 const val REPLICATION_MANAGE_ID = "replication_manage"
 
 const val REPLICATION_MANAGE_NAME = "同步管理员"
+
+const val GLOBAL_PREVIEW_ROLE_ID = "global_preview"
+
+const val GLOBAL_PREVIEW_ROLE_NAME = "全局预览"

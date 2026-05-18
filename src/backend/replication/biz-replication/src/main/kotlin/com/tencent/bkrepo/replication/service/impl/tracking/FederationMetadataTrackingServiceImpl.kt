@@ -168,10 +168,10 @@ class FederationMetadataTrackingServiceImpl(
     }
 
     /**
-     * 处理单个文件传输（不带重试计数增加）
+     * 处理单个文件传输
      */
     private fun processSingleFileTransfer(record: TFederationMetadataTracking): Boolean {
-        return retryStateManager.executeWithRetryState(record, incrementRetryCount = false) {
+        return retryStateManager.executeWithRetryState(record, incrementRetryCount = true) {
             executeFileTransfer(record)
         }
     }
