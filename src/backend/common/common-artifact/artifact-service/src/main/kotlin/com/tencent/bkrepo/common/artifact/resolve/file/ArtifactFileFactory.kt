@@ -261,7 +261,7 @@ class ArtifactFileFactory(
         ): Boolean {
             try {
                 // 仅COS存储类型支持直连上传
-                if (storageCredentials !is InnerCosCredentials) {
+                if (storageCredentials !is InnerCosCredentials || storageCredentials.encrypt.enabled) {
                     return false
                 }
 
