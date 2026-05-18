@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.auth.helper
 
 
+import com.tencent.bkrepo.auth.constant.GLOBAL_PREVIEW_ROLE_ID
 import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.message.AuthMessageCode
@@ -172,8 +173,49 @@ class UserHelper constructor(
         logger.info("add user to role batch userId : [$userIdList], roleId : [$roleId]")
         checkOrCreateUser(userIdList)
         checkRoleExist(roleId)
-        userDao.addRoleToUsers(userIdList, roleId)
+        val globalPreviewObjId = resolveGlobalPreviewRoleObjId()
+        when {
+            // 覆盖式分支：目标即全局预览角色 -> 先清空原有角色再写入
+            globalPreviewObjId != null && roleId == globalPreviewObjId -> {
+                userIdList.forEach { uid ->
+                    val user = userDao.findFirstByUserId(uid)
+                    val oldRoles = user?.roles.orEmpty()
+                    val removedRoles = oldRoles.filter { it != globalPreviewObjId }
+                    if (removedRoles.isNotEmpty()) {
+                        userDao.removeAllRolesFromUser(uid)
+                        logger.info(
+                            "uid=$uid action=overwrite-to-global-preview removedRoles=$removedRoles"
+                        )
+                    }
+                }
+                userDao.addRoleToUsers(userIdList, roleId)
+            }
+            // 单向锁定分支：目标非全局预览角色，但列表中存在已是全局预览的用户 -> 整批拒绝
+            globalPreviewObjId != null && roleId != globalPreviewObjId -> {
+                val conflictUsers = userDao.findByUserIdInAndRolesContains(userIdList, globalPreviewObjId)
+                if (conflictUsers.isNotEmpty()) {
+                    val conflictUids = conflictUsers.map { it.userId }
+                    logger.warn(
+                        "uid=$conflictUids targetRoleId=$roleId reason=user-already-global-preview"
+                    )
+                    throw ErrorCodeException(
+                        AuthMessageCode.AUTH_USER_ROLE_CONFLICT,
+                        conflictUids.joinToString(",")
+                    )
+                }
+                userDao.addRoleToUsers(userIdList, roleId)
+            }
+            // 其它情况：行为完全不变
+            else -> userDao.addRoleToUsers(userIdList, roleId)
+        }
         return true
+    }
+
+    /**
+     * 解析全局预览角色 mongo _id；未懒创建时返回 null
+     */
+    private fun resolveGlobalPreviewRoleObjId(): String? {
+        return roleRepository.findFirstByTypeAndRoleId(RoleType.SERVICE, GLOBAL_PREVIEW_ROLE_ID)?.id
     }
 
     fun removeUserFromRoleBatchCommon(userIdList: List<String>, roleId: String): Boolean {
