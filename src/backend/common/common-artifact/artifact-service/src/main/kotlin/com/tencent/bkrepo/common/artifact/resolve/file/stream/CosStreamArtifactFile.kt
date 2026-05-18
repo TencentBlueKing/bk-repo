@@ -9,6 +9,7 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import io.micrometer.observation.ObservationRegistry
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.InputStream
 
@@ -113,10 +114,21 @@ class CosStreamArtifactFile(
         if (initialized) {
             return
         }
+        try {
+            receiver.receiveStream(source)
+            val throughput = receiver.finish()
+            initialized = true
+            SpringContextUtils.publishEvent(ArtifactReceivedEvent(this, throughput, storageCredentials))
+        } catch (exception: Exception) {
+            runCatching { receiver.close() }
+                .onFailure {
+                    logger.warn("Failed to clean cos receiver after init failed.", it)
+                }
+            throw exception
+        }
+    }
 
-        receiver.receiveStream(source)
-        val throughput = receiver.finish()
-        initialized = true
-        SpringContextUtils.publishEvent(ArtifactReceivedEvent(this, throughput, storageCredentials))
+    companion object {
+        private val logger = LoggerFactory.getLogger(CosStreamArtifactFile::class.java)
     }
 }
