@@ -128,8 +128,14 @@ abstract class AbstractEncryptorFileStorage<Credentials : StorageCredentials, Cl
         toCredentials: StorageCredentials
     ) {
         if (!fromCredentials.encrypt.enabled) {
+            require(!toCredentials.encrypt.enabled)
             return super.copy(fromPath, fromName, toPath, toName, fromCredentials, toCredentials)
         }
+        require(
+            toCredentials.encrypt.enabled &&
+                    fromCredentials.encrypt.algorithm == toCredentials.encrypt.algorithm &&
+                    fromCredentials.encrypt.key == toCredentials.encrypt.key
+        )
         val newFromName = getEncryptName(fromName, fromCredentials)
         // 复制前后都是使用源存储的加密算法，因此使用原存储获取加密后文件名
         val newToName = getEncryptName(toName, fromCredentials)
