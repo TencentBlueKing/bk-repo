@@ -41,7 +41,7 @@ class RecordableDigestInputStream(
         try {
             trafficHandler.record(size, elapse)
         } catch (e: Exception) {
-            logger.error("Record download metrics error", e)
+            logger.error("Record ${trafficHandler.transferType.name} metrics error", e)
         }
     }
 
