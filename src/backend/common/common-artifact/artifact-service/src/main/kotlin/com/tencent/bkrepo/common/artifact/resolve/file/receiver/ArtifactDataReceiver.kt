@@ -190,13 +190,14 @@ class ArtifactDataReceiver(
     }
 
     override fun finish(): Throughput {
-        try {
-            return super.finish()
-        } finally {
-            if (!finished) {
+        if (!finished) {
+            try {
+                return super.finish()
+            } finally {
                 cleanOriginalOutputStream()
             }
         }
+        return Throughput(receivedSize(), endTime - startTime)
     }
 
     /**

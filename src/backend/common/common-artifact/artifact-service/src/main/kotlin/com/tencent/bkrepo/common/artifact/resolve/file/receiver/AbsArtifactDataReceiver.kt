@@ -39,12 +39,12 @@ abstract class AbsArtifactDataReceiver(
     /**
      * 接收开始时间
      */
-    private var startTime = 0L
+    protected var startTime = 0L
 
     /**
      * 接收结束时间
      */
-    private var endTime = 0L
+    protected var endTime = 0L
 
     /**
      * 接收是否完成
