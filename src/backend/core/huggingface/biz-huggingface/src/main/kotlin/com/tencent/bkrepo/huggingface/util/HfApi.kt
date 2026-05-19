@@ -27,10 +27,10 @@
 
 package com.tencent.bkrepo.huggingface.util
 
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.ACCEPT_ENCODING
-import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
+import com.tencent.bkrepo.common.artifact.repository.remote.buildOkHttpClient
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.huggingface.constants.ERROR_CODE_HEADER
 import com.tencent.bkrepo.huggingface.constants.ERROR_MSG_HEADER
@@ -38,6 +38,7 @@ import com.tencent.bkrepo.huggingface.exception.HfApiException
 import com.tencent.bkrepo.huggingface.pojo.DatasetInfo
 import com.tencent.bkrepo.huggingface.pojo.ModelInfo
 import io.micrometer.observation.ObservationRegistry
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.LoggerFactory
@@ -55,43 +56,36 @@ class HfApi(
 
     companion object {
         private lateinit var registry: ObservationRegistry
-        private val httpClient by lazy {
-            HttpClientBuilderFactory.create(registry = registry)
-                .addInterceptor(RedirectInterceptor())
-                .followRedirects(false).build()
-        }
         private val logger = LoggerFactory.getLogger(HfApi::class.java)
 
-        fun modelInfo(endpoint: String, token: String, repoId: String, revision: String?): ModelInfo {
-            val url = "$endpoint/api/models/$repoId" + revision?.let { "/revision/$it" }.orEmpty()
+        fun modelInfo(configuration: RemoteConfiguration, repoId: String, revision: String?): ModelInfo {
+            val httpClient = buildHttpClient(configuration)
+            val url = "${configuration.url}/api/models/$repoId" + revision?.let { "/revision/$it" }.orEmpty()
             logger.info("fetch model info from $url")
-            val request = Request.Builder().url(url)
-                .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }
-                .build()
+            val request = Request.Builder().url(url).build()
             httpClient.newCall(request).execute().use {
                 throwExceptionWhenFailed(it)
                 return it.body!!.string().readJsonString<ModelInfo>()
             }
         }
 
-        fun datasetInfo(endpoint: String, token: String, repoId: String, revision: String?): DatasetInfo {
-            val url = "$endpoint/api/datasets/$repoId" + revision?.let { "/revision/$it" }.orEmpty()
+        fun datasetInfo(configuration: RemoteConfiguration, repoId: String, revision: String?): DatasetInfo {
+            val httpClient = buildHttpClient(configuration)
+            val url = "${configuration.url}/api/datasets/$repoId" + revision?.let { "/revision/$it" }.orEmpty()
             logger.info("fetch dataset info from $url")
-            val request = Request.Builder().url(url)
-                .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }
-                .build()
+            val request = Request.Builder().url(url).build()
             httpClient.newCall(request).execute().use {
                 throwExceptionWhenFailed(it)
                 return it.body!!.string().readJsonString<DatasetInfo>()
             }
         }
 
-        fun download(endpoint: String, token: String, artifactUri: String, type: String?): Response {
-            val url = "${endpoint.trim('/')}${type?.let { "/" + it + "s" }.orEmpty()}$artifactUri"
+        fun download(configuration: RemoteConfiguration, artifactUri: String, type: String?): Response {
+            val httpClient = buildHttpClient(configuration)
+            val url = "${configuration.url.trim('/')}${type?.let { "/" + it + "s" }.orEmpty()}$artifactUri"
             val method = HttpContextHolder.getRequestOrNull()?.method
             logger.info("download file: $method $url")
             val request = Request.Builder().url(url)
-                .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }
                 // https://github.com/square/okhttp/issues/259#issuecomment-22056176
                 // 使用默认gzip编码时，Content-Length可能被okhttp剥离
                 .header(ACCEPT_ENCODING, "identity")
@@ -102,13 +96,11 @@ class HfApi(
             return response
         }
 
-        fun head(endpoint: String, token: String, artifactUri: String): Response {
-            val url = "$endpoint$artifactUri"
+        fun head(configuration: RemoteConfiguration, artifactUri: String): Response {
+            val httpClient = buildHttpClient(configuration)
+            val url = "${configuration.url}$artifactUri"
             logger.info("HEAD request url: $url")
-            val request = Request.Builder().url(url)
-                .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }
-                .head()
-                .build()
+            val request = Request.Builder().url(url).head().build()
             val response = httpClient.newCall(request).execute()
             throwExceptionWhenFailed(response)
             return response
@@ -123,6 +115,16 @@ class HfApi(
                     errorMessage = response.header(ERROR_MSG_HEADER).orEmpty()
                 )
             }
+        }
+
+        private fun buildHttpClient(configuration: RemoteConfiguration): OkHttpClient {
+            // 使用bearer token认证
+            configuration.credentials.username = null
+            configuration.credentials.credentialKey = "Bearer ${configuration.credentials.password}"
+            return buildOkHttpClient(configuration, registry = registry)
+                .addInterceptor(RedirectInterceptor())
+                .followRedirects(false)
+                .build()
         }
     }
 }
