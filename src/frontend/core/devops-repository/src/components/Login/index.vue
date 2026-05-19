@@ -102,7 +102,20 @@
                             })
                             const afterLoginUrl = sessionStorage.getItem('afterLogin')
                             sessionStorage.removeItem('afterLogin')
-                            afterLoginUrl && window.open(afterLoginUrl, '_self')
+
+                            // 安全校验：afterLogin的origin必须等于当前页面的origin
+                            if (afterLoginUrl) {
+                                try {
+                                    const afterLoginOrigin = new URL(afterLoginUrl).origin
+                                    if (afterLoginOrigin === window.location.origin) {
+                                        window.open(afterLoginUrl, '_self')
+                                    } else {
+                                        console.warn('Invalid afterLogin URL: origin must equal location.origin')
+                                    }
+                                } catch (e) {
+                                    console.warn('Invalid afterLogin URL format:', e.message)
+                                }
+                            }
                             location.href = ''
                             this.loginFailCounter = 0
                         } else {
