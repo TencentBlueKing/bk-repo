@@ -81,6 +81,11 @@ class PermissionServiceImplListRepoStrictFilterTest {
             mockRepoInfo(repoB),
             mockRepoInfo(repoC),
         )
+        // mockk(relaxed = true) 对 nullable 返回类型默认会构造一个 mock 对象（非 null），
+        // 这里显式 stub 为 null，避免 isUserLocalProjectAdmin / isGlobalPreviewUser
+        // 等基于 ?: return false 的判定被误命中。
+        every { userDao.findFirstByUserIdAndRolesIn(any(), any()) } returns null
+        every { roleRepository.findFirstByTypeAndRoleId(any(), any()) } returns null
     }
 
     private fun mockRepoInfo(name: String): RepositoryInfo {
