@@ -25,6 +25,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.time.LocalDateTime
+import java.time.ZoneId
 
 /**
  * 将文件保存为制品构件
@@ -39,10 +40,9 @@ class MediaArtifactFileConsumer(
     private val transcodeConfig: TranscodeConfig? = null,
     private val storageService: StorageService,
     private val blockNodeService: BlockNodeService,
-    private val nodeService: NodeService
+    private val nodeService: NodeService,
+    private val startTime: Long = System.currentTimeMillis()
 ) : FileConsumer {
-
-    private val startTime = System.currentTimeMillis()
     override fun accept(t: File) {
         accept(t.name, t.toArtifactFile(), null, System.currentTimeMillis())
     }
@@ -72,7 +72,7 @@ class MediaArtifactFileConsumer(
     fun genAndStoreArtifactInfos(name: String, file: ArtifactFile, endTime: Long): ArtifactInfo {
         val filePath = "$path/$name"
         val artifactInfo = ArtifactInfo(repo.projectId, repo.name, filePath)
-        val nodeCreateRequest = buildNodeCreateRequest(artifactInfo, file, userId, author, endTime)
+        val nodeCreateRequest = buildNodeCreateRequest(artifactInfo, file, userId, author, startTime, endTime)
         storageManager.storeArtifactFile(nodeCreateRequest, file, repo.storageCredentials)
         return artifactInfo
     }
@@ -107,7 +107,7 @@ class MediaArtifactFileConsumer(
         }
         if (isComplete) {
             // 正常结束：合并所有分块，创建完整node
-            completeBlockNode(artifactInfo, uploadId, endTime)
+            val videoTimeRange = completeBlockNode(artifactInfo, uploadId, endTime)
             // 额外文件也合并分块
             val extraArtifactInfos = extraArtifactInfoMap.map { (extraName, extraArtifactInfo) ->
                 val extraUploadId = "${uploadId}_${extraName.substringBefore(".")}"
@@ -116,14 +116,16 @@ class MediaArtifactFileConsumer(
             }.ifEmpty { null }
             // 转码仅在completeBlockNode后触发
             if (transcodeConfig != null) {
+                val transcodeStartTime = videoTimeRange?.start ?: startTime
+                val transcodeEndTime = videoTimeRange?.endInclusive ?: endTime
                 transcodeService.transcode(
                     artifactInfo = artifactInfo,
                     transcodeConfig = transcodeConfig,
                     userId = userId,
                     extraFiles = extraArtifactInfos,
                     author = author,
-                    videoStartTime = startTime,
-                    videoEndTime = endTime
+                    videoStartTime = transcodeStartTime,
+                    videoEndTime = transcodeEndTime
                 )
             }
         }
@@ -177,8 +179,10 @@ class MediaArtifactFileConsumer(
 
     /**
      * 视频流正常结束时，完成分块存储，创建对应node
+     * startTime 使用 consumer 成员变量，
+     * endTime 使用最后一块分块的 createdDate
      */
-    fun completeBlockNode(artifactInfo: ArtifactInfo, uploadId: String, endTime: Long) {
+    fun completeBlockNode(artifactInfo: ArtifactInfo, uploadId: String, endTime: Long): LongRange? {
         with(artifactInfo) {
             val blockNodes = blockNodeService.listBlocksInUploadId(
                 projectId,
@@ -187,16 +191,16 @@ class MediaArtifactFileConsumer(
                 uploadId = uploadId
             )
             if (blockNodes.isEmpty()) {
-                return
+                return null
             }
             val totalSize = blockNodes.sumOf { it.size }
             val crc64ecma = crc64ecma(blockNodes)
-            val beforeCreateNodeTime = LocalDateTime.now()
-            blockBaseNodeCreate(userId, artifactInfo, uploadId, totalSize, crc64ecma, endTime)
-            val afterCreateNodeTime = LocalDateTime.now()
-            val beforeUpdateTime = LocalDateTime.now()
+            // endTime 从最后一块分块的 createdDate 推算，比传入的 endTime 更准确
+            val blockEndTime = blockNodes.sortedBy { it.createdDate }.last().createdDate
+                .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            blockBaseNodeCreate(userId, artifactInfo, uploadId, totalSize, crc64ecma, startTime, blockEndTime)
             blockNodeService.updateBlockUploadId(projectId, repoName, getArtifactFullPath(), uploadId)
-            val afterUpdateTime = LocalDateTime.now()
+            return LongRange(startTime, blockEndTime)
         }
     }
 
@@ -206,7 +210,8 @@ class MediaArtifactFileConsumer(
         uploadId: String,
         fileSize: Long,
         crc64ecma: String,
-        endTime: Long
+        videoStartTime: Long,
+        videoEndTime: Long
     ) {
         val attributes = NodeAttribute(
             uid = NodeAttribute.NOBODY,
@@ -221,8 +226,8 @@ class MediaArtifactFileConsumer(
         val metadata = mutableListOf<MetadataModel>()
         metadata.add(MetadataModel(UPLOADID_KEY, versionedUploadId, system = true))
         metadata.add(MetadataModel(key = FS_ATTR_KEY, value = attributes))
-        metadata.add(MetadataModel(key = METADATA_KEY_MEDIA_START_TIME, value = startTime, system = true))
-        metadata.add(MetadataModel(key = METADATA_KEY_MEDIA_STOP_TIME, value = endTime, system = true))
+        metadata.add(MetadataModel(key = METADATA_KEY_MEDIA_START_TIME, value = videoStartTime, system = true))
+        metadata.add(MetadataModel(key = METADATA_KEY_MEDIA_STOP_TIME, value = videoEndTime, system = true))
         metadata.add(MetadataModel(key = METADATA_KEY_MEDIA_AUTHOR, value = author, system = true))
 
         val request = NodeCreateRequest(
@@ -266,7 +271,8 @@ class MediaArtifactFileConsumer(
         file: ArtifactFile,
         userId: String,
         author: String,
-        endTime: Long,
+        videoStartTime: Long,
+        videoEndTime: Long,
     ): NodeCreateRequest {
         with(artifactInfo) {
             return NodeCreateRequest(
@@ -280,8 +286,8 @@ class MediaArtifactFileConsumer(
                 crc64ecma = file.getFileCrc64ecma(),
                 operator = userId,
                 nodeMetadata = listOf(
-                    MetadataModel(key = METADATA_KEY_MEDIA_START_TIME, value = startTime, system = true),
-                    MetadataModel(key = METADATA_KEY_MEDIA_STOP_TIME, value = endTime, system = true),
+                    MetadataModel(key = METADATA_KEY_MEDIA_START_TIME, value = videoStartTime, system = true),
+                    MetadataModel(key = METADATA_KEY_MEDIA_STOP_TIME, value = videoEndTime, system = true),
                     MetadataModel(key = METADATA_KEY_MEDIA_AUTHOR, value = author, system = true),
                 ),
             )
