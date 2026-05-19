@@ -86,13 +86,8 @@ data class ReceiveProperties(
     var blockExpireTime: Duration = Duration.ofHours(12),
 
     /**
-     * 是否启用 COS 直传功能（全局开关）
-     * 默认 false，需要同时开启 InnerCosCredentials.directUploadToCos 才生效
-     */
-    var enableCosDirectUpload: Boolean = false,
-
-    /**
      * 开启COS直传的仓库，为空时所有仓库都将直传COS，格式为projectId/repoName
+     * 需 InnerCosCredentials.cosDirectUploadMode 不为 OFF 才生效
      */
     var enableCosDirectUploadRepos: Set<String> = emptySet()
 )

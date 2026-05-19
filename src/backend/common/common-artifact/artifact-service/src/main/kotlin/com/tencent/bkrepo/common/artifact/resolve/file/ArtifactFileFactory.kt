@@ -265,12 +265,25 @@ class ArtifactFileFactory(
                     return false
                 }
 
-                // 判断是否开启了直连上传且文件大小符合要求
-                val enabled = storageProperties.receive.enableCosDirectUpload && storageCredentials.directUploadToCos
+                when (storageCredentials.cosDirectUploadMode) {
+                    InnerCosCredentials.COS_DIRECT_UPLOAD_MODE_OFF -> return false
+                    InnerCosCredentials.COS_DIRECT_UPLOAD_MODE_ON_UNHEALTHY -> {
+                        if (getMonitor(storageCredentials).healthy.get()) {
+                            return false
+                        }
+                    }
+                    InnerCosCredentials.COS_DIRECT_UPLOAD_MODE_ALWAYS -> { /* continue */ }
+                    else -> {
+                        logger.warn(
+                            "unknown cosDirectUploadMode[${storageCredentials.cosDirectUploadMode}], treat as OFF"
+                        )
+                        return false
+                    }
+                }
+
                 val fileSizeThreshold = storageProperties.receive.fileSizeThreshold.toBytes()
                 val exceedThreshold = contentLength != null && contentLength > fileSizeThreshold
-
-                if (!enabled || !exceedThreshold) {
+                if (!exceedThreshold) {
                     return false
                 }
 

@@ -50,6 +50,6 @@ class InnerCosStorageCredentialsUpdater : StorageCredentialsUpdater {
         old.cmdId = new.cmdId
         old.inner = new.inner
         old.public = new.public
-        old.directUploadToCos = new.directUploadToCos
+        old.cosDirectUploadMode = new.cosDirectUploadMode
     }
 }
