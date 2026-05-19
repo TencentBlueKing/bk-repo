@@ -80,6 +80,7 @@ import com.tencent.bkrepo.auth.util.request.PermRequestUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.DEVX_ACCESS_FROM_OFFICE
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.slf4j.LoggerFactory
@@ -318,6 +319,8 @@ open class PermissionServiceImpl constructor(
         if (permHelper.checkRepoAdmin(context)) return true
         // check repo read action
         if (permHelper.checkRepoReadAction(context)) return true
+        // 严格模式 + 非 Generic 仓库：尝试仓库级整仓授权短路
+        if (checkStrictRepoLevelGrant(context)) return true
         //  check project user
         val isProjectUser = isUserLocalProjectUser(context.userId, context.projectId)
         if (permHelper.checkProjectReadAction(context, isProjectUser)) return true
@@ -326,6 +329,63 @@ open class PermissionServiceImpl constructor(
             return true
         }
         return false
+    }
+
+    /**
+     * 严格模式 + 非 Generic 仓库下尝试仓库级整仓授权短路。
+     * - 仅在严格模式下生效（避免影响 DEFAULT/DIR_CTRL）；
+     * - 仅对非 Generic 仓库放行（Generic 仓库继续走原路径级授权）；
+     * - 仓库类型查询失败按非整仓授权处理（兜底拒绝）。
+     * - 同一请求内复用仓库类型与严格模式判定结果（避免重复 DB 查询）。
+     */
+    protected fun checkStrictRepoLevelGrant(context: CheckPermissionContext): Boolean {
+        if (context.repoName.isNullOrBlank()) return false
+        if (!resolveStrictMode(context)) return false
+        val isGeneric = resolveIsGenericRepo(context) ?: return false
+        if (isGeneric) return false
+        return permHelper.checkRepoActionInPermission(context)
+    }
+
+    /**
+     * 请求级复用：判定仓库是否为 Generic 类型。
+     * @return true=Generic，false=非 Generic，null=查询失败/仓库不存在（调用方按兜底处理）
+     */
+    protected fun resolveIsGenericRepo(context: CheckPermissionContext): Boolean? {
+        context.isGenericRepo?.let { return it }
+        val result = isGenericRepo(context.projectId, context.repoName!!)
+        if (result != null) {
+            context.isGenericRepo = result
+        }
+        return result
+    }
+
+    /**
+     * 请求级复用：判定仓库是否处于严格模式。
+     */
+    protected fun resolveStrictMode(context: CheckPermissionContext): Boolean {
+        context.strictMode?.let { return it }
+        val result = checkRepoAccessControl(context.projectId, context.repoName!!)
+        context.strictMode = result
+        return result
+    }
+
+    /**
+     * 判定仓库是否为 Generic 类型（不带缓存的原始调用）。
+     * @return true=Generic，false=非 Generic，null=查询失败/仓库不存在（调用方按兜底处理）
+     */
+    protected fun isGenericRepo(projectId: String, repoName: String): Boolean? {
+        return try {
+            val detail = repositoryService.getRepoDetail(projectId, repoName)
+            if (detail == null) {
+                logger.warn("isGenericRepo: repo detail not found, projectId=$projectId, repoName=$repoName")
+                null
+            } else {
+                detail.type == RepositoryType.GENERIC
+            }
+        } catch (e: Exception) {
+            logger.warn("isGenericRepo: get repo detail failed, projectId=$projectId, repoName=$repoName", e)
+            null
+        }
     }
 
 
@@ -389,13 +449,17 @@ open class PermissionServiceImpl constructor(
         }
         val roles = user.roles
 
-        // 用户为系统管理员、项目管理员、项目用户
-        if (user.admin || isUserLocalProjectAdmin(userId, projectId) || isUserLocalProjectUser(userId, projectId)) {
+        // 系统管理员 / 项目管理员：全量可见，不参与严格模式过滤
+        if (user.admin || isUserLocalProjectAdmin(userId, projectId)) {
             return getAllRepoByProjectId(projectId)
         }
-        // 全局预览角色：对所有仓库可见（只读放行由 checkPermission 控制）
+        // 项目用户：全量可见，但严格模式仓库需有显式授权才可见
+        if (isUserLocalProjectUser(userId, projectId)) {
+            return filterByStrictMode(projectId, userId, roles, getAllRepoByProjectId(projectId))
+        }
+        // 全局预览角色：对所有仓库可见（只读放行由 checkPermission 控制），但严格模式仓库需有显式授权
         if (isGlobalPreviewUser(user)) {
-            return getAllRepoByProjectId(projectId)
+            return filterByStrictMode(projectId, userId, roles, getAllRepoByProjectId(projectId))
         }
 
         val repoList = mutableListOf<String>()
@@ -422,6 +486,30 @@ open class PermissionServiceImpl constructor(
         repoList.addAll(permHelper.getNoAdminRoleRepo(projectId, noAdminRole))
 
         return repoList.distinct()
+    }
+
+    /**
+     * 对仓库列表做严格模式可见性过滤：
+     * - 项目下没有任何严格模式仓库：直接返回原列表（快速退出，零额外开销）
+     * - 否则：保留 [非严格模式仓库] + [严格模式且当前用户/角色已显式授权的仓库]
+     *
+     * 用于 listPermissionRepo 中对"全量可见"路径（项目用户、Devops 项目成员、
+     * 全局预览角色）做严格模式可见性收紧；普通授权聚合路径无需调用，因其本身
+     * 仅返回已授权仓库。
+     */
+    protected fun filterByStrictMode(
+        projectId: String,
+        userId: String,
+        roles: List<String>,
+        repos: List<String>,
+    ): List<String> {
+        if (repos.isEmpty()) return repos
+        // 一次 Mongo 查询：项目下严格模式仓库集合（命中复合索引）
+        val strictRepos = repoAuthConfigDao.listRepoNamesByMode(projectId, STRICT)
+        if (strictRepos.isEmpty()) return repos
+        // 一次（或两次）Mongo 查询：用户/角色对这些 strict 仓库的已有授权
+        val grantedStrict = permHelper.listGrantedRepos(projectId, userId, roles, strictRepos)
+        return repos.filter { it !in strictRepos || it in grantedStrict }
     }
 
     override fun listNoPermissionPath(
@@ -580,8 +668,20 @@ open class PermissionServiceImpl constructor(
 
     fun checkNodeAction(request: CheckPermissionContext, isProjectUser: Boolean): Boolean {
         with(request) {
-            if (checkRepoAccessControl(projectId, repoName!!)) {
-                return permHelper.checkNodeActionWithCtrl(request)
+            if (resolveStrictMode(request)) {
+                // 严格模式：非 Generic 仓库优先尝试仓库级整仓授权（短路，复用请求级缓存）
+                val isGeneric = resolveIsGenericRepo(request)
+                if (isGeneric == false && permHelper.checkRepoActionInPermission(request)) {
+                    return true
+                }
+                val pass = permHelper.checkNodeActionWithCtrl(request)
+                if (!pass) {
+                    logger.debug(
+                        "strict mode reject: userId=$userId, projectId=$projectId, " +
+                            "repoName=$repoName, action=$action, isGeneric=$isGeneric"
+                    )
+                }
+                return pass
             }
             return permHelper.checkNodeActionWithOutCtrl(request, isProjectUser)
         }
