@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.repository.service.clientupgrade
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.repository.pojo.clientupgrade.ClientVersionConfigListOption
 import com.tencent.bkrepo.repository.pojo.clientupgrade.ClientVersionConfigUpsertRequest
 import com.tencent.bkrepo.repository.pojo.clientupgrade.ClientVersionConfigVo
 import com.tencent.bkrepo.repository.pojo.clientupgrade.ClientUpgradeCheckResponse
@@ -15,6 +16,8 @@ interface ClientVersionConfigService {
     fun batchRemove(ids: List<String>)
 
     fun listPage(productId: String?, pageNumber: Int, pageSize: Int): Page<ClientVersionConfigVo>
+
+    fun listPage(option: ClientVersionConfigListOption): Page<ClientVersionConfigVo>
 
     fun checkUpgrade(
         forUserId: String,
