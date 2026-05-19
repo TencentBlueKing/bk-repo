@@ -361,6 +361,60 @@ class PermissionServiceTest {
         roleService.deleteRoleById(replicationRoleId)
     }
 
+    @DisplayName("全局预览角色 - 持有者READ动作放行")
+    fun globalPreviewRoleAllowReadTest() {
+        userService.createUser(createUserRequest())
+        val previewRoleId = roleService.createRole(RequestUtil.buildGlobalPreviewRoleRequest())!!
+        userService.addUserToRole(userId, previewRoleId)
+
+        val checkRequest = CheckPermissionRequest(
+            uid = userId,
+            resourceType = ResourceType.NODE.toString(),
+            action = PermissionAction.READ.toString(),
+            projectId = "any-project",
+            repoName = "any-repo"
+        )
+        Assertions.assertTrue(permissionService.checkPermission(checkRequest))
+
+        roleService.deleteRoleById(previewRoleId)
+    }
+
+    @DisplayName("全局预览角色 - 持有者WRITE动作被拒")
+    fun globalPreviewRoleRejectWriteTest() {
+        userService.createUser(createUserRequest())
+        val previewRoleId = roleService.createRole(RequestUtil.buildGlobalPreviewRoleRequest())!!
+        userService.addUserToRole(userId, previewRoleId)
+
+        val checkRequest = CheckPermissionRequest(
+            uid = userId,
+            resourceType = ResourceType.NODE.toString(),
+            action = PermissionAction.WRITE.toString(),
+            projectId = "any-project",
+            repoName = "any-repo"
+        )
+        Assertions.assertFalse(permissionService.checkPermission(checkRequest))
+
+        roleService.deleteRoleById(previewRoleId)
+    }
+
+    @DisplayName("全局预览角色 - admin用户写动作仍被拒")
+    fun globalPreviewRoleRejectAdminWriteTest() {
+        userService.createUser(createUserRequest(admin = true))
+        val previewRoleId = roleService.createRole(RequestUtil.buildGlobalPreviewRoleRequest())!!
+        userService.addUserToRole(userId, previewRoleId)
+
+        val checkRequest = CheckPermissionRequest(
+            uid = userId,
+            resourceType = ResourceType.NODE.toString(),
+            action = PermissionAction.DELETE.toString(),
+            projectId = "any-project",
+            repoName = "any-repo"
+        )
+        Assertions.assertFalse(permissionService.checkPermission(checkRequest))
+
+        roleService.deleteRoleById(previewRoleId)
+    }
+
     private fun createUserRequest(
         id: String = userId,
         admin: Boolean = false

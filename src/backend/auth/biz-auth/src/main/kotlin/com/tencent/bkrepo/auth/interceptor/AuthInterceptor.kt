@@ -63,6 +63,8 @@ import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
+import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.common.service.util.HttpSigner
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -84,6 +86,10 @@ class AuthInterceptor(
 
     private val oauthAuthorizationService: OauthAuthorizationService by lazy { SpringContextUtils.getBean() }
 
+    private val jwtProperties: JwtAuthProperties by lazy { SpringContextUtils.getBean() }
+
+    private val signingKey by lazy { JwtUtils.createSigningKey(jwtProperties.secretKey) }
+
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val authHeader = request.getHeader(AUTHORIZATION).orEmpty()
         var authFailStr = String.format(AUTH_FAILED_RESPONSE, "empty auth header")
@@ -101,8 +107,8 @@ class AuthInterceptor(
 
             // oauth认证
             if (authHeader.startsWith(BEARER_AUTH_PREFIX)) {
-                authFailStr = String.format(AUTH_FAILED_RESPONSE, "illegal oauth token")
-                return checkOauthToken(request, authHeader)
+                authFailStr = String.format(AUTH_FAILED_RESPONSE, "illegal bearer token")
+                return checkBearerToken(request, authHeader)
             }
 
             // sign认证
@@ -121,6 +127,40 @@ class AuthInterceptor(
             logger.warn("check exception [$e]")
             return false
         }
+    }
+
+    private fun checkBearerToken(request: HttpServletRequest, authHeader: String): Boolean {
+        val token = authHeader.removePrefix(BEARER_AUTH_PREFIX)
+        val userId = parseInternalJwtUserId(token)
+        if (userId != null) {
+            return checkUserFromJwt(request, userId)
+        }
+        return checkOauthToken(request, authHeader)
+    }
+
+    private fun parseInternalJwtUserId(token: String): String? {
+        return try {
+            JwtUtils.validateToken(signingKey, token).body.subject?.takeIf { it.isNotBlank() }
+        } catch (e: Exception) {
+            logger.debug("validate internal jwt token failed", e)
+            null
+        }
+    }
+
+    private fun checkUserFromJwt(request: HttpServletRequest, userId: String): Boolean {
+        val userAccess = userAccessApiSet.any { request.requestURI.contains(it) }
+        val user = userService.getUserInfoById(userId) ?: run {
+            logger.warn("internal jwt user [$userId] not found")
+            throw IllegalArgumentException("internal jwt user not found")
+        }
+        val isAdmin = user.admin
+        request.setAttribute(USER_KEY, userId)
+        request.setAttribute(ADMIN_USER, isAdmin)
+        if (!isAdmin && !userAccess) {
+            logger.warn("user [$userId] can not access this endpoint [${request.requestURI}]")
+            throw IllegalArgumentException("user has no permission")
+        }
+        return true
     }
 
     private fun checkUserFromBasic(request: HttpServletRequest, authHeader: String): Boolean {
