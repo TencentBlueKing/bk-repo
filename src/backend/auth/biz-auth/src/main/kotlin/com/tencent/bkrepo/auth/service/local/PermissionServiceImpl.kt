@@ -323,7 +323,8 @@ open class PermissionServiceImpl constructor(
         if (checkStrictRepoLevelGrant(context)) return true
         //  check project user
         val isProjectUser = isUserLocalProjectUser(context.userId, context.projectId)
-        if (permHelper.checkProjectReadAction(context, isProjectUser)) return true
+        val isStrictMode = resolveStrictMode(context)
+        if (!isStrictMode && permHelper.checkProjectReadAction(context, isProjectUser)) return true
         // check node action
         if (needNodeCheck(context.projectId, context.repoName!!) && checkNodeAction(context, isProjectUser)) {
             return true
