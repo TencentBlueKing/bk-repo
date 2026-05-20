@@ -318,15 +318,25 @@ open class PermissionServiceImpl constructor(
         // check role repo admin
         if (permHelper.checkRepoAdmin(context)) return true
         // check repo read action
-        if (permHelper.checkRepoReadAction(context)) return true
+        if (permHelper.checkRepoReadAction(context)) {
+            logger.info("aaaaaaaaaa")
+            return true
+        }
         // 严格模式 + 非 Generic 仓库：尝试仓库级整仓授权短路
-        if (checkStrictRepoLevelGrant(context)) return true
+        if (checkStrictRepoLevelGrant(context)) {
+            logger.info("bbbbbbbb")
+            return true
+        }
         //  check project user
         val isProjectUser = isUserLocalProjectUser(context.userId, context.projectId)
         val isStrictMode = resolveStrictMode(context)
-        if (!isStrictMode && permHelper.checkProjectReadAction(context, isProjectUser)) return true
+        if (!isStrictMode && permHelper.checkProjectReadAction(context, isProjectUser)) {
+            logger.info("ddddddddd")
+            return true
+        }
         // check node action
         if (needNodeCheck(context.projectId, context.repoName!!) && checkNodeAction(context, isProjectUser)) {
+            logger.info("ccccccccc")
             return true
         }
         return false
