@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.common.artifact.metrics
 
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_IN_MEMORY
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_IN_REMOTE
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -41,7 +40,6 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.Tags
-import org.apache.commons.logging.LogFactory
 
 /**
  * 默认构件提供tag实现
@@ -83,13 +81,13 @@ class DefaultArtifactTagProvider(
         if (!includeRepoInfo) {
             return Tags.of(
                 PATH,
-                getTagPath(credentials, path)
+                TransferMedium.tagPath(credentials, path)
             )
         }
         return Tags.of(
             REPO_TAG, getRepoTagValue(repositoryDetail),
             PATH,
-            getTagPath(credentials, path)
+            TransferMedium.tagPath(credentials, path)
         )
     }
 
@@ -101,29 +99,6 @@ class DefaultArtifactTagProvider(
             return receiver.filePath.toString()
         }
         return SOURCE_IN_REMOTE
-    }
-
-    private fun getTagPath(credentials: StorageCredentials?, path: String): String {
-        if (path == SOURCE_IN_MEMORY) {
-            return "$SOURCE_IN_MEMORY:${credentials?.key ?: DEFAULT_STORAGE_KEY}"
-        }
-        if (path == SOURCE_IN_REMOTE) {
-            return "$SOURCE_IN_REMOTE:${credentials?.key ?: DEFAULT_STORAGE_KEY}"
-        }
-        credentials ?: return StringPool.UNKNOWN
-        with(credentials) {
-            if (path.startsWith(upload.location)) {
-                return upload.location
-            }
-            if (path.startsWith(upload.localPath)) {
-                return upload.localPath
-            }
-            if (path.startsWith(cache.path)) {
-                return cache.path
-            }
-            logger.warn("Unknown path[$path] origin with key[${credentials.key}]")
-            return StringPool.UNKNOWN
-        }
     }
 
     private fun getStorageCredentials(credentials: StorageCredentials?): StorageCredentials {
@@ -140,7 +115,6 @@ class DefaultArtifactTagProvider(
     }
 
     companion object {
-        private val logger = LogFactory.getLog(DefaultArtifactTagProvider::class.java)
         private const val PATH = "path"
         const val REPO_TAG = "repo"
     }

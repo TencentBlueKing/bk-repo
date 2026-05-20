@@ -63,6 +63,8 @@ const val ARTIFACT_UPLOAD_FAILED_COUNT = "artifact.upload.failed.count"
 const val ARTIFACT_UPLOAD_FAILED_COUNT_DESC = "构件上传失败量"
 const val ARTIFACT_ACCESS_TIME = "artifact.access-time"
 const val ARTIFACT_ACCESS_TIME_DESC = "构件访问时间"
+const val ARTIFACT_TRANSFER_SPEED = "artifact.transfer.speed"
+const val ARTIFACT_TRANSFER_SPEED_DESC = "构件传输速率分布（按文件大小、传输方式分桶）"
 
 const val ASYNC_TASK_ACTIVE_COUNT = "async.task.active.count"
 const val ASYNC_TASK_ACTIVE_COUNT_DESC = "异步任务实时数量"

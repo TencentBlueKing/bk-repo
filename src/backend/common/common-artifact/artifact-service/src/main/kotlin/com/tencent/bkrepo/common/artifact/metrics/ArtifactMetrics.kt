@@ -63,6 +63,8 @@ import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOADING_COUNT
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOADING_COUNT_DESC
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOADING_SIZE
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOADING_SIZE_DESC
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_TRANSFER_SPEED
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_TRANSFER_SPEED_DESC
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOADING_TIME
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOADING_TIME_DESC
 import com.tencent.bkrepo.common.metrics.constant.ASYNC_TASK_ACTIVE_COUNT
@@ -74,6 +76,7 @@ import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.DistributionSummary
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Tags
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.binder.MeterBinder
 import org.slf4j.LoggerFactory
@@ -276,6 +279,31 @@ class ArtifactMetrics(
             return Counter.builder(ARTIFACT_UPLOAD_FAILED_COUNT)
                 .description(ARTIFACT_UPLOAD_FAILED_COUNT_DESC)
                 .tags(tagProvider.getTags())
+                .register(meterRegistry)
+        }
+
+        /**
+         * 获取传输速率分布摘要（按文件大小、传输方式、介质分桶）
+         */
+        fun getTransferSpeedDistributionSummary(
+            direction: String,
+            sizeBucket: String,
+            transferMode: String,
+            medium: String,
+            storage: String,
+        ): DistributionSummary {
+            val tags = Tags.of(
+                "direction", direction,
+                "size_bucket", sizeBucket,
+                "transfer_mode", transferMode,
+                "medium", medium,
+                "storage", storage,
+            ).and(tagProvider.getTags())
+            return DistributionSummary.builder(ARTIFACT_TRANSFER_SPEED)
+                .description(ARTIFACT_TRANSFER_SPEED_DESC)
+                .baseUnit("bytes/second")
+                .tags(tags)
+                .serviceLevelObjectives(*TransferSpeedSlo.BOUNDARIES_BPS)
                 .register(meterRegistry)
         }
     }

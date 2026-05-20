@@ -41,6 +41,8 @@ import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactCacheMetrics
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsProperties
+import com.tencent.bkrepo.common.artifact.metrics.SizeBucket
+import com.tencent.bkrepo.common.artifact.metrics.TransferMedium
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecordLog
 import com.tencent.bkrepo.common.artifact.metrics.ChunkArtifactTransferMetrics
@@ -134,6 +136,13 @@ class ArtifactTransferListener(
             }
             queue.offer(record)
             ArtifactMetrics.getUploadedDistributionSummary().record(throughput.bytes.toDouble())
+            ArtifactMetrics.getTransferSpeedDistributionSummary(
+                direction = DIRECTION_UPLOAD,
+                sizeBucket = SizeBucket.of(throughput.bytes),
+                transferMode = determineTransferMode(),
+                medium = TransferMedium.of(artifactFile, storageCredentials),
+                storage = storageCredentials?.key ?: DEFAULT_STORAGE_KEY,
+            ).record(throughput.average().toDouble())
         }
     }
 
@@ -174,6 +183,13 @@ class ArtifactTransferListener(
                 projectUsageStatisticsService.inc(projectId = projectId, responseBytes = throughput.bytes)
             }
             ArtifactMetrics.getDownloadedDistributionSummary().record(throughput.bytes.toDouble())
+            ArtifactMetrics.getTransferSpeedDistributionSummary(
+                direction = DIRECTION_DOWNLOAD,
+                sizeBucket = SizeBucket.of(throughput.bytes),
+                transferMode = determineResponseTransferMode(artifactResource),
+                medium = TransferMedium.of(artifactResource, storageCredentials),
+                storage = storageCredentials?.key ?: DEFAULT_STORAGE_KEY,
+            ).record(throughput.average().toDouble())
             recordAccessTimeDistribution(artifactResource)
             artifactCacheMetrics.record(artifactResource)
             if (artifactMetricsProperties.collectByLog) {
@@ -397,5 +413,8 @@ class ArtifactTransferListener(
          * 分离上传标识
          */
         private const val SEPARATE_UPLOAD = "SEPARATE-UPLOAD"
+
+        private const val DIRECTION_UPLOAD = "UPLOAD"
+        private const val DIRECTION_DOWNLOAD = "DOWNLOAD"
     }
 }
