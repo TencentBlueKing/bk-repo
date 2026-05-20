@@ -47,6 +47,12 @@ import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_DOWNLOADING_TIME
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_DOWNLOADING_TIME_DESC
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_DOWNLOAD_FAILED_COUNT
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_DOWNLOAD_FAILED_COUNT_DESC
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_DOWNLOAD_TOTAL_COUNT
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_DOWNLOAD_TOTAL_COUNT_DESC
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOAD_FAILED_COUNT
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOAD_FAILED_COUNT_DESC
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOAD_TOTAL_COUNT
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOAD_TOTAL_COUNT_DESC
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_LIMIT_DOWNLOADING_SIZE
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_LIMIT_DOWNLOADING_SIZE_DESC
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_LIMIT_UPLOADING_SIZE
@@ -234,11 +240,41 @@ class ArtifactMetrics(
         }
 
         /**
+         * 获取下载总量计数器
+         */
+        fun getDownloadTotalCounter(): Counter {
+            return Counter.builder(ARTIFACT_DOWNLOAD_TOTAL_COUNT)
+                .description(ARTIFACT_DOWNLOAD_TOTAL_COUNT_DESC)
+                .tags(tagProvider.getTags())
+                .register(meterRegistry)
+        }
+
+        /**
          * 获取下载失败计数器
          */
         fun getDownloadFailedCounter(): Counter {
             return Counter.builder(ARTIFACT_DOWNLOAD_FAILED_COUNT)
                 .description(ARTIFACT_DOWNLOAD_FAILED_COUNT_DESC)
+                .tags(tagProvider.getTags())
+                .register(meterRegistry)
+        }
+
+        /**
+         * 获取上传总量计数器
+         */
+        fun getUploadTotalCounter(): Counter {
+            return Counter.builder(ARTIFACT_UPLOAD_TOTAL_COUNT)
+                .description(ARTIFACT_UPLOAD_TOTAL_COUNT_DESC)
+                .tags(tagProvider.getTags())
+                .register(meterRegistry)
+        }
+
+        /**
+         * 获取上传失败计数器
+         */
+        fun getUploadFailedCounter(): Counter {
+            return Counter.builder(ARTIFACT_UPLOAD_FAILED_COUNT)
+                .description(ARTIFACT_UPLOAD_FAILED_COUNT_DESC)
                 .tags(tagProvider.getTags())
                 .register(meterRegistry)
         }
