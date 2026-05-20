@@ -331,7 +331,7 @@ open class PermissionServiceImpl constructor(
         val isProjectUser = isUserLocalProjectUser(context.userId, context.projectId)
         val isStrictMode = resolveStrictMode(context)
         if (!isStrictMode && permHelper.checkProjectReadAction(context, isProjectUser)) {
-            logger.info("ddddddddd")
+            logger.info("ddddddddd [$context]")
             return true
         }
         // check node action
