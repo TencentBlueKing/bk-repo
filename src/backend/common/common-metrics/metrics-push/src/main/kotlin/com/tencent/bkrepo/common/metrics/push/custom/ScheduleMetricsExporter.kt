@@ -35,6 +35,8 @@ import io.prometheus.client.CollectorRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import java.time.Duration
+import java.util.LinkedHashMap
+import java.util.LinkedHashSet
 import java.util.concurrent.ConcurrentLinkedQueue
 
 class ScheduleMetricsExporter(
@@ -50,13 +52,13 @@ class ScheduleMetricsExporter(
     }
 
     private fun exportMetricsData() {
+        removeEmptyMetrics(registry)
         if (queue.isEmpty()) {
             return
         }
         logger.debug("start to export metric data to prometheus server")
-        val count = queue.size
-        for (i in 0 until count) {
-            val item: MetricsItem = queue.poll()
+        val items = drainQueue()
+        normalizeMetricLabels(items).forEach { item ->
             try {
                 var data = MetricsDataManager.getMetricsData(item.name)
                 if (data == null) {
@@ -76,6 +78,34 @@ class ScheduleMetricsExporter(
         drive.push(registry)
         // 不管是否成功都清除，避免异常情况下占用内存过多
         MetricsDataManager.clearMetricsHistory()
+    }
+
+    private fun drainQueue(): List<MetricsItem> {
+        val items = mutableListOf<MetricsItem>()
+        val count = queue.size
+        for (i in 0 until count) {
+            queue.poll()?.let(items::add)
+        }
+        return items
+    }
+
+    private fun normalizeMetricLabels(items: List<MetricsItem>): List<MetricsItem> {
+        val labelKeysByMetric = linkedMapOf<String, LinkedHashSet<String>>()
+        items.forEach { item ->
+            val keys = labelKeysByMetric.getOrPut(item.name) { LinkedHashSet() }
+            item.labels.keys.forEach(keys::add)
+        }
+        return items.map { item ->
+            val labelKeys = labelKeysByMetric[item.name] ?: return@map item
+            if (item.labels.keys == labelKeys) {
+                return@map item
+            }
+            val normalizedLabels = LinkedHashMap<String, String>(labelKeys.size)
+            labelKeys.forEach { key ->
+                normalizedLabels[key] = item.labels[key].orEmpty()
+            }
+            item.copy(labels = normalizedLabels)
+        }
     }
 
     companion object {
