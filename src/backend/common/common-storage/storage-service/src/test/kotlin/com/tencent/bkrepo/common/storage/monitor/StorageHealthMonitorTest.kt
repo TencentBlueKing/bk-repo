@@ -55,7 +55,10 @@ internal class StorageHealthMonitorTest {
         timesToRestore = 5,
         timesToFallback = 2
     )
-    private val storageProperties = StorageProperties(filesystem = storageCredentials, monitor = monitorConfig)
+    private val storageProperties = StorageProperties().apply {
+        filesystem = storageCredentials
+        monitor = monitorConfig
+    }
     private val path = storageCredentials.upload.location
 
     @Test
@@ -76,7 +79,10 @@ internal class StorageHealthMonitorTest {
             timesToRestore = 5,
             timesToFallback = 2
         )
-        val storageProperties = StorageProperties(filesystem = storageCredentials, monitor = config)
+        val storageProperties = StorageProperties().apply {
+            filesystem = storageCredentials
+            monitor = config
+        }
         val monitor = StorageHealthMonitor(storageProperties, path)
         repeat(2) {
             monitor.add(object : StorageHealthMonitor.Observer {
@@ -126,7 +132,10 @@ internal class StorageHealthMonitorTest {
             timesToRestore = 2,
             timesToFallback = 1
         )
-        val storageProperties = StorageProperties(filesystem = storageCredentials, monitor = config)
+        val storageProperties = StorageProperties().apply {
+            filesystem = storageCredentials
+            monitor = config
+        }
         val monitor = StorageHealthMonitor(storageProperties, path)
         monitor.add(object : StorageHealthMonitor.Observer {
             override fun unhealthy(fallbackPath: Path?, reason: String?) {

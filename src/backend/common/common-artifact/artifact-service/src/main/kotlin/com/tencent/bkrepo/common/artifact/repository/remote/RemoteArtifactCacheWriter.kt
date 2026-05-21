@@ -30,7 +30,7 @@ package com.tencent.bkrepo.common.artifact.repository.remote
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactDataReceiver
+import com.tencent.bkrepo.common.artifact.resolve.file.receiver.ArtifactDataReceiver
 import com.tencent.bkrepo.common.artifact.stream.StreamReadListener
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.storage.config.StorageProperties

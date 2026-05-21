@@ -1,9 +1,10 @@
 package com.tencent.bkrepo.repository.dao
 
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.repository.model.TClientVersionConfig
+import com.tencent.bkrepo.repository.pojo.clientupgrade.ClientVersionConfigListOption
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -19,31 +20,6 @@ class ClientVersionConfigDao : SimpleMongoDao<TClientVersionConfig>() {
         targetUserId: String?,
     ): TClientVersionConfig? {
         return findOne(Query.query(keyCriteria(productId, platform, arch, targetUserId)))
-    }
-
-    fun listByProductId(productId: String?): List<TClientVersionConfig> {
-        if (productId.isNullOrBlank()) {
-            return findAll()
-        }
-        val crit = Criteria.where(TClientVersionConfig::productId.name).`is`(productId)
-        return find(Query.query(crit))
-    }
-
-    fun existsByProductIdAndUser(productId: String, targetUserId: String): Boolean {
-        val crit = Criteria.where(TClientVersionConfig::productId.name).`is`(productId)
-            .and(TClientVersionConfig::targetUserId.name).`is`(targetUserId)
-        return exists(Query.query(crit))
-    }
-
-    fun existsByEnabledProductIdAndUser(
-        productId: String,
-        targetUserId: String,
-    ): Boolean {
-        val crit = Criteria
-            .where(TClientVersionConfig::productId.name).`is`(productId)
-            .and(TClientVersionConfig::targetUserId.name).`is`(targetUserId)
-            .and(TClientVersionConfig::enabled.name).`is`(true)
-        return exists(Query.query(crit))
     }
 
     fun existsEnabledUserConfigByScope(
@@ -73,12 +49,6 @@ class ClientVersionConfigDao : SimpleMongoDao<TClientVersionConfig>() {
         }
     }
 
-    fun listByProductIdAndNullUser(productId: String): List<TClientVersionConfig> {
-        val crit = Criteria.where(TClientVersionConfig::productId.name).`is`(productId)
-            .andOperator(nullTargetUserCriteria())
-        return find(Query.query(crit))
-    }
-
     fun pageByProductId(productId: String?, pageNumber: Int, pageSize: Int): Page<TClientVersionConfig> {
         val query = buildProductIdQuery(productId)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
@@ -87,8 +57,75 @@ class ClientVersionConfigDao : SimpleMongoDao<TClientVersionConfig>() {
         return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
-    private fun nullTargetUserCriteria(): Criteria {
-        return Criteria.where(TClientVersionConfig::targetUserId.name).`is`(null)
+    fun pageByQuery(option: ClientVersionConfigListOption): Page<TClientVersionConfig> {
+        val query = buildListQuery(option)
+        val pageRequest = Pages.ofRequest(option.pageNumber, option.pageSize)
+        val totalRecords = count(query)
+        val records = find(query.with(pageRequest))
+        return Pages.ofResponse(pageRequest, totalRecords, records)
+    }
+
+    private fun buildListQuery(option: ClientVersionConfigListOption): Query {
+        val criteria = Criteria()
+        normalize(option.productId)?.let {
+            criteria.and(TClientVersionConfig::productId.name).`is`(it)
+        }
+        normalize(option.platform)?.let {
+            criteria.and(TClientVersionConfig::platform.name).`is`(it)
+        }
+        val archList = option.archs
+            ?.mapNotNull { normalize(it) }
+            ?.distinct()
+            ?.takeIf { it.isNotEmpty() }
+        when {
+            normalize(option.arch) != null -> {
+                criteria.and(TClientVersionConfig::arch.name).`is`(normalize(option.arch))
+            }
+            archList != null -> {
+                criteria.and(TClientVersionConfig::arch.name).`in`(archList)
+            }
+        }
+        val targetUserId = trimValue(option.targetUserId)
+        if (targetUserId != null) {
+            criteria.and(TClientVersionConfig::targetUserId.name).`is`(targetUserId)
+        } else {
+            when (option.scope?.trim()?.lowercase()) {
+                SCOPE_GLOBAL -> criteria.and(TClientVersionConfig::targetUserId.name).`is`(null)
+                SCOPE_USER -> criteria.and(TClientVersionConfig::targetUserId.name).ne(null)
+            }
+        }
+        option.enabled?.let {
+            criteria.and(TClientVersionConfig::enabled.name).`is`(it)
+        }
+        trimValue(option.latestVersion)?.let {
+            criteria.and(TClientVersionConfig::latestVersion.name).`is`(it)
+        }
+        val query = if (criteria.criteriaObject.isEmpty()) {
+            Query()
+        } else {
+            Query(criteria)
+        }
+        query.with(resolveSort(option.sortField, option.sortDirection))
+        return query
+    }
+
+    private fun resolveSort(sortField: String?, sortDirection: String?): Sort {
+        val direction = if (sortDirection?.trim()?.uppercase() == "ASC") {
+            Sort.Direction.ASC
+        } else {
+            Sort.Direction.DESC
+        }
+        val field = when (sortField?.trim()) {
+            TClientVersionConfig::productId.name -> TClientVersionConfig::productId.name
+            TClientVersionConfig::platform.name -> TClientVersionConfig::platform.name
+            TClientVersionConfig::arch.name -> TClientVersionConfig::arch.name
+            TClientVersionConfig::latestVersion.name -> TClientVersionConfig::latestVersion.name
+            TClientVersionConfig::targetUserId.name -> TClientVersionConfig::targetUserId.name
+            TClientVersionConfig::createdDate.name -> TClientVersionConfig::createdDate.name
+            TClientVersionConfig::enabled.name -> TClientVersionConfig::enabled.name
+            else -> TClientVersionConfig::lastModifiedDate.name
+        }
+        return Sort.by(direction, field).and(Sort.by(Sort.Direction.DESC, "_id"))
     }
 
     private fun buildProductIdQuery(productId: String?): Query {
@@ -106,6 +143,10 @@ class ClientVersionConfigDao : SimpleMongoDao<TClientVersionConfig>() {
         return query
     }
 
+    private fun nullTargetUserCriteria(): Criteria {
+        return Criteria.where(TClientVersionConfig::targetUserId.name).`is`(null)
+    }
+
     private fun keyCriteria(
         productId: String,
         platform: String,
@@ -121,5 +162,18 @@ class ClientVersionConfigDao : SimpleMongoDao<TClientVersionConfig>() {
             Criteria.where(TClientVersionConfig::targetUserId.name).`is`(targetUserId)
         }
         return Criteria().andOperator(base, scopeKey)
+    }
+
+    private fun normalize(value: String?): String? {
+        return value?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun trimValue(value: String?): String? {
+        return value?.trim()?.takeIf { it.isNotEmpty() }
+    }
+
+    companion object {
+        private const val SCOPE_GLOBAL = "global"
+        private const val SCOPE_USER = "user"
     }
 }
