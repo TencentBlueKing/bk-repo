@@ -87,6 +87,8 @@ enum class AuthMessageCode(private val businessCode: Int, private val key: Strin
     AUTH_STALE_MEMBER_LAST_ADMIN(49, "auth.stale.member.last-admin"),
     AUTH_STALE_MEMBER_SELF_CLEAN_FORBIDDEN(50, "auth.stale.member.self-clean-forbidden"),
     AUTH_STALE_MEMBER_DUPLICATE(51, "auth.stale.member.duplicate"),
+    AUTH_DEVOPS_BATCH_CLEAN_EMPTY(52, "auth.devops.batch-clean.empty"),
+    AUTH_DEVOPS_BATCH_CLEAN_TOO_MANY(53, "auth.devops.batch-clean.too-many"),
     ;
 
     override fun getBusinessCode() = businessCode

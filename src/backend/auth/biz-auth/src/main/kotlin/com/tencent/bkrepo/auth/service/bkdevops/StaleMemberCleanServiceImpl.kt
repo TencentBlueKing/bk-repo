@@ -18,6 +18,7 @@ import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TRole
+import com.tencent.bkrepo.auth.pojo.cleanup.BatchCleanMembersResult
 import com.tencent.bkrepo.auth.pojo.cleanup.CleanMemberResult
 import com.tencent.bkrepo.auth.pojo.cleanup.CleanStepResult
 import com.tencent.bkrepo.auth.pojo.cleanup.StaleMemberInfo
@@ -102,6 +103,79 @@ class StaleMemberCleanServiceImpl(
     }
 
     override fun cleanMember(projectId: String, userId: String, operator: String): CleanMemberResult {
+        return doCleanMember(projectId, userId, operator, dryRun = false)
+    }
+
+    override fun cleanMembers(
+        projectId: String,
+        userIds: List<String>,
+        operator: String,
+        dryRun: Boolean,
+    ): BatchCleanMembersResult {
+        ensureDevopsConfigured()
+        if (userIds.isEmpty()) {
+            throw ErrorCodeException(AuthMessageCode.AUTH_DEVOPS_BATCH_CLEAN_EMPTY)
+        }
+        // 去重，保留首次出现顺序
+        val deduped = LinkedHashSet(userIds).toList()
+        if (deduped.size > StaleMemberCleanService.BATCH_CLEAN_MAX_SIZE) {
+            throw ErrorCodeException(
+                AuthMessageCode.AUTH_DEVOPS_BATCH_CLEAN_TOO_MANY,
+                StaleMemberCleanService.BATCH_CLEAN_MAX_SIZE.toString(),
+            )
+        }
+
+        val results = ArrayList<CleanMemberResult>(deduped.size)
+        var consecutiveUnknown = 0
+        var aborted = false
+        var abortReason: String? = null
+
+        for (uid in deduped) {
+            val r = doCleanMember(projectId, uid, operator, dryRun)
+            results += r
+            // 仅当原因是"bk-ci probe failed"时计入连续异常计数；其它拒绝原因不触发熔断
+            if (!r.accepted && r.reason?.startsWith("bk-ci probe failed") == true) {
+                consecutiveUnknown += 1
+                if (consecutiveUnknown >= StaleMemberCleanService.BATCH_CLEAN_ABORT_THRESHOLD) {
+                    aborted = true
+                    abortReason = "aborted after $consecutiveUnknown consecutive bk-ci probe failures"
+                    logger.warn(
+                        "batch clean aborted: project=[$projectId] operator=[$operator] " +
+                            "processed=[${results.size}/${deduped.size}] reason=[$abortReason]"
+                    )
+                    break
+                }
+            } else {
+                consecutiveUnknown = 0
+            }
+        }
+
+        val acceptedCount = results.count { it.accepted }
+        return BatchCleanMembersResult(
+            projectId = projectId,
+            operator = operator,
+            dryRun = dryRun,
+            total = deduped.size,
+            accepted = acceptedCount,
+            rejected = results.size - acceptedCount,
+            aborted = aborted,
+            abortReason = abortReason,
+            results = results,
+        )
+    }
+
+    /**
+     * 实际清理逻辑：覆盖单用户与批量两条入口。
+     *
+     * @param dryRun true 时仅完成"前置校验 + 二次确认"，不写库；返回的 [CleanMemberResult.steps] 为空。
+     *   注意：dryRun 也会写"30s 防抖"缓存，避免与真实清理交错。
+     */
+    private fun doCleanMember(
+        projectId: String,
+        userId: String,
+        operator: String,
+        dryRun: Boolean,
+    ): CleanMemberResult {
         ensureDevopsConfigured()
 
         // 自我清理拦截
@@ -165,6 +239,18 @@ class StaleMemberCleanServiceImpl(
                 operator = operator,
                 accepted = false,
                 reason = lastAdminCheck,
+            )
+        }
+
+        // dryRun 模式：所有前置校验已通过，但不实际写库。
+        if (dryRun) {
+            return CleanMemberResult(
+                projectId = projectId,
+                userId = userId,
+                operator = operator,
+                accepted = true,
+                reason = "dry-run: would clean (no writes)",
+                steps = emptyList(),
             )
         }
 

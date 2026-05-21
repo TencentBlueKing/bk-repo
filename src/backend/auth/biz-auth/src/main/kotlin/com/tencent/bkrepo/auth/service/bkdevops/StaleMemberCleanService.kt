@@ -8,6 +8,7 @@
 
 package com.tencent.bkrepo.auth.service.bkdevops
 
+import com.tencent.bkrepo.auth.pojo.cleanup.BatchCleanMembersResult
 import com.tencent.bkrepo.auth.pojo.cleanup.CleanMemberResult
 import com.tencent.bkrepo.auth.pojo.cleanup.StaleMemberListResponse
 
@@ -44,4 +45,30 @@ interface StaleMemberCleanService {
      * @param operator 操作人（已通过项目管理员鉴权），用于审计与"自我清理"拦截
      */
     fun cleanMember(projectId: String, userId: String, operator: String): CleanMemberResult
+
+    /**
+     * 批量清理：内部按顺序复用 [cleanMember] 处理每个用户。
+     *
+     * 设计要点：
+     * 1. [userIds] 必填且非空，单批最多 [BATCH_CLEAN_MAX_SIZE] 个，超过抛 [com.tencent.bkrepo.common.api.exception.ErrorCodeException]；
+     * 2. 自动去重并保留首次出现顺序；
+     * 3. 串行执行 —— 充分利用 [CIAuthService] 的本地缓存、避免 burst 打到 bk-ci；
+     * 4. **熔断**：连续出现 [BATCH_CLEAN_ABORT_THRESHOLD] 个 bk-ci 探测异常（UNKNOWN）即中止剩余清理，
+     *    避免 bk-ci 故障期间的级联误判；
+     * 5. **dryRun**：仅做"二次确认 + 唯一管理员"等只读校验，不写库；用于让管理员预览影响面。
+     */
+    fun cleanMembers(
+        projectId: String,
+        userIds: List<String>,
+        operator: String,
+        dryRun: Boolean = false,
+    ): BatchCleanMembersResult
+
+    companion object {
+        /** 批量清理单批最大允许数量。 */
+        const val BATCH_CLEAN_MAX_SIZE = 100
+
+        /** 连续 N 次 bk-ci UNKNOWN 即熔断。 */
+        const val BATCH_CLEAN_ABORT_THRESHOLD = 5
+    }
 }
