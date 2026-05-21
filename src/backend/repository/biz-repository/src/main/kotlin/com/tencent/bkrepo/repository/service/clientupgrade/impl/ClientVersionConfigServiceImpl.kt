@@ -10,6 +10,7 @@ import com.tencent.bkrepo.repository.pojo.clientupgrade.ClientVersionConfigUpser
 import com.tencent.bkrepo.repository.pojo.clientupgrade.ClientVersionConfigVo
 import com.tencent.bkrepo.repository.pojo.clientupgrade.ClientUpgradeCheckResponse
 import com.tencent.bkrepo.repository.service.clientupgrade.ClientVersionConfigCache
+import com.tencent.bkrepo.repository.pojo.clientupgrade.ClientVersionConfigListOption
 import com.tencent.bkrepo.repository.service.clientupgrade.ClientVersionConfigService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
@@ -80,15 +81,20 @@ class ClientVersionConfigServiceImpl(
 
     override fun listPage(productId: String?, pageNumber: Int, pageSize: Int): Page<ClientVersionConfigVo> {
         val pid = productId?.trim()?.takeIf { it.isNotEmpty() }?.lowercase()
-        val page = clientVersionConfigDao.pageByProductId(pid, pageNumber, pageSize)
-        return Page(
-            pageNumber = page.pageNumber,
-            pageSize = page.pageSize,
-            totalRecords = page.totalRecords,
-            totalPages = page.totalPages,
-            records = page.records.map { it.toVo() },
-        )
+        return toPageVo(clientVersionConfigDao.pageByProductId(pid, pageNumber, pageSize))
     }
+
+    override fun listPage(option: ClientVersionConfigListOption): Page<ClientVersionConfigVo> {
+        return toPageVo(clientVersionConfigDao.pageByQuery(option))
+    }
+
+    private fun toPageVo(page: Page<TClientVersionConfig>) = Page(
+        pageNumber = page.pageNumber,
+        pageSize = page.pageSize,
+        totalRecords = page.totalRecords,
+        totalPages = page.totalPages,
+        records = page.records.map { it.toVo() },
+    )
 
     override fun checkUpgrade(
         forUserId: String,

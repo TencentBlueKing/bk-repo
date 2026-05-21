@@ -7,6 +7,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.pojo.clientupgrade.ClientVersionConfigListOption
 import com.tencent.bkrepo.repository.pojo.clientupgrade.ClientVersionConfigUpsertRequest
 import com.tencent.bkrepo.repository.pojo.clientupgrade.ClientVersionConfigVo
 import com.tencent.bkrepo.repository.service.clientupgrade.ClientVersionConfigService
@@ -37,7 +38,17 @@ class UserClientUpgradeAdminController(
         @RequestParam(required = false, defaultValue = "$DEFAULT_PAGE_NUMBER") pageNumber: Int = DEFAULT_PAGE_NUMBER,
         @RequestParam(required = false, defaultValue = "$DEFAULT_PAGE_SIZE") pageSize: Int = DEFAULT_PAGE_SIZE,
     ): Response<Page<ClientVersionConfigVo>> {
-        return ResponseBuilder.success(clientVersionConfigService.listPage(productId, pageNumber, pageSize))
+        return ResponseBuilder.success(
+            clientVersionConfigService.listPage(productId, pageNumber, pageSize),
+        )
+    }
+
+    @Operation(summary = "分页查询客户端版本配置（多条件）")
+    @PostMapping("/list")
+    fun listPageByOption(
+        @RequestBody option: ClientVersionConfigListOption,
+    ): Response<Page<ClientVersionConfigVo>> {
+        return ResponseBuilder.success(clientVersionConfigService.listPage(option))
     }
 
     @Operation(summary = "新增或更新版本配置")
