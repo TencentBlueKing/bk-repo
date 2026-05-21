@@ -9,12 +9,14 @@
 package com.tencent.bkrepo.auth.controller.user
 
 import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
+import com.tencent.bkrepo.auth.controller.OpenResource
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.pojo.cleanup.BatchCleanMembersRequest
 import com.tencent.bkrepo.auth.pojo.cleanup.BatchCleanMembersResult
+import com.tencent.bkrepo.auth.pojo.cleanup.CleanAllStaleMembersRequest
 import com.tencent.bkrepo.auth.pojo.cleanup.CleanMemberResult
 import com.tencent.bkrepo.auth.pojo.cleanup.StaleMemberListResponse
-import com.tencent.bkrepo.auth.service.bkdevops.DevopsProjectService
+import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.bkdevops.StaleMemberCleanService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -36,8 +38,8 @@ import org.springframework.web.bind.annotation.RestController
  *
  * 设计要点：
  * - 仅在 DevOps 鉴权模式下注册（[DevopsAuthCondition]）
- * - 鉴权严格走 [DevopsProjectService.isProjectManager]（bk-ci 角色判定）；
- *   平台级 admin / 系统管理员**不享有越权调用权限**
+ * - 鉴权复用 [OpenResource.preCheckProjectAdmin]：底层走 PermissionService.checkPermission(PROJECT/MANAGE)，
+ *   命中条件包括 bk-ci 项目管理员 / 平台超管 / 本地 project_manage 角色
  * - 清理接口在执行业务前再做一次"调用方仍是项目管理员"校验，覆盖窗口期问题
  */
 @Tag(name = "项目残留成员治理")
@@ -46,8 +48,8 @@ import org.springframework.web.bind.annotation.RestController
 @Conditional(DevopsAuthCondition::class)
 class StaleMemberCleanController(
     private val staleMemberCleanService: StaleMemberCleanService,
-    private val devopsProjectService: DevopsProjectService,
-) {
+    permissionService: PermissionService,
+) : OpenResource(permissionService) {
 
     @Operation(summary = "列出项目下'已不在 bk-ci 项目成员中、却仍在本地有权限痕迹'的用户名单")
     @GetMapping
@@ -55,7 +57,7 @@ class StaleMemberCleanController(
         @PathVariable projectId: String,
     ): Response<StaleMemberListResponse> {
         val operator = currentUser()
-        ensureProjectManager(operator, projectId)
+        preCheckProjectAdmin(projectId)
         val response = staleMemberCleanService.listStaleMembers(projectId)
         logger.info(
             "stale-member list invoked: operator=[$operator] project=[$projectId] " +
@@ -73,11 +75,11 @@ class StaleMemberCleanController(
     ): Response<CleanMemberResult> {
         val operator = currentUser()
         // 入口鉴权
-        ensureProjectManager(operator, projectId)
+        preCheckProjectAdmin(projectId)
         try {
             val result = staleMemberCleanService.cleanMember(projectId, userId, operator)
-            // 业务执行前的"窗口期"再校验：如果调用方在执行间隙刚被移出管理员，则拒绝清理
-            if (result.accepted && !devopsProjectService.isProjectManager(operator, projectId)) {
+            // 业务执行后的"窗口期"再校验：如果调用方在执行间隙刚失去管理员权限，则拒绝清理
+            if (result.accepted && !isContextUserProjectAdmin(projectId)) {
                 logger.warn(
                     "operator [$operator] lost project-manager role during clean " +
                         "of project=[$projectId] target=[$userId]; reject post-hoc"
@@ -108,7 +110,7 @@ class StaleMemberCleanController(
         @RequestBody request: BatchCleanMembersRequest,
     ): Response<BatchCleanMembersResult> {
         val operator = currentUser()
-        ensureProjectManager(operator, projectId)
+        preCheckProjectAdmin(projectId)
         try {
             val result = staleMemberCleanService.cleanMembers(
                 projectId = projectId,
@@ -118,7 +120,7 @@ class StaleMemberCleanController(
             )
             // 业务执行后再校验一次操作人仍是项目管理员（覆盖窗口期），仅对实写模式做额外保护
             if (!request.dryRun && result.accepted > 0 &&
-                !devopsProjectService.isProjectManager(operator, projectId)
+                !isContextUserProjectAdmin(projectId)
             ) {
                 logger.warn(
                     "operator [$operator] lost project-manager role during batch clean " +
@@ -140,20 +142,56 @@ class StaleMemberCleanController(
         }
     }
 
+    @Operation(
+        summary = "一键清理项目下全部已离职成员的本地权限残留",
+        description = "服务端先调用名单接口拿到全部 NOT_MEMBER 用户（UNKNOWN 已被排除），" +
+            "再按 100 一片自动分片串行清理；每个用户独立走二次确认/唯一管理员/30s 防抖等护栏。" +
+            "为防止 stale 名单异常膨胀，单次最多清理 maxCleanSize（默认 200）个用户；" +
+            "超过则拒绝并提示管理员改用 clean-batch 分批。dryRun=true 时仅做只读校验，不实际写库。",
+    )
+    @PostMapping("/clean-all")
+    fun cleanAllStaleMembers(
+        @PathVariable projectId: String,
+        @RequestBody(required = false) request: CleanAllStaleMembersRequest?,
+    ): Response<BatchCleanMembersResult> {
+        val operator = currentUser()
+        preCheckProjectAdmin(projectId)
+        val req = request ?: CleanAllStaleMembersRequest()
+        try {
+            val result = staleMemberCleanService.cleanAllStaleMembers(
+                projectId = projectId,
+                operator = operator,
+                dryRun = req.dryRun,
+                maxCleanSize = req.maxCleanSize,
+            )
+            // 业务执行后再校验一次操作人仍是项目管理员（覆盖窗口期），仅对实写模式做额外保护
+            if (!req.dryRun && result.accepted > 0 &&
+                !isContextUserProjectAdmin(projectId)
+            ) {
+                logger.warn(
+                    "operator [$operator] lost project-manager role during clean-all " +
+                        "of project=[$projectId] accepted=[${result.accepted}]; reject post-hoc"
+                )
+                throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
+            }
+            auditCleanAll(operator, projectId, req, result)
+            return ResponseBuilder.success(result)
+        } catch (e: ErrorCodeException) {
+            throw e
+        } catch (e: Exception) {
+            logger.error(
+                "clean-all stale members failed: operator=[$operator] project=[$projectId] " +
+                    "dryRun=[${req.dryRun}] maxCleanSize=[${req.maxCleanSize}]",
+                e,
+            )
+            throw e
+        }
+    }
+
     private fun currentUser(): String {
         val uid = SecurityUtils.getUserId()
         if (uid.isBlank()) throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
         return uid
-    }
-
-    /**
-     * 严格按 bk-ci 项目管理员判定：平台级 admin / 系统管理员不享有越权调用权限。
-     */
-    private fun ensureProjectManager(operator: String, projectId: String) {
-        if (!devopsProjectService.isProjectManager(operator, projectId)) {
-            logger.warn("user [$operator] is not project manager of [$projectId]; reject stale-member ops")
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
-        }
     }
 
     /**
@@ -198,6 +236,29 @@ class StaleMemberCleanController(
         result.results.forEach { auditClean(operator, projectId, it.userId, it) }
         AUDIT_LOGGER.info(
             "STALE_MEMBER_CLEAN_BATCH_END | operator=[{}] project=[{}] dryRun=[{}] " +
+                "total=[{}] accepted=[{}] rejected=[{}] aborted=[{}] abortReason=[{}]",
+            operator, projectId, request.dryRun,
+            result.total, result.accepted, result.rejected, result.aborted, result.abortReason ?: "",
+        )
+    }
+
+    /**
+     * 一键清理审计：与 [auditCleanBatch] 同构，只把头/尾标签换成 CLEAN_ALL_*，
+     * 中间逐用户行依旧走 [auditClean] 通道，与其它清理共用同一格式。
+     */
+    private fun auditCleanAll(
+        operator: String,
+        projectId: String,
+        request: CleanAllStaleMembersRequest,
+        result: BatchCleanMembersResult,
+    ) {
+        AUDIT_LOGGER.info(
+            "STALE_MEMBER_CLEAN_ALL_START | operator=[{}] project=[{}] dryRun=[{}] maxCleanSize=[{}] picked=[{}]",
+            operator, projectId, request.dryRun, request.maxCleanSize, result.total,
+        )
+        result.results.forEach { auditClean(operator, projectId, it.userId, it) }
+        AUDIT_LOGGER.info(
+            "STALE_MEMBER_CLEAN_ALL_END | operator=[{}] project=[{}] dryRun=[{}] " +
                 "total=[{}] accepted=[{}] rejected=[{}] aborted=[{}] abortReason=[{}]",
             operator, projectId, request.dryRun,
             result.total, result.accepted, result.rejected, result.aborted, result.abortReason ?: "",

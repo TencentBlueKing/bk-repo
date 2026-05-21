@@ -164,6 +164,74 @@ class StaleMemberCleanServiceImpl(
         )
     }
 
+    override fun cleanAllStaleMembers(
+        projectId: String,
+        operator: String,
+        dryRun: Boolean,
+        maxCleanSize: Int,
+    ): BatchCleanMembersResult {
+        ensureDevopsConfigured()
+
+        // ① 复用 listStaleMembers 取数（已经做了 bk-ci 三态确认，UNKNOWN 不会出现在名单里）
+        val stale = listStaleMembers(projectId).members.map { it.userId }
+        if (stale.isEmpty()) {
+            logger.info("clean-all noop: project=[$projectId] operator=[$operator] no stale member found")
+            return BatchCleanMembersResult(
+                projectId = projectId,
+                operator = operator,
+                dryRun = dryRun,
+                total = 0,
+                accepted = 0,
+                rejected = 0,
+                aborted = false,
+                abortReason = null,
+                results = emptyList(),
+            )
+        }
+
+        // ② 兜底闸：名单异常膨胀时拒绝整体清理，提示管理员改走 clean-batch 分批
+        if (stale.size > maxCleanSize) {
+            throw ErrorCodeException(
+                AuthMessageCode.AUTH_DEVOPS_CLEAN_ALL_TOO_MANY,
+                stale.size.toString(),
+                maxCleanSize.toString(),
+            )
+        }
+
+        // ③ 自动分片串行：每片 ≤ BATCH_CLEAN_MAX_SIZE，复用 cleanMembers 内的护栏与熔断
+        val chunks = stale.chunked(StaleMemberCleanService.BATCH_CLEAN_MAX_SIZE)
+        val merged = ArrayList<CleanMemberResult>(stale.size)
+        var totalAccepted = 0
+        var aborted = false
+        var abortReason: String? = null
+        for ((idx, chunk) in chunks.withIndex()) {
+            val r = cleanMembers(projectId, chunk, operator, dryRun)
+            merged += r.results
+            totalAccepted += r.accepted
+            if (r.aborted) {
+                aborted = true
+                abortReason = r.abortReason
+                logger.warn(
+                    "clean-all aborted at chunk[${idx + 1}/${chunks.size}]: project=[$projectId] " +
+                        "operator=[$operator] processed=[${merged.size}/${stale.size}] reason=[$abortReason]"
+                )
+                break
+            }
+        }
+
+        return BatchCleanMembersResult(
+            projectId = projectId,
+            operator = operator,
+            dryRun = dryRun,
+            total = stale.size,
+            accepted = totalAccepted,
+            rejected = merged.size - totalAccepted,
+            aborted = aborted,
+            abortReason = abortReason,
+            results = merged,
+        )
+    }
+
     /**
      * 实际清理逻辑：覆盖单用户与批量两条入口。
      *

@@ -64,11 +64,33 @@ interface StaleMemberCleanService {
         dryRun: Boolean = false,
     ): BatchCleanMembersResult
 
+    /**
+     * 一键清理项目下"全部已离职成员"。
+     *
+     * 流程：
+     * 1. 复用 [listStaleMembers] 拿到全部 NOT_MEMBER 用户（UNKNOWN 已被排除）；
+     * 2. 兜底校验名单规模 ≤ [maxCleanSize]，超过抛错并提示管理员改用 clean-batch 分批；
+     * 3. 当名单大于 [BATCH_CLEAN_MAX_SIZE] 时按 100 一片自动分片，串行复用 [cleanMembers]；
+     * 4. 任一片熔断（连续 N 次 bk-ci UNKNOWN）即整体中止剩余分片。
+     *
+     * 与 [cleanMembers] 的关系：本方法是它的"自动取数 + 自动分片"包装，**业务护栏完全一致**
+     * （自我清理 / 二次确认 / 唯一管理员 / 30s 防抖 / 4 步独立 try-catch / UNKNOWN 熔断）。
+     */
+    fun cleanAllStaleMembers(
+        projectId: String,
+        operator: String,
+        dryRun: Boolean = false,
+        maxCleanSize: Int = DEFAULT_CLEAN_ALL_MAX_SIZE,
+    ): BatchCleanMembersResult
+
     companion object {
         /** 批量清理单批最大允许数量。 */
         const val BATCH_CLEAN_MAX_SIZE = 100
 
         /** 连续 N 次 bk-ci UNKNOWN 即熔断。 */
         const val BATCH_CLEAN_ABORT_THRESHOLD = 5
+
+        /** 一键清理默认上限（兜底闸，与 [com.tencent.bkrepo.auth.pojo.cleanup.CleanAllStaleMembersRequest.DEFAULT_MAX_CLEAN_ALL] 对齐）。 */
+        const val DEFAULT_CLEAN_ALL_MAX_SIZE = 200
     }
 }

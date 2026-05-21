@@ -55,3 +55,26 @@ data class BatchCleanMembersResult(
     @get:Schema(title = "每个用户的明细结果（顺序与请求一致）")
     val results: List<CleanMemberResult>,
 )
+
+/**
+ * 一键清理"项目下全部已离职成员"请求体。
+ *
+ * - 不需要传 userIds：服务端先调用 [com.tencent.bkrepo.auth.service.bkdevops.StaleMemberCleanService.listStaleMembers]
+ *   拿到名单（已通过 bk-ci 三态确认，UNKNOWN 不会进入名单），再串行清理；
+ * - [maxCleanSize] 是兜底闸：当 stale 名单异常膨胀时拒绝清理，提示管理员改用 clean-batch 分批；
+ *   生产值默认见 [DEFAULT_MAX_CLEAN_ALL]。
+ */
+@Schema(title = "一键清理项目全部已离职成员请求")
+data class CleanAllStaleMembersRequest(
+    @get:Schema(title = "演练模式：仅返回'将要清理'的预览，不实际写库")
+    val dryRun: Boolean = false,
+    @get:Schema(
+        title = "本次操作允许清理的最大人数上限（防止 stale 名单异常膨胀时的兜底保护）",
+    )
+    val maxCleanSize: Int = DEFAULT_MAX_CLEAN_ALL,
+) {
+    companion object {
+        /** 单次 clean-all 默认允许清理的最大人数上限。 */
+        const val DEFAULT_MAX_CLEAN_ALL = 200
+    }
+}
