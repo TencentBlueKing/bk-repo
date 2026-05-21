@@ -416,7 +416,9 @@
         },
         created () {
             this.getRepoListAll({ projectId: this.projectId }).then(_ => {
-                if (!this.repoListAll.find(repo => repo.name === this.repoName)) {
+                if (MODE_CONFIG !== 'ci' && (this.repoName === 'log' || this.repoName === 'report')) {
+                    this.pathChange()
+                } else if (!this.repoListAll.find(repo => repo.name === this.repoName)) {
                     this.$router.replace({ name: 'repositories', params: { projectId: this.projectId } })
                 } else {
                     this.pathChange()
@@ -1083,7 +1085,7 @@
                     fullPath
                 })
             },
-            handlerDownload (row) {
+            downloadFromWeb (row) {
                 const transPath = encodeURIComponent(row.fullPath)
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
                 fetch(window.BK_SUBPATH + 'web' + url, {
