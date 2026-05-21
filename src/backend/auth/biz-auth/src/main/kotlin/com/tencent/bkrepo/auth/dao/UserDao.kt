@@ -195,4 +195,23 @@ class UserDao : SimpleMongoDao<TUser>() {
         return this.find(query)
     }
 
+    /**
+     * 从指定用户的 roles 数组中批量移除给定角色 id（mongo `_id`）。
+     *
+     * 用于"清理某用户在某项目下的所有本地角色绑定"——调用方应先汇总
+     * 该项目下需要移除的所有 role 的 mongo id（PROJECT/REPO 类型），
+     * 再交由本方法一次性 `$pullAll`。
+     *
+     * @return 受影响的文档数（0/1）
+     */
+    fun pullRolesFromUser(userId: String, roleIds: List<String>): Long {
+        if (roleIds.isEmpty()) return 0L
+        val query = Query(Criteria.where(TUser::userId.name).`is`(userId))
+        // Spring Data Mongo `Update.pullAll` 接收 Java 的 Object[]；Kotlin 的 Array<String>
+        // 不能协变到 Array<Any>，必须显式构造 Array<Any> 才能通过编译。
+        val values: Array<Any> = Array(roleIds.size) { roleIds[it] }
+        val update = Update().pullAll(TUser::roles.name, values)
+        return this.updateFirst(query, update).modifiedCount
+    }
+
 }

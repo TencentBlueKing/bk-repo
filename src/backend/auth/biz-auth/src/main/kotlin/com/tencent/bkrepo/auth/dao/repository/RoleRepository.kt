@@ -87,4 +87,10 @@ interface RoleRepository : MongoRepository<TRole, String> {
     fun findByProjectIdAndSource(projectId: String, source: RoleSource): List<TRole>
 
     fun findFirstByTypeAndRoleId(type: RoleType, roleId: String): TRole?
+
+    /**
+     * 查询项目下所有 PROJECT 与 REPO 类型角色，用于聚合"项目维度"的本地角色残留。
+     * SERVICE 类型角色不绑定到具体项目，不在该方法的返回范围内。
+     */
+    fun findByProjectIdAndTypeIn(projectId: String, types: List<RoleType>): List<TRole>
 }

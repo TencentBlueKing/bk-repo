@@ -165,4 +165,29 @@ class PermissionDao : SimpleMongoDao<TPermission>() {
             .and(TPermission::repos.name).`is`(repoName)
         return this.find(Query.query(celeriac))
     }
+
+    /**
+     * 列出该项目下所有 permission 文档。
+     * 用于"项目维度残留聚合"扫描——按 projectId 直接拉取，回到内存里聚合 users 集合。
+     */
+    fun listByProjectId(projectId: String): List<TPermission> {
+        val query = Query(Criteria.where(TPermission::projectId.name).`is`(projectId))
+        return this.find(query)
+    }
+
+    /**
+     * 在指定项目的所有 permission 文档中，从其 `users` 数组里拉出（pull）目标 userId。
+     * - 仅扫描 `projectId == 该项目 && users 包含目标 userId` 的文档，避免全表扫描
+     * - 返回受影响的文档数，便于审计输出"影响行数"
+     */
+    fun pullUserFromAllInProject(projectId: String, userId: String): Long {
+        val query = Query.query(
+            Criteria().andOperator(
+                Criteria.where(TPermission::projectId.name).`is`(projectId),
+                Criteria.where(TPermission::users.name).`is`(userId)
+            )
+        )
+        val update = Update().pull(TPermission::users.name, userId)
+        return this.updateMulti(query, update).modifiedCount
+    }
 }
