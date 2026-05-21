@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.resolve.file
+package com.tencent.bkrepo.common.artifact.resolve.file.receiver
 
 import com.tencent.bkrepo.common.api.constant.StringPool.randomString
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics

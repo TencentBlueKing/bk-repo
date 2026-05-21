@@ -64,14 +64,14 @@ class StreamArtifactFileTest {
         localThreshold: Long = -1,
         contentLength: Long? = null
     ): StreamArtifactFile {
-        val storageProperties = StorageProperties(
-            filesystem = storageCredentials,
+        val storageProperties = StorageProperties().apply {
+            filesystem = storageCredentials
             receive = ReceiveProperties(
                 fileSizeThreshold = DataSize.ofBytes(threshold),
                 localThreshold = DataSize.ofBytes(localThreshold)
-            ),
+            )
             monitor = MonitorProperties()
-        )
+        }
         val monitor = StorageHealthMonitor(storageProperties, tempDir)
         return StreamArtifactFile(
             source,

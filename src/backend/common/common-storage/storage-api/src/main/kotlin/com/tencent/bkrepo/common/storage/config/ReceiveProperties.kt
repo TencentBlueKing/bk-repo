@@ -84,4 +84,10 @@ data class ReceiveProperties(
      * 接受分块过期时间, 默认12小时
      */
     var blockExpireTime: Duration = Duration.ofHours(12),
+
+    /**
+     * 开启COS直传的仓库，为空时所有仓库都将直传COS，格式为projectId/repoName
+     * 需 InnerCosCredentials.cosDirectUploadMode 不为 OFF 才生效
+     */
+    var enableCosDirectUploadRepos: Set<String> = emptySet()
 )
