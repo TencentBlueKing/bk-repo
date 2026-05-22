@@ -11,28 +11,10 @@ package com.tencent.bkrepo.auth.pojo.cleanup
 import io.swagger.v3.oas.annotations.media.Schema
 
 /**
- * 批量清理请求体。
- *
- * 设计要点：
- * - [userIds] 必填且非空：禁止"空列表 = 清理全部"这种危险语义，必须由前端先调用名单接口、
- *   人工二次确认勾选后再传入；
- * - [dryRun] 为 true 时，仅复用单用户清理流程中的"二次确认 + 唯一管理员守门"等校验，
- *   不会执行实际写库（受 service 实现保证）。
- */
-@Schema(title = "批量清理请求")
-data class BatchCleanMembersRequest(
-    @get:Schema(title = "目标用户 ID 列表（必填且非空，单批最多 100 个）")
-    val userIds: List<String>,
-    @get:Schema(title = "演练模式：仅返回'将要清理'的预览，不实际写库")
-    val dryRun: Boolean = false,
-)
-
-/**
- * 批量清理整体结果。
+ * 一键清理整体结果。
  *
  * - [aborted] 为 true 表示出现连续 N 个 UNKNOWN（bk-ci 探测异常）后熔断，剩余用户未尝试清理；
- * - [results] 顺序与请求中 [BatchCleanMembersRequest.userIds] 顺序一致；
- *   若 aborted=true，则后段未尝试的用户不会出现在 [results] 中。
+ * - [results] 顺序与处理顺序一致；若 aborted=true，则后段未尝试的用户不会出现在 [results] 中。
  */
 @Schema(title = "批量清理结果")
 data class BatchCleanMembersResult(
@@ -61,7 +43,7 @@ data class BatchCleanMembersResult(
  *
  * - 不需要传 userIds：服务端先调用 [com.tencent.bkrepo.auth.service.bkdevops.StaleMemberCleanService.listStaleMembers]
  *   拿到名单（已通过 bk-ci 三态确认，UNKNOWN 不会进入名单），再串行清理；
- * - [maxCleanSize] 是兜底闸：当 stale 名单异常膨胀时拒绝清理，提示管理员改用 clean-batch 分批；
+ * - [maxCleanSize] 是兜底闸：当 stale 名单异常膨胀时拒绝清理，提示管理员降低阈值或缩小项目范围；
  *   生产值默认见 [DEFAULT_MAX_CLEAN_ALL]。
  */
 @Schema(title = "一键清理项目全部已离职成员请求")

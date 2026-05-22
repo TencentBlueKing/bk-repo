@@ -47,34 +47,15 @@ interface StaleMemberCleanService {
     fun cleanMember(projectId: String, userId: String, operator: String): CleanMemberResult
 
     /**
-     * 批量清理：内部按顺序复用 [cleanMember] 处理每个用户。
-     *
-     * 设计要点：
-     * 1. [userIds] 必填且非空，单批最多 [BATCH_CLEAN_MAX_SIZE] 个
-     * 2. 自动去重并保留首次出现顺序；
-     * 3. 串行执行 —— 充分利用 [CIAuthService] 的本地缓存、避免 burst 打到 bk-ci；
-     * 4. **熔断**：连续出现 [BATCH_CLEAN_ABORT_THRESHOLD] 个 bk-ci 探测异常（UNKNOWN）即中止剩余清理，
-     *    避免 bk-ci 故障期间的级联误判；
-     * 5. **dryRun**：仅做"二次确认 + 唯一管理员"等只读校验，不写库；用于让管理员预览影响面。
-     */
-    fun cleanMembers(
-        projectId: String,
-        userIds: List<String>,
-        operator: String,
-        dryRun: Boolean = false,
-    ): BatchCleanMembersResult
-
-    /**
      * 一键清理项目下"全部已离职成员"。
      *
      * 流程：
      * 1. 复用 [listStaleMembers] 拿到全部 NOT_MEMBER 用户（UNKNOWN 已被排除）；
-     * 2. 兜底校验名单规模 ≤ [maxCleanSize]，超过抛错并提示管理员改用 clean-batch 分批；
-     * 3. 当名单大于 [BATCH_CLEAN_MAX_SIZE] 时按 100 一片自动分片，串行复用 [cleanMembers]；
-     * 4. 任一片熔断（连续 N 次 bk-ci UNKNOWN）即整体中止剩余分片。
+     * 2. 兜底校验名单规模 ≤ [maxCleanSize]，超过抛错并提示管理员降低清理范围；
+     * 3. 名单按 [CLEAN_ALL_CHUNK_SIZE] 一片自动分片，串行复用 [cleanMember]；
+     * 4. 连续 [CLEAN_ALL_ABORT_THRESHOLD] 次 bk-ci UNKNOWN 即整体中止剩余清理。
      *
-     * 与 [cleanMembers] 的关系：本方法是它的"自动取数 + 自动分片"包装，**业务护栏完全一致**
-     * （自我清理 / 二次确认 / 唯一管理员 / 30s 防抖 / 4 步独立 try-catch / UNKNOWN 熔断）。
+     * 业务护栏与单用户清理一致（自我清理 / 二次确认 / 唯一管理员 / 30s 防抖 / 4 步独立 try-catch）。
      */
     fun cleanAllStaleMembers(
         projectId: String,
@@ -84,11 +65,11 @@ interface StaleMemberCleanService {
     ): BatchCleanMembersResult
 
     companion object {
-        /** 批量清理单批最大允许数量。 */
-        const val BATCH_CLEAN_MAX_SIZE = 100
+        /** 一键清理时单片大小（控制 bk-ci 调用与日志聚合的粒度）。 */
+        const val CLEAN_ALL_CHUNK_SIZE = 100
 
         /** 连续 N 次 bk-ci UNKNOWN 即熔断。 */
-        const val BATCH_CLEAN_ABORT_THRESHOLD = 5
+        const val CLEAN_ALL_ABORT_THRESHOLD = 5
 
         const val DEFAULT_CLEAN_ALL_MAX_SIZE = 200
     }

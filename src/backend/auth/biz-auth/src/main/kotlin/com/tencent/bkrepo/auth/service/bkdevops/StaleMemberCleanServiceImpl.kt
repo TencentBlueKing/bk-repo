@@ -106,64 +106,6 @@ class StaleMemberCleanServiceImpl(
         return doCleanMember(projectId, userId, operator, dryRun = false)
     }
 
-    override fun cleanMembers(
-        projectId: String,
-        userIds: List<String>,
-        operator: String,
-        dryRun: Boolean,
-    ): BatchCleanMembersResult {
-        ensureDevopsConfigured()
-        if (userIds.isEmpty()) {
-            throw ErrorCodeException(AuthMessageCode.AUTH_DEVOPS_BATCH_CLEAN_EMPTY)
-        }
-        // 去重，保留首次出现顺序
-        val deduped = LinkedHashSet(userIds).toList()
-        if (deduped.size > StaleMemberCleanService.BATCH_CLEAN_MAX_SIZE) {
-            throw ErrorCodeException(
-                AuthMessageCode.AUTH_DEVOPS_BATCH_CLEAN_TOO_MANY,
-                StaleMemberCleanService.BATCH_CLEAN_MAX_SIZE.toString(),
-            )
-        }
-
-        val results = ArrayList<CleanMemberResult>(deduped.size)
-        var consecutiveUnknown = 0
-        var aborted = false
-        var abortReason: String? = null
-
-        for (uid in deduped) {
-            val r = doCleanMember(projectId, uid, operator, dryRun)
-            results += r
-            // 仅当原因是"bk-ci probe failed"时计入连续异常计数；其它拒绝原因不触发熔断
-            if (!r.accepted && r.reason?.startsWith("bk-ci probe failed") == true) {
-                consecutiveUnknown += 1
-                if (consecutiveUnknown >= StaleMemberCleanService.BATCH_CLEAN_ABORT_THRESHOLD) {
-                    aborted = true
-                    abortReason = "aborted after $consecutiveUnknown consecutive bk-ci probe failures"
-                    logger.warn(
-                        "batch clean aborted: project=[$projectId] operator=[$operator] " +
-                            "processed=[${results.size}/${deduped.size}] reason=[$abortReason]"
-                    )
-                    break
-                }
-            } else {
-                consecutiveUnknown = 0
-            }
-        }
-
-        val acceptedCount = results.count { it.accepted }
-        return BatchCleanMembersResult(
-            projectId = projectId,
-            operator = operator,
-            dryRun = dryRun,
-            total = deduped.size,
-            accepted = acceptedCount,
-            rejected = results.size - acceptedCount,
-            aborted = aborted,
-            abortReason = abortReason,
-            results = results,
-        )
-    }
-
     override fun cleanAllStaleMembers(
         projectId: String,
         operator: String,
@@ -189,7 +131,7 @@ class StaleMemberCleanServiceImpl(
             )
         }
 
-        // ② 兜底闸：名单异常膨胀时拒绝整体清理，提示管理员改走 clean-batch 分批
+        // ② 兜底闸：名单异常膨胀时拒绝整体清理，提示管理员降低 maxCleanSize 或缩小项目范围
         if (stale.size > maxCleanSize) {
             throw ErrorCodeException(
                 AuthMessageCode.AUTH_DEVOPS_CLEAN_ALL_TOO_MANY,
@@ -198,37 +140,42 @@ class StaleMemberCleanServiceImpl(
             )
         }
 
-        // ③ 自动分片串行：每片 ≤ BATCH_CLEAN_MAX_SIZE，复用 cleanMembers 内的护栏与熔断
-        val chunks = stale.chunked(StaleMemberCleanService.BATCH_CLEAN_MAX_SIZE)
-        val merged = ArrayList<CleanMemberResult>(stale.size)
-        var totalAccepted = 0
+        // ③ 串行执行 + UNKNOWN 熔断：每个用户独立走 doCleanMember 的全部护栏
+        val results = ArrayList<CleanMemberResult>(stale.size)
+        var consecutiveUnknown = 0
         var aborted = false
         var abortReason: String? = null
-        for ((idx, chunk) in chunks.withIndex()) {
-            val r = cleanMembers(projectId, chunk, operator, dryRun)
-            merged += r.results
-            totalAccepted += r.accepted
-            if (r.aborted) {
-                aborted = true
-                abortReason = r.abortReason
-                logger.warn(
-                    "clean-all aborted at chunk[${idx + 1}/${chunks.size}]: project=[$projectId] " +
-                        "operator=[$operator] processed=[${merged.size}/${stale.size}] reason=[$abortReason]"
-                )
-                break
+        for (uid in stale) {
+            val r = doCleanMember(projectId, uid, operator, dryRun)
+            results += r
+            // 仅当原因是 "bk-ci probe failed" 时计入连续异常计数；其它拒绝原因不触发熔断
+            if (!r.accepted && r.reason?.startsWith("bk-ci probe failed") == true) {
+                consecutiveUnknown += 1
+                if (consecutiveUnknown >= StaleMemberCleanService.CLEAN_ALL_ABORT_THRESHOLD) {
+                    aborted = true
+                    abortReason = "aborted after $consecutiveUnknown consecutive bk-ci probe failures"
+                    logger.warn(
+                        "clean-all aborted: project=[$projectId] operator=[$operator] " +
+                            "processed=[${results.size}/${stale.size}] reason=[$abortReason]"
+                    )
+                    break
+                }
+            } else {
+                consecutiveUnknown = 0
             }
         }
 
+        val acceptedCount = results.count { it.accepted }
         return BatchCleanMembersResult(
             projectId = projectId,
             operator = operator,
             dryRun = dryRun,
             total = stale.size,
-            accepted = totalAccepted,
-            rejected = merged.size - totalAccepted,
+            accepted = acceptedCount,
+            rejected = results.size - acceptedCount,
             aborted = aborted,
             abortReason = abortReason,
-            results = merged,
+            results = results,
         )
     }
 
