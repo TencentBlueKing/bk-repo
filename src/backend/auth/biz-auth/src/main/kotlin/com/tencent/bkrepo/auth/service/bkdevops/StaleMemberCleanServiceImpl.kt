@@ -377,40 +377,60 @@ class StaleMemberCleanServiceImpl(
      */
     private fun collectCandidates(projectId: String): CandidateAggregation {
         val map = HashMap<String, HitCounters>()
-        fun touch(userId: String): HitCounters = map.getOrPut(userId) { HitCounters() }
 
         // 1) 项目下所有 PROJECT / REPO 类型角色 → 反查持有这些角色的 user
-        val projectRoles = roleRepository.findByProjectIdAndTypeIn(projectId, listOf(RoleType.PROJECT, RoleType.REPO))
-        if (projectRoles.isNotEmpty()) {
-            val projectRoleIds = projectRoles.filter { it.type == RoleType.PROJECT }.mapNotNull { it.id }
-            val repoRoleIds = projectRoles.filter { it.type == RoleType.REPO }.mapNotNull { it.id }
-            if (projectRoleIds.isNotEmpty()) {
-                userDao.findAllByRolesIn(projectRoleIds).forEach { user ->
-                    val hitInProject = user.roles.count { it in projectRoleIds }
-                    if (hitInProject > 0) touch(user.userId).projectRoleCount += hitInProject
-                }
-            }
-            if (repoRoleIds.isNotEmpty()) {
-                userDao.findAllByRolesIn(repoRoleIds).forEach { user ->
-                    val hitInRepo = user.roles.count { it in repoRoleIds }
-                    if (hitInRepo > 0) touch(user.userId).repoRoleCount += hitInRepo
-                }
-            }
-        }
+        aggregateRoleHits(projectId, map)
 
         // 2) permission 表中 projectId=该项目 的所有 permission 文档 → users 字段展开
-        permissionDao.listByProjectId(projectId).forEach { permission ->
-            permission.users.forEach { uid ->
-                if (uid.isNotBlank()) touch(uid).permissionCount += 1
-            }
-        }
+        aggregatePermissionHits(projectId, map)
 
         // 3) personal_path 表中 projectId=该项目 的所有记录 → userId 展开
-        personalPathDao.listByProject(projectId).forEach { path ->
-            if (path.userId.isNotBlank()) touch(path.userId).personalPathCount += 1
-        }
+        aggregatePersonalPathHits(projectId, map)
 
         return CandidateAggregation(userIdToHits = map)
+    }
+
+    /** 角色维度聚合：分别处理 PROJECT 与 REPO 类型角色的反查与计数。 */
+    private fun aggregateRoleHits(projectId: String, map: HashMap<String, HitCounters>) {
+        val projectRoles = roleRepository.findByProjectIdAndTypeIn(projectId, listOf(RoleType.PROJECT, RoleType.REPO))
+        if (projectRoles.isEmpty()) return
+        val projectRoleIds = projectRoles.filter { it.type == RoleType.PROJECT }.mapNotNull { it.id }
+        val repoRoleIds = projectRoles.filter { it.type == RoleType.REPO }.mapNotNull { it.id }
+        countRoleHits(projectRoleIds, map) { counters, hits -> counters.projectRoleCount += hits }
+        countRoleHits(repoRoleIds, map) { counters, hits -> counters.repoRoleCount += hits }
+    }
+
+    /**
+     * 通用的"角色 ID 集合 → 反查持有用户 → 累加命中次数"小工具。
+     *
+     * 抽出此方法既能让 [collectCandidates] 嵌套层级达标，也复用了 PROJECT / REPO 两类角色的相同流程。
+     */
+    private inline fun countRoleHits(
+        roleIds: List<String>,
+        map: HashMap<String, HitCounters>,
+        crossinline accumulate: (HitCounters, Int) -> Unit,
+    ) {
+        if (roleIds.isEmpty()) return
+        userDao.findAllByRolesIn(roleIds).forEach { user ->
+            val hits = user.roles.count { it in roleIds }
+            if (hits > 0) accumulate(map.getOrPut(user.userId) { HitCounters() }, hits)
+        }
+    }
+
+    /** permission 维度聚合：展开 permission.users 列表逐个累加。 */
+    private fun aggregatePermissionHits(projectId: String, map: HashMap<String, HitCounters>) {
+        permissionDao.listByProjectId(projectId).forEach { permission ->
+            permission.users.forEach { uid ->
+                if (uid.isNotBlank()) map.getOrPut(uid) { HitCounters() }.permissionCount += 1
+            }
+        }
+    }
+
+    /** personal_path 维度聚合：按 projectId 拉取后展开 userId 计数。 */
+    private fun aggregatePersonalPathHits(projectId: String, map: HashMap<String, HitCounters>) {
+        personalPathDao.listByProject(projectId).forEach { path ->
+            if (path.userId.isNotBlank()) map.getOrPut(path.userId) { HitCounters() }.personalPathCount += 1
+        }
     }
 
     private fun buildStaleMemberInfo(userId: String, candidates: CandidateAggregation): StaleMemberInfo {

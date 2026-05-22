@@ -50,7 +50,7 @@ interface StaleMemberCleanService {
      * 批量清理：内部按顺序复用 [cleanMember] 处理每个用户。
      *
      * 设计要点：
-     * 1. [userIds] 必填且非空，单批最多 [BATCH_CLEAN_MAX_SIZE] 个，超过抛 [com.tencent.bkrepo.common.api.exception.ErrorCodeException]；
+     * 1. [userIds] 必填且非空，单批最多 [BATCH_CLEAN_MAX_SIZE] 个
      * 2. 自动去重并保留首次出现顺序；
      * 3. 串行执行 —— 充分利用 [CIAuthService] 的本地缓存、避免 burst 打到 bk-ci；
      * 4. **熔断**：连续出现 [BATCH_CLEAN_ABORT_THRESHOLD] 个 bk-ci 探测异常（UNKNOWN）即中止剩余清理，
@@ -90,7 +90,6 @@ interface StaleMemberCleanService {
         /** 连续 N 次 bk-ci UNKNOWN 即熔断。 */
         const val BATCH_CLEAN_ABORT_THRESHOLD = 5
 
-        /** 一键清理默认上限（兜底闸，与 [com.tencent.bkrepo.auth.pojo.cleanup.CleanAllStaleMembersRequest.DEFAULT_MAX_CLEAN_ALL] 对齐）。 */
         const val DEFAULT_CLEAN_ALL_MAX_SIZE = 200
     }
 }
