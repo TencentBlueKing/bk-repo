@@ -1,0 +1,43 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ *
+ * Copyright (C) 2026 Tencent.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+package com.tencent.bkrepo.skill.pojo.response
+
+import com.tencent.bkrepo.common.artifact.pojo.BasicInfo
+import com.tencent.bkrepo.common.artifact.pojo.PackageVersionInfo
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import io.swagger.v3.oas.annotations.media.Schema
+
+@Schema(title = "skill版本详情页返回包装模型")
+data class SkillVersionInfo(
+    @get:Schema(title = "基础信息")
+    override val basic: BasicInfo,
+    @get:Schema(title = "元数据信息")
+    val metadata: List<MetadataModel>,
+    @get:Schema(title = "SKILL.md内容")
+    val skillMd: String?,
+) : PackageVersionInfo
