@@ -6,8 +6,7 @@ import axios from 'axios'
 import cookies from 'js-cookie'
 import BkUserDisplayName from '@blueking/bk-user-display-name'
 import * as VueDemi from 'vue-demi'
-import { defineComponent } from '@vue/composition-api'
-import VueCompositionAPI from '@vue/composition-api'
+import VueCompositionAPI, * as CompositionAPI from '@vue/composition-api'
 
 // 本地模块
 import App from '@/App'
@@ -30,9 +29,18 @@ const DEFAULT_LANGUAGE = 'zh-cn'
 
 /**
  * 配置 vue-demi 以支持 Vue 2
+ * 注意：@vue-office/excel 等组件内部通过 vue-demi 调用 ref/reactive/computed 等多个 Composition API，
+ * 仅代理 defineComponent 会导致 setup 阶段抛 TypeError: e.ref is not a function（xlsx 预览白屏）。
+ * 这里把整个 @vue/composition-api 命名空间合并到 VueDemi 上，并显式声明 Vue2 标记。
  */
 Vue.use(VueCompositionAPI)
-VueDemi.defineComponent = defineComponent
+Object.assign(VueDemi, CompositionAPI, {
+    Vue,
+    Vue2: Vue,
+    isVue2: true,
+    isVue3: false,
+    install: () => {} // 防止后续 Vue.use(VueDemi) 触发的 install 把上面合并的 API 覆盖
+})
 
 Vue.component('Icon', Icon)
 Vue.component('CanwayDialog', CanwayDialog)
