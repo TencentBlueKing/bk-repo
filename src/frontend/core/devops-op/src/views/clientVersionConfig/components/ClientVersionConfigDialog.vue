@@ -7,31 +7,24 @@
   >
     <el-form ref="form" :model="form" :rules="rules" label-width="120px" status-icon>
       <el-form-item label="制品产品线" prop="productId">
-        <el-input
-          v-model="form.productId"
-          placeholder="如 bkrepo-cli"
-          size="small"
-        />
+        <el-input :value="fixedProductLabel" disabled size="small" />
       </el-form-item>
       <el-form-item label="平台" prop="platform">
-        <el-select v-model="form.platform" placeholder="请选择平台" size="small" style="width:100%">
-          <el-option
-            v-for="opt in platformOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
-          />
-        </el-select>
+        <el-input :value="fixedPlatformLabel" disabled size="small" />
       </el-form-item>
       <el-form-item label="架构" prop="arch">
-        <el-select v-model="form.arch" size="small" style="width:100%">
-          <el-option label="amd64" value="amd64" />
-          <el-option label="arm64" value="arm64" />
-          <el-option label="x64" value="x64" />
-        </el-select>
+        <el-input :value="form.arch" disabled size="small" />
       </el-form-item>
-      <el-form-item label="目标用户" prop="targetUserId">
-        <el-input v-model="form.targetUserId" placeholder="空=全员；否则仅该 bk 用户灰度" size="small" />
+      <el-form-item v-if="!userOnly" label="目标用户">
+        <el-input value="全员默认" disabled size="small" />
+      </el-form-item>
+      <el-form-item v-else label="目标用户" prop="targetUserId">
+        <el-input
+          v-model="form.targetUserId"
+          placeholder="必填，bk 用户名"
+          size="small"
+          :disabled="!createMode"
+        />
       </el-form-item>
       <el-form-item label="最低版本(强升)" prop="minVersion">
         <el-input v-model="form.minVersion" placeholder="低于此版本强制升级，可空" size="small" />
@@ -58,19 +51,7 @@
 
 <script>
 import { upsertClientVersionConfig } from '@/api/clientVersionConfig'
-
-const PLATFORM_PRESETS = [
-  { label: 'Windows', value: 'windows' },
-  { label: 'macOS (Darwin)', value: 'darwin' },
-  { label: 'Linux', value: 'linux' }
-]
-
-function normalizePlatformForForm(platform) {
-  const s = (platform || '').trim()
-  const lower = s.toLowerCase()
-  const known = PLATFORM_PRESETS.map(p => p.value)
-  return known.includes(lower) ? lower : s
-}
+import { productLabel, platformLabel } from '../productPresets'
 
 function emptyForm() {
   return {
@@ -101,6 +82,22 @@ export default {
     record: {
       type: Object,
       default: () => ({})
+    },
+    fixedProductId: {
+      type: String,
+      default: ''
+    },
+    fixedPlatform: {
+      type: String,
+      default: ''
+    },
+    fixedArch: {
+      type: String,
+      default: ''
+    },
+    userOnly: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -112,51 +109,64 @@ export default {
         productId: [{ required: true, message: '必填', trigger: 'blur' }],
         platform: [{ required: true, message: '必填', trigger: 'change' }],
         arch: [{ required: true, message: '必填', trigger: 'change' }],
+        targetUserId: [],
         latestVersion: [{ required: true, message: '必填', trigger: 'blur' }],
         downloadUrl: [{ required: true, message: '必填', trigger: 'blur' }]
       }
     }
   },
   computed: {
-    platformOptions() {
-      const raw = (this.form.platform || '').trim()
-      const lower = raw.toLowerCase()
-      const knownVals = PLATFORM_PRESETS.map(p => p.value)
-      if (raw && !knownVals.includes(lower)) {
-        return [...PLATFORM_PRESETS, { label: raw, value: raw }]
-      }
-      return PLATFORM_PRESETS
+    fixedProductLabel() {
+      return productLabel(this.form.productId)
+    },
+    fixedPlatformLabel() {
+      return platformLabel(this.form.platform)
     }
   },
   watch: {
     visible(val) {
       this.showDialog = val
       if (val) {
+        this.syncUserRules()
         this.initForm()
       }
+    },
+    userOnly() {
+      this.syncUserRules()
     },
     showDialog(val) {
       this.$emit('update:visible', val)
     }
   },
   methods: {
+    syncUserRules() {
+      this.rules.targetUserId = this.userOnly
+        ? [{ required: true, message: '用户必填', trigger: 'blur' }]
+        : []
+    },
     initForm() {
       if (this.createMode) {
         this.form = emptyForm()
+        this.form.productId = this.fixedProductId
+        this.form.platform = this.fixedPlatform
+        this.form.arch = this.fixedArch
       } else {
         const r = this.record || {}
         this.form = {
           id: r.id,
-          productId: r.productId || '',
-          platform: normalizePlatformForForm(r.platform),
-          arch: r.arch || '',
-          targetUserId: r.targetUserId || '',
+          productId: r.productId || this.fixedProductId,
+          platform: (r.platform || this.fixedPlatform).trim().toLowerCase(),
+          arch: r.arch || this.fixedArch,
+          targetUserId: this.userOnly ? (r.targetUserId || '') : '',
           minVersion: r.minVersion || '',
           latestVersion: r.latestVersion || '',
           downloadUrl: r.downloadUrl || '',
           releaseNotes: r.releaseNotes || '',
           enabled: r.enabled !== false
         }
+      }
+      if (!this.userOnly) {
+        this.form.targetUserId = ''
       }
       this.$nextTick(() => this.$refs.form && this.$refs.form.clearValidate())
     },
@@ -173,9 +183,8 @@ export default {
         downloadUrl: f.downloadUrl.trim(),
         enabled: f.enabled
       }
-      const uid = (f.targetUserId || '').trim()
-      if (uid) {
-        payload.targetUserId = uid
+      if (this.userOnly) {
+        payload.targetUserId = (f.targetUserId || '').trim()
       }
       const minV = (f.minVersion || '').trim()
       if (minV) {

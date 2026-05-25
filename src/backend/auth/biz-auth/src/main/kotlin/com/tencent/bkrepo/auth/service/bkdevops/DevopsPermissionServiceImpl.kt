@@ -314,7 +314,9 @@ class DevopsPermissionServiceImpl constructor(
                 return checkNodeAction(context, isDevopsProjectMember)
             }
             logger.debug("no need check path control [$context]")
-            return isDevopsProjectMember || super.checkLocalRepoOrNodePermission(context)
+            val isStrictMode = resolveStrictMode(context)
+            if (!isStrictMode && isDevopsProjectMember) return true
+            return super.checkLocalRepoOrNodePermission(context)
         }
     }
 

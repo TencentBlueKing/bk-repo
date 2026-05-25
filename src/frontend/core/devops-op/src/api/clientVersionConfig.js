@@ -1,19 +1,13 @@
 import request from '@/utils/request'
 
 const PREFIX = '/repository/api/client/upgrade'
+export const BATCH_LIMIT = 50
 
-export function listClientVersionConfigs(productId, pageNumber, pageSize) {
-  const params = {
-    pageNumber,
-    pageSize
-  }
-  if (productId) {
-    params.productId = productId
-  }
+export function listClientVersionConfigs(option) {
   return request({
     url: `${PREFIX}/list`,
-    method: 'get',
-    params
+    method: 'post',
+    data: option
   })
 }
 
@@ -31,6 +25,12 @@ export function batchUpsertClientVersionConfig(dataList) {
     method: 'post',
     data: dataList
   })
+}
+
+export async function batchUpsertInChunks(dataList) {
+  for (let i = 0; i < dataList.length; i += BATCH_LIMIT) {
+    await batchUpsertClientVersionConfig(dataList.slice(i, i + BATCH_LIMIT))
+  }
 }
 
 export function deleteClientVersionConfig(id) {

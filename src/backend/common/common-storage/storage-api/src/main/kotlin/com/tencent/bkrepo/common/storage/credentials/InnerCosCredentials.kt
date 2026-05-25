@@ -59,6 +59,13 @@ data class InnerCosCredentials(
      * 分片上传/下载阈值，单位 MB
      */
     var multipartThreshold: Long = 10,
+    /**
+     * COS 直传模式（凭证级）
+     * - OFF：关闭直连
+     * - ON_UNHEALTHY：仅当存储 monitor 判定为不健康时直连
+     * - ALWAYS：全部直连（仍受 ReceiveProperties.enableCosDirectUploadRepos 白名单约束）
+     */
+    var cosDirectUploadMode: String = COS_DIRECT_UPLOAD_MODE_OFF,
     var download: DownloadProperties = DownloadProperties(),
     override var key: String? = null,
     override var cache: CacheProperties = CacheProperties(),
@@ -72,6 +79,10 @@ data class InnerCosCredentials(
     companion object {
         const val type = "innercos"
         const val MB = 1024 * 1024
+
+        const val COS_DIRECT_UPLOAD_MODE_OFF = "OFF"
+        const val COS_DIRECT_UPLOAD_MODE_ON_UNHEALTHY = "ON_UNHEALTHY"
+        const val COS_DIRECT_UPLOAD_MODE_ALWAYS = "ALWAYS"
     }
 
     data class DownloadProperties(

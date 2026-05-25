@@ -282,7 +282,7 @@ open class PermissionServiceImpl constructor(
         if (otherRoles.isNotEmpty()) {
             logger.warn(
                 "uid=${user.userId} role=global_preview holds dirty roles=$otherRoles, " +
-                    "prefer global preview restriction"
+                        "prefer global preview restriction"
             )
         }
 
@@ -292,7 +292,7 @@ open class PermissionServiceImpl constructor(
         } else {
             logger.info(
                 "uid=${user.userId} role=global_preview rejectedAction=$action " +
-                    "project=$projectId repo=$repoName"
+                        "project=$projectId repo=$repoName"
             )
             false
         }
@@ -323,7 +323,8 @@ open class PermissionServiceImpl constructor(
         if (checkStrictRepoLevelGrant(context)) return true
         //  check project user
         val isProjectUser = isUserLocalProjectUser(context.userId, context.projectId)
-        if (permHelper.checkProjectReadAction(context, isProjectUser)) return true
+        val isStrictMode = resolveStrictMode(context)
+        if (!isStrictMode && permHelper.checkProjectReadAction(context, isProjectUser)) return true
         // check node action
         if (needNodeCheck(context.projectId, context.repoName!!) && checkNodeAction(context, isProjectUser)) {
             return true
@@ -565,7 +566,7 @@ open class PermissionServiceImpl constructor(
             val platform = accountDao.findOneByAppId(appId!!) ?: return false
             // 非平台账号
             if (!permHelper.isPlatformApp(platform)) return false
-            
+
             // 检查账号的action限制
             if (platform.limit != null) {
                 if (!platform.limit!!.isActionAllowed(action)) {
@@ -573,7 +574,7 @@ open class PermissionServiceImpl constructor(
                     return false
                 }
             }
-            
+
             // 不限制scope
             if (platform.scope == null) return true
             // 平台账号，限制scope
@@ -678,7 +679,7 @@ open class PermissionServiceImpl constructor(
                 if (!pass) {
                     logger.debug(
                         "strict mode reject: userId=$userId, projectId=$projectId, " +
-                            "repoName=$repoName, action=$action, isGeneric=$isGeneric"
+                                "repoName=$repoName, action=$action, isGeneric=$isGeneric"
                     )
                 }
                 return pass
