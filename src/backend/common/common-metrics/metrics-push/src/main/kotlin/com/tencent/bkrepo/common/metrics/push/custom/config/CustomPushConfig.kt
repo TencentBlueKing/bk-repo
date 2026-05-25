@@ -7,6 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 class CustomPushConfig {
     var enabled: Boolean = false
     var bktoken: String = StringPool.EMPTY
+    var sources: List<CustomPushSourceConfig> = emptyList()
 
     /**
      * 指标维度裁剪白名单：key 为指标名（精确匹配），value 为上报 metrics 时保留的 label key 列表。
@@ -15,5 +16,12 @@ class CustomPushConfig {
      * 示例：
      *   artifact_transfer_rate: ["projectId", "repoName", "type", "env"]
      */
+    var labelIncludes: Map<String, List<String>> = emptyMap()
+}
+
+class CustomPushSourceConfig {
+    var name: String = StringPool.EMPTY
+    var bktoken: String = StringPool.EMPTY
+    var metricIncludes: List<String> = emptyList()
     var labelIncludes: Map<String, List<String>> = emptyMap()
 }
