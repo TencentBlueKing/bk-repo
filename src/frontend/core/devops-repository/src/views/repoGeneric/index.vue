@@ -266,6 +266,7 @@
     import { Base64 } from 'js-base64'
     import { isOutDisplayType, isText } from '@repository/utils/file'
     import ElectronProtocolCheck from '@repository/utils/ElectronProtocolCheck'
+    import cookies from 'js-cookie'
 
     export default {
         name: 'RepoGeneric',
@@ -1152,8 +1153,10 @@
             buildExeDownloadUrl (row) {
                 const url = new URL(window.BK_SUBPATH, location.origin)
                 const transPath = encodeURIComponent(row.fullPath)
-                const downloadUrl = `${url}generic/${this.projectId}/${this.repoName}${transPath}`
-                return BK_ARTIFACT_SCHEME + 'action=download&url=' + encodeURIComponent(downloadUrl)
+                const targetCookie = cookies.get((MODE_CONFIG === 'ci' || MODE_CONFIG === 'saas') ? 'bk_token' : 'bkrepo_ticket')
+                const downloadUrl = `${url}web/generic/${this.projectId}/${this.repoName}${transPath}`
+                const cookieStr = (MODE_CONFIG === 'ci' || MODE_CONFIG === 'saas') ? `bkrepo_ticket=${targetCookie}` : `bk_token=${targetCookie}`
+                return BK_ARTIFACT_SCHEME + 'action=download&url=' + encodeURIComponent(downloadUrl) + `&${cookieStr}`
             },
             handlerDownload (row) {
                 const target = this.buildExeDownloadUrl(row)
