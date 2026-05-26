@@ -139,7 +139,7 @@ abstract class NodeBaseService(
                 val pageRequest = Pages.ofRequest(1, repositoryProperties.listCountLimit.toInt())
                 query = query.with(pageRequest)
             }
-            return nodeDao.find(query).map { convert(it)!! }
+            return nodeDao.findByListOption(query, option).map { convert(it)!! }
         }
     }
 
@@ -161,7 +161,7 @@ abstract class NodeBaseService(
                 0L
             }
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-            val records = nodeDao.find(query.with(pageRequest)).map { convert(it)!! }
+            val records = nodeDao.findByListOption(query.with(pageRequest), option).map { convert(it)!! }
             return Pages.ofResponse(pageRequest, totalRecords, records)
         }
     }

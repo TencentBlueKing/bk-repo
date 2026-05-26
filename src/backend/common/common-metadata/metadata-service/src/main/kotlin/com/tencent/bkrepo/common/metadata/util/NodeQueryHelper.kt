@@ -39,8 +39,13 @@ import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import org.bson.Document
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.aggregation.Aggregation
+import org.springframework.data.mongodb.core.aggregation.AggregationOptions
+import org.springframework.data.mongodb.core.aggregation.AggregationOperation
+import org.springframework.data.mongodb.core.aggregation.AggregationOperationContext
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -158,7 +163,7 @@ object NodeQueryHelper {
             }
             query.with(Sort.by(Sort.Direction.ASC, TNode::fullPath.name))
         }
-        if (!option.includeMetadata) {
+        if (option.metadataKeys.isNotEmpty() || !option.includeMetadata) {
             query.fields().exclude(TNode::metadata.name)
         }
         if (option.deep) {
@@ -167,6 +172,61 @@ object NodeQueryHelper {
             query.withHint(TNode.PATH_IDX)
         }
         return query
+    }
+
+    /**
+     * 构建仅返回指定元数据键的聚合查询
+     */
+    fun buildPartialMetadataAggregation(query: Query, option: NodeListOption): Aggregation {
+        val operations = mutableListOf<AggregationOperation>()
+        operations.add(DocumentAggregationOperation(Document("\$match", query.queryObject)))
+        query.sortObject?.takeIf { it.isNotEmpty() }?.let {
+            operations.add(DocumentAggregationOperation(Document("\$sort", it)))
+        }
+        if (query.skip > 0) {
+            operations.add(Aggregation.skip(query.skip))
+        }
+        if (query.limit > 0) {
+            operations.add(Aggregation.limit(query.limit.toLong()))
+        }
+        operations.add(
+            DocumentAggregationOperation(
+                Document(
+                    "\$addFields",
+                    Document(TNode::metadata.name, buildFilteredMetadataExpression(option.metadataKeys)),
+                ),
+            ),
+        )
+        return Aggregation.newAggregation(operations)
+            .withOptions(AggregationOptions.builder().hint(nodeListHint(option)).build())
+    }
+
+    private fun buildFilteredMetadataExpression(metadataKeys: List<String>): Document {
+        return Document(
+            "\$filter",
+            Document()
+                .append("input", Document("\$ifNull", listOf("\$${TNode::metadata.name}", emptyList<Any>())))
+                .append("as", "item")
+                .append("cond", Document("\$in", listOf("\$\$item.key", metadataKeys))),
+        )
+    }
+
+    private fun nodeListHint(option: NodeListOption): Document {
+        return if (option.deep) {
+            Document(TNode::projectId.name, 1)
+                .append(TNode::repoName.name, 1)
+                .append(TNode::fullPath.name, 1)
+                .append(TNode::deleted.name, 1)
+        } else {
+            Document(TNode::projectId.name, 1)
+                .append(TNode::repoName.name, 1)
+                .append(TNode::path.name, 1)
+                .append(TNode::deleted.name, 1)
+        }
+    }
+
+    private class DocumentAggregationOperation(private val document: Document) : AggregationOperation {
+        override fun toDocument(context: AggregationOperationContext): Document = document
     }
 
     /**

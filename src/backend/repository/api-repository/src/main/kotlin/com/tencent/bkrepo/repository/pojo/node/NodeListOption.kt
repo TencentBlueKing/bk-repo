@@ -47,6 +47,8 @@ data class NodeListOption(
     val includeFolder: Boolean = true,
     @get:Schema(title = "是否包含元数据")
     val includeMetadata: Boolean = false,
+    @get:Schema(title = "需要查询的元数据键，非空时仅返回指定键的元数据")
+    val metadataKeys: List<String> = emptyList(),
     @get:Schema(title = "是否深度查询文件")
     val deep: Boolean = false,
     @get:Schema(title = "是否排序，目录在前，文件在后，并按照文件名称排序")
