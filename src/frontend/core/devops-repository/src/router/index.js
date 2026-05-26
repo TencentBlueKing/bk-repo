@@ -25,7 +25,6 @@ const createRouter = () => {
         base: routeBase,
         routes: routerArr
     })
-    console.log(rootPath, routeBase, subEnv)
     connectToMain(router)
     return router
 }

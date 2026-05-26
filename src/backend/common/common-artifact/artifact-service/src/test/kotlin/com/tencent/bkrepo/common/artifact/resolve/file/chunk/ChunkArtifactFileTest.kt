@@ -54,10 +54,10 @@ class ChunkArtifactFileTest {
     private val storageCredentials = FileSystemCredentials(upload = uploadProperties)
 
     private fun buildArtifactFile(): ChunkedArtifactFile {
-        val storageProperties = StorageProperties(
-            filesystem = storageCredentials,
+        val storageProperties = StorageProperties().apply {
+            filesystem = storageCredentials
             receive = ReceiveProperties(fileSizeThreshold = DataSize.ofBytes(DEFAULT_BUFFER_SIZE.toLong()))
-        )
+        }
         val monitor = StorageHealthMonitor(storageProperties, storageCredentials.upload.location)
         return ChunkedArtifactFile(monitor, storageProperties, storageCredentials, ObservationRegistry.NOOP)
     }

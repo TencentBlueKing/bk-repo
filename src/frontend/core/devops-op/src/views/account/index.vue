@@ -85,6 +85,15 @@
         </template>
       </el-table-column>
       <el-table-column
+        label="账号限制"
+        width="150"
+        prop="limit"
+      >
+        <template slot-scope="scope">
+          <span>{{ scope.row.limit || '-' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column
         label="最后修改时间"
         width="250"
         prop="lastModifiedDate"

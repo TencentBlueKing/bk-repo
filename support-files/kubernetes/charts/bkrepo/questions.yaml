@@ -101,3 +101,8 @@ questions:
     type: boolean
     default: false
     group: "registry服务部署选择"
+  - variable: huggingface.enabled
+    label: "是否部署huggingface registry"
+    type: boolean
+    default: false
+    group: "registry服务部署选择"

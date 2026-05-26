@@ -6,6 +6,30 @@ export function formatNormalDate(date) {
   return date != null ? moment(date).format(normalDateType) : null
 }
 
+export function formatApiDateTime(time) {
+  if (!time) return ''
+  if (Array.isArray(time) && time.length >= 3) {
+    const [year, month, day, hour = 0, minute = 0, second = 0] = time
+    return moment({
+      year,
+      month: month - 1,
+      date: day,
+      hour,
+      minute,
+      second
+    }).format(normalDateType)
+  }
+  let date = time
+  if (typeof time === 'string' && /^[0-9]+$/.test(time)) {
+    date = parseInt(time, 10)
+  }
+  if (typeof date === 'number' && date.toString().length === 10) {
+    date = date * 1000
+  }
+  const formatted = moment(date)
+  return formatted.isValid() ? formatted.format(normalDateType) : String(time)
+}
+
 const units = ['毫秒', '秒', '分', '小时', '天']
 const multiples = ['1000', '60', '60', '24', '1']
 
