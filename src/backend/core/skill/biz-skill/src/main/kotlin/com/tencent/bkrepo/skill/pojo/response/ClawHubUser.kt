@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.skill.pojo.response
 
+
 data class ClawHubUser(
     val handle: String?,
     val displayName: String?,

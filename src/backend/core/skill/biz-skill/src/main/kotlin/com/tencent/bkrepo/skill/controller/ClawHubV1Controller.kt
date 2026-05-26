@@ -37,9 +37,11 @@ import com.tencent.bkrepo.skill.constant.SORT_UPDATED
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubPublishInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubArchiveDownloadInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubFileDownloadInfo
+import com.tencent.bkrepo.skill.pojo.artifact.ClawHubResolveInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubSearchInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubSkillInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubSkillListInfo
+import com.tencent.bkrepo.skill.pojo.artifact.ClawHubSkillModerationInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubSkillVersionInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubSkillVersionListInfo
 import com.tencent.bkrepo.skill.pojo.response.ClawHubPublishResponse
@@ -47,17 +49,17 @@ import com.tencent.bkrepo.skill.pojo.response.ClawHubSkillListResponse
 import com.tencent.bkrepo.skill.pojo.response.ClawHubSkillDetailResponse
 import com.tencent.bkrepo.skill.pojo.response.ClawHubSkillVersionDetailResponse
 import com.tencent.bkrepo.skill.pojo.response.ClawHubSkillVersionListResponse
+import com.tencent.bkrepo.skill.pojo.response.ClawHubModerationResponse
+import com.tencent.bkrepo.skill.pojo.response.ClawHubResolveResponse
 import com.tencent.bkrepo.skill.pojo.response.ClawHubSearchResponse
 import com.tencent.bkrepo.skill.service.ClawHubService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
-import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
 @Tag(name = "Skill ClawHub v1 API")
@@ -86,6 +88,15 @@ class ClawHubV1Controller(
         artifactInfo: ClawHubSkillInfo,
     ): ClawHubSkillDetailResponse {
         return clawHubService.getSkillDetail(artifactInfo)
+    }
+
+    @Operation(summary = "获取skill审核状态")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+    @GetMapping("/skills/{slug}/moderation")
+    fun getSkillModeration(
+        artifactInfo: ClawHubSkillModerationInfo,
+    ): ClawHubModerationResponse {
+        return clawHubService.getSkillModeration(artifactInfo)
     }
 
     @Operation(summary = "获取指定skill所有版本")
@@ -117,13 +128,25 @@ class ClawHubV1Controller(
         return clawHubService.search(artifactInfo)
     }
 
+    @Operation(summary = "根据fingerprint解析skill版本")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+    @GetMapping("/resolve")
+    fun resolve(
+        artifactInfo: ClawHubResolveInfo,
+        @RequestParam slug: String,
+        @RequestParam hash: String,
+    ): ClawHubResolveResponse {
+        return clawHubService.resolve(artifactInfo)
+    }
+
     @Operation(summary = "下载skill zip")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/download", produces = [MediaType.ALL_VALUE])
     fun download(
         artifactInfo: ClawHubArchiveDownloadInfo,
         @RequestParam slug: String,
-        @RequestParam version: String,
+        @RequestParam(required = false) version: String?,
+        @RequestParam(required = false) tag: String?,
     ) {
         clawHubService.download(artifactInfo)
     }
@@ -134,6 +157,7 @@ class ClawHubV1Controller(
     fun getFileContent(
         artifactInfo: ClawHubFileDownloadInfo,
         @RequestParam(required = false) version: String?,
+        @RequestParam(required = false) tag: String?,
         @RequestParam path: String,
     ) {
         clawHubService.getFileContent(artifactInfo)
@@ -142,7 +166,6 @@ class ClawHubV1Controller(
     @Operation(summary = "发布skill")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     @PostMapping("/skills", consumes = ["multipart/form-data"])
-    @ResponseStatus(HttpStatus.CREATED)
     fun publish(
         artifactMultiFileMap: ArtifactMultiFileMap,
         artifactInfo: ClawHubPublishInfo,

@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactMultiFileMap
 import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
@@ -46,11 +47,16 @@ import com.tencent.bkrepo.skill.constant.SkillMessageCode
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubPublishInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubArchiveDownloadInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubFileDownloadInfo
+import com.tencent.bkrepo.skill.pojo.artifact.ClawHubResolveInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubSearchInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubSkillInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubSkillListInfo
+import com.tencent.bkrepo.skill.pojo.artifact.ClawHubSkillModerationInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubSkillVersionInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubSkillVersionListInfo
+import com.tencent.bkrepo.skill.pojo.artifact.SkillArtifactInfo
+import com.tencent.bkrepo.skill.pojo.response.ClawHubModerationResponse
+import com.tencent.bkrepo.skill.pojo.response.ClawHubResolveResponse
 import com.tencent.bkrepo.skill.pojo.response.ClawHubPublishResponse
 import com.tencent.bkrepo.skill.pojo.response.ClawHubSkillDetailResponse
 import com.tencent.bkrepo.skill.pojo.response.ClawHubSkillListResponse
@@ -95,20 +101,59 @@ class ClawHubService(
         return ClawHubSearchResponse(results = results)
     }
 
+    fun resolve(artifactInfo: ClawHubResolveInfo): ClawHubResolveResponse {
+        val context = ArtifactQueryContext()
+        return repository.query(context) as ClawHubResolveResponse
+    }
+
+    fun getSkillModeration(artifactInfo: ClawHubSkillModerationInfo): ClawHubModerationResponse {
+        val context = ArtifactQueryContext()
+        return repository.query(context) as ClawHubModerationResponse
+    }
+
     fun download(artifactInfo: ClawHubArchiveDownloadInfo) {
+        ensureDownloadVersion(artifactInfo)
         val context = ArtifactDownloadContext(useDisposition = true)
         repository.download(context)
     }
 
     fun getFileContent(artifactInfo: ClawHubFileDownloadInfo) {
-        with(artifactInfo) {
-            if (!isVersionInitialized()) {
-                version = packageService.findPackageByKey(projectId, repoName, getPackageKey())?.latest
-                    ?: throw PackageNotFoundException(slug)
-            }
-        }
+        ensureDownloadVersion(artifactInfo)
         val context = ArtifactDownloadContext()
         repository.download(context)
+    }
+
+    private fun ensureDownloadVersion(artifactInfo: SkillArtifactInfo) {
+        when (artifactInfo) {
+            is ClawHubArchiveDownloadInfo -> {
+                if (!artifactInfo.isVersionInitialized()) {
+                    artifactInfo.version = resolveDownloadVersion(artifactInfo)
+                }
+            }
+            is ClawHubFileDownloadInfo -> {
+                if (!artifactInfo.isVersionInitialized()) {
+                    artifactInfo.version = resolveDownloadVersion(artifactInfo)
+                }
+            }
+        }
+    }
+
+    private fun resolveDownloadVersion(artifactInfo: SkillArtifactInfo): String {
+        with(artifactInfo) {
+            version?.let { return it }
+            val packageKey = getPackageKey()
+            val tag = when (artifactInfo) {
+                is ClawHubArchiveDownloadInfo -> artifactInfo.tag
+                is ClawHubFileDownloadInfo -> artifactInfo.tag
+                else -> null
+            }
+            if (tag != null) {
+                return packageService.findVersionNameByTag(projectId, repoName, packageKey, tag)
+                    ?: throw VersionNotFoundException("$slug@$tag")
+            }
+            return packageService.findPackageByKey(projectId, repoName, packageKey)?.latest
+                ?: throw PackageNotFoundException(slug)
+        }
     }
 
     fun publish(

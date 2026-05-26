@@ -39,6 +39,8 @@ data class ClawHubPublishPayload(
     val tags: List<String>,
     val acceptLicenseTerms: Boolean? = null,
     val forkOf: ForkOfInfo? = null,
+    val ownerHandle: String? = null,
+    val migrateOwner: Boolean? = null,
 )
 
 data class ForkOfInfo(

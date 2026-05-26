@@ -48,7 +48,8 @@ class ClawHubFileDownloadInfoResolver : ArtifactInfoResolver {
         val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
         val slug = attributes["slug"]!!.toString().trim()
         val version = request.getParameter("version")?.trim()
+        val tag = request.getParameter("tag")?.trim()
         val path = request.getParameter("path")!!.trim()
-        return ClawHubFileDownloadInfo(projectId, repoName, slug, version, path)
+        return ClawHubFileDownloadInfo(projectId, repoName, slug, version, tag, path)
     }
 }

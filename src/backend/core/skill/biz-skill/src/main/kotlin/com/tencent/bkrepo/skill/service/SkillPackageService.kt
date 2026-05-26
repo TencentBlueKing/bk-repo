@@ -77,6 +77,7 @@ class SkillPackageService(
                 packageType = PackageType.SKILL,
                 packageDescription = metadata?.description,
                 packageExtension = mapOf(FIELD_DISPLAY_NAME to payload.displayName),
+                versionTag = payload.tags.filter { it.isNotBlank() }.associateWith { version },
                 versionName = version,
                 size = size,
                 artifactPath = getArtifactFullPath(),
@@ -98,7 +99,7 @@ class SkillPackageService(
                 projectId = projectId,
                 repoName = repoName,
                 packageKey = getPackageKey(),
-                packageVersion = version,
+                packageVersion = getArtifactVersion()!!,
             )
         }
     }

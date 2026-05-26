@@ -45,7 +45,8 @@ class ClawHubArchiveDownloadInfoResolver : ArtifactInfoResolver {
         request: HttpServletRequest
     ): ArtifactInfo {
         val slug = request.getParameter("slug")!!.trim()
-        val version = request.getParameter("version")!!.trim()
-        return ClawHubArchiveDownloadInfo(projectId, repoName, slug, version)
+        val version = request.getParameter("version")?.trim()
+        val tag = request.getParameter("tag")?.trim()
+        return ClawHubArchiveDownloadInfo(projectId, repoName, slug, version, tag)
     }
 }
