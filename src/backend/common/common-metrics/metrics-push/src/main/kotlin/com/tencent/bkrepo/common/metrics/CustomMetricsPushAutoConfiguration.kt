@@ -6,8 +6,10 @@ import com.tencent.bkrepo.common.metrics.push.custom.base.BkHttpConnectionFactor
 import com.tencent.bkrepo.common.metrics.push.custom.base.CustomEventPush
 import com.tencent.bkrepo.common.metrics.push.custom.base.PrometheusDrive
 import com.tencent.bkrepo.common.metrics.push.custom.base.PrometheusPush
+import com.tencent.bkrepo.common.metrics.push.custom.base.PrometheusPushSource
 import com.tencent.bkrepo.common.metrics.push.custom.config.CustomEventConfig
 import com.tencent.bkrepo.common.metrics.push.custom.config.CustomPushConfig
+import com.tencent.bkrepo.common.metrics.push.custom.config.CustomPushSourceConfig
 import com.tencent.bkrepo.common.metrics.push.custom.config.CustomReportConfig
 import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
 import io.prometheus.client.CollectorRegistry
@@ -62,11 +64,20 @@ class CustomMetricsPushAutoConfiguration {
         val properties = prometheusProperties.pushgateway
         val groupingKey = properties.groupingKey
         val job = getJob(properties)
-        val pushDrive = PrometheusPush(
-            job, groupingKey, properties.baseUrl,
-            customPushConfig.bktoken, properties.username, properties.password
-        )
-        return PrometheusDrive(pushDrive = pushDrive)
+        val pushSources = customPushConfig.resolveSources().mapIndexed { index, source ->
+            val sourceName = source.name.ifBlank { "$DEFAULT_SOURCE_NAME-${index + 1}" }
+            val bkToken = source.bktoken.ifBlank { customPushConfig.bktoken }
+            val pushDrive = PrometheusPush(
+                jobName = job,
+                groupingKey = groupingKey,
+                uri = properties.baseUrl,
+                bkToken = bkToken,
+                user = properties.username,
+                password = properties.password,
+            )
+            PrometheusPushSource(sourceName, pushDrive, source.metricIncludes, source.labelIncludes)
+        }
+        return PrometheusDrive(pushSources)
     }
 
     /**
@@ -131,8 +142,17 @@ class CustomMetricsPushAutoConfiguration {
         return job
     }
 
+    private fun CustomPushConfig.resolveSources(): List<CustomPushSourceConfig> {
+        val defaultSource = CustomPushSourceConfig().apply {
+            name = DEFAULT_SOURCE_NAME
+            bktoken = this@resolveSources.bktoken
+        }
+        return listOf(defaultSource) + sources
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(CustomMetricsPushAutoConfiguration::class.java)
         private const val SERVICE_NAME = "\${service.prefix:}\${spring.application.name}\${service.suffix:}"
+        private const val DEFAULT_SOURCE_NAME = "default"
     }
 }

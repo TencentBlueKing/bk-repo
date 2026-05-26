@@ -34,7 +34,7 @@ import io.prometheus.client.CollectorRegistry
 import java.util.concurrent.ConcurrentHashMap
 
 
-object MetricsDataManager {
+class MetricsDataManager {
 
     private val metricsDataCache: ConcurrentHashMap<String, MetricsData> = ConcurrentHashMap()
 
