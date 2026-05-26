@@ -173,6 +173,11 @@ class StorageHealthMonitor(
     }
 
     /**
+     * 当前是否存在检查失败，即连续失败次数大于 0
+     */
+    fun hasCheckFailed(): Boolean = checkFailedTimes.get() > 0
+
+    /**
      * 获取降级存储路径
      */
     fun getFallbackPath(): Path? = monitorConfig.fallbackLocation?.toPath()

@@ -267,6 +267,11 @@ class ArtifactFileFactory(
 
                 when (storageCredentials.cosDirectUploadMode) {
                     InnerCosCredentials.COS_DIRECT_UPLOAD_MODE_OFF -> return false
+                    InnerCosCredentials.COS_DIRECT_UPLOAD_MODE_ON_CHECK_FAILED -> {
+                        if (!getMonitor(storageCredentials).hasCheckFailed()) {
+                            return false
+                        }
+                    }
                     InnerCosCredentials.COS_DIRECT_UPLOAD_MODE_ON_UNHEALTHY -> {
                         if (getMonitor(storageCredentials).healthy.get()) {
                             return false
