@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.metadata.handler.MaskPartString
 import com.tencent.bkrepo.common.storage.config.CacheProperties
 import com.tencent.bkrepo.common.storage.config.CompressProperties
 import com.tencent.bkrepo.common.storage.config.EncryptProperties
+import com.tencent.bkrepo.common.storage.config.MonitorProperties
 import com.tencent.bkrepo.common.storage.config.UploadProperties
 
 /**
@@ -72,6 +73,7 @@ data class InnerCosCredentials(
     override var upload: UploadProperties = UploadProperties(),
     override var encrypt: EncryptProperties = EncryptProperties(),
     override var compress: CompressProperties = CompressProperties(),
+    override var monitor: MonitorProperties? = null,
     override var allowRepoTypes: Set<String>? = null,
     override var notAllowRepoTypes: Set<String>? = setOf(RepositoryType.DRIVE.name),
 ) : StorageCredentials(key, cache, upload, encrypt, compress) {

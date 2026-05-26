@@ -18,19 +18,23 @@ class StorageHealthMonitorHelper(private val monitorMap: ConcurrentHashMap<Strin
     private val monitorCounter = AtomicInteger()
 
     /**
-     * 获取存储相对应的监控
+     * 获取存储相对应的监控，同时热更新监控配置
      * */
     fun getMonitor(properties: StorageProperties, storageCredentials: StorageCredentials): StorageHealthMonitor {
         val location = storageCredentials.upload.location
-        return monitorMap[location] ?: synchronized(location.intern()) {
-            monitorMap[location]?.let { return it }
-            val executorService = createExecutorService(monitorCounter.getAndIncrement())
-            val storageHealthMonitor = StorageHealthMonitor(properties, location, executorService)
-            monitorMap.putIfAbsent(
-                location,
+        val monitorConfig = storageCredentials.monitor ?: properties.monitor
+        val existing = monitorMap[location]
+        if (existing != null) {
+            existing.monitorConfig = monitorConfig
+            return existing
+        }
+        return synchronized(location.intern()) {
+            monitorMap[location]?.also { it.monitorConfig = monitorConfig } ?: run {
+                val executorService = createExecutorService(monitorCounter.getAndIncrement())
+                val storageHealthMonitor = StorageHealthMonitor(monitorConfig, location, executorService)
+                monitorMap.putIfAbsent(location, storageHealthMonitor)
                 storageHealthMonitor
-            )
-            storageHealthMonitor
+            }
         }
     }
 

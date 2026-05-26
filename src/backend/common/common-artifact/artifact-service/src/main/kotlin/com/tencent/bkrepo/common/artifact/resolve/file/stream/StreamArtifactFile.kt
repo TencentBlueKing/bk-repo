@@ -85,7 +85,7 @@ open class StreamArtifactFile(
         val receivePath = if (useLocalPath) localPath else path
         receiver = ArtifactDataReceiver(
             storageProperties.receive,
-            storageProperties.monitor,
+            monitor.monitorConfig,
             receivePath,
             randomPath = !useLocalPath,
             requestLimitCheckService = requestLimitCheckService,

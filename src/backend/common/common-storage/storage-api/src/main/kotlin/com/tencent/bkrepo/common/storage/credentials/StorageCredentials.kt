@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.storage.config.CacheProperties
 import com.tencent.bkrepo.common.storage.config.CompressProperties
 import com.tencent.bkrepo.common.storage.config.EncryptProperties
+import com.tencent.bkrepo.common.storage.config.MonitorProperties
 import com.tencent.bkrepo.common.storage.config.UploadProperties
 
 /**
@@ -54,6 +55,10 @@ open class StorageCredentials(
     open var upload: UploadProperties,
     open var encrypt: EncryptProperties,
     open var compress: CompressProperties,
+    /**
+     * 存储监控配置，为null时使用全局配置
+     */
+    open var monitor: MonitorProperties? = null,
     /**
      * 允许使用该存储的仓库类型，为null时表示所有类型都允许使用
      */
