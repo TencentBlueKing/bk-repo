@@ -18,16 +18,26 @@ import org.springframework.stereotype.Repository
 @Repository
 class UserDao : SimpleMongoDao<TUser>() {
 
+    /**
+     * 分批为用户添加角色，避免单次 updateMulti 操作文档数过多导致慢查询
+     */
     fun addRoleToUsers(userIdList: List<String>, roleId: String) {
-        val query = UserQueryHelper.getUserByIdList(userIdList)
         val update = UserUpdateHelper.buildAddRole(roleId)
-        this.updateMulti(query, update)
+        userIdList.chunked(BATCH_SIZE).forEach { batch ->
+            val query = UserQueryHelper.getUserByIdList(batch)
+            this.updateMulti(query, update)
+        }
     }
 
+    /**
+     * 分批从用户中移除角色，避免单次 updateMulti 操作文档数过多导致慢查询
+     */
     fun removeRoleFromUsers(userIdList: List<String>, roleId: String) {
-        val query = UserQueryHelper.getUserByIdListAndRoleId(userIdList, roleId)
         val update = UserUpdateHelper.buildUnsetRoles()
-        this.updateMulti(query, update)
+        userIdList.chunked(BATCH_SIZE).forEach { batch ->
+            val query = UserQueryHelper.getUserByIdListAndRoleId(batch, roleId)
+            this.updateMulti(query, update)
+        }
     }
 
     fun addUserToRole(userId: String, roleId: String) {
@@ -193,6 +203,11 @@ class UserDao : SimpleMongoDao<TUser>() {
             )
         )
         return this.find(query)
+    }
+
+    companion object {
+        /** 批量更新时每批处理的用户数量，避免单次操作持锁时间过长 */
+        private const val BATCH_SIZE = 50
     }
 
 }
