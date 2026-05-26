@@ -108,25 +108,30 @@ class MediaArtifactFileConsumer(
         if (isComplete) {
             // 正常结束：合并所有分块，创建完整node
             val videoTimeRange = completeBlockNode(artifactInfo, uploadId, endTime)
-            // 额外文件也合并分块
-            val extraArtifactInfos = extraArtifactInfoMap.map { (extraName, extraArtifactInfo) ->
-                val extraUploadId = "${uploadId}_${extraName.substringBefore(".")}"
-                completeBlockNode(extraArtifactInfo, extraUploadId, endTime)
-                extraArtifactInfo
-            }.ifEmpty { null }
-            // 转码仅在completeBlockNode后触发
-            if (transcodeConfig != null) {
-                val transcodeStartTime = videoTimeRange?.start ?: startTime
-                val transcodeEndTime = videoTimeRange?.endInclusive ?: endTime
-                transcodeService.transcode(
-                    artifactInfo = artifactInfo,
-                    transcodeConfig = transcodeConfig,
-                    userId = userId,
-                    extraFiles = extraArtifactInfos,
-                    author = author,
-                    videoStartTime = transcodeStartTime,
-                    videoEndTime = transcodeEndTime
-                )
+            // 视频主文件为空时不触发转码
+            if (videoTimeRange == null) {
+                logger.warn("Video blocks empty for [$filePath], skip transcode.")
+            } else {
+                // 额外文件也合并分块
+                val extraArtifactInfos = extraArtifactInfoMap.map { (extraName, extraArtifactInfo) ->
+                    val extraUploadId = "${uploadId}_${extraName.substringBefore(".")}"
+                    completeBlockNode(extraArtifactInfo, extraUploadId, endTime)
+                    extraArtifactInfo
+                }.ifEmpty { null }
+                // 转码仅在completeBlockNode后触发
+                if (transcodeConfig != null) {
+                    val transcodeStartTime = videoTimeRange.start
+                    val transcodeEndTime = videoTimeRange.endInclusive
+                    transcodeService.transcode(
+                        artifactInfo = artifactInfo,
+                        transcodeConfig = transcodeConfig,
+                        userId = userId,
+                        extraFiles = extraArtifactInfos,
+                        author = author,
+                        videoStartTime = transcodeStartTime,
+                        videoEndTime = transcodeEndTime
+                    )
+                }
             }
         }
         logger.info(
@@ -194,6 +199,11 @@ class MediaArtifactFileConsumer(
                 return null
             }
             val totalSize = blockNodes.sumOf { it.size }
+            if (totalSize == 0L) {
+                logger.warn("All blocks are empty for " +
+                        "[$projectId/$repoName${getArtifactFullPath()}], skip creating node.")
+                return null
+            }
             val crc64ecma = crc64ecma(blockNodes)
             // endTime 从最后一块分块的 createdDate 推算，比传入的 endTime 更准确
             val blockEndTime = blockNodes.sortedBy { it.createdDate }.last().createdDate
