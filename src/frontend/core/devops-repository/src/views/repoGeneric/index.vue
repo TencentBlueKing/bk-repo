@@ -393,6 +393,14 @@
             },
             '$route.query.path' () {
                 this.pathChange()
+            },
+            showMultiDelete: {
+                handler () {
+                    this.$nextTick(() => {
+                        this.updateTableFixedBodyTop()
+                    })
+                },
+                immediate: true
             }
         },
         beforeRouteEnter (to, from, next) {
@@ -456,6 +464,16 @@
                 'getPermissionUrl',
                 'getProjectShareEnabled'
             ]),
+            updateTableFixedBodyTop () {
+                const el = document.querySelector('.bk-table-fixed-body-wrapper')
+                if (el) {
+                    if (this.showMultiDelete) {
+                        el.style.top = '83px'
+                    } else {
+                        el.style.top = '43px'
+                    }
+                }
+            },
             cancelSelect () {
                 sessionStorage.removeItem(this.userInfo.name + 'SelectedPaths')
                 for (let i = 0; i < this.artifactoryList.length; i++) {

@@ -41,11 +41,15 @@ object LuaScript {
     private const val TOKEN_BUCKET_RATE_LIMITER_FILE_PATH = "token-bucket-rate-limiter.lua"
     private const val SLIDING_WINDOW_RATE_LIMITER_FILE_PATH = "sliding-window-rate-limiter.lua"
     private const val LEAKY_RATE_LIMITER_FILE_PATH = "leaky-rate-limiter.lua"
+    private const val SEMAPHORE_ACQUIRE_FILE_PATH = "semaphore-acquire.lua"
+    private const val SEMAPHORE_RELEASE_FILE_PATH = "semaphore-release.lua"
 
     lateinit var fixWindowRateLimiterScript: String
     lateinit var tokenBucketRateLimiterScript: String
     lateinit var slidingWindowRateLimiterScript: String
     lateinit var leakyRateLimiterScript: String
+    lateinit var semaphoreAcquireScript: String
+    lateinit var semaphoreReleaseScript: String
 
     init {
         val fixWindowInput = Thread.currentThread().contextClassLoader
@@ -56,11 +60,17 @@ object LuaScript {
             .getResourceAsStream(SLIDING_WINDOW_RATE_LIMITER_FILE_PATH)
         val leakyInput = Thread.currentThread().contextClassLoader
             .getResourceAsStream(LEAKY_RATE_LIMITER_FILE_PATH)
+        val semaphoreAcquireInput = Thread.currentThread().contextClassLoader
+            .getResourceAsStream(SEMAPHORE_ACQUIRE_FILE_PATH)
+        val semaphoreReleaseInput = Thread.currentThread().contextClassLoader
+            .getResourceAsStream(SEMAPHORE_RELEASE_FILE_PATH)
         try {
             fixWindowRateLimiterScript = StreamUtils.copyToString(fixWindowInput, StandardCharsets.UTF_8)
             tokenBucketRateLimiterScript = StreamUtils.copyToString(tokenBucketInput, StandardCharsets.UTF_8)
             slidingWindowRateLimiterScript = StreamUtils.copyToString(slidingWindowInput, StandardCharsets.UTF_8)
             leakyRateLimiterScript = StreamUtils.copyToString(leakyInput, StandardCharsets.UTF_8)
+            semaphoreAcquireScript = StreamUtils.copyToString(semaphoreAcquireInput, StandardCharsets.UTF_8)
+            semaphoreReleaseScript = StreamUtils.copyToString(semaphoreReleaseInput, StandardCharsets.UTF_8)
         } catch (e: IOException) {
             logger.error("lua script Initialization failed, $e")
         }

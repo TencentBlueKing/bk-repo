@@ -92,10 +92,16 @@ class DevopsPermissionServiceImpl constructor(
 ) {
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
-        // 用户为系统管理员，或者当前项目管理员
-        if (isUserSystemAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)
-            || isDevopsProjectMember(userId, projectId, READ.name, null)
-        ) return getAllRepoByProjectId(projectId)
+        // 系统管理员 / 项目管理员：全量可见，不过滤
+        if (isUserSystemAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)) {
+            return getAllRepoByProjectId(projectId)
+        }
+        // Devops 项目成员：全量可见，但严格模式仓库需有显式授权才可见
+        if (isDevopsProjectMember(userId, projectId, READ.name, null)) {
+            val user = getUserInfo(userId)
+            val roles = user?.roles.orEmpty()
+            return filterByStrictMode(projectId, userId, roles, getAllRepoByProjectId(projectId))
+        }
 
         return super.listPermissionRepo(projectId, userId, appId)
     }
@@ -104,6 +110,13 @@ class DevopsPermissionServiceImpl constructor(
 
         // 校验平台账号操作范围
         if (request.appId != null && !checkPlatformPermission(request)) return false
+
+        // 全局预览角色拦截：在 bkiamv3 / devops 流程之前完成判断
+        val previewUser = getUserInfo(request.uid)
+        if (previewUser != null && !previewUser.locked) {
+            checkGlobalPreviewRole(previewUser, request.action, request.projectId, request.repoName)
+                ?.let { return it }
+        }
 
         // bkiamv3权限校验
         if (matchBkiamv3Cond(request)) {
@@ -290,13 +303,20 @@ class DevopsPermissionServiceImpl constructor(
     private fun checkRepoNotInDevops(context: CheckPermissionContext): Boolean {
         logger.debug("check repo not in devops request [$context]")
         with(context) {
+            // 严格模式 + 非 Generic 仓库：优先尝试仓库级整仓授权（短路放行）
+            // 放在 isDevopsProjectMember 之前，避免命中场景下产生不必要的 DevOps 远程调用
+            if (checkStrictRepoLevelGrant(context)) {
+                return true
+            }
             val isDevopsProjectMember = isDevopsProjectMember(userId, projectId, action, repoName)
             if (needCheckPathPermission(resourceType, projectId, repoName!!)) {
                 logger.debug("need check path control [$context]")
                 return checkNodeAction(context, isDevopsProjectMember)
             }
             logger.debug("no need check path control [$context]")
-            return isDevopsProjectMember || super.checkLocalRepoOrNodePermission(context)
+            val isStrictMode = resolveStrictMode(context)
+            if (!isStrictMode && isDevopsProjectMember) return true
+            return super.checkLocalRepoOrNodePermission(context)
         }
     }
 

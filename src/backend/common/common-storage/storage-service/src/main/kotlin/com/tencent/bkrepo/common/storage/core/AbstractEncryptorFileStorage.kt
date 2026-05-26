@@ -120,16 +120,25 @@ abstract class AbstractEncryptorFileStorage<Credentials : StorageCredentials, Cl
     }
 
     override fun copy(
-        path: String,
-        name: String,
+        fromPath: String,
+        fromName: String,
+        toPath: String,
+        toName: String,
         fromCredentials: StorageCredentials,
         toCredentials: StorageCredentials
     ) {
         if (!fromCredentials.encrypt.enabled) {
-            return super.copy(path, name, fromCredentials, toCredentials)
+            require(!toCredentials.encrypt.enabled)
+            return super.copy(fromPath, fromName, toPath, toName, fromCredentials, toCredentials)
         }
-        val newName = getEncryptName(name, fromCredentials)
-        super.copy(path, newName, fromCredentials, toCredentials)
+        require(
+            toCredentials.encrypt.enabled &&
+                    fromCredentials.encrypt.algorithm == toCredentials.encrypt.algorithm &&
+                    fromCredentials.encrypt.key == toCredentials.encrypt.key
+        )
+        val newFromName = getEncryptName(fromName, fromCredentials)
+        val newToName = getEncryptName(toName, toCredentials)
+        super.copy(fromPath, newFromName, toPath, newToName, fromCredentials, toCredentials)
     }
 
     /**

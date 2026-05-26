@@ -5,8 +5,6 @@ import Vue from 'vue'
 import axios from 'axios'
 import cookies from 'js-cookie'
 import BkUserDisplayName from '@blueking/bk-user-display-name'
-import * as VueDemi from 'vue-demi'
-import { defineComponent } from '@vue/composition-api'
 import VueCompositionAPI from '@vue/composition-api'
 
 // 本地模块
@@ -29,10 +27,13 @@ const DISPLAY_NAME_CACHE_DURATION = 1000 * 60 * 5 // 5分钟
 const DEFAULT_LANGUAGE = 'zh-cn'
 
 /**
- * 配置 vue-demi 以支持 Vue 2
+ * 配置 Vue 2 + Composition API
+ * 让 @vue-office/excel 等通过 vue-demi 调用 ref/reactive/computed/defineComponent 等 API 时能正常工作。
+ * 注：vue-demi 在 v2 模式下会重新导出 @vue/composition-api 的 API，
+ *     所以只要 Vue.use(VueCompositionAPI) 成功安装，下游组件即可拿到完整 Composition API。
+ *     vue-demi 的 ESM/CJS 互操作问题通过 webpack resolve.alias 在打包层解决（见 webpack.base.js）。
  */
 Vue.use(VueCompositionAPI)
-VueDemi.defineComponent = defineComponent
 
 Vue.component('Icon', Icon)
 Vue.component('CanwayDialog', CanwayDialog)

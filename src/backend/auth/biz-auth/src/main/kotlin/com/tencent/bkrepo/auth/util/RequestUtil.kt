@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.auth.util
 
+import com.tencent.bkrepo.auth.constant.GLOBAL_PREVIEW_ROLE_ID
+import com.tencent.bkrepo.auth.constant.GLOBAL_PREVIEW_ROLE_NAME
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_NAME
 import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
@@ -93,6 +95,19 @@ object RequestUtil {
             name = REPLICATION_MANAGE_NAME,
             type = RoleType.SERVICE,
             admin = false
+        )
+    }
+
+    /**
+     * 构造全局预览角色请求（系统预置全局只读角色）
+     */
+    fun buildGlobalPreviewRoleRequest(): CreateRoleRequest {
+        return CreateRoleRequest(
+            roleId = GLOBAL_PREVIEW_ROLE_ID,
+            name = GLOBAL_PREVIEW_ROLE_NAME,
+            type = RoleType.SERVICE,
+            admin = false,
+            description = "系统预置全局只读角色"
         )
     }
 }

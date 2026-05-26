@@ -41,7 +41,7 @@ data class DriveNode(
     val deleted: LocalDateTime? = null,
 )
 
-fun TDriveNode.toDriveNode(): DriveNode {
+fun TDriveNode.toDriveNode(snap: Boolean = false): DriveNode {
     return DriveNode(
         id = id!!,
         createdBy = createdBy,
@@ -68,6 +68,6 @@ fun TDriveNode.toDriveNode(): DriveNode {
         rdev = rdev,
         flags = flags,
         symlinkTarget = symlinkTarget,
-        deleted = deleted,
+        deleted = if (snap) null else deleted,
     )
 }

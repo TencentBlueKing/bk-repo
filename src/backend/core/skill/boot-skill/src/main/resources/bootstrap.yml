@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: skill
+server:
+  port: 25828

@@ -101,7 +101,7 @@ class DriveNodeService(
             lastId = lastId,
             snapSeq = snapSeq,
         )
-        return CursorPage.fromRecords(records, pageSize) { it.toDriveNode() }
+        return CursorPage.fromRecords(records, pageSize) { it.toDriveNode(snapSeq != null) }
     }
 
     suspend fun listModifiedNodesPage(
