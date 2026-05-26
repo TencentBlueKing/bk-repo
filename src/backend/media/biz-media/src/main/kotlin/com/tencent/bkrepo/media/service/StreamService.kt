@@ -224,6 +224,11 @@ class StreamService(
             logger.warn("MergeExpiredBlocks: no video blocks found for uploadId=$uploadId, skip.")
             return
         }
+        val totalVideoSize = videoBlocks.sumOf { it.size }
+        if (totalVideoSize == 0L) {
+            logger.warn("MergeExpiredBlocks: video blocks are all empty for uploadId=$uploadId, skip.")
+            return
+        }
 
         // 从分块元信息推算 author 和视频结束时间
         // storeBlockNode 中 createdBy 存的是 author（真实录制者）
