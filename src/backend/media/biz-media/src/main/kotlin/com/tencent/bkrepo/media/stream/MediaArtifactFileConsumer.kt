@@ -200,7 +200,8 @@ class MediaArtifactFileConsumer(
             }
             val totalSize = blockNodes.sumOf { it.size }
             if (totalSize == 0L) {
-                logger.warn("All blocks are empty for [$projectId/$repoName${getArtifactFullPath()}], skip creating node.")
+                logger.warn("All blocks are empty for " +
+                        "[$projectId/$repoName${getArtifactFullPath()}], skip creating node.")
                 return null
             }
             val crc64ecma = crc64ecma(blockNodes)
