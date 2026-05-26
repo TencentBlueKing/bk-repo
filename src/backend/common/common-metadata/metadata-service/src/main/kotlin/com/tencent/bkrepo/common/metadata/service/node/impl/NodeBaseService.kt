@@ -139,7 +139,28 @@ abstract class NodeBaseService(
                 val pageRequest = Pages.ofRequest(1, repositoryProperties.listCountLimit.toInt())
                 query = query.with(pageRequest)
             }
-            return nodeDao.findByListOption(query, option).map { convert(it)!! }
+            return nodeDao.find(query).map { convert(it)!! }
+        }
+    }
+
+    override fun listNodeWithMetadataKeys(
+        artifact: ArtifactInfo,
+        option: NodeListOption,
+        metadataKeys: List<String>,
+    ): List<NodeInfo> {
+        checkNodeListOption(option)
+        with(artifact) {
+            val userId = SecurityUtils.getUserId()
+            val (hasPermissionPaths, noPermissionPaths) = getPermissionPaths(userId, projectId, repoName)
+            option.hasPermissionPath = hasPermissionPaths
+            option.noPermissionPath = noPermissionPaths
+            var query = NodeQueryHelper.nodeListQuery(projectId, repoName, getArtifactFullPath(), option)
+            val totalNum = getTotalNodeNum(artifact, query)
+            if (totalNum > repositoryProperties.listCountLimit) {
+                val pageRequest = Pages.ofRequest(1, repositoryProperties.listCountLimit.toInt())
+                query = query.with(pageRequest)
+            }
+            return nodeDao.findWithMetadataKeys(query, option, metadataKeys).map { convert(it)!! }
         }
     }
 
@@ -161,7 +182,7 @@ abstract class NodeBaseService(
                 0L
             }
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-            val records = nodeDao.findByListOption(query.with(pageRequest), option).map { convert(it)!! }
+            val records = nodeDao.find(query.with(pageRequest)).map { convert(it)!! }
             return Pages.ofResponse(pageRequest, totalRecords, records)
         }
     }

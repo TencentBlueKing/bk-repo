@@ -96,11 +96,8 @@ class NodeDao : HashShardingMongoDao<TNode>() {
         return this.exists(NodeQueryHelper.nodeQuery(projectId, repoName, fullPath))
     }
 
-    fun findByListOption(query: Query, option: NodeListOption): List<TNode> {
-        if (option.metadataKeys.isEmpty()) {
-            return find(query)
-        }
-        val aggregation = NodeQueryHelper.buildPartialMetadataAggregation(query, option)
+    fun findWithMetadataKeys(query: Query, option: NodeListOption, metadataKeys: List<String>): List<TNode> {
+        val aggregation = NodeQueryHelper.buildPartialMetadataAggregation(query, option, metadataKeys)
         return aggregate(aggregation, classType).mappedResults
     }
 

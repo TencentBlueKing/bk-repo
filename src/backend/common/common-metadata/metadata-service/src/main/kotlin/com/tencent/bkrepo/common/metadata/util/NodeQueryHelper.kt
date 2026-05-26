@@ -163,7 +163,7 @@ object NodeQueryHelper {
             }
             query.with(Sort.by(Sort.Direction.ASC, TNode::fullPath.name))
         }
-        if (option.metadataKeys.isNotEmpty() || !option.includeMetadata) {
+        if (!option.includeMetadata) {
             query.fields().exclude(TNode::metadata.name)
         }
         if (option.deep) {
@@ -177,7 +177,7 @@ object NodeQueryHelper {
     /**
      * 构建仅返回指定元数据键的聚合查询
      */
-    fun buildPartialMetadataAggregation(query: Query, option: NodeListOption): Aggregation {
+    fun buildPartialMetadataAggregation(query: Query, option: NodeListOption, metadataKeys: List<String>): Aggregation {
         val operations = mutableListOf<AggregationOperation>()
         operations.add(DocumentAggregationOperation(Document("\$match", query.queryObject)))
         query.sortObject?.takeIf { it.isNotEmpty() }?.let {
@@ -193,7 +193,7 @@ object NodeQueryHelper {
             DocumentAggregationOperation(
                 Document(
                     "\$addFields",
-                    Document(TNode::metadata.name, buildFilteredMetadataExpression(option.metadataKeys)),
+                    Document(TNode::metadata.name, buildFilteredMetadataExpression(metadataKeys)),
                 ),
             ),
         )
