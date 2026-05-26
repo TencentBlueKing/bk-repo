@@ -1160,7 +1160,7 @@
                     repoName: this.repoName,
                     fullPathSet: [row.fullPath],
                     type: 'DOWNLOAD',
-                    host: new URL(window.BK_SUBPATH, location.origin) + 'web/generic'
+                    host: new URL(window.BK_SUBPATH, location.origin) + 'generic'
                 })
                 return BK_ARTIFACT_SCHEME + 'action=download&url=' + encodeURIComponent(url)
             },
