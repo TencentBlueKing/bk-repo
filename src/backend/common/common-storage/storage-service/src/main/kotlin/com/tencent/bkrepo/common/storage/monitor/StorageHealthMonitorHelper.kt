@@ -22,7 +22,7 @@ class StorageHealthMonitorHelper(private val monitorMap: ConcurrentHashMap<Strin
      * */
     fun getMonitor(properties: StorageProperties, storageCredentials: StorageCredentials): StorageHealthMonitor {
         val location = storageCredentials.upload.location
-        val monitorConfig = storageCredentials.monitor ?: properties.monitor
+        val monitorConfig = storageCredentials.monitor?.toMonitorProperties() ?: properties.monitor
         val existing = monitorMap[location]
         if (existing != null) {
             existing.monitorConfig = monitorConfig

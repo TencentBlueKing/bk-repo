@@ -50,7 +50,7 @@ abstract class HealthCheckSupport : AbstractStorageSupport() {
 
     override fun checkHealth(storageCredentials: StorageCredentials?) {
         val credentials = getCredentialsOrDefault(storageCredentials)
-        val monitorConfig = credentials.monitor ?: storageProperties.monitor
+        val monitorConfig = credentials.monitor?.toMonitorProperties() ?: storageProperties.monitor
         val future = healthCheckExecutor.submit(Callable { doCheckHealth(credentials) }.trace())
         try {
             future.get(monitorConfig.timeout.seconds, TimeUnit.SECONDS)
@@ -65,7 +65,7 @@ abstract class HealthCheckSupport : AbstractStorageSupport() {
      * 健康检查实现
      */
     open fun doCheckHealth(credentials: StorageCredentials) {
-        val monitorConfig = credentials.monitor ?: storageProperties.monitor
+        val monitorConfig = credentials.monitor?.toMonitorProperties() ?: storageProperties.monitor
         val filename = System.nanoTime().toString()
         val size = monitorConfig.dataSize.toBytes()
         val inputStream = ZeroInputStream(size)
