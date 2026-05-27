@@ -39,7 +39,9 @@ enum class RepositoryMessageCode(private val key: String, private val businessCo
     BKDIRVE_CONFIG_ERROR("repository.bkdirve.config.error", 7),
     DRIVE_API_NOT_ALLOWED("repository.drive.api.not.allowed", 8),
     STORAGE_CREDENTIALS_REPO_TYPE_NOT_ALLOWED("repository.storage.credentials.repo-type.not-allowed", 9),
-    
+    ILNET_CONFIG_ERROR("repository.ilnet.config.error", 10),
+    ILNET_SERVICE_UNAVAILABLE("repository.ilnet.service.unavailable", 11),
+
     ;
 
     override fun getBusinessCode() = businessCode
