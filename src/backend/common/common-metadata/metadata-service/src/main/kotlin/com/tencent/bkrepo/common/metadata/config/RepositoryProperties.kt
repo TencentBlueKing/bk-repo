@@ -37,45 +37,56 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 @ConfigurationProperties("repository")
-class RepositoryProperties(
-    var deletedNodeReserveDays: Long = 14,
-    var defaultStorageCredentialsKey: String? = null,
-    var listCountLimit: Long = 100000L,
-    var slowLogTimeThreshold: Long = 1_000,
+class RepositoryProperties {
+    var deletedNodeReserveDays: Long = 14
+    var defaultStorageCredentialsKey: String? = null
+    var listCountLimit: Long = 100000L
+    var slowLogTimeThreshold: Long = 1_000
     @NestedConfigurationProperty
-    var job: RepoJobProperties = RepoJobProperties(),
+    var job: RepoJobProperties = RepoJobProperties()
     @NestedConfigurationProperty
-    var repoStorageMapping: RepoStorageMapping = RepoStorageMapping(),
-    var allowUserAddSystemMetadata: List<String> = emptyList(),
-    var gitUrl: String = "",
-    var svnUrl: String = "",
+    var repoStorageMapping: RepoStorageMapping = RepoStorageMapping()
+    var allowUserAddSystemMetadata: List<String> = emptyList()
+    var gitUrl: String = ""
+    var svnUrl: String = ""
     /**
      * 用于验证bkci webhook签名
      */
-    var bkciWebhookSecret: String = "",
+    var bkciWebhookSecret: String = ""
     /**
      * 当目录节点上的num字段小于该值时，去db中实时count目录大小
      * 注意： 此配置的值要比listCountLimit大
      */
-    var subNodeLimit: Long = 100000000L,
+    var subNodeLimit: Long = 100000000L
     /**
      * 是否返回真实项目启用禁用状态
      */
-    var returnEnabled: Boolean = true,
+    var returnEnabled: Boolean = true
     /**
      * 系统元数据标签
      */
-    var systemMetadataLabels: List<String> = emptyList(),
+    var systemMetadataLabels: List<String> = emptyList()
     /**
      * 更新流水线制品快照url
      */
-    var updateArtifactUrl: String = "",
+    var updateArtifactUrl: String = ""
     /**
      * 更新流水线制品快照token
      */
-    var updateArtifactToken: String = "",
+    var updateArtifactToken: String = ""
     /**
      * 允许跳过项目禁用分享检查的平台账户白名单
      */
     var tokenBypassPlatforms: List<String> = emptyList()
-)
+    /**
+     * 是否启用按 ID 批量删除模式。
+     * 开启后删除操作先 find（带 hint）获取节点 ID，再按 ID 批量 update，
+     * 适用于大目录删除或 updateMulti hint 不生效的特殊场景。
+     * 关闭时直接在 updateMulti 上加 withHint 强制索引选择。
+     */
+    var deleteBatchByIds: Boolean = false
+    /**
+     * 按 ID 批量删除时每批次的文档数量
+     */
+    var deleteBatchSize: Int = 200
+}

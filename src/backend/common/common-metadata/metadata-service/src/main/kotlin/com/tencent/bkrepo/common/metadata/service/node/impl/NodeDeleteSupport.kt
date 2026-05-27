@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
@@ -66,6 +67,7 @@ open class NodeDeleteSupport(
 
     val nodeDao: NodeDao = nodeBaseService.nodeDao
     val quotaService: QuotaService = nodeBaseService.quotaService
+    val repositoryProperties: RepositoryProperties = nodeBaseService.repositoryProperties
     val routerControllerService: RouterControllerService = nodeBaseService.routerControllerService
     val routerControllerProperties: RouterControllerProperties = nodeBaseService.routerControllerProperties
 
@@ -255,8 +257,12 @@ open class NodeDeleteSupport(
             "/$projectId/$repoName$fullPaths"
         }
         try {
-            val updateResult = nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
-            deletedNum = updateResult.modifiedCount
+            deletedNum = if (repositoryProperties.deleteBatchByIds) {
+                deleteBatchByNodeIds(query, operator, deleteTime)
+            } else {
+                query.withHint(TNode.FULL_PATH_IDX)
+                nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime)).modifiedCount
+            }
             if (deletedNum == 0L) {
                 logger.info("Delete node[$resourceKey] by [$operator] success. No nodes were deleted.")
                 return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
@@ -288,7 +294,22 @@ open class NodeDeleteSupport(
     }
 
 
-    // 文件用精确匹配，目录或节点不存在（并发删除场景）退化到正则前缀查询
+    private fun deleteBatchByNodeIds(query: Query, operator: String, deleteTime: LocalDateTime): Long {
+        query.withHint(TNode.FULL_PATH_IDX)
+        query.fields().include(ID)
+        val batchSize = repositoryProperties.deleteBatchSize
+        val update = NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime)
+        var totalModified = 0L
+        query.limit(batchSize)
+        var nodeIds = nodeDao.find(query).mapNotNull { it.id }
+        while (nodeIds.isNotEmpty()) {
+            val batchQuery = Query(Criteria.where(ID).`in`(nodeIds))
+            totalModified += nodeDao.updateMulti(batchQuery, update).modifiedCount
+            nodeIds = nodeDao.find(query).mapNotNull { it.id }
+        }
+        return totalModified
+    }
+
     private fun buildDeleteCriteria(projectId: String, repoName: String, fullPath: String): Criteria {
         val normalizedFullPath = PathUtils.normalizeFullPath(fullPath)
         val existNode = nodeDao.findNode(projectId, repoName, normalizedFullPath)
