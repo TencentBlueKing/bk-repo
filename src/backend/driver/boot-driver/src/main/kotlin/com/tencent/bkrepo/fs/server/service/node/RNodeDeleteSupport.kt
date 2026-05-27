@@ -151,13 +151,17 @@ open class RNodeDeleteSupport(
         val update = NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime)
         var totalModified = 0L
         query.limit(batchSize)
-        var nodeIds = nodeDao.find(query).mapNotNull { it.id }
+        var nodeIds = findNodeIds(query)
         while (nodeIds.isNotEmpty()) {
             val batchQuery = Query(Criteria.where(ID).`in`(nodeIds))
             totalModified += nodeDao.updateMulti(batchQuery, update).modifiedCount
-            nodeIds = nodeDao.find(query).mapNotNull { it.id }
+            nodeIds = findNodeIds(query)
         }
         return totalModified
+    }
+
+    private suspend fun findNodeIds(query: Query): List<String> {
+        return nodeDao.find(query, Map::class.java).map { it[ID].toString() }
     }
 
     companion object {
