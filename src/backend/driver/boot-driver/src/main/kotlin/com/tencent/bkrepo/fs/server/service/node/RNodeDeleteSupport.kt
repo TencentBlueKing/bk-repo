@@ -31,11 +31,13 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildCriteria
+import com.tencent.bkrepo.common.mongo.reactive.dao.AbstractMongoReactiveDao.Companion.ID
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.LoggerFactory
@@ -55,6 +57,7 @@ open class RNodeDeleteSupport(
 
     private val nodeDao = nodeBaseService.nodeDao
     private val quotaService = nodeBaseService.quotaService
+    private val repositoryProperties: RepositoryProperties = nodeBaseService.repositoryProperties
 
     override suspend fun deleteNode(deleteRequest: NodeDeleteRequest): NodeDeleteResult {
         with(deleteRequest) {
@@ -108,8 +111,12 @@ open class RNodeDeleteSupport(
             "/$projectId/$repoName$fullPaths"
         }
         try {
-            val updateResult = nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
-            deletedNum = updateResult.modifiedCount
+            deletedNum = if (repositoryProperties.deleteBatchByIds) {
+                deleteBatchByNodeIds(query, operator, deleteTime)
+            } else {
+                query.withHint(TNode.FULL_PATH_IDX)
+                nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime)).modifiedCount
+            }
             if (deletedNum == 0L) {
                 return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
             }
@@ -136,6 +143,22 @@ open class RNodeDeleteSupport(
         return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
     }
 
+
+    private suspend fun deleteBatchByNodeIds(query: Query, operator: String, deleteTime: LocalDateTime): Long {
+        query.withHint(TNode.FULL_PATH_IDX)
+        query.fields().include(ID)
+        val batchSize = repositoryProperties.deleteBatchSize
+        val update = NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime)
+        var totalModified = 0L
+        query.limit(batchSize)
+        var nodeIds = nodeDao.find(query).mapNotNull { it.id }
+        while (nodeIds.isNotEmpty()) {
+            val batchQuery = Query(Criteria.where(ID).`in`(nodeIds))
+            totalModified += nodeDao.updateMulti(batchQuery, update).modifiedCount
+            nodeIds = nodeDao.find(query).mapNotNull { it.id }
+        }
+        return totalModified
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(RNodeDeleteSupport::class.java)
