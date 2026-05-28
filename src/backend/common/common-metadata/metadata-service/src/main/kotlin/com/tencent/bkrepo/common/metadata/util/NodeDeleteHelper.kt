@@ -1,13 +1,51 @@
 package com.tencent.bkrepo.common.metadata.util
 
+import com.mongodb.ReadPreference
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.constant.ID
 import com.tencent.bkrepo.common.metadata.model.TNode
 import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
+import java.time.LocalDateTime
 
 object NodeDeleteHelper {
+
+    /**
+     * 分批按 ID 删除节点的完整逻辑，兼容同步与协程调用方。
+     *
+     * 每批次通过 [findByQuery] 强制从 Primary 查询未删除的节点 ID，再按 ID 批量 update 标记删除
+     *
+     * 利用 inline 展开使得 suspend 调用方可以在 lambda 中直接调用 suspend DAO 方法。
+     */
+    inline fun deleteBatchByNodeIds(
+        query: Query,
+        batchSize: Int,
+        operator: String,
+        deleteTime: LocalDateTime,
+        findByQuery: (Query) -> List<Map<*, *>>,
+        updateMulti: (Query, Update) -> Long,
+    ): Long {
+        query.withHint(TNode.FULL_PATH_IDX)
+        query.fields().include(ID)
+        query.limit(batchSize)
+        query.withReadPreference(ReadPreference.primary())
+        val update = NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime)
+        var totalModified = 0L
+
+        var docs = findByQuery(query)
+        while (docs.isNotEmpty()) {
+            val nodeIds = docs.map { it[ID]!! }
+            totalModified += updateMulti(Query(Criteria.where(ID).`in`(nodeIds)), update)
+            docs = findByQuery(query)
+        }
+
+        return totalModified
+    }
+
     fun buildCriteria(
         projectId: String,
         repoName: String,

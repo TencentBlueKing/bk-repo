@@ -36,8 +36,8 @@ import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
+import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper
 import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildCriteria
-import com.tencent.bkrepo.common.mongo.reactive.dao.AbstractMongoReactiveDao.Companion.ID
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.LoggerFactory
@@ -145,23 +145,14 @@ open class RNodeDeleteSupport(
 
 
     private suspend fun deleteBatchByNodeIds(query: Query, operator: String, deleteTime: LocalDateTime): Long {
-        query.withHint(TNode.FULL_PATH_IDX)
-        query.fields().include(ID)
-        val batchSize = repositoryProperties.deleteBatchSize
-        val update = NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime)
-        var totalModified = 0L
-        query.limit(batchSize)
-        var nodeIds = findNodeIds(query)
-        while (nodeIds.isNotEmpty()) {
-            val batchQuery = Query(Criteria.where(ID).`in`(nodeIds))
-            totalModified += nodeDao.updateMulti(batchQuery, update).modifiedCount
-            nodeIds = findNodeIds(query)
-        }
-        return totalModified
-    }
-
-    private suspend fun findNodeIds(query: Query): List<String> {
-        return nodeDao.find(query, Map::class.java).map { it[ID].toString() }
+        return NodeDeleteHelper.deleteBatchByNodeIds(
+            query = query,
+            batchSize = repositoryProperties.deleteBatchSize,
+            operator = operator,
+            deleteTime = deleteTime,
+            findByQuery = { q -> nodeDao.find(q, Map::class.java) },
+            updateMulti = { q, u -> nodeDao.updateMulti(q, u).modifiedCount }
+        )
     }
 
     companion object {
