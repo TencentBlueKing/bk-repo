@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.metadata.config.RepositoryProperties.Companion.
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties.Companion.DELETE_MODE_UPDATE_WITH_HINT
 import com.tencent.bkrepo.common.metadata.constant.ID
 import com.tencent.bkrepo.common.metadata.model.TNode
+import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -69,7 +70,14 @@ object NodeDeleteHelper {
         var docs = findByQuery(query)
         while (docs.isNotEmpty()) {
             val nodeIds = docs.map { it[ID]!! }
-            totalModified += updateMulti(Query(Criteria.where(ID).`in`(nodeIds)), update)
+            val modifiedCount = updateMulti(Query(Criteria.where(ID).`in`(nodeIds)), update)
+            if (modifiedCount != nodeIds.size.toLong()) {
+                logger.error(
+                    "Node batch delete modified count [$modifiedCount] mismatch with node id count " +
+                        "[${nodeIds.size}], nodeIds [$nodeIds]"
+                )
+            }
+            totalModified += modifiedCount
             docs = findByQuery(query)
         }
 
@@ -114,4 +122,7 @@ object NodeDeleteHelper {
             .and(TNode::deleted).isEqualTo(null)
             .and(TNode::fullPath).isEqualTo(normalizedFullPath)
     }
+
+    @PublishedApi
+    internal val logger = LoggerFactory.getLogger(NodeDeleteHelper::class.java)
 }
