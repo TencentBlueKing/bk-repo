@@ -31,7 +31,6 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
@@ -56,7 +55,6 @@ open class RNodeDeleteSupport(
 
     private val nodeDao = nodeBaseService.nodeDao
     private val quotaService = nodeBaseService.quotaService
-    private val repositoryProperties: RepositoryProperties = nodeBaseService.repositoryProperties
 
     override suspend fun deleteNode(deleteRequest: NodeDeleteRequest): NodeDeleteResult {
         with(deleteRequest) {
@@ -112,8 +110,8 @@ open class RNodeDeleteSupport(
         try {
             deletedNum = NodeDeleteHelper.deleteNodes(
                 query = query,
-                batchByIds = repositoryProperties.deleteBatchByIds,
-                batchSize = repositoryProperties.deleteBatchSize,
+                batchByIds = nodeBaseService.repositoryProperties.deleteBatchByIds,
+                batchSize = nodeBaseService.repositoryProperties.deleteBatchSize,
                 operator = operator,
                 deleteTime = deleteTime,
                 findByQuery = { q -> nodeDao.find(q, Map::class.java) },
@@ -144,7 +142,6 @@ open class RNodeDeleteSupport(
         )
         return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
     }
-
 
 
     companion object {

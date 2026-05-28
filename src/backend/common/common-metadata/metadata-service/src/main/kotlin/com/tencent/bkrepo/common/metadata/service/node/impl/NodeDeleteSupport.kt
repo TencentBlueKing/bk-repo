@@ -33,7 +33,6 @@ import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
-import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
@@ -68,7 +67,6 @@ open class NodeDeleteSupport(
 
     val nodeDao: NodeDao = nodeBaseService.nodeDao
     val quotaService: QuotaService = nodeBaseService.quotaService
-    val repositoryProperties: RepositoryProperties = nodeBaseService.repositoryProperties
     val routerControllerService: RouterControllerService = nodeBaseService.routerControllerService
     val routerControllerProperties: RouterControllerProperties = nodeBaseService.routerControllerProperties
 
@@ -260,8 +258,8 @@ open class NodeDeleteSupport(
         try {
             deletedNum = NodeDeleteHelper.deleteNodes(
                 query = query,
-                batchByIds = repositoryProperties.deleteBatchByIds,
-                batchSize = repositoryProperties.deleteBatchSize,
+                batchByIds = nodeBaseService.repositoryProperties.deleteBatchByIds,
+                batchSize = nodeBaseService.repositoryProperties.deleteBatchSize,
                 operator = operator,
                 deleteTime = deleteTime,
                 findByQuery = { q -> nodeDao.find(q, Map::class.java) },
@@ -298,7 +296,7 @@ open class NodeDeleteSupport(
     }
 
 
-
+    // 文件用精确匹配，目录或节点不存在（并发删除场景）退化到正则前缀查询
     private fun buildDeleteCriteria(projectId: String, repoName: String, fullPath: String): Criteria {
         val normalizedFullPath = PathUtils.normalizeFullPath(fullPath)
         val existNode = nodeDao.findNode(projectId, repoName, normalizedFullPath)
