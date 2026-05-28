@@ -62,7 +62,11 @@
         methods: {
             cancel () {
                 const BK_CI_DOMAIN = location.host.split('.').slice(1).join('.')
-                cookies.set('hasShowLog', this.versionLogs[0].version, { domain: BK_CI_DOMAIN, path: '/', expires: 366 })
+                const isIpWithPort = /^(\d{1,3}\.){3}\d{1,3}:\d+$/.test(location.host)
+                const cookieOptions = isIpWithPort
+                    ? { path: '/', expires: 366 }
+                    : { domain: BK_CI_DOMAIN, path: '/', expires: 366 }
+                cookies.set('hasShowLog', this.versionLogs[0].version, cookieOptions)
                 this.show = false
             },
             async handleItemClick (item, index) {
