@@ -83,7 +83,7 @@ class RemoteArtifactCacheWriter(
             useLocalPath = contentLength > 0 && contentLength < localThreshold.toBytes()
             receiver = ArtifactDataReceiver(
                 storageProperties.receive,
-                storageProperties.monitor,
+                monitor.monitorConfig,
                 if (useLocalPath) localPath else path,
                 randomPath = !useLocalPath,
                 registry = registry

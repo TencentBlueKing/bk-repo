@@ -29,7 +29,6 @@ package com.tencent.bkrepo.common.storage.monitor
 
 import com.tencent.bkrepo.common.storage.config.MonitorProperties
 import com.tencent.bkrepo.common.storage.config.UploadProperties
-import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.DisplayName
@@ -55,15 +54,11 @@ internal class StorageHealthMonitorTest {
         timesToRestore = 5,
         timesToFallback = 2
     )
-    private val storageProperties = StorageProperties().apply {
-        filesystem = storageCredentials
-        monitor = monitorConfig
-    }
     private val path = storageCredentials.upload.location
 
     @Test
     fun testCheck() {
-        val monitor = StorageHealthMonitor(storageProperties, path)
+        val monitor = StorageHealthMonitor(monitorConfig, path)
         TimeUnit.SECONDS.sleep(10)
         monitor.stop()
     }
@@ -79,11 +74,7 @@ internal class StorageHealthMonitorTest {
             timesToRestore = 5,
             timesToFallback = 2
         )
-        val storageProperties = StorageProperties().apply {
-            filesystem = storageCredentials
-            monitor = config
-        }
-        val monitor = StorageHealthMonitor(storageProperties, path)
+        val monitor = StorageHealthMonitor(config, path)
         repeat(2) {
             monitor.add(object : StorageHealthMonitor.Observer {
                 override fun unhealthy(fallbackPath: Path?, reason: String?) {
@@ -132,11 +123,7 @@ internal class StorageHealthMonitorTest {
             timesToRestore = 2,
             timesToFallback = 1
         )
-        val storageProperties = StorageProperties().apply {
-            filesystem = storageCredentials
-            monitor = config
-        }
-        val monitor = StorageHealthMonitor(storageProperties, path)
+        val monitor = StorageHealthMonitor(config, path)
         monitor.add(object : StorageHealthMonitor.Observer {
             override fun unhealthy(fallbackPath: Path?, reason: String?) {
                 println("unhealthy, fallbackPath: $fallbackPath, reason: $reason")
@@ -155,7 +142,7 @@ internal class StorageHealthMonitorTest {
     @DisplayName("测试并发情况下的观察者的变更与通知")
     @Test
     fun testConcurrentOperateObservers() {
-        val monitor = StorageHealthMonitor(storageProperties, path)
+        val monitor = StorageHealthMonitor(monitorConfig, path)
         val observer = object : StorageHealthMonitor.Observer {
             override fun unhealthy(fallbackPath: Path?, reason: String?) {
                 println("change to unhealthy")

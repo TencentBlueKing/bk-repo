@@ -70,7 +70,7 @@ class ChunkedArtifactFile(
         val path = storageCredentials.upload.location.toPath()
         receiver = ArtifactDataReceiver(
             storageProperties.receive,
-            storageProperties.monitor,
+            monitor.monitorConfig,
             path,
             randomPath = true,
             registry = registry
