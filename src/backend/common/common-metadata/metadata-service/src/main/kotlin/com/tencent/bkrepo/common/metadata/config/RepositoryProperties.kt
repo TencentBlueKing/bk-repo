@@ -79,14 +79,20 @@ class RepositoryProperties {
      */
     var tokenBypassPlatforms: List<String> = emptyList()
     /**
-     * 是否启用按 ID 批量删除模式。
-     * 开启后删除操作先 find（带 hint）获取节点 ID，再按 ID 批量 update，
-     * 适用于大目录删除或 updateMulti hint 不生效的特殊场景。
-     * 关闭时直接在 updateMulti 上加 withHint 强制索引选择。
+     * 节点删除策略模式：
+     * - update：直接 updateMulti，不使用 hint
+     * - updateWithHint：updateMulti 时附带 hint 强制指定索引（需要 MongoDB 4.2+）
+     * - batchByIds：分批从 Primary 通过 find（带 hint）查询节点 ID，再按 ID 批量 update，兼容 MongoDB 4.2 以下版本
      */
-    var deleteBatchByIds: Boolean = false
+    var deleteMode: String = DELETE_MODE_UPDATE
     /**
-     * 按 ID 批量删除时每批次的文档数量
+     * batchByIds 模式下每批次的文档数量
      */
     var deleteBatchSize: Int = 200
+
+    companion object {
+        const val DELETE_MODE_UPDATE = "update"
+        const val DELETE_MODE_UPDATE_WITH_HINT = "updateWithHint"
+        const val DELETE_MODE_BATCH_BY_IDS = "batchByIds"
+    }
 }

@@ -44,6 +44,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
+import kotlinx.coroutines.reactor.awaitSingle
 import java.time.LocalDateTime
 
 /**
@@ -108,14 +109,18 @@ open class RNodeDeleteSupport(
             "/$projectId/$repoName$fullPaths"
         }
         try {
+            val collectionName = nodeDao.determineCollectionName(query)
             deletedNum = NodeDeleteHelper.deleteNodes(
                 query = query,
-                batchByIds = nodeBaseService.repositoryProperties.deleteBatchByIds,
+                deleteMode = nodeBaseService.repositoryProperties.deleteMode,
                 batchSize = nodeBaseService.repositoryProperties.deleteBatchSize,
                 operator = operator,
                 deleteTime = deleteTime,
                 findByQuery = { q -> nodeDao.find(q, Map::class.java) },
-                updateMulti = { q, u -> nodeDao.updateMulti(q, u).modifiedCount }
+                updateMulti = { q, u ->
+                    nodeDao.determineReactiveMongoOperations()
+                        .updateMulti(q, u, collectionName).awaitSingle().modifiedCount
+                }
             )
             if (deletedNum == 0L) {
                 return NodeDeleteResult(deletedNum, deletedSize, deleteTime)

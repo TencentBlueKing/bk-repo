@@ -2,6 +2,8 @@ package com.tencent.bkrepo.common.metadata.util
 
 import com.mongodb.ReadPreference
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties.Companion.DELETE_MODE_BATCH_BY_IDS
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties.Companion.DELETE_MODE_UPDATE_WITH_HINT
 import com.tencent.bkrepo.common.metadata.constant.ID
 import com.tencent.bkrepo.common.metadata.model.TNode
 import org.springframework.data.mongodb.core.query.Criteria
@@ -17,26 +19,34 @@ object NodeDeleteHelper {
     /**
      * 执行节点删除（软删除），兼容同步与协程调用方。
      *
-     * 根据 [batchByIds] 开关选择策略：
-     * - true：分批从 Primary 查询未删除节点 ID，再按 ID 批量 update，避免索引选择错误
-     * - false：直接在 query 上加 hint 执行 updateMulti
+     * 根据 [deleteMode] 选择策略：
+     * - update：直接 updateMulti，不使用 hint
+     * - updateWithHint：updateMulti 附带 hint 强制走 FULL_PATH_IDX（需要 MongoDB 4.2+）
+     * - batchByIds：分批从 Primary 通过 find（带 hint）查询节点 ID，再按 ID 批量 update，
+     *   兼容 MongoDB 4.2 以下版本
      *
      * 利用 inline 展开使得 suspend 调用方可以在 lambda 中直接调用 suspend DAO 方法。
      */
     inline fun deleteNodes(
         query: Query,
-        batchByIds: Boolean,
+        deleteMode: String,
         batchSize: Int,
         operator: String,
         deleteTime: LocalDateTime,
         findByQuery: (Query) -> List<Map<*, *>>,
         updateMulti: (Query, Update) -> Long,
     ): Long {
-        return if (batchByIds) {
-            deleteBatchByNodeIds(query, batchSize, operator, deleteTime, findByQuery, updateMulti)
-        } else {
-            query.withHint(TNode.FULL_PATH_IDX)
-            updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
+        return when (deleteMode) {
+            DELETE_MODE_UPDATE_WITH_HINT -> {
+                query.withHint(TNode.FULL_PATH_IDX)
+                updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
+            }
+            DELETE_MODE_BATCH_BY_IDS -> {
+                deleteBatchByNodeIds(query, batchSize, operator, deleteTime, findByQuery, updateMulti)
+            }
+            else -> {
+                updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
+            }
         }
     }
 

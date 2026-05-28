@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
@@ -80,6 +81,7 @@ class NodeServiceTest @Autowired constructor(
     private val projectService: ProjectService,
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService,
+    private val repositoryProperties: RepositoryProperties,
 ) : ServiceBaseTest() {
 
     private val option = NodeListOption(includeFolder = false, deep = false)
@@ -822,6 +824,40 @@ class NodeServiceTest @Autowired constructor(
         )
         nodeService.copyNode(copyRequest)
         assertEquals("value", nodeService.getNodeDetail(node("/b"))!!.metadata["key"])
+    }
+
+    @Test
+    @DisplayName("测试batchByIds模式删除节点数超过batchSize")
+    fun `should delete all nodes when node count exceeds batchSize with batchByIds mode`() {
+        val originalDeleteMode = repositoryProperties.deleteMode
+        val originalBatchSize = repositoryProperties.deleteBatchSize
+        try {
+            repositoryProperties.deleteMode = RepositoryProperties.DELETE_MODE_BATCH_BY_IDS
+            repositoryProperties.deleteBatchSize = 3
+
+            val nodeCount = 10
+            for (i in 1..nodeCount) {
+                nodeService.createNode(createRequest("/batch-delete/$i.txt", folder = false))
+            }
+
+            val listOption = NodeListOption(includeFolder = false, deep = true)
+            assertEquals(nodeCount, nodeService.listNode(node("/batch-delete"), listOption).size)
+
+            nodeService.deleteNode(
+                NodeDeleteRequest(
+                    projectId = UT_PROJECT_ID,
+                    repoName = UT_REPO_NAME,
+                    fullPath = "/batch-delete",
+                    operator = UT_USER
+                )
+            )
+
+            assertFalse(nodeService.checkExist(node("/batch-delete")))
+            assertEquals(0, nodeService.listNode(node("/batch-delete"), listOption).size)
+        } finally {
+            repositoryProperties.deleteMode = originalDeleteMode
+            repositoryProperties.deleteBatchSize = originalBatchSize
+        }
     }
 
     private fun createRequest(
