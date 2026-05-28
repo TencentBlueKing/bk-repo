@@ -34,7 +34,6 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildDeletedEvent
-import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper
 import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildCriteria
@@ -111,12 +110,15 @@ open class RNodeDeleteSupport(
             "/$projectId/$repoName$fullPaths"
         }
         try {
-            deletedNum = if (repositoryProperties.deleteBatchByIds) {
-                deleteBatchByNodeIds(query, operator, deleteTime)
-            } else {
-                query.withHint(TNode.FULL_PATH_IDX)
-                nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime)).modifiedCount
-            }
+            deletedNum = NodeDeleteHelper.deleteNodes(
+                query = query,
+                batchByIds = repositoryProperties.deleteBatchByIds,
+                batchSize = repositoryProperties.deleteBatchSize,
+                operator = operator,
+                deleteTime = deleteTime,
+                findByQuery = { q -> nodeDao.find(q, Map::class.java) },
+                updateMulti = { q, u -> nodeDao.updateMulti(q, u).modifiedCount }
+            )
             if (deletedNum == 0L) {
                 return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
             }
@@ -144,16 +146,6 @@ open class RNodeDeleteSupport(
     }
 
 
-    private suspend fun deleteBatchByNodeIds(query: Query, operator: String, deleteTime: LocalDateTime): Long {
-        return NodeDeleteHelper.deleteBatchByNodeIds(
-            query = query,
-            batchSize = repositoryProperties.deleteBatchSize,
-            operator = operator,
-            deleteTime = deleteTime,
-            findByQuery = { q -> nodeDao.find(q, Map::class.java) },
-            updateMulti = { q, u -> nodeDao.updateMulti(q, u).modifiedCount }
-        )
-    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(RNodeDeleteSupport::class.java)

@@ -258,12 +258,15 @@ open class NodeDeleteSupport(
             "/$projectId/$repoName$fullPaths"
         }
         try {
-            deletedNum = if (repositoryProperties.deleteBatchByIds) {
-                deleteBatchByNodeIds(query, operator, deleteTime)
-            } else {
-                query.withHint(TNode.FULL_PATH_IDX)
-                nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime)).modifiedCount
-            }
+            deletedNum = NodeDeleteHelper.deleteNodes(
+                query = query,
+                batchByIds = repositoryProperties.deleteBatchByIds,
+                batchSize = repositoryProperties.deleteBatchSize,
+                operator = operator,
+                deleteTime = deleteTime,
+                findByQuery = { q -> nodeDao.find(q, Map::class.java) },
+                updateMulti = { q, u -> nodeDao.updateMulti(q, u).modifiedCount }
+            )
             if (deletedNum == 0L) {
                 logger.info("Delete node[$resourceKey] by [$operator] success. No nodes were deleted.")
                 return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
@@ -295,16 +298,6 @@ open class NodeDeleteSupport(
     }
 
 
-    private fun deleteBatchByNodeIds(query: Query, operator: String, deleteTime: LocalDateTime): Long {
-        return NodeDeleteHelper.deleteBatchByNodeIds(
-            query = query,
-            batchSize = repositoryProperties.deleteBatchSize,
-            operator = operator,
-            deleteTime = deleteTime,
-            findByQuery = { q -> nodeDao.find(q, Map::class.java) },
-            updateMulti = { q, u -> nodeDao.updateMulti(q, u).modifiedCount }
-        )
-    }
 
     private fun buildDeleteCriteria(projectId: String, repoName: String, fullPath: String): Criteria {
         val normalizedFullPath = PathUtils.normalizeFullPath(fullPath)
