@@ -68,6 +68,7 @@ object NodeDeleteHelper {
         query.withReadPreference(ReadPreference.primary())
         val update = NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime)
         var totalModified = 0L
+        var round = 0
 
         var docs = findByQuery(query)
         while (docs.isNotEmpty()) {
@@ -80,6 +81,14 @@ object NodeDeleteHelper {
                 )
             }
             totalModified += modifiedCount
+            round++
+            // 每隔固定批次输出一次进度日志，便于监控大目录删除的进展
+            if (round % LOG_ROUND_INTERVAL == 0) {
+                logger.info(
+                    "Node batch delete in progress, operator [$operator], deleteTime [$deleteTime], " +
+                        "round [$round], deleted [$totalModified] nodes"
+                )
+            }
             docs = findByQuery(query)
         }
 
@@ -127,4 +136,10 @@ object NodeDeleteHelper {
 
     @PublishedApi
     internal val logger = LoggerFactory.getLogger(NodeDeleteHelper::class.java)
+
+    /**
+     * 分批删除每隔该批次数输出一次进度日志
+     */
+    @PublishedApi
+    internal const val LOG_ROUND_INTERVAL = 100
 }
