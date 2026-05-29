@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.metadata.util
 
 import com.mongodb.ReadPreference
+import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties.Companion.DELETE_MODE_BATCH_BY_IDS
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties.Companion.DELETE_MODE_UPDATE_WITH_HINT
@@ -14,6 +15,7 @@ import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import java.time.LocalDateTime
+import java.util.concurrent.atomic.AtomicInteger
 
 object NodeDeleteHelper {
 
@@ -23,32 +25,60 @@ object NodeDeleteHelper {
      * 根据 [deleteMode] 选择策略：
      * - update：直接 updateMulti，不使用 hint
      * - updateWithHint：updateMulti 附带 hint 强制走 FULL_PATH_IDX（需要 MongoDB 4.2+）
-     * - batchByIds：分批从 Primary 通过 find（带 hint）查询节点 ID，再按 ID 批量 update，
+     * - batchByIds：分批从 Primary 通过 find（带 hint）查询节点 ID，再按 ID 批量 update
      *   兼容 MongoDB 4.2 以下版本
      *
-     * 利用 inline 展开使得 suspend 调用方可以在 lambda 中直接调用 suspend DAO 方法。
+     * [concurrency] 限制同时执行的删除操作数量，小于等于 0 表示不限制，超过上限时抛出[TooManyRequestsException]
+     *
+     * 利用 inline 展开使得 suspend 调用方可以在 lambda 中直接调用 suspend DAO 方法
      */
     inline fun deleteNodes(
         query: Query,
         deleteMode: String,
         batchSize: Int,
+        concurrency: Int,
         operator: String,
         deleteTime: LocalDateTime,
         findByQuery: (Query) -> List<Map<*, *>>,
         updateMulti: (Query, Update) -> Long,
     ): Long {
-        return when (deleteMode) {
-            DELETE_MODE_UPDATE_WITH_HINT -> {
-                query.withHint(TNode.FULL_PATH_IDX)
-                updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
+        val acquired = tryAcquireConcurrencyPermit(concurrency)
+        try {
+            return when (deleteMode) {
+                DELETE_MODE_UPDATE_WITH_HINT -> {
+                    query.withHint(TNode.FULL_PATH_IDX)
+                    updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
+                }
+                DELETE_MODE_BATCH_BY_IDS -> {
+                    deleteBatchByNodeIds(query, batchSize, operator, deleteTime, findByQuery, updateMulti)
+                }
+                else -> {
+                    updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
+                }
             }
-            DELETE_MODE_BATCH_BY_IDS -> {
-                deleteBatchByNodeIds(query, batchSize, operator, deleteTime, findByQuery, updateMulti)
-            }
-            else -> {
-                updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
+        } finally {
+            if (acquired) {
+                runningDeleteCount.decrementAndGet()
             }
         }
+    }
+
+    /**
+     * 尝试占用一个并发执行名额。[concurrency] 小于等于 0 表示不限制。
+     *
+     * @return true 表示已占用名额，操作结束后需要释放；false 表示未开启限制无需释放
+     * @throws TooManyRequestsException 当前并发数已达上限
+     */
+    @PublishedApi
+    internal fun tryAcquireConcurrencyPermit(concurrency: Int): Boolean {
+        if (concurrency <= 0) {
+            return false
+        }
+        if (runningDeleteCount.incrementAndGet() > concurrency) {
+            runningDeleteCount.decrementAndGet()
+            throw TooManyRequestsException("Concurrent deleteNodes operations exceed limit [$concurrency]")
+        }
+        return true
     }
 
     @PublishedApi
@@ -136,6 +166,12 @@ object NodeDeleteHelper {
 
     @PublishedApi
     internal val logger = LoggerFactory.getLogger(NodeDeleteHelper::class.java)
+
+    /**
+     * 当前正在执行的 deleteNodes 操作数量，用于并发限制
+     */
+    @PublishedApi
+    internal val runningDeleteCount = AtomicInteger(0)
 
     /**
      * 分批删除每隔该批次数输出一次进度日志

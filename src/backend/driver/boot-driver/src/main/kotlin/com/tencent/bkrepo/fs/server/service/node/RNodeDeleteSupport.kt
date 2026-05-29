@@ -114,6 +114,7 @@ open class RNodeDeleteSupport(
                 query = query,
                 deleteMode = nodeBaseService.repositoryProperties.deleteMode,
                 batchSize = nodeBaseService.repositoryProperties.deleteBatchSize,
+                concurrency = nodeBaseService.repositoryProperties.deleteNodesConcurrency,
                 operator = operator,
                 deleteTime = deleteTime,
                 findByQuery = { q -> nodeDao.find(q, Map::class.java) },

@@ -89,6 +89,11 @@ class RepositoryProperties {
      * batchByIds 模式下每批次的文档数量
      */
     var deleteBatchSize: Int = 200
+    /**
+     * 同时执行的 deleteNodes 操作数量上限，小于等于 0 表示不限制。
+     * 超过上限的删除请求将快速失败（抛出 TooManyRequestsException）
+     */
+    var deleteNodesConcurrency: Int = 0
 
     companion object {
         const val DELETE_MODE_UPDATE = "update"
