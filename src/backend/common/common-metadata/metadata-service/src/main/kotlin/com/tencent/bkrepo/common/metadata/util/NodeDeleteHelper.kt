@@ -60,6 +60,8 @@ object NodeDeleteHelper {
         findByQuery: (Query) -> List<Map<*, *>>,
         updateMulti: (Query, Update) -> Long,
     ): Long {
+        // 限制删除范围为删除发起时刻（deleteTime）之前已存在的节点，避免删除过程中新建的节点被持续卷入导致循环无法收敛
+        query.addCriteria(Criteria.where(TNode::createdDate.name).lte(deleteTime))
         query.withHint(TNode.FULL_PATH_IDX)
         query.fields().include(ID)
         query.limit(batchSize)
