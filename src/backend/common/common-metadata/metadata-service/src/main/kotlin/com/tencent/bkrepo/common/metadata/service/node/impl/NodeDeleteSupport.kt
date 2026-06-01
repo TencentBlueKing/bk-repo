@@ -244,7 +244,8 @@ open class NodeDeleteSupport(
         fullPaths: List<String>? = null,
         decreaseVolume: Boolean = true,
         source: String? = null,
-        deleteTime: LocalDateTime = LocalDateTime.now()
+        deleteTime: LocalDateTime = LocalDateTime.now(),
+        useFullPathIndex: Boolean = true
     ): NodeDeleteResult {
         var deletedNum = 0L
         var deletedSize = 0L
@@ -267,7 +268,8 @@ open class NodeDeleteSupport(
                 findByQuery = { q -> nodeDao.find(q, Map::class.java) },
                 updateMulti = { q, u ->
                     nodeDao.determineMongoTemplate().updateMulti(q, u, collectionName).modifiedCount
-                }
+                },
+                useFullPathIndex = useFullPathIndex
             )
             if (deletedNum == 0L) {
                 logger.info("Delete node[$resourceKey] by [$operator] success. No nodes were deleted.")

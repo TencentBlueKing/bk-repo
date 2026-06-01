@@ -41,20 +41,20 @@ object NodeDeleteHelper {
         deleteTime: LocalDateTime,
         findByQuery: (Query) -> List<Map<*, *>>,
         updateMulti: (Query, Update) -> Long,
+        useFullPathIndex: Boolean = true,
     ): Long {
         val acquired = tryAcquireConcurrencyPermit(concurrency)
         try {
-            return when (deleteMode) {
-                DELETE_MODE_UPDATE_WITH_HINT -> {
+            return when {
+                useFullPathIndex && deleteMode == DELETE_MODE_UPDATE_WITH_HINT -> {
                     query.withHint(TNode.FULL_PATH_IDX)
                     updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
                 }
-                DELETE_MODE_BATCH_BY_IDS -> {
+                useFullPathIndex && deleteMode == DELETE_MODE_BATCH_BY_IDS -> {
                     deleteBatchByNodeIds(query, batchSize, operator, deleteTime, findByQuery, updateMulti)
                 }
-                else -> {
-                    updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
-                }
+                // 无需使用 fullPath 索引，或普通删除模式时，直接走不带 hint 的 updateMulti
+                else -> updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
             }
         } finally {
             if (acquired) {
