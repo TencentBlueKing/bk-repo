@@ -45,7 +45,7 @@ object NodeDeleteHelper {
     ): Long {
         val running = runningDeleteCount.incrementAndGet()
         logger.info(
-            "Delete nodes by [$operator], mode [$DELETE_MODE_UPDATE_WITH_HINT], useFullPathIndex[$useFullPathIndex]"
+            "Delete nodes by [$operator], mode [$deleteMode], useFullPathIndex[$useFullPathIndex]"
         )
         try {
             checkConcurrencyLimit(running, concurrency)
