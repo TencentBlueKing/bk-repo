@@ -43,11 +43,12 @@ object NodeDeleteHelper {
         updateMulti: (Query, Update) -> Long,
         useFullPathIndex: Boolean = true,
     ): Long {
-        val acquired = tryAcquireConcurrencyPermit(concurrency)
+        val running = runningDeleteCount.incrementAndGet()
         logger.info(
             "Delete nodes by [$operator], mode [$DELETE_MODE_UPDATE_WITH_HINT], useFullPathIndex[$useFullPathIndex]"
         )
         try {
+            checkConcurrencyLimit(running, concurrency)
             return when {
                 useFullPathIndex && deleteMode == DELETE_MODE_UPDATE_WITH_HINT -> {
                     query.withHint(TNode.FULL_PATH_IDX)
@@ -60,28 +61,21 @@ object NodeDeleteHelper {
                 else -> updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
             }
         } finally {
-            if (acquired) {
-                runningDeleteCount.decrementAndGet()
-            }
+            runningDeleteCount.decrementAndGet()
         }
     }
 
     /**
-     * 尝试占用一个并发执行名额。[concurrency] 小于等于 0 表示不限制。
+     * 校验并发执行名额。[concurrency] 小于等于 0 表示不限制。
      *
-     * @return true 表示已占用名额，操作结束后需要释放；false 表示未开启限制无需释放
+     * @param running 当前在途删除操作数（含本次）
      * @throws TooManyRequestsException 当前并发数已达上限
      */
     @PublishedApi
-    internal fun tryAcquireConcurrencyPermit(concurrency: Int): Boolean {
-        if (concurrency <= 0) {
-            return false
-        }
-        if (runningDeleteCount.incrementAndGet() > concurrency) {
-            runningDeleteCount.decrementAndGet()
+    internal fun checkConcurrencyLimit(running: Int, concurrency: Int) {
+        if (concurrency > 0 && running > concurrency) {
             throw TooManyRequestsException("Concurrent deleteNodes operations exceed limit [$concurrency]")
         }
-        return true
     }
 
     @PublishedApi
@@ -171,7 +165,7 @@ object NodeDeleteHelper {
     internal val logger = LoggerFactory.getLogger(NodeDeleteHelper::class.java)
 
     /**
-     * 当前正在执行的 deleteNodes 操作数量，用于并发限制
+     * 当前正在执行的 deleteNodes 操作数量，用于并发限制与指标统计
      */
     @PublishedApi
     internal val runningDeleteCount = AtomicInteger(0)
