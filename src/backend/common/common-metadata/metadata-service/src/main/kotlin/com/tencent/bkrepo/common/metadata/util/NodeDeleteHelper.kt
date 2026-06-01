@@ -44,6 +44,9 @@ object NodeDeleteHelper {
         useFullPathIndex: Boolean = true,
     ): Long {
         val acquired = tryAcquireConcurrencyPermit(concurrency)
+        logger.info(
+            "Delete nodes by [$operator], mode [$DELETE_MODE_UPDATE_WITH_HINT], useFullPathIndex[$useFullPathIndex]"
+        )
         try {
             return when {
                 useFullPathIndex && deleteMode == DELETE_MODE_UPDATE_WITH_HINT -> {
