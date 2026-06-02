@@ -57,16 +57,16 @@ object NodeDeleteHelper {
         try {
             checkConcurrencyLimit(running, concurrency)
             checkDeleteNodeCountLimit(query, maxDeleteNodeCount, useFullPathIndex, countByQuery)
+            val deleteQuery = Query.of(query)
             return when {
                 useFullPathIndex && deleteMode == DELETE_MODE_UPDATE_WITH_HINT -> {
-                    query.withHint(TNode.FULL_PATH_IDX)
-                    updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
+                    deleteQuery.withHint(TNode.FULL_PATH_IDX)
+                    updateMulti(deleteQuery, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
                 }
                 useFullPathIndex && deleteMode == DELETE_MODE_BATCH_BY_IDS -> {
-                    deleteBatchByNodeIds(query, batchSize, operator, deleteTime, findByQuery, updateMulti)
+                    deleteBatchByNodeIds(deleteQuery, batchSize, operator, deleteTime, findByQuery, updateMulti)
                 }
-                // 无需使用 fullPath 索引，或普通删除模式时，直接走不带 hint 的 updateMulti
-                else -> updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
+                else -> updateMulti(deleteQuery, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
             }
         } finally {
             runningDeleteCount.decrementAndGet()
