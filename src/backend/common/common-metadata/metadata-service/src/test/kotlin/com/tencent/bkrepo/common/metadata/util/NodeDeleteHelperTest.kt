@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.metadata.util
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -91,16 +92,45 @@ class NodeDeleteHelperTest {
         }
     }
 
-    private inline fun deleteNodes(concurrency: Int, crossinline updateMulti: (Query, Update) -> Long): Long {
+    @Test
+    @DisplayName("节点数量超过 maxDeleteNodeCount 时拒绝删除")
+    fun `should reject when node count exceeds maxDeleteNodeCount`() {
+        assertThrows<ErrorCodeException> {
+            deleteNodes(maxDeleteNodeCount = 100, countResult = 200) { _, _ -> 0L }
+        }
+    }
+
+    @Test
+    @DisplayName("节点数量未超过 maxDeleteNodeCount 时正常删除")
+    fun `should allow delete when node count within maxDeleteNodeCount`() {
+        val deleted = deleteNodes(maxDeleteNodeCount = 100, countResult = 50) { _, _ -> 50L }
+        assertEquals(50L, deleted)
+    }
+
+    @Test
+    @DisplayName("maxDeleteNodeCount 小于等于 0 时不限制删除数量")
+    fun `should not limit when maxDeleteNodeCount is not positive`() {
+        val deleted = deleteNodes(maxDeleteNodeCount = 0, countResult = Long.MAX_VALUE) { _, _ -> 1L }
+        assertEquals(1L, deleted)
+    }
+
+    private inline fun deleteNodes(
+        concurrency: Int = 0,
+        maxDeleteNodeCount: Long = 0,
+        countResult: Long = 0,
+        crossinline updateMulti: (Query, Update) -> Long,
+    ): Long {
         return NodeDeleteHelper.deleteNodes(
             query = Query(),
             deleteMode = RepositoryProperties.DELETE_MODE_UPDATE,
             batchSize = 100,
             concurrency = concurrency,
+            maxDeleteNodeCount = maxDeleteNodeCount,
             operator = "ut",
             deleteTime = LocalDateTime.now(),
             findByQuery = { emptyList() },
-            updateMulti = { q, u -> updateMulti(q, u) }
+            updateMulti = { q, u -> updateMulti(q, u) },
+            countByQuery = { countResult }
         )
     }
 

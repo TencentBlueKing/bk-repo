@@ -94,6 +94,11 @@ class RepositoryProperties {
      * 超过上限的删除请求将快速失败（抛出 TooManyRequestsException）
      */
     var deleteNodesConcurrency: Int = 0
+    /**
+     * 单次删除操作允许影响的最大节点数，小于等于 0 表示不限制。
+     * 删除前会先执行 count 查询，超过上限时直接拒绝
+     */
+    var maxDeleteNodeCount: Long = 0
 
     companion object {
         const val DELETE_MODE_UPDATE = "update"

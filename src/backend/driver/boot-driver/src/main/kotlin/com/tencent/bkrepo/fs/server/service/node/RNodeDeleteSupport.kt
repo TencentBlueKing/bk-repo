@@ -115,13 +115,15 @@ open class RNodeDeleteSupport(
                 deleteMode = nodeBaseService.repositoryProperties.deleteMode,
                 batchSize = nodeBaseService.repositoryProperties.deleteBatchSize,
                 concurrency = nodeBaseService.repositoryProperties.deleteNodesConcurrency,
+                maxDeleteNodeCount = nodeBaseService.repositoryProperties.maxDeleteNodeCount,
                 operator = operator,
                 deleteTime = deleteTime,
                 findByQuery = { q -> nodeDao.find(q, Map::class.java) },
                 updateMulti = { q, u ->
                     nodeDao.determineReactiveMongoOperations()
                         .updateMulti(q, u, collectionName).awaitSingle().modifiedCount
-                }
+                },
+                countByQuery = { q -> nodeDao.count(q) }
             )
             if (deletedNum == 0L) {
                 return NodeDeleteResult(deletedNum, deletedSize, deleteTime)

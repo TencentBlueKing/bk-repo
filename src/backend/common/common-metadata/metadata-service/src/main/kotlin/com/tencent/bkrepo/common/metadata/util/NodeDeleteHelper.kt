@@ -1,7 +1,9 @@
 package com.tencent.bkrepo.common.metadata.util
 
 import com.mongodb.ReadPreference
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties.Companion.DELETE_MODE_BATCH_BY_IDS
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties.Companion.DELETE_MODE_UPDATE_WITH_HINT
@@ -30,6 +32,9 @@ object NodeDeleteHelper {
      *
      * [concurrency] 限制同时执行的删除操作数量，小于等于 0 表示不限制，超过上限时抛出[TooManyRequestsException]
      *
+     * [maxDeleteNodeCount] 限制单次删除操作允许影响的最大节点数，小于等于 0 表示不限制。
+     * 删除前会通过 [countByQuery] 执行 count 查询，超过上限时直接拒绝
+     *
      * 利用 inline 展开使得 suspend 调用方可以在 lambda 中直接调用 suspend DAO 方法
      */
     inline fun deleteNodes(
@@ -37,10 +42,12 @@ object NodeDeleteHelper {
         deleteMode: String,
         batchSize: Int,
         concurrency: Int,
+        maxDeleteNodeCount: Long = 0,
         operator: String,
         deleteTime: LocalDateTime,
         findByQuery: (Query) -> List<Map<*, *>>,
         updateMulti: (Query, Update) -> Long,
+        countByQuery: (Query) -> Long = { 0L },
         useFullPathIndex: Boolean = true,
     ): Long {
         val running = runningDeleteCount.incrementAndGet()
@@ -49,6 +56,7 @@ object NodeDeleteHelper {
         )
         try {
             checkConcurrencyLimit(running, concurrency)
+            checkDeleteNodeCountLimit(query, maxDeleteNodeCount, useFullPathIndex, countByQuery)
             return when {
                 useFullPathIndex && deleteMode == DELETE_MODE_UPDATE_WITH_HINT -> {
                     query.withHint(TNode.FULL_PATH_IDX)
@@ -75,6 +83,32 @@ object NodeDeleteHelper {
     internal fun checkConcurrencyLimit(running: Int, concurrency: Int) {
         if (concurrency > 0 && running > concurrency) {
             throw TooManyRequestsException("Concurrent deleteNodes operations exceed limit [$concurrency]")
+        }
+    }
+
+    /**
+     * 校验待删除节点数量是否超过上限。[maxDeleteNodeCount] 小于等于 0 表示不限制。
+     *
+     * 通过 [Query.of] 拷贝原始 query 避免 hint 影响后续 update；当 [useFullPathIndex] 为 true 时为 count 查询指定 hint
+     *
+     * @throws ErrorCodeException 待删除节点数超过上限
+     */
+    @PublishedApi
+    internal inline fun checkDeleteNodeCountLimit(
+        query: Query,
+        maxDeleteNodeCount: Long,
+        useFullPathIndex: Boolean,
+        countByQuery: (Query) -> Long,
+    ) {
+        if (maxDeleteNodeCount <= 0) return
+        val countQuery = Query.of(query)
+        if (useFullPathIndex) countQuery.withHint(TNode.FULL_PATH_IDX)
+        val count = countByQuery(countQuery)
+        if (count > maxDeleteNodeCount) {
+            throw ErrorCodeException(
+                CommonMessageCode.PARAMETER_INVALID,
+                "Delete node count [$count] exceeds limit [$maxDeleteNodeCount]"
+            )
         }
     }
 

@@ -263,12 +263,14 @@ open class NodeDeleteSupport(
                 deleteMode = nodeBaseService.repositoryProperties.deleteMode,
                 batchSize = nodeBaseService.repositoryProperties.deleteBatchSize,
                 concurrency = nodeBaseService.repositoryProperties.deleteNodesConcurrency,
+                maxDeleteNodeCount = nodeBaseService.repositoryProperties.maxDeleteNodeCount,
                 operator = operator,
                 deleteTime = deleteTime,
                 findByQuery = { q -> nodeDao.find(q, Map::class.java) },
                 updateMulti = { q, u ->
                     nodeDao.determineMongoTemplate().updateMulti(q, u, collectionName).modifiedCount
                 },
+                countByQuery = { q -> nodeDao.count(q) },
                 useFullPathIndex = useFullPathIndex
             )
             if (deletedNum == 0L) {
