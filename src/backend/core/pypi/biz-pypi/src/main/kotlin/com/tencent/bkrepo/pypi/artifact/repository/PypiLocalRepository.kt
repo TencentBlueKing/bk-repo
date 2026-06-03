@@ -31,13 +31,11 @@ import com.tencent.bk.audit.annotations.ActionAuditRecord
 import com.tencent.bk.audit.annotations.AuditAttribute
 import com.tencent.bk.audit.annotations.AuditEntry
 import com.tencent.bk.audit.annotations.AuditInstanceRecord
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.artifact.audit.NODE_DELETE_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
-import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -48,8 +46,6 @@ import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifa
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.metadata.service.packages.StageService
-import com.tencent.bkrepo.common.metadata.util.version.SemVersion
-import com.tencent.bkrepo.common.metadata.util.version.SemVersionParser
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -57,45 +53,24 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.pypi.artifact.PypiProperties
 import com.tencent.bkrepo.pypi.artifact.PypiSimpleArtifactInfo
 import com.tencent.bkrepo.pypi.artifact.url.UrlPatternUtil.parameterMaps
 import com.tencent.bkrepo.pypi.artifact.xml.Value
 import com.tencent.bkrepo.pypi.artifact.xml.XmlUtil
-import com.tencent.bkrepo.pypi.constants.INDENT
-import com.tencent.bkrepo.pypi.constants.LINE_BREAK
-import com.tencent.bkrepo.pypi.constants.NON_ALPHANUMERIC_SEQ_REGEX
-import com.tencent.bkrepo.pypi.constants.PACKAGE_INDEX_TITLE
-import com.tencent.bkrepo.pypi.constants.REQUIRES_PYTHON
-import com.tencent.bkrepo.pypi.constants.REQUIRES_PYTHON_ATTR
-import com.tencent.bkrepo.pypi.constants.SIMPLE_PAGE_CONTENT
 import com.tencent.bkrepo.pypi.constants.SUMMARY
-import com.tencent.bkrepo.pypi.constants.VERSION
-import com.tencent.bkrepo.pypi.constants.VERSION_INDEX_TITLE
-import com.tencent.bkrepo.pypi.exception.PypiSimpleNotFoundException
+import com.tencent.bkrepo.pypi.service.PypiSimpleIndexService
 import com.tencent.bkrepo.pypi.pojo.Basic
 import com.tencent.bkrepo.pypi.pojo.PypiArtifactVersionData
-import com.tencent.bkrepo.pypi.util.HtmlUtils
 import com.tencent.bkrepo.pypi.util.PypiVersionUtils.toPypiPackagePojo
 import com.tencent.bkrepo.pypi.util.XmlUtils
 import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
-import com.tencent.bkrepo.repository.constant.FULL_PATH
-import com.tencent.bkrepo.repository.constant.METADATA
-import com.tencent.bkrepo.repository.constant.NAME
-import com.tencent.bkrepo.repository.constant.NODE_METADATA
-import com.tencent.bkrepo.repository.constant.PROJECT_ID
-import com.tencent.bkrepo.repository.constant.REPO_NAME
-import com.tencent.bkrepo.repository.constant.SHA256
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -103,7 +78,7 @@ import org.springframework.stereotype.Component
 @Component
 class PypiLocalRepository(
     private val stageService: StageService,
-    private val pypiProperties: PypiProperties
+    private val pypiSimpleIndexService: PypiSimpleIndexService,
 ) : LocalRepository() {
 
     /**
@@ -158,6 +133,7 @@ class PypiLocalRepository(
             HttpContextHolder.getClientAddress()
         )
         store(nodeCreateRequest, artifactFile, context.storageCredentials)
+        pypiSimpleIndexService.refreshAfterUpload(context.projectId, context.repoName, name, context.userId)
     }
 
     override fun onDownloadBefore(context: ArtifactDownloadContext) {
@@ -276,6 +252,9 @@ class PypiLocalRepository(
                 packageKey,
                 HttpContextHolder.getClientAddress()
             )
+            pypiSimpleIndexService.refreshAfterRemove(
+                context.projectId, context.repoName, name, deleteWholePackage = true, context.userId
+            )
         } else {
             // 删除版本
             nodeService.deleteNode(
@@ -293,6 +272,9 @@ class PypiLocalRepository(
                 version,
                 HttpContextHolder.getClientAddress(),
                 contentPath,
+            )
+            pypiSimpleIndexService.refreshAfterRemove(
+                context.projectId, context.repoName, name, deleteWholePackage = false, context.userId
             )
         }
     }
@@ -350,163 +332,9 @@ class PypiLocalRepository(
         }
     }
 
-    // https://packaging.python.org/en/latest/specifications/simple-repository-api/
-    fun getSimpleHtml(artifactInfo: PypiSimpleArtifactInfo): String? {
-        with(artifactInfo) {
-            logger.info("Get simple html, artifactInfo: $this")
-            // 请求不带包名，返回包名列表.
-            if (packageName == null) {
-                val nodeList = nodeService.listNode(
-                    ArtifactInfo(projectId, repoName, ROOT),
-                    NodeListOption(includeFolder = true)
-                ).filter { it.folder }.takeIf { it.isNotEmpty() } ?: throw PypiSimpleNotFoundException(StringPool.SLASH)
-                // 过滤掉'根节点',
-                return buildPypiPageContent(PACKAGE_INDEX_TITLE, buildPackageListContent(nodeList))
-            }
-            // 请求中带包名，返回对应包的文件列表。
-            val nodes = nodeService.listNodeWithMetadataKeys(
-                ArtifactInfo(projectId, repoName, "/$packageName"),
-                NodeListOption(
-                    includeFolder = false,
-                    deep = true,
-                ),
-                listOf(VERSION, REQUIRES_PYTHON),
-            )
-            if (!nodes.isNullOrEmpty()) {
-                return buildPypiPageContent(
-                    String.format(VERSION_INDEX_TITLE, packageName),
-                    buildPackageFileListContent(nodes)
-                )
-            }
-            if (!pypiProperties.enableRegexQuery) {
-                throw PypiSimpleNotFoundException(packageName!!)
-            }
-            logger.info("not found nodeList by packageName[$packageName], use regex query")
-            // 客户端标准化包名规则：1.连续的[-_.]转换为单个"-"；2.转换为全小写。此处需要以反向规则查询
-            var pageNumber = 1
-            val nodeList = mutableListOf<Map<String, Any?>>()
-            do {
-                val queryModel = NodeQueryBuilder()
-                    .select(NAME, FULL_PATH, METADATA, SHA256)
-                    .sortByAsc(NAME)
-                    .page(pageNumber, PAGE_SIZE)
-                    .projectId(projectId)
-                    .repoName(repoName)
-                    .path("^/${packageName!!.replace("-", NON_ALPHANUMERIC_SEQ_REGEX)}/", OperationType.REGEX_I)
-                    .excludeFolder()
-                    .build()
-                val records = nodeSearchService.searchWithoutCount(queryModel).records
-                nodeList.addAll(records)
-                pageNumber++
-            } while (records.size == PAGE_SIZE)
-            nodeList.ifEmpty { throw PypiSimpleNotFoundException(packageName!!) }
-            return buildPypiPageContent(
-                String.format(VERSION_INDEX_TITLE, packageName),
-                buildPackageFileNodeListContent(nodeList)
-            )
-        }
-    }
-
-    /**
-     * html 页面公用的元素
-     * @param listContent 显示的内容
-     */
-    private fun buildPypiPageContent(title: String, listContent: String) =
-        String.format(SIMPLE_PAGE_CONTENT, title, title, listContent)
-
-    /**
-     * 对应包中的文件列表
-     * [nodeList]
-     */
-    @Suppress("UNCHECKED_CAST")
-    private fun buildPackageFileNodeListContent(nodeList: List<Map<String, Any?>>): String {
-        val builder = StringBuilder()
-        val sortedNodeList = nodeList.sortedBy { node ->
-            try {
-                SemVersionParser.parse(
-                    getNodeMetadata(node).find { it.key == VERSION }?.value.toString()
-                )
-            } catch (_: IllegalArgumentException) {
-                SemVersion(0, 0, 0)
-            }
-        }
-        // data-requires-python属性值中的"<"和">"需要转换为HTML编码
-        sortedNodeList.forEachIndexed { i, node ->
-            val requiresPython = getNodeMetadata(node)
-                .find { it.key == REQUIRES_PYTHON }?.value?.toString()?.ifBlank { null }
-            builder.append(
-                buildPackageFileNodeLink(
-                    fullPath = node[FULL_PATH].toString(),
-                    name = node[NAME].toString(),
-                    sha256 = node[SHA256]?.toString(),
-                    requiresPython = requiresPython
-                )
-            )
-            if (i != nodeList.size - 1) builder.append("\n")
-        }
-        return builder.toString()
-    }
-
-    private fun getNodeMetadata(node: Map<String, Any?>): List<MetadataModel> {
-        return try {
-            node[NODE_METADATA] as List<MetadataModel>
-        } catch (e: ClassCastException) {
-            logger.error("node[${node[PROJECT_ID]}/${node[REPO_NAME]}${node[FULL_PATH]}] " +
-                    "metadata is not List<MetadataModel>, ${e.message}")
-            emptyList()
-        }
-    }
-
-    /**
-     * 对应包中的文件列表
-     * [nodeList]
-     */
-    private fun buildPackageFileListContent(nodeList: List<NodeInfo>): String {
-        val builder = StringBuilder()
-        val sortedNodeList = nodeList.sortedBy {
-            try {
-                SemVersionParser.parse(it.metadata?.get("version").toString())
-            } catch (ignore: IllegalArgumentException) {
-                SemVersion(0, 0, 0)
-            }
-        }
-        sortedNodeList.forEachIndexed { i, node ->
-            val requiresPython = node.nodeMetadata
-                ?.find { it.key == REQUIRES_PYTHON }?.value?.toString()?.ifBlank { null }
-            builder.append(buildPackageFileNodeLink(node.fullPath, node.name, node.sha256, requiresPython))
-            if (i != nodeList.size - 1) builder.append("\n")
-        }
-        return builder.toString()
-    }
-
-    private fun buildPackageFileNodeLink(
-        fullPath: String,
-        name: String,
-        sha256: String?,
-        requiresPython: String?
-    ): String {
-        val href = "../../packages$fullPath#sha256=$sha256"
-        val requiresPythonAttr = requiresPython
-            ?.let { " $REQUIRES_PYTHON_ATTR=\"${HtmlUtils.partialEncode(it)}\"" } ?: ""
-        return "$INDENT<a href=\"$href\"$requiresPythonAttr rel=\"internal\">$name</a>$LINE_BREAK"
-    }
-
-    /**
-     * 所有包列表
-     * @param nodeList
-     */
-    private fun buildPackageListContent(nodeList: List<NodeInfo>): String {
-        val builder = StringBuilder()
-        if (nodeList.isEmpty()) {
-            builder.append("The directory is empty.")
-        }
-        // href中的包名需要根据PEP 503规范进行标准化，且以"/"结尾
-        nodeList.forEachIndexed { i, node ->
-            val href = "\"${node.name.replace(nonAlphanumericSeqRegex, "-").toLowerCase()}/\""
-            builder.append("$INDENT<a href=$href rel=\"internal\">${node.name}</a>$LINE_BREAK")
-            if (i != nodeList.size - 1) builder.append("\n")
-        }
-        return builder.toString()
+    fun getSimpleHtml(artifactInfo: PypiSimpleArtifactInfo): String {
+        logger.info("Get simple html, artifactInfo: $artifactInfo")
+        return pypiSimpleIndexService.getSimpleHtml(artifactInfo)
     }
 
     fun store(node: NodeCreateRequest, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?) {
@@ -547,8 +375,6 @@ class PypiLocalRepository(
     }
 
     companion object {
-        private const val PAGE_SIZE = 1000
-        private val nonAlphanumericSeqRegex = Regex(NON_ALPHANUMERIC_SEQ_REGEX)
         val logger: Logger = LoggerFactory.getLogger(PypiLocalRepository::class.java)
         const val pageLimitCurrent = 0
         const val pageLimitSize = 10
