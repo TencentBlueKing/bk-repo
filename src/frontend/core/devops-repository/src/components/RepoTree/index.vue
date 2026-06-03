@@ -6,8 +6,8 @@
                     :class="{ 'selected': selectedNode.roadMap === item.roadMap }"
                     :style="{ 'padding-left': 20 * computedDepth(item) + 'px' }"
                     @click.stop="itemClickHandler(item)">
-                    <i v-if="item.loading" class="mr5 loading spin-icon"></i>
-                    <i v-else-if="!item.leaf" class="mr5 devops-icon" @click.stop="iconClickHandler(item)"
+                    <i v-if="item.loading" class="loading spin-icon repo-tree-angle-loading"></i>
+                    <i v-else-if="!item.leaf" class="devops-icon repo-tree-angle" @click.stop="iconClickHandler(item)"
                         :class="openList.includes(item.roadMap) ? 'icon-angle-down' : 'icon-angle-right'"></i>
                     <slot name="icon" :item="item" :open-list="openList">
                         <Icon class="mr5" size="14" :name="openList.includes(item.roadMap) ? 'folder-open' : 'folder'" />
@@ -230,8 +230,21 @@
             &.icon-angle-down {
                 font-size: 12px;
                 font-weight: bold;
-                transform: scale(0.8)
+                transform: scale(0.8);
             }
+        }
+        .repo-tree-angle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+        }
+        .repo-tree-angle-loading {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin: 12px;
         }
         .node-text {
             flex: 1;
