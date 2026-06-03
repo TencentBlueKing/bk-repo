@@ -86,6 +86,10 @@ class RepositoryProperties {
      */
     var deleteMode: String = DELETE_MODE_UPDATE
     /**
+     * 按项目配置删除模式，key 为 projectId，value 为对应的删除模式，未配置的项目使用全局 [deleteMode]
+     */
+    var projectDeleteMode: Map<String, String> = emptyMap()
+    /**
      * batchByIds 模式下每批次的文档数量
      */
     var deleteBatchSize: Int = 200
@@ -99,6 +103,11 @@ class RepositoryProperties {
      * 删除前会先执行 count 查询，超过上限时直接拒绝
      */
     var maxDeleteNodeCount: Long = 0
+
+    /**
+     * 获取指定项目使用的节点删除策略模式，优先使用项目级配置 [projectDeleteMode]，未配置时回退到全局 [deleteMode]
+     */
+    fun getDeleteMode(projectId: String): String = projectDeleteMode[projectId] ?: deleteMode
 
     companion object {
         const val DELETE_MODE_UPDATE = "update"

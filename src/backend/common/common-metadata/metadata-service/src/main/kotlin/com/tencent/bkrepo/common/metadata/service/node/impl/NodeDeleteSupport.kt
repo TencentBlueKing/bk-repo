@@ -260,7 +260,7 @@ open class NodeDeleteSupport(
             val collectionName = nodeDao.determineCollectionName(query)
             deletedNum = NodeDeleteHelper.deleteNodes(
                 query = query,
-                deleteMode = nodeBaseService.repositoryProperties.deleteMode,
+                deleteMode = nodeBaseService.repositoryProperties.getDeleteMode(projectId),
                 batchSize = nodeBaseService.repositoryProperties.deleteBatchSize,
                 concurrency = nodeBaseService.repositoryProperties.deleteNodesConcurrency,
                 maxDeleteNodeCount = nodeBaseService.repositoryProperties.maxDeleteNodeCount,
