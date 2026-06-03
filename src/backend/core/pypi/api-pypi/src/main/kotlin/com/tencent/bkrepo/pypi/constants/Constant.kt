@@ -62,6 +62,11 @@ const val SIMPLE_PAGE_CONTENT =
 </html>"""
 
 const val REMOTE_HTML_CACHE_FULL_PATH = "remoteHtml.html"
+
+const val SIMPLE_INDEX_ROOT = "/.pypi-simple-index"
+const val SIMPLE_INDEX_DIR_NAME = ".pypi-simple-index"
+const val SIMPLE_INDEX_PACKAGE_LIST = "/.pypi-simple-index/package-list.html"
+const val SIMPLE_INDEX_PACKAGES_DIR = "/.pypi-simple-index/packages"
 const val FLUSH_CACHE_EXPIRE = 60 * 24
 const val XML_RPC_URI = "RPC2"
 const val XML_RPC_OPERATION_OR = "or"
