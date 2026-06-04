@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.artifact.resolve.file
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.resolve.file.stream.CosStreamArtifactFile
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
@@ -54,9 +55,12 @@ class ArtifactFileCleanInterceptor : HandlerInterceptor {
         try {
             val artifactFileList = request.getAttribute(ArtifactFileFactory.ARTIFACT_FILES) as? List<ArtifactFile>
             artifactFileList?.filter { it.hasInitialized() && !it.isInMemory() }?.forEach {
-                val absolutePath = it.getFile()!!.absolutePath
-                measureTimeMillis { it.delete() }.apply {
-                    logger.info("Delete temp artifact file [$absolutePath] success, elapse $this ms")
+                val elapsed = measureTimeMillis { it.delete() }
+                if (it is CosStreamArtifactFile) {
+                    logger.info("Delete temp cos artifact file [${it.getName()}] success, elapse $elapsed ms")
+                } else {
+                    val absolutePath = it.getFile()!!.absolutePath
+                    logger.info("Delete temp artifact file [$absolutePath] success, elapse $elapsed ms")
                 }
             }
         } catch (exception: IOException) {

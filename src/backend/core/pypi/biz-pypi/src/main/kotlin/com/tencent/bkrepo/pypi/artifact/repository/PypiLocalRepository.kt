@@ -364,9 +364,13 @@ class PypiLocalRepository(
                 return buildPypiPageContent(PACKAGE_INDEX_TITLE, buildPackageListContent(nodeList))
             }
             // 请求中带包名，返回对应包的文件列表。
-            val nodes = nodeService.listNode(
+            val nodes = nodeService.listNodeWithMetadataKeys(
                 ArtifactInfo(projectId, repoName, "/$packageName"),
-                NodeListOption(includeFolder = false, deep = true, includeMetadata = true)
+                NodeListOption(
+                    includeFolder = false,
+                    deep = true,
+                ),
+                listOf(VERSION, REQUIRES_PYTHON),
             )
             if (!nodes.isNullOrEmpty()) {
                 return buildPypiPageContent(

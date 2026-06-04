@@ -34,12 +34,10 @@ import com.google.common.util.concurrent.UncheckedExecutionException
 import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.NAME
 import com.tencent.bkrepo.job.PROJECT
@@ -48,6 +46,7 @@ import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.DeletedNodeCleanupJobContext
+import com.tencent.bkrepo.job.batch.utils.DriveUtils.notAllowDriveRepository
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.DeletedNodeCleanupJobProperties
@@ -279,12 +278,6 @@ class DeletedNodeCleanupJob(
             // StorageReconcileJob中会为缺少引用的存储文件补偿创建引用
             decrementFileReferences(sha256, it, false)
         }
-    }
-
-    private fun notAllowDriveRepository(credentials: StorageCredentials): Boolean {
-        val allowRepoTypes = credentials.allowRepoTypes
-        return allowRepoTypes?.isNotEmpty() == true && !allowRepoTypes.contains(RepositoryType.DRIVE.name) ||
-                credentials.notAllowRepoTypes?.contains(RepositoryType.DRIVE.name) == true
     }
 
     data class RepositoryId(val projectId: String, val repoName: String) {

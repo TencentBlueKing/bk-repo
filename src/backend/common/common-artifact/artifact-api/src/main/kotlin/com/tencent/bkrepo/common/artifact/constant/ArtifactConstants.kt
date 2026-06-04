@@ -177,6 +177,9 @@ const val METADATA_KEY_PACKAGE_KEY = PACKAGE_KEY
 const val METADATA_KEY_PACKAGE_NAME = PACKAGE_NAME
 const val METADATA_KEY_PACKAGE_VERSION = PACKAGE_VERSION
 
+const val SHA256 = "sha256"
+const val MD5 = "md5"
+
 /**
  * 节点链接的目标项目
  */

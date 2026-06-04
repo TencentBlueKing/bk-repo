@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.media.service
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
@@ -13,6 +14,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
@@ -33,6 +35,7 @@ import com.tencent.bkrepo.media.stream.RemuxRecordingListener
 import com.tencent.bkrepo.media.stream.StreamManger
 import com.tencent.bkrepo.media.stream.StreamMode
 import com.tencent.bkrepo.media.stream.TranscodeConfig
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.devops.utils.jackson.readJsonString
@@ -62,6 +65,7 @@ class StreamService(
     private val storageService: StorageService,
     private val blockNodeService: BlockNodeService,
     private val mediaActiveStreamDao: MediaActiveStreamDao,
+    private val permissionManager: PermissionManager,
 ) : ArtifactService() {
 
     /**
@@ -77,6 +81,10 @@ class StreamService(
         }
         // 如果是纯直播则不创建节点
         if (mediaMod == MediaMod.LIVE.name) {
+            permissionManager.checkProjectPermission(
+                action = PermissionAction.VIEW,
+                projectId = projectId,
+            )
             val expireAt = System.currentTimeMillis() + 24 * 60 * 60 * 1000
             val token: String = generateToken("$projectId-${repoName}", expireAt)
             return "$serverAddress/$projectId/$repoName$STREAM_PATH?token=$token"
@@ -86,6 +94,10 @@ class StreamService(
         * 2. 创建streams目录
         * 3. 创建streams目录写权限url =》 推流地址/{projectId}/{pushId}/streams
         * */
+        permissionManager.checkProjectPermission(
+            action = PermissionAction.MANAGE,
+            projectId = projectId,
+        )
         repositoryService.getRepoDetail(projectId, repoName) ?: let {
             val createRepoRequest = RepoCreateRequest(
                 projectId = projectId,
@@ -137,7 +149,8 @@ class StreamService(
         remux: Boolean = false,
         saveType: MediaType = MediaType.MP4,
         transcodeExtraParams: String? = null,
-        uploadId: String? = null
+        uploadId: String? = null,
+        videoStartTime: Long? = null
     ): ClientStream {
         val repoId = RepositoryId(projectId, repoName)
         val repo = ArtifactContextHolder.getRepoDetail(repoId)
@@ -160,7 +173,8 @@ class StreamService(
             streamTranscodeConfig,
             storageService,
             blockNodeService,
-            nodeService
+            nodeService,
+            videoStartTime ?: System.currentTimeMillis()
         )
         val recordingListener = if (remux) {
             RemuxRecordingListener(credentials.upload.location, scheduler, saveType, fileConsumer)
@@ -168,10 +182,14 @@ class StreamService(
             val artifactFile = ArtifactFileFactory.buildChunked(credentials)
             val clientMouseArtifactFile = ArtifactFileFactory.buildChunked(credentials)
             val hostAudioArtifactFile = ArtifactFileFactory.buildChunked(credentials)
+            val micAudioArtifactFile = ArtifactFileFactory.buildChunked(credentials)
+            val syncMetadataArtifactFile = ArtifactFileFactory.buildChunked(credentials)
             ArtifactFileRecordingListener(
                 artifactFile = artifactFile,
                 clientMouseArtifactFile = clientMouseArtifactFile,
                 hostAudioArtifactFile = hostAudioArtifactFile,
+                micAudioArtifactFile = micAudioArtifactFile,
+                syncMetadataArtifactFile = syncMetadataArtifactFile,
                 fileConsumer = fileConsumer,
                 scheduler = scheduler,
                 uploadId = uploadId,
@@ -199,6 +217,8 @@ class StreamService(
         repoName: String,
         uploadId: String,
         transcodeExtraParams: String? = null,
+        syncCollectorState: String? = null,
+        persistedStartTime: Long? = null,
     ) {
         val repo = repositoryService.getRepoDetail(projectId, repoName)
             ?: run {
@@ -215,29 +235,44 @@ class StreamService(
             logger.warn("MergeExpiredBlocks: no video blocks found for uploadId=$uploadId, skip.")
             return
         }
+        val totalVideoSize = videoBlocks.sumOf { it.size }
+        if (totalVideoSize == 0L) {
+            logger.warn("MergeExpiredBlocks: video blocks are all empty for uploadId=$uploadId, skip.")
+            return
+        }
 
-        // 从分块元信息推算 author 和视频起止时间
+        // 从分块元信息推算 author 和视频结束时间
         // storeBlockNode 中 createdBy 存的是 author（真实录制者）
         val author = videoBlocks.first().createdBy
         val sortedBlocks = videoBlocks.sortedBy { it.createdDate }
-        val videoStartTime = sortedBlocks.first().createdDate
-            .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        // 开始时间优先使用插件侧持久化的精确时间
+        val videoStartTime = persistedStartTime
+            ?: sortedBlocks.first().createdDate
+                .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
         val videoEndTime = sortedBlocks.last().createdDate
             .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
         // 获取转码配置，并将 transcodeExtraParams (sktoken) 设置到配置中
         val transcodeConfig = getTranscodeConfig(projectId)?.copy(extraParams = transcodeExtraParams)
-        val fileConsumer = buildFileConsumer(repo, author, transcodeConfig)
+        val fileConsumer = buildFileConsumer(repo, author, transcodeConfig, persistedStartTime)
 
         // 合并视频主文件分块
         fileConsumer.completeBlockNode(videoArtifactInfo, uploadId, videoEndTime)
         logger.info("MergeExpiredBlocks: video merged for uploadId=$uploadId")
 
-        // 合并额外文件（鼠标轨迹、音频）的分块
-        val extraFileSpecs = listOf("CM" to MediaType.JSON, "AU" to MediaType.AAC)
+        // 合并额外文件（鼠标轨迹、主机音频、麦克风音频）的分块（不含 AV 同步元数据）
+        val extraFileSpecs = listOf("CM" to MediaType.JSON, "AU" to MediaType.AAC, "MI" to MediaType.AAC)
         val extraArtifactInfos = mergeExtraFileBlocks(
             projectId, repoName, uploadId, extraFileSpecs, fileConsumer, videoEndTime
+        ).toMutableList()
+
+        // 处理同步元数据：优先从 AV 分块合并，若无分块则从 syncCollectorState 构造
+        val avArtifactInfo = handleSyncMetadata(
+            projectId, repoName, uploadId, fileConsumer, syncCollectorState, videoEndTime
         )
+        if (avArtifactInfo != null) {
+            extraArtifactInfos.add(avArtifactInfo)
+        }
 
         // 合并完成后触发转码
         if (transcodeConfig != null) {
@@ -278,15 +313,18 @@ class StreamService(
     /**
      * 构建 MediaArtifactFileConsumer 实例
      * @param author 真实录制者（从分块 createdBy 获取）
+     * @param persistedStartTime 插件侧持久化的录屏开始时间（用于重连场景恢复首次连接时间）
      */
     private fun buildFileConsumer(
         repo: com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail,
         author: String,
-        transcodeConfig: TranscodeConfig?
+        transcodeConfig: TranscodeConfig?,
+        persistedStartTime: Long? = null
     ): MediaArtifactFileConsumer {
         return MediaArtifactFileConsumer(
             storageManager, transcodeService, repo, author, author,
-            STREAM_PATH, transcodeConfig, storageService, blockNodeService, nodeService
+            STREAM_PATH, transcodeConfig, storageService, blockNodeService, nodeService,
+            persistedStartTime ?: System.currentTimeMillis()
         )
     }
 
@@ -316,6 +354,119 @@ class StreamService(
             } else {
                 null
             }
+        }
+    }
+
+    /**
+     * 处理同步元数据文件
+     * 优先合并已有的 AV 分块（正常关闭路径会产生）；若无分块，从 syncCollectorState 构造 AV 文件
+     * @return 成功创建的 AV 文件 ArtifactInfo，或 null
+     */
+    private fun handleSyncMetadata(
+        projectId: String,
+        repoName: String,
+        uploadId: String,
+        fileConsumer: MediaArtifactFileConsumer,
+        syncCollectorState: String?,
+        endTime: Long
+    ): ArtifactInfo? {
+        val avArtifactInfo = buildArtifactInfo(projectId, repoName, uploadId, MediaType.JSON, "AV")
+        val avUploadId = "${uploadId}_AV_$uploadId"
+        val avBlocks = blockNodeService.listBlocksInUploadId(
+            projectId, repoName, avArtifactInfo.getArtifactFullPath(), avUploadId
+        )
+
+        // 优先从已有分块合并（正常关闭时 dispatch 产生的完整 AV JSON）
+        if (avBlocks.isNotEmpty()) {
+            fileConsumer.completeBlockNode(avArtifactInfo, avUploadId, endTime)
+            logger.info("handleSyncMetadata: AV file merged from blocks for uploadId=$uploadId")
+            return avArtifactInfo
+        }
+
+        // 无分块：从 syncCollectorState 构造 AV 文件
+        if (!syncCollectorState.isNullOrEmpty()) {
+            val metadataJson = convertSyncStateToMetadataJson(syncCollectorState)
+            if (metadataJson != null) {
+                val repo = repositoryService.getRepoDetail(projectId, repoName) ?: return null
+                val credentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
+                val artifactFile = ArtifactFileFactory.build(metadataJson.toByteArray().inputStream())
+                storageManager.storeArtifactFile(
+                    NodeCreateRequest(
+                        projectId = projectId,
+                        repoName = repoName,
+                        fullPath = avArtifactInfo.getArtifactFullPath(),
+                        folder = false,
+                        overwrite = true,
+                        size = metadataJson.length.toLong(),
+                    ),
+                    artifactFile,
+                    credentials
+                )
+                logger.info(
+                    "handleSyncMetadata: AV file created from syncCollectorState " +
+                        "for uploadId=$uploadId (${metadataJson.length} bytes)"
+                )
+                return avArtifactInfo
+            }
+        }
+
+        logger.info("handleSyncMetadata: no AV data available for uploadId=$uploadId")
+        return null
+    }
+
+    /**
+     * 将 SyncCollectorState JSON 转换为 SyncMetadata JSON
+     * SyncCollectorState 是内部状态（含计数器），SyncMetadata 是供 run.py 使用的精简格式
+     */
+    private fun convertSyncStateToMetadataJson(stateJson: String): String? {
+        return try {
+            val state = JsonUtils.objectMapper.readTree(stateJson)
+            val metadata = com.fasterxml.jackson.databind.node.ObjectNode(
+                com.fasterxml.jackson.databind.node.JsonNodeFactory.instance
+            )
+            metadata.put("version", 1)
+
+            // video info
+            val video = metadata.putObject("video")
+            video.put("codecType", state.get("videoCodecType")?.asText() ?: "UNKNOWN")
+            video.put("width", state.get("videoWidth")?.asInt() ?: 0)
+            video.put("height", state.get("videoHeight")?.asInt() ?: 0)
+
+            // audio info
+            if (state.has("audioCodec") && state.get("audioCodec").asInt(-1) >= 0) {
+                val audio = metadata.putObject("audio")
+                audio.put("codec", state.get("audioCodec").asInt())
+                audio.put("sampleRate", state.get("audioSampleRate").asLong())
+                audio.put("channels", state.get("audioChannels").asInt())
+            }
+
+            // mic audio info
+            if (state.has("micAudioCodec") && state.get("micAudioCodec").asInt(-1) >= 0) {
+                val micAudio = metadata.putObject("micAudio")
+                micAudio.put("codec", state.get("micAudioCodec").asInt())
+                micAudio.put("sampleRate", state.get("micAudioSampleRate").asLong())
+                micAudio.put("channels", state.get("micAudioChannels").asInt())
+            }
+
+            // syncPoints & micSyncPoints
+            if (state.has("syncPoints")) {
+                metadata.set<com.fasterxml.jackson.databind.node.ObjectNode>("syncPoints", state.get("syncPoints"))
+            }
+            if (state.has("micSyncPoints")) {
+                metadata.set<
+                    com.fasterxml.jackson.databind.node.ObjectNode
+                >("micSyncPoints", state.get("micSyncPoints"))
+            }
+
+            // segments
+            if (state.has("segments")) {
+                metadata.set<com.fasterxml.jackson.databind.node.ObjectNode>("segments", state.get("segments"))
+            }
+
+            JsonUtils.objectMapper.writeValueAsString(metadata)
+        } catch (e: Exception) {
+            logger.error("convertSyncStateToMetadataJson failed", e)
+            null
         }
     }
 

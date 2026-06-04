@@ -1,0 +1,25 @@
+{{- if .Values.huggingface.enabled -}}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "common.names.fullname" . }}-huggingface
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: huggingface
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- end }}
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" (dict "value" .Values.commonAnnotations "context" $) | nindent 4 }}
+  {{- end }}
+data:
+  application.yml: |-
+    {{- if keys $.Values.huggingface.config }}
+    {{- toYaml .Values.huggingface.config | nindent 4 }}
+    {{- end}}
+    huggingface:
+      {{- if or .Values.ingress.tls .Values.forceHttps }}
+      domain: https://{{ .Values.gateway.host }}/huggingface
+      {{- else }}
+      domain: http://{{ .Values.gateway.host }}/huggingface
+      {{- end }}
+{{- end }}

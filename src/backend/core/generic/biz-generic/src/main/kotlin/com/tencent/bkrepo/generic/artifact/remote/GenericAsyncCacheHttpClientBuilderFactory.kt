@@ -30,6 +30,7 @@ package com.tencent.bkrepo.generic.artifact.remote
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.remote.AsyncCacheHttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.repository.remote.buildOkHttpClient
+import com.tencent.bkrepo.generic.artifact.checkRemoteHostAllowed
 import com.tencent.bkrepo.generic.artifact.createPlatformDns
 import com.tencent.bkrepo.generic.config.GenericProperties
 import io.micrometer.observation.ObservationRegistry
@@ -44,6 +45,7 @@ class GenericAsyncCacheHttpClientBuilderFactory(
     private val registry: ObservationRegistry
 ) : AsyncCacheHttpClientBuilderFactory {
     override fun newBuilder(configuration: RemoteConfiguration): OkHttpClient.Builder {
+        checkRemoteHostAllowed(configuration.url, genericProperties.allowedRemoteHosts)
         val platforms = genericProperties.platforms
         // 自定义dns，解析特定platform的域名到指定ip
         return buildOkHttpClient(configuration, false, registry = registry).dns(createPlatformDns(platforms))

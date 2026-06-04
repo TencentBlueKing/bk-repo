@@ -31,6 +31,9 @@
 
 package com.tencent.bkrepo.auth.pojo.enums
 
+
+import java.util.Locale.getDefault
+
 enum class ResourceType {
     SYSTEM,
     PROJECT,
@@ -39,14 +42,14 @@ enum class ResourceType {
     ENDPOINT,
     REPLICATION;
 
-    fun id() = this.name.toLowerCase()
+    fun id() = name.lowercase(getDefault())
 
     companion object {
         private val DEFAULT = NODE
 
         fun lookup(value: String): ResourceType {
-            val upperCase = value.toUpperCase()
-            return values().find { it.name == upperCase } ?: DEFAULT
+            val upperCase = value.uppercase(getDefault())
+            return ResourceType.entries.find { it.name == upperCase } ?: DEFAULT
         }
     }
 }

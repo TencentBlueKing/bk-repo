@@ -217,7 +217,7 @@ class RateLimiterConfigServiceTest {
 
     @Test
     fun `update with targets — delegates to repository save with targets`() {
-        val updateRequest = sampleRequest.copy(id = "id1", targets = listOf("10.0.0.1"))
+        val updateRequest = sampleRequest.copy(id = "id1", targets = listOf("127.0.0.1"))
         val captor = argumentCaptor<TRateLimit>()
         // Stub save to return non-null so the ?: run branch is NOT triggered:
         // targets?.let { save(withTargets) } returns non-null → run block skipped
@@ -226,7 +226,7 @@ class RateLimiterConfigServiceTest {
         svc.update(updateRequest)
 
         verify(repo).save(captor.capture())
-        Assertions.assertEquals(listOf("10.0.0.1"), captor.firstValue.targets)
+        Assertions.assertEquals(listOf("127.0.0.1"), captor.firstValue.targets)
     }
 
     // ─── findByModuleNameAndLimitDimensionAndResource ─────────────────────────────
