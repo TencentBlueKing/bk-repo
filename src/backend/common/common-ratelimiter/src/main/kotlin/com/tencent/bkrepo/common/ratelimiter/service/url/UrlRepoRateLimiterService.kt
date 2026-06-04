@@ -72,29 +72,22 @@ class UrlRepoRateLimiterService(
     }
 
     override fun buildResource(request: HttpServletRequest): String {
-        val (projectId, repoName) = try {
-            getRepoInfoFromAttribute(request)
-        } catch (e: InvalidResourceException) {
-            getRepoInfoFromBody(request)
-        }
-        return if (repoName.isNullOrEmpty()) {
-            "/$projectId/"
-        } else {
-            "/$projectId/$repoName/"
-        }
+        val (projectId, repoNames) = resolveRepoInfo(request)
+        return buildRepoResourcePaths(projectId!!, repoNames).first
     }
 
     override fun buildExtraResource(request: HttpServletRequest): List<String> {
-        val (projectId, repoName) = try {
-            getRepoInfoFromAttribute(request)
+        val (projectId, repoNames) = resolveRepoInfo(request)
+        return buildRepoResourcePaths(projectId!!, repoNames).second
+    }
+
+    private fun resolveRepoInfo(request: HttpServletRequest): Pair<String?, List<String>> {
+        return try {
+            val (projectId, repoName) = getRepoInfoFromAttribute(request)
+            Pair(projectId, repoName?.let { listOf(it) } ?: emptyList())
         } catch (e: InvalidResourceException) {
             getRepoInfoFromBody(request)
         }
-        val result = mutableListOf<String>()
-        if (!repoName.isNullOrEmpty()) {
-            result.add("/$projectId/")
-        }
-        return result
     }
 
     override fun buildRateLimitResource(request: HttpServletRequest): String {

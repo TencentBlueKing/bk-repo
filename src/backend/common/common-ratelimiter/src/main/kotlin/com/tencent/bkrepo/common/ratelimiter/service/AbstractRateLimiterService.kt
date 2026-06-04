@@ -272,25 +272,43 @@ abstract class AbstractRateLimiterService(
         return requestPattern ?: request.requestURI
     }
 
-    fun getRepoInfoFromBody(request: HttpServletRequest): Pair<String?, String?> {
+    fun getRepoInfoFromBody(request: HttpServletRequest): Pair<String?, List<String>> {
         val limit = DataSize.ofMegabytes(1).toBytes()
         val lengthCondition = request.contentLength in 1..limit
         val typeCondition = request.contentType?.startsWith(MediaType.APPLICATION_JSON_VALUE) == true
         // 限制缓存大小
         if (lengthCondition && typeCondition) {
             val multiReadRequest = MultipleReadHttpRequest(request, limit)
-            val (projectId, repoName) = getRepoInfoFromQueryModel(multiReadRequest)
-            if (!projectId.isNullOrEmpty()) return Pair(projectId, repoName)
-            val (newProjectId, newRepoName) = getRepoInfoFromOtherRequest(multiReadRequest)
+            val (projectId, repoNames) = getRepoInfoFromQueryModel(multiReadRequest)
+            if (!projectId.isNullOrEmpty()) return Pair(projectId, repoNames)
+            val (newProjectId, newRepoNames) = getRepoInfoFromOtherRequest(multiReadRequest)
             if (newProjectId.isNullOrEmpty()) {
                 throw InvalidResourceException("Could not find projectId from request ${request.requestURI}")
             }
-            return Pair(newProjectId, newRepoName)
+            return Pair(newProjectId, newRepoNames)
         }
         throw InvalidResourceException("Could not find projectId from body of request ${request.requestURI}")
     }
 
-    private fun getRepoInfoFromQueryModel(multiReadRequest: MultipleReadHttpRequest): Pair<String?, String?> {
+    /**
+     * 根据 projectId 与仓库列表构建主资源路径及备用路径（单仓库时主路径为仓库级，多仓库时依次匹配各仓库）
+     */
+    protected fun buildRepoResourcePaths(
+        projectId: String,
+        repoNames: List<String>,
+    ): Pair<String, List<String>> {
+        return when (repoNames.size) {
+            0 -> "/$projectId/" to emptyList()
+            1 -> "/$projectId/${repoNames.first()}/" to listOf("/$projectId/")
+            else -> {
+                val primary = "/$projectId/${repoNames.first()}/"
+                val extras = repoNames.drop(1).map { "/$projectId/$it/" } + "/$projectId/"
+                primary to extras
+            }
+        }
+    }
+
+    private fun getRepoInfoFromQueryModel(multiReadRequest: MultipleReadHttpRequest): Pair<String?, List<String>> {
         try {
             val queryModel = multiReadRequest.inputStream.readJsonString<QueryModel>()
             val rule = queryModel.rule
@@ -299,30 +317,49 @@ abstract class AbstractRateLimiterService(
             }
         } catch (ignore: Exception) {
         }
-        return Pair(null, null)
+        return Pair(null, emptyList())
     }
 
-    private fun getRepoInfoFromOtherRequest(multiReadRequest: MultipleReadHttpRequest): Pair<String?, String?> {
+    private fun getRepoInfoFromOtherRequest(multiReadRequest: MultipleReadHttpRequest): Pair<String?, List<String>> {
         try {
             val mappedValue = objectMapper.readValue<Map<String, Any>>(multiReadRequest.inputStream)
-            return Pair((mappedValue[PROJECT_ID] as? String), (mappedValue[REPO_NAME] as? String))
+            val repoName = mappedValue[REPO_NAME] as? String
+            return Pair(
+                mappedValue[PROJECT_ID] as? String,
+                repoName?.let { listOf(it) } ?: emptyList(),
+            )
         } catch (ignore: Exception) {
-            return Pair(null, null)
+            return Pair(null, emptyList())
         }
     }
 
-    private fun findRepoInfoFromRule(rule: Rule.NestedRule): Pair<String?, String?> {
+    private fun findRepoInfoFromRule(rule: Rule.NestedRule): Pair<String?, List<String>> {
         var projectId: String? = null
-        var repoName: String? = null
-        findKeyRule(PROJECT_ID, rule.rules)?.let {
-            it.value.toString().apply { projectId = this }
+        var repoNames = emptyList<String>()
+        findKeyRule(PROJECT_ID, rule.rules)?.let { projectId = extractRuleStringValue(it) }
+        findKeyRule(REPO_NAME, rule.rules)?.let { repoNames = extractRuleStringValues(it) }
+        return Pair(projectId, repoNames)
+    }
+
+    private fun extractRuleStringValue(rule: Rule.QueryRule): String? {
+        return extractRuleStringValues(rule).firstOrNull()
+    }
+
+    private fun extractRuleStringValues(rule: Rule.QueryRule): List<String> {
+        return when (rule.operation) {
+            OperationType.EQ -> listOfNotNull(rule.value?.toString()).filter { it.isNotEmpty() }
+            OperationType.IN -> valuesFromInRule(rule.value)
+            else -> emptyList()
         }
-        findKeyRule(REPO_NAME, rule.rules)?.let {
-            if (it.operation == OperationType.EQ) {
-                it.value.toString().apply { repoName = this }
-            }
+    }
+
+    private fun valuesFromInRule(value: Any?): List<String> {
+        val values = when (value) {
+            is Collection<*> -> value
+            is Array<*> -> value.toList()
+            else -> return emptyList()
         }
-        return Pair(projectId, repoName)
+        return values.mapNotNull { it?.toString() }.filter { it.isNotEmpty() }
     }
 
     private fun findKeyRule(key: String, rules: List<Rule>): Rule.QueryRule? {

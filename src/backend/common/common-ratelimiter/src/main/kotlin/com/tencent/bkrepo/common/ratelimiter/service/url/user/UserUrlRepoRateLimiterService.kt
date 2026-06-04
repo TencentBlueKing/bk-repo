@@ -76,31 +76,27 @@ class UserUrlRepoRateLimiterService(
 
     override fun buildResource(request: HttpServletRequest): String {
         val userId = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
-        val (projectId, repoName) = try {
-            getRepoInfoFromAttribute(request)
-        } catch (e: InvalidResourceException) {
-            getRepoInfoFromBody(request)
-        }
-        return if (repoName.isNullOrEmpty()) {
-            "$userId:/$projectId/"
-        } else {
-            "$userId:/$projectId/$repoName/"
-        }
+        val (projectId, repoNames) = resolveRepoInfo(request)
+        val (resource, _) = buildRepoResourcePaths(projectId!!, repoNames)
+        return "$userId:$resource"
     }
 
     override fun buildExtraResource(request: HttpServletRequest): List<String> {
         val userId = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
-        val (projectId, repoName) = try {
-            getRepoInfoFromAttribute(request)
+        val (projectId, repoNames) = resolveRepoInfo(request)
+        val (_, extras) = buildRepoResourcePaths(projectId!!, repoNames)
+        val result = extras.map { "$userId:$it" }.toMutableList()
+        result.add("$userId:")
+        return result
+    }
+
+    private fun resolveRepoInfo(request: HttpServletRequest): Pair<String?, List<String>> {
+        return try {
+            val (projectId, repoName) = getRepoInfoFromAttribute(request)
+            Pair(projectId, repoName?.let { listOf(it) } ?: emptyList())
         } catch (e: InvalidResourceException) {
             getRepoInfoFromBody(request)
         }
-        val result = mutableListOf<String>()
-        if (!repoName.isNullOrEmpty()) {
-            result.add("$userId:/$projectId/")
-        }
-        result.add("$userId:")
-        return result
     }
 
     override fun buildRateLimitResource(request: HttpServletRequest): String {

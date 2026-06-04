@@ -134,28 +134,31 @@ class UrlPrefixUploadRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
     }
 
     @Test
-    fun `generateKey uses actual requestURI`() {
+    fun `generateKey uses matched prefix`() {
         val svc = rateLimiterService as UrlPrefixUploadRateLimiterService
         val resource = svc.buildResource(request)
         val resInfo = ResInfo(resource = resource, extraResource = svc.buildExtraResource(request))
         val resLimitInfo = svc.rateLimitRule?.getRateLimitRule(resInfo)
         Assertions.assertNotNull(resLimitInfo)
         Assertions.assertEquals(
-            KEY_PREFIX + "UrlPrefixUploadRate:/generic/proj/repo/upload/file.zip",
+            KEY_PREFIX + "UrlPrefixUploadRate:/generic/proj/repo/",
             svc.generateKey(resLimitInfo!!.resource, resLimitInfo.resourceLimit)
         )
     }
 
     @Test
-    fun `prefix rule applies to sub-paths independently`() {
+    fun `prefix rule applies to sub-paths with shared counter`() {
         val svc = rateLimiterService as UrlPrefixUploadRateLimiterService
         request.requestURI = "/generic/proj/repo/path/a.zip"
         val resA = ResInfo(resource = svc.buildResource(request), extraResource = emptyList())
         request.requestURI = "/generic/proj/repo/path/b.zip"
         val resB = ResInfo(resource = svc.buildResource(request), extraResource = emptyList())
-        Assertions.assertNotEquals(
-            svc.rateLimitRule?.getRateLimitRule(resA)?.resource,
-            svc.rateLimitRule?.getRateLimitRule(resB)?.resource
+        val limitA = svc.rateLimitRule?.getRateLimitRule(resA)
+        val limitB = svc.rateLimitRule?.getRateLimitRule(resB)
+        Assertions.assertNotEquals(limitA?.resource, limitB?.resource)
+        Assertions.assertEquals(
+            svc.generateKey(limitA!!.resource, limitA.resourceLimit),
+            svc.generateKey(limitB!!.resource, limitB.resourceLimit)
         )
         request.requestURI = "/generic/proj/repo/upload/file.zip"
     }
@@ -179,7 +182,7 @@ class UrlPrefixUploadRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
         val resInfo = ResInfo(resource = svc.buildResource(request), extraResource = emptyList())
         Assertions.assertNotNull(svc.rateLimitRule?.getRateLimitRule(resInfo))
         Assertions.assertEquals(
-            KEY_PREFIX + "UrlPrefixUploadRate:/generic/proj/repo/upload/file.zip",
+            KEY_PREFIX + "UrlPrefixUploadRate:/generic/proj/repo/",
             svc.generateKey(resInfo.resource, l1)
         )
         request.requestURI = "/generic/proj/repo/upload/file.zip"
@@ -192,7 +195,7 @@ class UrlPrefixUploadRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
         val resInfo = ResInfo(resource = svc.buildResource(request), extraResource = emptyList())
         Assertions.assertNotNull(svc.rateLimitRule?.getRateLimitRule(resInfo))
         Assertions.assertEquals(
-            KEY_PREFIX + "UrlPrefixUploadRate:/generic/proj/repo/upload/file.zip",
+            KEY_PREFIX + "UrlPrefixUploadRate:/generic/proj/repo/",
             svc.generateKey(resInfo.resource, l1)
         )
         request.requestURI = "/generic/proj/repo/upload/file.zip"

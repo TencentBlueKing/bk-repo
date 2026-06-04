@@ -122,14 +122,14 @@ class UrlPrefixDownloadRateLimiterServiceTest : AbstractRateLimiterServiceTest()
     }
 
     @Test
-    fun `generateKey uses actual requestURI`() {
+    fun `generateKey uses matched prefix`() {
         val svc = rateLimiterService as UrlPrefixDownloadRateLimiterService
         val resource = svc.buildResource(request)
         val resInfo = ResInfo(resource = resource, extraResource = svc.buildExtraResource(request))
         val resLimitInfo = svc.rateLimitRule?.getRateLimitRule(resInfo)
         Assertions.assertNotNull(resLimitInfo)
         Assertions.assertEquals(
-            KEY_PREFIX + "UrlPrefixDownloadRate:/generic/proj/repo/download/file.zip",
+            KEY_PREFIX + "UrlPrefixDownloadRate:/generic/proj/repo/",
             svc.generateKey(resLimitInfo!!.resource, resLimitInfo.resourceLimit)
         )
     }
@@ -153,7 +153,7 @@ class UrlPrefixDownloadRateLimiterServiceTest : AbstractRateLimiterServiceTest()
         val resInfo = ResInfo(resource = svc.buildResource(request), extraResource = emptyList())
         Assertions.assertNotNull(svc.rateLimitRule?.getRateLimitRule(resInfo))
         Assertions.assertEquals(
-            KEY_PREFIX + "UrlPrefixDownloadRate:/generic/proj/repo/download/file.zip",
+            KEY_PREFIX + "UrlPrefixDownloadRate:/generic/proj/repo/",
             svc.generateKey(resInfo.resource, l1)
         )
         request.requestURI = "/generic/proj/repo/download/file.zip"
@@ -166,7 +166,7 @@ class UrlPrefixDownloadRateLimiterServiceTest : AbstractRateLimiterServiceTest()
         val resInfo = ResInfo(resource = svc.buildResource(request), extraResource = emptyList())
         Assertions.assertNotNull(svc.rateLimitRule?.getRateLimitRule(resInfo))
         Assertions.assertEquals(
-            KEY_PREFIX + "UrlPrefixDownloadRate:/generic/proj/repo/download/file.zip",
+            KEY_PREFIX + "UrlPrefixDownloadRate:/generic/proj/repo/",
             svc.generateKey(resInfo.resource, l1)
         )
         request.requestURI = "/generic/proj/repo/download/file.zip"

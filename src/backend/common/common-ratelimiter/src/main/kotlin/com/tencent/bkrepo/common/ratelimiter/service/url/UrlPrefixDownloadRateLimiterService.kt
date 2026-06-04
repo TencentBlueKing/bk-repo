@@ -15,7 +15,7 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 
 /**
- * 下载请求(GET) URL 前缀限频实现，支持前缀匹配，resource 为完整请求 URI
+ * 下载请求(GET) URL 前缀限频实现，支持前缀匹配。
  */
 class UrlPrefixDownloadRateLimiterService(
     taskScheduler: ThreadPoolTaskScheduler,
@@ -56,6 +56,7 @@ class UrlPrefixDownloadRateLimiterService(
     }
 
     override fun generateKey(resource: String, resourceLimit: ResourceLimit): String {
-        return KEY_PREFIX + "UrlPrefixDownloadRate:$resource"
+        val prefix = ResourcePathUtils.normalizeUri(resourceLimit.resource)
+        return KEY_PREFIX + "UrlPrefixDownloadRate:$prefix"
     }
 }
