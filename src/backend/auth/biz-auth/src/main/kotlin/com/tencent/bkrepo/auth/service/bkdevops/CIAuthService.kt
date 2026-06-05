@@ -106,6 +106,38 @@ class CIAuthService @Autowired constructor(
         }
     }
 
+    /**
+     * "项目成员"探测——区分三态。
+     *
+     * 与 [isProjectMember] 的区别：当 bk-ci 接口调用失败/超时时，
+     * 本方法返回 [MembershipProbeResult.UNKNOWN]，调用方可以基于此实现
+     * "未确认就不允许清理"的安全语义；而 [isProjectMember] 始终把异常折算为 false。
+     *
+     * 命中缓存时直接转化为对应的 IS_MEMBER / NOT_MEMBER（缓存里只存 Boolean，
+     * 一次成功结果在 TTL 内复用，不会再次走 HTTP）。
+     */
+    fun probeProjectMember(user: String, projectCode: String): MembershipProbeResult {
+        val cacheKey = CacheKeyBuilder.projectMember(user, projectCode)
+        resourcePermissionCache.getIfPresent(cacheKey)?.let {
+            return if (it) MembershipProbeResult.IS_MEMBER else MembershipProbeResult.NOT_MEMBER
+        }
+        val url = AuthApiUrls.isProjectUser(devopsAuthConfig.getBkciAuthServer(), projectCode, user)
+        val response = try {
+            executeAuthRequestOrThrow<BkciAuthCheckResponse>(
+                url = url,
+                user = user,
+                projectCode = projectCode,
+                logPrefix = "probeProjectMember"
+            )
+        } catch (e: Exception) {
+            logger.warn("probeProjectMember failed for user=[$user] project=[$projectCode]: ${e.message}")
+            return MembershipProbeResult.UNKNOWN
+        }
+        val isMember = response?.let { it.status == 0 && it.data } ?: false
+        resourcePermissionCache.put(cacheKey, isMember)
+        return if (isMember) MembershipProbeResult.IS_MEMBER else MembershipProbeResult.NOT_MEMBER
+    }
+
     fun isProjectManager(user: String, projectCode: String): Boolean {
         val cacheKey = CacheKeyBuilder.projectManager(user, projectCode)
         return getCachedOrCompute(cacheKey) {
@@ -229,22 +261,7 @@ class CIAuthService @Autowired constructor(
         logPrefix: String
     ): T? {
         return try {
-            val requestBuilder = Request.Builder()
-                .url(url)
-                .header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
-                .get()
-
-            user?.let { requestBuilder.header(DEVOPS_UID, it) }
-            projectCode?.let { requestBuilder.header(DEVOPS_PROJECT_ID, it) }
-
-            val request = requestBuilder.build().let {
-                if (user != null) it.addTenantHeaderIfNeeded(user) else it
-            }
-
-            val apiResponse = HttpUtils.doRequest(okHttpClient, request, HTTP_RETRY_COUNT, allowHttpStatusSet)
-            logger.debug("$logPrefix, requestUrl: [$url], result: [${apiResponse.content}]")
-
-            objectMapper.readValue<T>(apiResponse.content)
+            executeAuthRequestOrThrow<T>(url, user, projectCode, logPrefix)
         } catch (exception: InvalidFormatException) {
             logger.info("$logPrefix url is $url, error: ", exception)
             null
@@ -252,6 +269,34 @@ class CIAuthService @Autowired constructor(
             logger.error("$logPrefix error: ", exception)
             null
         }
+    }
+
+    /**
+     * 与 [executeAuthRequest] 等价，但**不吞异常**——HTTP 失败/反序列化失败均直接抛出。
+     * 用于需要明确区分"接口异常"与"业务返回 false"的场景（参见 [probeProjectMember]）。
+     */
+    private inline fun <reified T> executeAuthRequestOrThrow(
+        url: String,
+        user: String? = null,
+        projectCode: String? = null,
+        logPrefix: String
+    ): T? {
+        val requestBuilder = Request.Builder()
+            .url(url)
+            .header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
+            .get()
+
+        user?.let { requestBuilder.header(DEVOPS_UID, it) }
+        projectCode?.let { requestBuilder.header(DEVOPS_PROJECT_ID, it) }
+
+        val request = requestBuilder.build().let {
+            if (user != null) it.addTenantHeaderIfNeeded(user) else it
+        }
+
+        val apiResponse = HttpUtils.doRequest(okHttpClient, request, HTTP_RETRY_COUNT, allowHttpStatusSet)
+        logger.debug("$logPrefix, requestUrl: [$url], result: [${apiResponse.content}]")
+
+        return objectMapper.readValue<T>(apiResponse.content)
     }
 
     /**

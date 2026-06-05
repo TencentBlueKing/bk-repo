@@ -81,6 +81,13 @@ enum class AuthMessageCode(private val businessCode: Int, private val key: Strin
     AUTH_IAM_TOKEN_CHECK_FAILED(43, "auth.iam.token.check.failed"),
     AUTH_USER_ROLE_CONFLICT(44, "auth.user.role.conflict"),
     AUTH_BUILTIN_ROLE_NOT_DELETABLE(45, "auth.builtin.role.not-deletable"),
+    AUTH_DEVOPS_CONFIG_MISSING(46, "auth.devops.config.missing"),
+    AUTH_STALE_MEMBER_STILL_PROJECT_MEMBER(47, "auth.stale.member.still-project-member"),
+    AUTH_STALE_MEMBER_PROBE_FAILED(48, "auth.stale.member.probe-failed"),
+    AUTH_STALE_MEMBER_LAST_ADMIN(49, "auth.stale.member.last-admin"),
+    AUTH_STALE_MEMBER_SELF_CLEAN_FORBIDDEN(50, "auth.stale.member.self-clean-forbidden"),
+    AUTH_STALE_MEMBER_DUPLICATE(51, "auth.stale.member.duplicate"),
+    AUTH_DEVOPS_CLEAN_ALL_TOO_MANY(54, "auth.devops.clean-all.too-many"),
     ;
 
     override fun getBusinessCode() = businessCode
