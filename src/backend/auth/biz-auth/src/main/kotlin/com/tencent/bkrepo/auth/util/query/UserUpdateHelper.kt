@@ -53,7 +53,7 @@ object UserUpdateHelper {
 
     fun buildAddRole(roleId: String): Update {
         val update = Update()
-        return update.push(TUser::roles.name, roleId)
+        return update.addToSet(TUser::roles.name, roleId)
     }
 
     fun buildPwdUpdate(newHashPwd: String): Update {

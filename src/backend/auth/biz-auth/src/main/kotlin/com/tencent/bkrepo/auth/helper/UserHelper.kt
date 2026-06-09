@@ -173,11 +173,21 @@ class UserHelper constructor(
         logger.info("add user to role batch userId : [$userIdList], roleId : [$roleId]")
         checkOrCreateUser(userIdList)
         checkRoleExist(roleId)
+
+        // 前置过滤：排除已拥有该角色的用户，减少无效写入
+        val existingUsers = userDao.findByUserIdInAndRolesContains(userIdList, roleId)
+        val existingUserIds = existingUsers.map { it.userId }.toSet()
+        val needUpdateUsers = userIdList.filter { it !in existingUserIds }
+        if (needUpdateUsers.isEmpty()) {
+            logger.info("all users already have role [$roleId], skip update")
+            return true
+        }
+
         val globalPreviewObjId = resolveGlobalPreviewRoleObjId()
         when {
             // 覆盖式分支：目标即全局预览角色 -> 先清空原有角色再写入
             globalPreviewObjId != null && roleId == globalPreviewObjId -> {
-                userIdList.forEach { uid ->
+                needUpdateUsers.forEach { uid ->
                     val user = userDao.findFirstByUserId(uid)
                     val oldRoles = user?.roles.orEmpty()
                     val removedRoles = oldRoles.filter { it != globalPreviewObjId }
@@ -188,11 +198,11 @@ class UserHelper constructor(
                         )
                     }
                 }
-                userDao.addRoleToUsers(userIdList, roleId)
+                userDao.addRoleToUsers(needUpdateUsers, roleId)
             }
             // 单向锁定分支：目标非全局预览角色，但列表中存在已是全局预览的用户 -> 整批拒绝
             globalPreviewObjId != null && roleId != globalPreviewObjId -> {
-                val conflictUsers = userDao.findByUserIdInAndRolesContains(userIdList, globalPreviewObjId)
+                val conflictUsers = userDao.findByUserIdInAndRolesContains(needUpdateUsers, globalPreviewObjId)
                 if (conflictUsers.isNotEmpty()) {
                     val conflictUids = conflictUsers.map { it.userId }
                     logger.warn(
@@ -203,10 +213,10 @@ class UserHelper constructor(
                         conflictUids.joinToString(",")
                     )
                 }
-                userDao.addRoleToUsers(userIdList, roleId)
+                userDao.addRoleToUsers(needUpdateUsers, roleId)
             }
             // 其它情况：行为完全不变
-            else -> userDao.addRoleToUsers(userIdList, roleId)
+            else -> userDao.addRoleToUsers(needUpdateUsers, roleId)
         }
         return true
     }
