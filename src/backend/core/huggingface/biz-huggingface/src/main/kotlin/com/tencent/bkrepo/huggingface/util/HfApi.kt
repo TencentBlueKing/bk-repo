@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.huggingface.util
 
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.ACCEPT_ENCODING
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
@@ -44,6 +46,7 @@ import okhttp3.Response
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
+import java.util.concurrent.TimeUnit
 
 @Component
 class HfApi(
@@ -58,8 +61,15 @@ class HfApi(
         private lateinit var registry: ObservationRegistry
         private val logger = LoggerFactory.getLogger(HfApi::class.java)
 
+        private val httpClientCache = CacheBuilder.newBuilder()
+            .maximumSize(1000)
+            .expireAfterAccess(10, TimeUnit.MINUTES)
+            .build(
+                CacheLoader.from<RemoteConfiguration, OkHttpClient> { buildHttpClient(it) }
+            )
+
         fun modelInfo(configuration: RemoteConfiguration, repoId: String, revision: String?): ModelInfo {
-            val httpClient = buildHttpClient(configuration)
+            val httpClient = httpClientCache.get(configuration)
             val url = "${configuration.url}/api/models/$repoId" + revision?.let { "/revision/$it" }.orEmpty()
             logger.info("fetch model info from $url")
             val request = Request.Builder().url(url).build()
@@ -70,7 +80,7 @@ class HfApi(
         }
 
         fun datasetInfo(configuration: RemoteConfiguration, repoId: String, revision: String?): DatasetInfo {
-            val httpClient = buildHttpClient(configuration)
+            val httpClient = httpClientCache.get(configuration)
             val url = "${configuration.url}/api/datasets/$repoId" + revision?.let { "/revision/$it" }.orEmpty()
             logger.info("fetch dataset info from $url")
             val request = Request.Builder().url(url).build()
@@ -81,7 +91,7 @@ class HfApi(
         }
 
         fun download(configuration: RemoteConfiguration, artifactUri: String, type: String?): Response {
-            val httpClient = buildHttpClient(configuration)
+            val httpClient = httpClientCache.get(configuration)
             val url = "${configuration.url.trim('/')}${type?.let { "/" + it + "s" }.orEmpty()}$artifactUri"
             val method = HttpContextHolder.getRequestOrNull()?.method
             logger.info("download file: $method $url")
@@ -97,7 +107,7 @@ class HfApi(
         }
 
         fun head(configuration: RemoteConfiguration, artifactUri: String): Response {
-            val httpClient = buildHttpClient(configuration)
+            val httpClient = httpClientCache.get(configuration)
             val url = "${configuration.url}$artifactUri"
             logger.info("HEAD request url: $url")
             val request = Request.Builder().url(url).head().build()
