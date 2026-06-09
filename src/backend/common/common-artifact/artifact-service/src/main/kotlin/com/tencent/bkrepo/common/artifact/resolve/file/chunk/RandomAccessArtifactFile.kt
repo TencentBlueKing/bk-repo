@@ -46,7 +46,7 @@ class RandomAccessArtifactFile(
     init {
         val path = storageCredentials.upload.location.toPath()
         receiver = ArtifactDataReceiver(
-            storageProperties.receive, storageProperties.monitor, path, registry = registry
+            storageProperties.receive, monitor.monitorConfig, path, registry = registry
         )
         monitor.add(receiver)
         if (!monitor.healthy.get()) {

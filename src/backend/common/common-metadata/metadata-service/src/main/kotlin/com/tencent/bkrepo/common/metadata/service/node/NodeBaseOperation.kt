@@ -59,6 +59,15 @@ interface NodeBaseOperation {
     fun listNode(artifact: ArtifactInfo, option: NodeListOption): List<NodeInfo>
 
     /**
+     * 列表查询节点，仅返回指定键的节点元数据
+     */
+    fun listNodeWithMetadataKeys(
+        artifact: ArtifactInfo,
+        option: NodeListOption,
+        metadataKeys: List<String>,
+    ): List<NodeInfo>
+
+    /**
      * 分页查询节点
      */
     fun listNodePage(artifact: ArtifactInfo, option: NodeListOption): Page<NodeInfo>
