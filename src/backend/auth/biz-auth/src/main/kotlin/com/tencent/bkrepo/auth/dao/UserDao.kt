@@ -30,12 +30,16 @@ class UserDao : SimpleMongoDao<TUser>() {
     }
 
     /**
-     * 分批从用户中移除角色，避免单次 updateMulti 操作文档数过多导致慢查询
+     * 分批从用户中移除角色，避免单次 updateMulti 操作文档数过多导致慢查询。
+     *
+     * 由于底层使用 \$pull 实现真删除（而非位置 \$unset），无需额外限定
+     * `roles == roleId`，按 userId 范围批量执行即可；
+     * 命令同时会把数组中残留的 null 一并清掉，对历史脏数据具备自愈能力。
      */
     fun removeRoleFromUsers(userIdList: List<String>, roleId: String) {
-        val update = UserUpdateHelper.buildUnsetRoles()
+        val update = UserUpdateHelper.buildUnsetRoles(roleId)
         userIdList.chunked(BATCH_SIZE).forEach { batch ->
-            val query = UserQueryHelper.getUserByIdListAndRoleId(batch, roleId)
+            val query = UserQueryHelper.getUserByIdList(batch)
             this.updateMulti(query, update)
         }
     }
@@ -49,7 +53,7 @@ class UserDao : SimpleMongoDao<TUser>() {
 
     fun removeUserFromRole(userId: String, roleId: String) {
         val query = UserQueryHelper.getUserByIdAndRoleId(userId, roleId)
-        val update = UserUpdateHelper.buildUnsetRoles()
+        val update = UserUpdateHelper.buildUnsetRoles(roleId)
         this.upsert(query, update)
     }
 
