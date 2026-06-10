@@ -47,8 +47,10 @@ class ProjectModel @Autowired constructor(
 ) {
 
     fun getProjectNum(projectType: ProjectType): Long {
+        if (projectType == ProjectType.ALL) {
+            return mongoTemplate.getCollection(OPDATA_PROJECT).estimatedDocumentCount()
+        }
         val query = when (projectType) {
-            ProjectType.ALL -> Query()
             ProjectType.BLUEKING -> {
                 val criteriaList = mutableListOf<String>()
                 criteriaList.addAll(ProjectType.GIT.prefix!!)
@@ -71,6 +73,7 @@ class ProjectModel @Autowired constructor(
                     )
                 )
             }
+            else -> Query()
         }
         return mongoTemplate.count(query, OPDATA_PROJECT)
     }

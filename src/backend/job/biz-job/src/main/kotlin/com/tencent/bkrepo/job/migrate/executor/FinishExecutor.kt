@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.migrate.executor
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.job.migrate.cache.MigrateRepoStorageCache
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
@@ -51,6 +52,7 @@ class FinishExecutor(
     executingTaskRecorder: ExecutingTaskRecorder,
     migrateArchivedFileService: MigrateArchivedFileService,
     private val repositoryService: RepositoryService,
+    private val migratingCache: MigrateRepoStorageCache,
 ) : BaseTaskExecutor(
     properties,
     migrateRepoStorageTaskDao,
@@ -69,6 +71,7 @@ class FinishExecutor(
             logger.info("migrate finished, task[${newContext.task}]")
             repositoryService.unsetOldStorageCredentialsKey(projectId, repoName)
             migrateRepoStorageTaskDao.removeById(id!!)
+            migratingCache.invalidate(projectId, repoName)
             logger.info("clean migrate task[${projectId}/${repoName}] success")
             return context
         }

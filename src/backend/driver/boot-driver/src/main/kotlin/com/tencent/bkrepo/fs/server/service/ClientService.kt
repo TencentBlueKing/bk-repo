@@ -56,12 +56,16 @@ import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import com.google.common.cache.CacheBuilder
+import org.slf4j.LoggerFactory
+import java.util.concurrent.TimeUnit
 
 @Service
 class ClientService(
@@ -69,6 +73,21 @@ class ClientService(
     private val dailyClientRepository: DailyClientRepository,
     private val customMetricsExporter: CustomMetricsExporter? = null
 ) {
+    data class ClientMetaLabels(
+        val projectId: String,
+        val repoName: String,
+        val mountPoint: String,
+        val userId: String,
+        val ip: String,
+        val version: String,
+        val os: String
+    )
+
+    // 仅缓存 metrics 所需的 7 个稳定 label 字段，避免心跳时重复读 DB
+    private val clientMetaCache = CacheBuilder.newBuilder()
+        .maximumSize(CLIENT_META_CACHE_SIZE)
+        .expireAfterAccess(1, TimeUnit.HOURS)
+        .build<String, ClientMetaLabels>()
 
     suspend fun createClient(request: ClientCreateRequest): ClientDetail {
         with(request) {
@@ -86,7 +105,8 @@ class ClientService(
             } else {
                 updateClient(request, client)
             }
-            pushHeartbeatMetrics(newClient)
+            clientMetaCache.put(newClient.id!!, newClient.toMetaLabels())
+            pushHeartbeatMetrics(newClient.toMetaLabels(), newClient.heartbeatTime)
             return newClient.convert()
         }
     }
@@ -102,20 +122,32 @@ class ClientService(
         val request = convertClientRequest(client)
         recordDairyClient(request, "finish")
         clientRepository.remove(query)
+        clientMetaCache.invalidate(clientId)
     }
 
     suspend fun heartbeat(projectId: String, repoName: String, clientId: String) {
+        val now = LocalDateTime.now()
         val query = Query(
             Criteria.where(TClient::projectId.name).isEqualTo(projectId)
                 .and(TClient::repoName.name).isEqualTo(repoName)
                 .and(TClient::id.name).isEqualTo(clientId)
         )
-        val client = clientRepository.findOne(query)
-            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, clientId)
-        client.heartbeatTime = LocalDateTime.now()
-        client.online = true
-        val newClient = clientRepository.save(client)
-        pushHeartbeatMetrics(newClient)
+        val update = Update()
+            .set(TClient::heartbeatTime.name, now)
+            .set(TClient::online.name, true)
+        val updateResult = clientRepository.updateFirst(query, update)
+        if (updateResult.matchedCount == 0L) {
+            throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, clientId)
+        }
+        val labels = clientMetaCache.getIfPresent(clientId)
+            ?: clientRepository.findOne(query)?.toMetaLabels()?.also {
+                clientMetaCache.put(clientId, it)
+            }
+        if (labels == null) {
+            logger.warn("client [$clientId] heartbeat updated but labels not found")
+            return
+        }
+        pushHeartbeatMetrics(labels, now)
     }
 
     suspend fun listClients(request: ClientListRequest): Page<ClientDetail> {
@@ -133,27 +165,35 @@ class ClientService(
         return Pages.ofResponse(pageRequest, count, data.map { it.convert() })
     }
 
-    suspend fun pushHeartbeatMetrics(client: TClient) {
-        with(client) {
-            val metricItem = MetricsItem(
-                name = DRIVE_CLIENT_HEARTBEAT,
-                help = DRIVE_CLIENT_HEARTBEAT_DESC,
-                dataModel = DataModel.DATAMODEL_GAUGE,
-                keepHistory = false,
-                value = heartbeatTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli().toDouble(),
-                labels = mutableMapOf(
-                    TClient::projectId.name to projectId,
-                    TClient::repoName.name to repoName,
-                    TClient::mountPoint.name to mountPoint,
-                    TClient::userId.name to userId,
-                    TClient::ip.name to ip,
-                    TClient::version.name to version,
-                    TClient::os.name to os,
-                )
+    suspend fun pushHeartbeatMetrics(labels: ClientMetaLabels, heartbeatTime: LocalDateTime) {
+        val metricItem = MetricsItem(
+            name = DRIVE_CLIENT_HEARTBEAT,
+            help = DRIVE_CLIENT_HEARTBEAT_DESC,
+            dataModel = DataModel.DATAMODEL_GAUGE,
+            keepHistory = false,
+            value = heartbeatTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli().toDouble(),
+            labels = mutableMapOf(
+                TClient::projectId.name to labels.projectId,
+                TClient::repoName.name to labels.repoName,
+                TClient::mountPoint.name to labels.mountPoint,
+                TClient::userId.name to labels.userId,
+                TClient::ip.name to labels.ip,
+                TClient::version.name to labels.version,
+                TClient::os.name to labels.os,
             )
-            customMetricsExporter?.reportMetrics(metricItem)
-        }
+        )
+        customMetricsExporter?.reportMetrics(metricItem)
     }
+
+    private fun TClient.toMetaLabels() = ClientMetaLabels(
+        projectId = projectId,
+        repoName = repoName,
+        mountPoint = mountPoint,
+        userId = userId,
+        ip = ip,
+        version = version,
+        os = os
+    )
 
     suspend fun pushMetrics(request: ClientPushMetricsRequest) {
         with(request) {
@@ -200,7 +240,14 @@ class ClientService(
             online = true,
             heartbeatTime = LocalDateTime.now()
         )
-        return clientRepository.save(newClient)
+        val saved = clientRepository.save(newClient)
+        clientMetaCache.put(saved.id!!, saved.toMetaLabels())
+        return saved
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ClientService::class.java)
+        private const val CLIENT_META_CACHE_SIZE = 100_000L
     }
 
     private fun TClient.convert(): ClientDetail {

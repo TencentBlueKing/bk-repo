@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.migrate.executor
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.job.migrate.cache.MigrateRepoStorageCache
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
@@ -61,7 +62,8 @@ class MigrateExecutor(
     private val migrateFailedHandler: MigrateFailedHandler,
     private val transferDataExecutor: TransferDataExecutor,
     private val repositoryService: RepositoryService,
-    private val mongoTemplate: MongoTemplate
+    private val mongoTemplate: MongoTemplate,
+    private val migratingCache: MigrateRepoStorageCache,
 ) : BaseTaskExecutor(
     properties,
     migrateRepoStorageTaskDao,
@@ -142,6 +144,7 @@ class MigrateExecutor(
         return if (repo.storageCredentials?.key != task.dstStorageKey) {
             val startDate = LocalDateTime.now()
             val newTask = migrateRepoStorageTaskDao.updateStartDate(task.id!!, startDate)!!
+            migratingCache.invalidate(task.projectId, task.repoName)
             logger.info("update migrate task of [${task.projectId}/${task.repoName}] startDate[$startDate]")
             // 修改repository配置，保证之后上传的文件直接保存到新存储实例中，文件下载时，当前实例找不到的情况下会去默认存储找
             repositoryService.updateStorageCredentialsKey(task.projectId, task.repoName, task.dstStorageKey)
