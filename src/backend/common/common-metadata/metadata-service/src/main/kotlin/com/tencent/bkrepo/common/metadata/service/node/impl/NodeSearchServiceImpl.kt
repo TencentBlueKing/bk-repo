@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.common.metadata.service.node.impl
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
@@ -46,10 +48,13 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
+import com.mongodb.MongoException
+import com.mongodb.MongoExecutionTimeoutException
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
+import java.time.Duration
 import java.time.LocalDateTime
 import java.util.Date
 import java.util.concurrent.TimeUnit
@@ -128,6 +133,10 @@ class NodeSearchServiceImpl(
         return projectSet.toList()
     }
 
+    private fun applySearchTimeout(query: Query): Query {
+        return query.maxTime(Duration.ofMillis(repositoryProperties.nodeSearchQueryTimeoutMs))
+    }
+
     private fun queryList(query: Query): List<MutableMap<String, Any?>> {
         val nodeList: List<MutableMap<String, Any?>>
         val time = measureTimeMillis {
@@ -161,22 +170,47 @@ class NodeSearchServiceImpl(
     }
 
     private fun doQuery(context: NodeQueryContext): Page<Map<String, Any?>> {
-        val query = context.mongoQuery
-        val nodeList = queryList(query)
-        val countQuery = Query.of(query).limit(0).skip(0)
-        val totalRecords = nodeDao.count(countQuery)
-        val pageNumber = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
-        return Page(pageNumber + 1, query.limit, totalRecords, nodeList)
+        try {
+            val query = applySearchTimeout(context.mongoQuery)
+            val nodeList = queryList(query)
+            val countQuery = Query.of(query).limit(0).skip(0)
+            val totalRecords = nodeDao.count(countQuery)
+            val pageNumber = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
+            return Page(pageNumber + 1, query.limit, totalRecords, nodeList)
+        } catch (exception: RuntimeException) {
+            throwSearchTimeoutException(exception)
+        }
     }
 
     private fun doQueryWithoutCount(context: NodeQueryContext): Page<Map<String, Any?>> {
-        val query = context.mongoQuery
-        val nodeList = queryList(query)
-        val pageNumber = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
-        return Page(pageNumber + 1, query.limit, 0, nodeList)
+        try {
+            val query = applySearchTimeout(context.mongoQuery)
+            val nodeList = queryList(query)
+            val pageNumber = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
+            return Page(pageNumber + 1, query.limit, 0, nodeList)
+        } catch (exception: RuntimeException) {
+            throwSearchTimeoutException(exception)
+        }
+    }
+
+    private fun throwSearchTimeoutException(exception: RuntimeException): Nothing {
+        if (!exception.isMongoMaxTimeExceeded()) throw exception
+        logger.warn("node search query timeout", exception)
+        throw ErrorCodeException(CommonMessageCode.QUERY_DATA_TOO_LARGE)
+    }
+
+    private fun Throwable.isMongoMaxTimeExceeded(): Boolean {
+        var cause: Throwable? = this
+        while (cause != null) {
+            if (cause is MongoExecutionTimeoutException) return true
+            if (cause is MongoException && cause.code == MONGO_MAX_TIME_EXCEEDED_CODE) return true
+            cause = cause.cause
+        }
+        return false
     }
 
     companion object {
+        private const val MONGO_MAX_TIME_EXCEEDED_CODE = 50
         private val logger = LoggerFactory.getLogger(NodeSearchServiceImpl::class.java)
         fun convertDateTime(value: Any): LocalDateTime? {
             return if (value is Date) {
