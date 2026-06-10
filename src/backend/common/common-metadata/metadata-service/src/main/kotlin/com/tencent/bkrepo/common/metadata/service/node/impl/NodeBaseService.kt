@@ -127,6 +127,22 @@ abstract class NodeBaseService(
     }
 
     override fun listNode(artifact: ArtifactInfo, option: NodeListOption): List<NodeInfo> {
+        return listNodeByQuery(artifact, option) { query -> nodeDao.find(query) }
+    }
+
+    override fun listNodeWithMetadataKeys(
+        artifact: ArtifactInfo,
+        option: NodeListOption,
+        metadataKeys: List<String>,
+    ): List<NodeInfo> {
+        return listNodeByQuery(artifact, option) { query -> nodeDao.findWithMetadataKeys(query, option, metadataKeys) }
+    }
+
+    private fun listNodeByQuery(
+        artifact: ArtifactInfo,
+        option: NodeListOption,
+        queryExecutor: (Query) -> List<TNode>,
+    ): List<NodeInfo> {
         checkNodeListOption(option)
         with(artifact) {
             val userId = SecurityUtils.getUserId()
@@ -139,7 +155,7 @@ abstract class NodeBaseService(
                 val pageRequest = Pages.ofRequest(1, repositoryProperties.listCountLimit.toInt())
                 query = query.with(pageRequest)
             }
-            return nodeDao.find(query).map { convert(it)!! }
+            return queryExecutor(query).map { convert(it)!! }
         }
     }
 
@@ -492,7 +508,9 @@ abstract class NodeBaseService(
                 logger.info("Delete block base node[$fullPath] by [$operator] success: $oldNodeId.")
 
             } else {
-                deleteByFullPathWithoutDecreaseVolume(projectId, repoName, fullPath, operator, source)
+                deleteByFullPathWithoutDecreaseVolume(
+                    projectId, repoName, fullPath, operator, source, isFile = !existNode.folder
+                )
             }
 
             // 更新配额使用量

@@ -9,12 +9,12 @@
     <script src="__BK_REPO_SUBPATH__ui/libs/vue-router.min.js"></script>
     <script src="__BK_REPO_SUBPATH__ui/libs/jsencrypt.min.js"></script>
     <script src="__BK_REPO_SUBPATH__ui/watermark.js"></script>
-    <link rel='preload' as='script' href="__BK_REPO_SUBPATH__ui/libs/bk-magic-vue/bk-magic-vue.min.js" />
     <link href="__BK_REPO_SUBPATH__ui/libs/bk-magic-vue/bk-magic-vue.min.css" rel="stylesheet">
     <link href="__BK_REPO_SUBPATH__ui/iconfont.css" rel="stylesheet">
     <title><%= htmlWebpackPlugin.options.title %></title>
 </head>
 <body>
+    <script src="__BK_REPO_SUBPATH__ui/libs/bk-magic-vue/bk-magic-vue.min.js"></script>
     <script>
         // 子路径
         var BK_SUBPATH = '__BK_REPO_SUBPATH__' || '/'
@@ -308,7 +308,6 @@
         }
 
     </script>
-    <script src="__BK_REPO_SUBPATH__ui/libs/bk-magic-vue/bk-magic-vue.min.js"></script>
     <script>
         <% for (var chunk of htmlWebpackPlugin.files.js) { %>
             loadScript("<%= chunk %>");

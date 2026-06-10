@@ -409,6 +409,8 @@ repository:
   config:
     # 节点被删除后多久清理数据
     deletedNodeReserveDays: 15
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -480,6 +482,8 @@ auth:
   bcs:
     accessKey: ""
     secretKey: ""
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -524,6 +528,8 @@ generic:
       projectId:
       repoName:
       fullPath:
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -564,6 +570,8 @@ generic:
 s3:
   enabled: true
   config: {}
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -617,6 +625,8 @@ preview:
     # 默认水印
     watermark:
       txt: ""
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -657,6 +667,8 @@ preview:
 maven:
   enabled: true
   config: {}
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -693,50 +705,13 @@ maven:
   podAnnotations: {}
   priorityClassName: ""
 
-## router-controller服务配置
-routercontroller:
-  enabled: true
-  config: {}
-  ## Kubernetes 通用配置
-  image:
-    registry: registry.hub.docker.com
-    repository: bkrepo/bkrepo-router-controller
-    tag: 1.1.0
-    pullPolicy: IfNotPresent
-    pullSecrets: []
-  replicaCount: 1
-  hostAliases: []
-  resources:
-    requests:
-      cpu: 100m
-      memory: 1000Mi
-    limits:
-      cpu: 500m
-      memory: 1500Mi
-  containerSecurityContext:
-    enabled: false
-    runAsUser: 1001
-    runAsNonRoot: true
-  podSecurityContext:
-    enabled: false
-    fsGroup: 1001
-  podAffinityPreset: ""
-  podAntiAffinityPreset: ""
-  nodeAffinityPreset:
-    type: ""
-    key: ""
-    values: []
-  affinity: {}
-  nodeSelector: {}
-  tolerations: []
-  podLabels: {}
-  podAnnotations: {}
-  priorityClassName: ""
 
 ## replication服务配置
 replication:
   enabled: true
   config: {}
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -777,6 +752,8 @@ replication:
 opdata:
   enabled: true
   config: {}
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -817,6 +794,8 @@ opdata:
 docker:
   enabled: false
   config: {}
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -857,6 +836,8 @@ docker:
 npm:
   enabled: false
   config: {}
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -897,6 +878,8 @@ npm:
 pypi:
   enabled: false
   config: {}
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -937,6 +920,8 @@ pypi:
 helm:
   enabled: false
   config: {}
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
@@ -972,10 +957,93 @@ helm:
   podLabels: {}
   podAnnotations: {}
   priorityClassName: ""
+
+## huggingface registry服务配置
+huggingface:
+  enabled: false
+  config: {}
+  ## Kubernetes 通用配置
+  image:
+    registry: registry.hub.docker.com
+    repository: bkrepo/bkrepo-huggingface
+    tag: 1.1.0
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  replicaCount: 1
+  hostAliases: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
+  containerSecurityContext:
+    enabled: false
+    runAsUser: 1001
+    runAsNonRoot: true
+  podSecurityContext:
+    enabled: false
+    fsGroup: 1001
+  podAffinityPreset: ""
+  podAntiAffinityPreset: ""
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  podLabels: {}
+  podAnnotations: {}
+  priorityClassName: ""
+
+## skill registry服务配置
+skill:
+  enabled: false
+  config: {}
+  ## Kubernetes 通用配置
+  image:
+    registry: registry.hub.docker.com
+    repository: bkrepo/bkrepo-skill
+    tag: 1.1.0
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  replicaCount: 1
+  hostAliases: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
+  containerSecurityContext:
+    enabled: false
+    runAsUser: 1001
+    runAsNonRoot: true
+  podSecurityContext:
+    enabled: false
+    fsGroup: 1001
+  podAffinityPreset: ""
+  podAntiAffinityPreset: ""
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  podLabels: {}
+  podAnnotations: {}
+  priorityClassName: ""
+
 ## job registry服务配置
 job:
   enabled: true
   config: {}
+  ## jvm启动选项，优先级高于common.jvmOption
+  jvmOption: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com

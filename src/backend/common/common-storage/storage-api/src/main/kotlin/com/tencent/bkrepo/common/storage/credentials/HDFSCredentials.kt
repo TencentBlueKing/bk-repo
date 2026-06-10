@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.storage.config.CacheProperties
 import com.tencent.bkrepo.common.storage.config.CompressProperties
 import com.tencent.bkrepo.common.storage.config.EncryptProperties
+import com.tencent.bkrepo.common.storage.config.MonitorConfig
 import com.tencent.bkrepo.common.storage.config.UploadProperties
 
 /**
@@ -52,6 +53,7 @@ data class HDFSCredentials(
     override var upload: UploadProperties = UploadProperties(),
     override var encrypt: EncryptProperties = EncryptProperties(),
     override var compress: CompressProperties = CompressProperties(),
+    override var monitor: MonitorConfig? = null,
     override var allowRepoTypes: Set<String>? = null,
     override var notAllowRepoTypes: Set<String>? = setOf(RepositoryType.DRIVE.name),
 ) : StorageCredentials(key, cache, upload, encrypt, compress) {

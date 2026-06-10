@@ -76,9 +76,9 @@ class FixedWindowRateLimiterTest {
         val ticker = Mockito.mock(Ticker::class.java)
         Mockito.`when`(ticker.read()).thenReturn(0 * 1000 * 1000L)
         val ratelimiter: RateLimiter = FixedWindowRateLimiter(5, Duration.ofSeconds(1), Stopwatch.createStarted(ticker))
-        var successNum = 0
-        var failedNum = 0
-        var errorNum = 0
+        val successNum = java.util.concurrent.atomic.AtomicInteger(0)
+        val failedNum = java.util.concurrent.atomic.AtomicInteger(0)
+        val errorNum = java.util.concurrent.atomic.AtomicInteger(0)
         val readers = Runtime.getRuntime().availableProcessors()
         val countDownLatch = CountDownLatch(readers)
         val elapsedTime = measureTimeMillis {
@@ -88,12 +88,12 @@ class FixedWindowRateLimiterTest {
                         Thread.sleep((Random.nextInt(5) * 2).toLong())
                         val passed = ratelimiter.tryAcquire(1)
                         if (passed) {
-                            successNum++
+                            successNum.incrementAndGet()
                         } else {
-                            failedNum++
+                            failedNum.incrementAndGet()
                         }
                     } catch (e: Exception) {
-                        errorNum++
+                        errorNum.incrementAndGet()
                     }
                     countDownLatch.countDown()
                 }
@@ -101,6 +101,12 @@ class FixedWindowRateLimiterTest {
         }
         countDownLatch.await()
         println("elapse: ${HumanReadable.time(elapsedTime, TimeUnit.MILLISECONDS)}")
-        println("successNum $successNum, failedNum $failedNum. errorNum $errorNum")
+        println("successNum ${successNum.get()}, failedNum ${failedNum.get()}. errorNum ${errorNum.get()}")
+        // 所有线程均正常完成，无异常
+        org.junit.jupiter.api.Assertions.assertEquals(0, errorNum.get())
+        // 成功 + 失败 = 总线程数
+        org.junit.jupiter.api.Assertions.assertEquals(readers, successNum.get() + failedNum.get())
+        // 不超过容量限制
+        org.junit.jupiter.api.Assertions.assertTrue(successNum.get() <= 5)
     }
 }

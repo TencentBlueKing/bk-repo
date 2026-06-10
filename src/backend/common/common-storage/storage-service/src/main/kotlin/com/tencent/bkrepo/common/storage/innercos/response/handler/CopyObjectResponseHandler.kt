@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.storage.innercos.response.handler
 
 import com.tencent.bkrepo.common.storage.innercos.RESPONSE_LAST_MODIFIED
+import com.tencent.bkrepo.common.storage.innercos.exception.InnerCosException
 import com.tencent.bkrepo.common.storage.innercos.http.Headers.Companion.ETAG
 import com.tencent.bkrepo.common.storage.innercos.http.HttpResponseHandler
 import com.tencent.bkrepo.common.storage.innercos.response.CopyObjectResponse
@@ -40,8 +41,12 @@ import okhttp3.Response
 class CopyObjectResponseHandler : HttpResponseHandler<CopyObjectResponse>() {
     override fun handle(response: Response): CopyObjectResponse {
         val result = readXmlToMap(response)
-        val eTag = (result[ETAG].toString()).trim('"')
-        val lastModified = result[RESPONSE_LAST_MODIFIED].toString()
+        val eTag = (result[ETAG]?.toString())?.trim('"')
+        val lastModified = result[RESPONSE_LAST_MODIFIED]?.toString()
+        // 对于 PUT Object - Copy 接口，即使 HTTP 状态码为200也有可能在响应体中包含错误
+        if (eTag == null || lastModified == null) {
+            throw InnerCosException("copy failed, response body[$result]")
+        }
         return CopyObjectResponse(eTag, lastModified)
     }
 }

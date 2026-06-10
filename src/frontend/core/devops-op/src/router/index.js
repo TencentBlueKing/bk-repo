@@ -34,6 +34,7 @@ export const ROUTER_NAME_MIGRATE_REPO_STORAGE_CONFIG = 'MigrationConfig'
 export const ROUTER_NAME_MIGRATE_PROJECT_GRAYSCALE_CONFIG = 'ProjectGrayscaleConfig'
 export const ROUTER_NAME_SERVER_LOG = 'ServerLog'
 export const ROUTER_NAME_SIGN_CONFIG = 'SignConfig'
+export const ROUTER_NAME_CLIENT_VERSION_CONFIG = 'ClientVersionConfig'
 
 Vue.use(Router)
 
@@ -357,6 +358,22 @@ export const asyncRoutes = [
         name: ROUTER_NAME_RATE_LIMITER_CONFIG,
         meta: { title: '限流配置', icon: 'permission' },
         component: () => import('@/views/rateLimitConfg/RateLimiter')
+      }
+    ]
+  },
+  // 客户端版本控制
+  {
+    path: '/client-version',
+    component: Layout,
+    alwaysShow: true,
+    redirect: '/client-version/version-config',
+    meta: { title: '客户端版本控制', icon: 'file-blue' },
+    children: [
+      {
+        path: 'version-config',
+        name: ROUTER_NAME_CLIENT_VERSION_CONFIG,
+        meta: { title: '客户端版本配置', icon: 'service-config' },
+        component: () => import('@/views/clientVersionConfig/index')
       }
     ]
   },
