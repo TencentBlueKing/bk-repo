@@ -64,6 +64,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import com.google.common.cache.CacheBuilder
+import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -84,6 +85,7 @@ class ClientService(
 
     // 仅缓存 metrics 所需的 7 个稳定 label 字段，避免心跳时重复读 DB
     private val clientMetaCache = CacheBuilder.newBuilder()
+        .maximumSize(CLIENT_META_CACHE_SIZE)
         .expireAfterAccess(1, TimeUnit.HOURS)
         .build<String, ClientMetaLabels>()
 
@@ -125,7 +127,11 @@ class ClientService(
 
     suspend fun heartbeat(projectId: String, repoName: String, clientId: String) {
         val now = LocalDateTime.now()
-        val query = Query(Criteria.where("_id").isEqualTo(clientId))
+        val query = Query(
+            Criteria.where(TClient::projectId.name).isEqualTo(projectId)
+                .and(TClient::repoName.name).isEqualTo(repoName)
+                .and(TClient::id.name).isEqualTo(clientId)
+        )
         val update = Update()
             .set(TClient::heartbeatTime.name, now)
             .set(TClient::online.name, true)
@@ -134,10 +140,13 @@ class ClientService(
             throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, clientId)
         }
         val labels = clientMetaCache.getIfPresent(clientId)
-            ?: clientRepository.findOne(query)?.also {
-                clientMetaCache.put(clientId, it.toMetaLabels())
-            }?.toMetaLabels()
-            ?: return
+            ?: clientRepository.findOne(query)?.toMetaLabels()?.also {
+                clientMetaCache.put(clientId, it)
+            }
+        if (labels == null) {
+            logger.warn("client [$clientId] heartbeat updated but labels not found")
+            return
+        }
         pushHeartbeatMetrics(labels, now)
     }
 
@@ -231,7 +240,14 @@ class ClientService(
             online = true,
             heartbeatTime = LocalDateTime.now()
         )
-        return clientRepository.save(newClient)
+        val saved = clientRepository.save(newClient)
+        clientMetaCache.put(saved.id!!, saved.toMetaLabels())
+        return saved
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ClientService::class.java)
+        private const val CLIENT_META_CACHE_SIZE = 100_000L
     }
 
     private fun TClient.convert(): ClientDetail {

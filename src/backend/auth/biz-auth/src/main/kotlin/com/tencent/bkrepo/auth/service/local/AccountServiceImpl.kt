@@ -77,6 +77,14 @@ class AccountServiceImpl constructor(
             .forEach { credentialCache.invalidate(it) }
     }
 
+    private fun invalidateCredentialsByAccessKeys(accessKeys: Collection<String>) {
+        accessKeys.forEach { invalidateCredentialByAccessKey(it) }
+    }
+
+    private fun invalidateAccountCredentials(account: TAccount) {
+        invalidateCredentialsByAccessKeys(account.credentials.map { it.accessKey })
+    }
+
     override fun createAccount(request: CreateAccountRequest, owner: String): Account {
         logger.info("create  account  request : [$request]")
         if (request.authorizationGrantTypes.contains(AuthorizationGrantType.AUTHORIZATION_CODE)) {
@@ -146,6 +154,7 @@ class AccountServiceImpl constructor(
     override fun deleteAccount(appId: String, userId: String): Boolean {
         logger.info("delete account appId [$appId]")
         val account = findAccountAndCheckOwner(appId, userId)
+        invalidateAccountCredentials(account)
         oauthTokenRepository.deleteByAccountId(account.id!!)
         accountDao.removeById(account.id)
         return true
@@ -167,6 +176,8 @@ class AccountServiceImpl constructor(
             )
 
             val account = findAccountAndCheckOwner(appId, userId)
+            val previousLocked = account.locked
+            val previousAccessKeys = account.credentials.map { it.accessKey }.toSet()
             setCredentials(account, this)
             account.authorizationGrantTypes = authorizationGrantTypes
             account.locked = locked
@@ -184,6 +195,12 @@ class AccountServiceImpl constructor(
             account.lastModifiedDate = LocalDateTime.now()
 
             accountDao.save(account)
+            if (locked != previousLocked) {
+                invalidateCredentialsByAccessKeys(previousAccessKeys + account.credentials.map { it.accessKey })
+            } else {
+                val removedAccessKeys = previousAccessKeys - account.credentials.map { it.accessKey }.toSet()
+                invalidateCredentialsByAccessKeys(removedAccessKeys)
+            }
             return true
         }
     }

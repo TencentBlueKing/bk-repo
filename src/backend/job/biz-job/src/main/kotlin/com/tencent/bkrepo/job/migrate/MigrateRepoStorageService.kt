@@ -29,7 +29,6 @@ package com.tencent.bkrepo.job.migrate
 
 import com.google.common.base.CaseFormat.LOWER_CAMEL
 import com.google.common.base.CaseFormat.UPPER_CAMEL
-import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -40,6 +39,7 @@ import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration.Companio
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
+import com.tencent.bkrepo.job.migrate.cache.MigrateRepoStorageCache
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
 import com.tencent.bkrepo.job.migrate.executor.CorrectExecutor
@@ -67,7 +67,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
-import java.util.concurrent.TimeUnit
 
 /**
  * 仓库存储迁移服务
@@ -80,15 +79,10 @@ class MigrateRepoStorageService(
     private val executors: Map<String, TaskExecutor>,
     private val executingTaskRecorder: ExecutingTaskRecorder,
     private val repositoryService: RepositoryService,
+    private val migratingCache: MigrateRepoStorageCache,
 ) {
     @Value(SERVICE_INSTANCE_ID)
     protected lateinit var instanceId: String
-
-    // 缓存迁移状态，避免多实例在批量处理节点时对同一 task 文档反复触发 findAndModify 写锁
-    private val migratingCache = CacheBuilder.newBuilder()
-        .maximumSize(1000)
-        .expireAfterWrite(30, TimeUnit.SECONDS)
-        .build<String, Boolean>()
 
     /**
      * 迁移仓库存储
@@ -169,7 +163,7 @@ class MigrateRepoStorageService(
      * @return 是否正在迁移
      */
     fun migrating(projectId: String, repoName: String): Boolean {
-        return migratingCache.get("$projectId/$repoName") {
+        return migratingCache.get(projectId, repoName) {
             migrateRepoStorageTaskDao.migrating(projectId, repoName)
         }
     }
@@ -193,6 +187,7 @@ class MigrateRepoStorageService(
                 }
                 // 任务之前在本实例内执行，但可能由于进程重启或其他原因而中断，需要重置状态
                 migrateRepoStorageTaskDao.updateState(it.id, it.state, rollbackState, it.lastModifiedDate)
+                migratingCache.invalidate(it.projectId, it.repoName)
                 logger.info("rollback task[${it.projectId}/${it.repoName}] state[${it.state}] to [$rollbackState]")
             }
         }
@@ -202,7 +197,7 @@ class MigrateRepoStorageService(
         val projectId = task.projectId
         val repoName = task.repoName
         // 任务开始执行时主动失效缓存，确保 migrating() 能感知到最新状态
-        migratingCache.invalidate("$projectId/$repoName")
+        migratingCache.invalidate(projectId, repoName)
         val executorName = when (task.state) {
             PENDING.name -> MigrateExecutor::class.simpleName!!
             MIGRATE_FINISHED.name -> CorrectExecutor::class.simpleName!!
