@@ -44,7 +44,9 @@ import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.util.MetadataUtils
 import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext
+import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
@@ -75,11 +77,13 @@ class NodeSearchServiceImpl(
 ) : NodeSearchService {
 
     override fun search(queryModel: QueryModel): Page<Map<String, Any?>> {
+        logNodeSearch(queryModel)
         val context = nodeQueryInterpreter.interpret(queryModel) as NodeQueryContext
         return doQuery(context)
     }
 
     override fun searchWithoutCount(queryModel: QueryModel): Page<Map<String, Any?>> {
+        logNodeSearch(queryModel)
         val context = nodeQueryInterpreter.interpret(queryModel) as NodeQueryContext
         return doQueryWithoutCount(context)
     }
@@ -209,9 +213,70 @@ class NodeSearchServiceImpl(
         return false
     }
 
+    private fun logNodeSearch(queryModel: QueryModel) {
+        val rule = queryModel.rule
+        val projectIds = fieldValuesFromRule(rule, NodeInfo::projectId.name)
+        val repoNames = fieldValuesFromRule(rule, NodeInfo::repoName.name)
+        logger.info(
+            "node search project[${formatFieldValues(projectIds)}] " +
+                "repo[${formatFieldValues(repoNames)}]",
+        )
+    }
+
+    private fun formatFieldValues(values: List<String>): String {
+        return if (values.isEmpty()) "-" else values.joinToString(",")
+    }
+
+    private fun fieldValuesFromRule(rule: Rule, field: String): List<String> {
+        return when (rule) {
+            is Rule.QueryRule -> fieldValue(rule, field)
+            is Rule.FixedRule -> fieldValuesFromRule(rule.wrapperRule, field)
+            is Rule.NestedRule -> valuesFromNestedRule(rule, field)
+            else -> emptyList()
+        }
+    }
+
+    private fun fieldValue(rule: Rule.QueryRule, field: String): List<String> {
+        return if (rule.field == field) {
+            stringValuesFromQueryRule(rule)
+        } else {
+            emptyList()
+        }
+    }
+
+    private fun valuesFromNestedRule(rule: Rule.NestedRule, field: String): List<String> {
+        if (rule.relation != Rule.NestedRule.RelationType.AND) {
+            return emptyList()
+        }
+        return rule.rules
+            .asSequence()
+            .filterIsInstance<Rule.QueryRule>()
+            .filter { it.field == field }
+            .flatMap { stringValuesFromQueryRule(it).asSequence() }
+            .toList()
+    }
+
+    private fun stringValuesFromQueryRule(rule: Rule.QueryRule): List<String> {
+        return when (rule.operation) {
+            OperationType.EQ -> listOfNotNull(rule.value?.toString()).filter { it.isNotEmpty() }
+            OperationType.IN -> valuesFromInRule(rule.value)
+            else -> emptyList()
+        }
+    }
+
+    private fun valuesFromInRule(value: Any?): List<String> {
+        val values = when (value) {
+            is Collection<*> -> value
+            is Array<*> -> value.toList()
+            else -> return emptyList()
+        }
+        return values.mapNotNull { it?.toString() }.filter { it.isNotEmpty() }
+    }
+
     companion object {
         private const val MONGO_MAX_TIME_EXCEEDED_CODE = 50
         private val logger = LoggerFactory.getLogger(NodeSearchServiceImpl::class.java)
+
         fun convertDateTime(value: Any): LocalDateTime? {
             return if (value is Date) {
                 LocalDateTime.ofInstant(

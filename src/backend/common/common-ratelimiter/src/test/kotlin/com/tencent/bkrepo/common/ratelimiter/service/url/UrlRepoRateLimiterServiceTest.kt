@@ -212,11 +212,11 @@ class UrlRepoRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
 
         val queryModel = queryModelBuilder.build()
         request.setContent(queryModel.toJsonString().toByteArray())
-        val (projectId, repoName) = (rateLimiterService as UrlRepoRateLimiterService).getRepoInfoFromBody(
+        val (projectId, repoNames) = (rateLimiterService as UrlRepoRateLimiterService).getRepoInfoFromBody(
             request
         )
         Assertions.assertEquals("test-projectId", projectId)
-        Assertions.assertEquals("test-repoName", repoName)
+        Assertions.assertEquals(listOf("test-repoName"), repoNames)
 
         request.setContent(
             UserRepoCreateRequest(
@@ -227,11 +227,11 @@ class UrlRepoRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
                 display = false
             ).toJsonString().toByteArray()
         )
-        val (projectId1, repoName1) = (rateLimiterService as UrlRepoRateLimiterService).getRepoInfoFromBody(
+        val (projectId1, repoNames1) = (rateLimiterService as UrlRepoRateLimiterService).getRepoInfoFromBody(
             request
         )
         Assertions.assertEquals("test-projectId1", projectId1)
-        Assertions.assertEquals(null, repoName1)
+        Assertions.assertEquals(emptyList<String>(), repoNames1)
 
         request.requestURI = "/blueking/generic-local/test.txt"
     }

@@ -40,6 +40,8 @@ import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.UrlDownloadBandwi
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.UrlUploadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.user.UserDownloadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.user.UserUploadBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.url.UrlPrefixDownloadBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.url.UrlPrefixUploadBandwidthRateLimiterService
 import java.io.InputStream
 
 /**
@@ -331,6 +333,18 @@ class CommonRateLimitInputStream(
             )
             LimitDimension.USER_DOWNLOAD_BANDWIDTH.name ->
                 UserDownloadBandwidthRateLimiterService.getAlgorithmOfRateLimiter(
+                rateCheckContext.limitKey,
+                rateCheckContext.resourceLimit,
+                rateCheckContext.resInfo
+            )
+            LimitDimension.URL_PREFIX_UPLOAD_BANDWIDTH.name ->
+                UrlPrefixUploadBandwidthRateLimiterService.getAlgorithmOfRateLimiter(
+                rateCheckContext.limitKey,
+                rateCheckContext.resourceLimit,
+                rateCheckContext.resInfo
+            )
+            LimitDimension.URL_PREFIX_DOWNLOAD_BANDWIDTH.name ->
+                UrlPrefixDownloadBandwidthRateLimiterService.getAlgorithmOfRateLimiter(
                 rateCheckContext.limitKey,
                 rateCheckContext.resourceLimit,
                 rateCheckContext.resInfo
