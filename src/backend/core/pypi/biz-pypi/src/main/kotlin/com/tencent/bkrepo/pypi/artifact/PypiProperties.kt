@@ -6,4 +6,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class PypiProperties(
     var domain: String = "localhost",
     var enableRegexQuery: Boolean = true,
+    var enableSimpleIndexCache: Boolean = true,
 )
