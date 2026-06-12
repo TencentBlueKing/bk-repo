@@ -44,18 +44,14 @@ import org.slf4j.LoggerFactory
 /**
  * 容错版 PlatformAuthHandler。
  *
- * 背景：opdata 请求经网关会携带 `Authorization: Platform xxx`，
- * 默认 [PlatformAuthHandler] 在 `onAuthenticate` 时通过 Feign 调用 auth 校验 AK/SK，
- * 一旦 auth 不可用（连接拒绝 / 超时 / 5xx），整个 opdata 的所有受保护接口都会 500。
+ * auth 微服务不可达时按入口分级降级，避免 opdata 整体 500：
+ * - `X-BKREPO-API-TYPE: web`（web.conf 已 cookie 鉴权并强制覆盖该 header）→ 采信 `X-BKREPO-UID`，admin 可继续操作；
+ * - 其它入口（bkapigw / backend.conf 等）→ 降级匿名，避免伪造 `X-BKREPO-UID` 越权。
  *
- * 本类在 auth 不可达时降级：
- * - 捕获 Feign 网络类异常 ([RetryableException]) 及服务端 5xx ([FeignException.FeignServerException])；
- * - 返回请求头中的 `X-BKREPO-UID`，若无则返回匿名用户；
- * - 业务层后续的权限判断由 opdata 本地的 `UserAuthProvider` 兜底，
- *   保证 auth 故障期间 opdata 仍可用。
+ * 安全前提：所有 nginx 入口都已强制覆盖 `X-BKREPO-API-TYPE`（web.conf="web" / bkapigw.conf="bkapigw" /
+ * backend.conf="api" 且清空 UID），外部无法伪造 "web" 标识。要求 opdata 端口仅对网关可达。
  *
- * 注意：仅在 Feign 调用失败时降级；若 auth 明确返回凭证无效（4xx），仍按认证失败处理，
- * 避免放过真正的非法请求。
+ * 仅对 Feign 网络异常 / 5xx 降级；4xx 仍按认证失败处理。
  */
 class ResilientPlatformAuthHandler(
     authenticationManager: AuthenticationManager
@@ -65,28 +61,36 @@ class ResilientPlatformAuthHandler(
         return try {
             super.onAuthenticate(request, authCredentials)
         } catch (e: RetryableException) {
-            // 连接拒绝 / 读超时 等网络异常
-            logger.warn("Auth service unreachable, fallback to header uid. cause=${e.message}")
-            fallbackUser(request)
+            logger.warn("Auth service unreachable, try fallback. cause=${e.message}")
+            fallback(request)
         } catch (e: FeignException) {
-            // 仅对 5xx 降级，4xx 仍认为是凭证非法
+            // 仅对 5xx / 网络异常降级，4xx 仍按凭证非法处理
             if (e.status() in 500..599 || e.status() == -1) {
-                logger.warn("Auth service error ${e.status()}, fallback to header uid. cause=${e.message}")
-                fallbackUser(request)
+                logger.warn("Auth service error ${e.status()}, try fallback. cause=${e.message}")
+                fallback(request)
             } else {
                 throw e
             }
         }
     }
 
-    private fun fallbackUser(request: HttpServletRequest): String {
-        val userId = request.getHeader(AUTH_HEADER_UID).orEmpty().trim()
-            .takeIf { it.isNotEmpty() } ?: ANONYMOUS_USER
+    /** web 入口采信 `X-BKREPO-UID`，其它入口降级匿名以防身份伪造。 */
+    private fun fallback(request: HttpServletRequest): String {
+        val apiType = request.getHeader(HEADER_API_TYPE).orEmpty().trim()
+        val userId = if (apiType.equals(API_TYPE_WEB, ignoreCase = true)) {
+            request.getHeader(AUTH_HEADER_UID).orEmpty().trim()
+                .takeIf { it.isNotEmpty() } ?: ANONYMOUS_USER
+        } else {
+            logger.warn("Non-web entry [$apiType] in fallback, forcing anonymous.")
+            ANONYMOUS_USER
+        }
         request.setAttribute(USER_KEY, userId)
         return userId
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ResilientPlatformAuthHandler::class.java)
+        private const val HEADER_API_TYPE = "X-BKREPO-API-TYPE"
+        private const val API_TYPE_WEB = "web"
     }
 }
