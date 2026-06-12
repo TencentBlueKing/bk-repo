@@ -98,6 +98,11 @@ class PreviewTokenAuthHandler(
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: HttpAuthCredentials): String {
         require(authCredentials is TemporaryTokenAuthCredentials)
         val token = authCredentials.token
+
+        // URI 白名单校验：PREVIEW token 仅能用于 bkrepo 形态的预览端点，
+        // 防止被用于远程预览(@Principal GENERAL)等接口冒充登录态身份。
+        ensureUriAllowedForPreviewToken(request)
+
         val tokenInfo = authenticationManager.getTokenInfo(token)
             ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, maskToken(token))
 
@@ -135,23 +140,29 @@ class PreviewTokenAuthHandler(
         }
 
         // 3. URL 范围校验（fullPath）：在 URI 中按 token 自身的 projectId/repoName 定位资源段，
-        //    成功定位即可推导出 fullPath，必然落在 token 的 project/repo 范围内
+        //    成功定位即可推导出 fullPath，必然落在 token 的 project/repo 范围内。
+        //    fail-close：定位不到 project/repo 段时直接拒绝，避免被构造畸形 URI 绕过。
         val requestFullPath = locateRequestFullPath(request, tokenInfo)
-        if (requestFullPath != null) {
-            if (!isSubPath(requestFullPath, tokenInfo.fullPath)) {
-                logger.warn(
-                    "TemporaryToken scope mismatch (fullPath): " +
-                        "uri=${request.requestURI}, token=${maskToken(tokenInfo.token)}, " +
-                        "tokenPath=${tokenInfo.fullPath}, requestPath=$requestFullPath"
-                )
-                throw ErrorCodeException(
-                    PreviewMessageCode.PREVIEW_TEMPORARY_TOKEN_OUT_OF_SCOPE,
-                    requestFullPath
-                )
-            }
-        } else {
-            logger.info(
-                "TemporaryToken: skip path-scope check, no project/repo segment in uri=${request.requestURI}"
+        if (requestFullPath == null) {
+            logger.warn(
+                "TemporaryToken scope reject: cannot locate project/repo segment, " +
+                    "uri=${request.requestURI}, token=${maskToken(tokenInfo.token)}, " +
+                    "projectId=${tokenInfo.projectId}, repoName=${tokenInfo.repoName}"
+            )
+            throw ErrorCodeException(
+                PreviewMessageCode.PREVIEW_TEMPORARY_TOKEN_OUT_OF_SCOPE,
+                request.requestURI
+            )
+        }
+        if (!isSubPath(requestFullPath, tokenInfo.fullPath)) {
+            logger.warn(
+                "TemporaryToken scope mismatch (fullPath): " +
+                    "uri=${request.requestURI}, token=${maskToken(tokenInfo.token)}, " +
+                    "tokenPath=${tokenInfo.fullPath}, requestPath=$requestFullPath"
+            )
+            throw ErrorCodeException(
+                PreviewMessageCode.PREVIEW_TEMPORARY_TOKEN_OUT_OF_SCOPE,
+                requestFullPath
             )
         }
 
@@ -233,11 +244,51 @@ class PreviewTokenAuthHandler(
     }
 
     /**
-     * 与 PathUtils.isSubPath 等价的本地实现，避免引入额外依赖。
+     * 安全版 isSubPath：在公共 PathUtils.isSubPath 仅做 startsWith 的基础上，
+     * 额外要求子路径与父路径的边界必须落在 `/` 分隔符上，避免
+     * 父路径=`/a/b` 时把 `/a/b-evil/...` 误判为子路径，从而造成越权访问。
+     *
+     * 规则：
+     *  - parent 规范化为前缀以 '/' 开头；
+     *  - 若 parent 已以 '/' 结尾（典型如根目录 "/"），直接 startsWith 即可；
+     *  - 否则要求 path == parent 或 path 以 "$parent/" 开头。
      */
     private fun isSubPath(path: String, parent: String): Boolean {
         val formatParent = if (parent.startsWith('/')) parent else "/$parent"
-        return path.startsWith(formatParent)
+        if (formatParent.endsWith('/')) {
+            return path.startsWith(formatParent)
+        }
+        return path == formatParent || path.startsWith("$formatParent/")
+    }
+
+    /**
+     * URI 白名单：PREVIEW token 只允许命中 bkrepo 形态的预览端点。
+     *
+     * 不允许命中 `/api/file/onlinePreview` 与 `/api/file/getPreviewInfo`（远程 URL 预览，@Principal GENERAL），
+     * 否则 PREVIEW token 会被错误地用于冒充 createdBy 调用 GENERAL 接口，扩大攻击面。
+     *
+     * 命中规则：requestURI 在去除可能的上下文路径后，必须以
+     *   `/api/file/onlinePreview/` 或 `/api/file/getPreviewInfo/` 开头
+     * （以 `/` 结尾确保后面必须接 `{projectId}/{repoName}/...`，避免被精确 URI 误命中）。
+     */
+    private fun ensureUriAllowedForPreviewToken(request: HttpServletRequest) {
+        val uri = request.requestURI ?: ""
+        var allowed = false
+        for (prefix in ALLOWED_URI_PREFIXES) {
+            if (uri.contains(prefix)) {
+                allowed = true
+                break
+            }
+        }
+        if (!allowed) {
+            logger.warn(
+                "TemporaryToken reject: uri not allowed for PREVIEW token, uri=$uri, method=${request.method}"
+            )
+            throw ErrorCodeException(
+                PreviewMessageCode.PREVIEW_TEMPORARY_TOKEN_OUT_OF_SCOPE,
+                uri
+            )
+        }
     }
 
     /**
@@ -282,5 +333,14 @@ class PreviewTokenAuthHandler(
          * 供 [PreviewArtifactPermissionCheckHandler] 与下游 controller 读取。
          */
         const val REQ_ATTR_TEMP_TOKEN_INFO = "bkrepo.preview.temporary.token.info"
+
+        // 允许使用 PREVIEW token 的 URI 前缀白名单。
+        // 必须严格对应 PreviewArtifactInfo 中的两个 bkrepo 端点：
+        //  - PREVIEW_BKREPO_MAPPING_URI       = /api/file/onlinePreview/{projectId}/{repoName}/(**)
+        //  - PREVIEW_INFO_BKREPO_MAPPING_URI  = /api/file/getPreviewInfo/{projectId}/{repoName}/(**)
+        private val ALLOWED_URI_PREFIXES = listOf(
+            "/api/file/onlinePreview/",
+            "/api/file/getPreviewInfo/",
+        )
     }
 }

@@ -11,6 +11,12 @@ export const PREVIEW_TOKEN_STORAGE_KEY = 'previewToken'
 /**
  * 从当前 URL 读取 ?token=...，写入 sessionStorage（如有则覆盖）。
  * 在预览组件 created() 中调用，幂等。
+ *
+ * 重要：若当前 URL **未携带 token**，必须清空 sessionStorage 中的旧 token，
+ * 否则上一次预览残留的 token 会被自动注入到当前请求中，导致：
+ *   1) 跨文件越权：A 文件的 token 被复用到 B 文件，绕过路径级 ACL；
+ *   2) 登录态降权：已登录用户的请求被误打 Temporary 头，反而走 token 校验链路；
+ *   3) 与后端 TemporaryTokenAuthHandler 的严格路径校验冲突，正常文件 403/404。
  */
 export function capturePreviewTokenFromUrl () {
     try {
@@ -19,6 +25,9 @@ export function capturePreviewTokenFromUrl () {
         const token = params.get('token')
         if (token && token.length > 0) {
             window.sessionStorage.setItem(PREVIEW_TOKEN_STORAGE_KEY, token)
+        } else {
+            // URL 未带 token：清空残留，确保本次预览走登录态而非旧 token
+            window.sessionStorage.removeItem(PREVIEW_TOKEN_STORAGE_KEY)
         }
     } catch (e) {
         // sessionStorage 不可用时静默失败，回退到登录态行为
