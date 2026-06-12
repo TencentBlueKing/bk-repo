@@ -74,7 +74,8 @@ router.beforeEach(async(to, from, next) => {
       // other pages that do not have permission to access are redirected to the login page.
       if (MODE_CONFIG !== MODE_CONFIG_STAND_ALONE) {
         try {
-          const response = await fetch('/web/auth/api/user/info')
+          // 改走 opdata，opdata 内部通过 Feign 调 auth，auth 不可用时降级返回固定 admin
+          const response = await fetch('/web/opdata/api/user/info')
           if (response.ok) {
             const resJson = await response.json()
             setTempUid(resJson.data.userId)
