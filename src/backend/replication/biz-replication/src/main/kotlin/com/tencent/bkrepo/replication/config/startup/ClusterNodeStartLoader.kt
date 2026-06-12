@@ -110,6 +110,15 @@ class ClusterNodeStartLoader(
                 secretKey = self.secretKey,
                 type = ClusterNodeType.EDGE,
                 ping = false,
+                // detectType 选择规则：
+                //   - 当 EDGE 已具备主动上报心跳能力（即 EdgeNodeReportJob 已生效，
+                //     目前等价于 architecture == COMMIT_EDGE && role == EDGE）时，使用 REPORT，
+                //     由 EDGE 主动向 CENTER 上报，CENTER 不会反向 ping EDGE。
+                //   - 否则使用 PING，由 CENTER 主动连通性探测。
+                // 部署提示：当网络是 “EDGE -> CENTER 单向可达” 时（CENTER 无法回连 EDGE），
+                // 即便 architecture != COMMIT_EDGE，也应由运维通过 CENTER 上的
+                // ClusterClusterNodeController.update 接口将该节点 detectType 显式改为 REPORT，
+                // 避免 EDGE 被反复 ping 失败错标为 UNHEALTHY；本处不做自动判定，不引入新配置项。
                 detectType = if (architecture == ClusterArchitecture.COMMIT_EDGE) REPORT else PING,
                 udpPort = self.udpPort
             )
