@@ -265,6 +265,8 @@
     import previewBasicFileDialog from './previewBasicFileDialog'
     import { Base64 } from 'js-base64'
     import { isOutDisplayType, isText } from '@repository/utils/file'
+    import ElectronProtocolCheck from '@repository/utils/ElectronProtocolCheck'
+    import cookies from 'js-cookie'
 
     export default {
         name: 'RepoGeneric',
@@ -462,7 +464,8 @@
                 'refreshSupportFileNameExtList',
                 'getMultiFolderNumOfFolder',
                 'getPermissionUrl',
-                'getProjectShareEnabled'
+                'getProjectShareEnabled',
+                'shareArtifactory'
             ]),
             updateTableFixedBodyTop () {
                 const el = document.querySelector('.bk-table-fixed-body-wrapper')
@@ -1083,7 +1086,7 @@
                     fullPath
                 })
             },
-            handlerDownload (row) {
+            downloadFromWeb (row) {
                 const transPath = encodeURIComponent(row.fullPath)
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
                 fetch(window.BK_SUBPATH + 'web' + url, {
@@ -1147,6 +1150,44 @@
                         })
                     }
                 })
+            },
+            // 由于cookie部分是HttpOnly属性，无法使用cookie。
+            // 其实客户端是支持携带cookie的(bk_token或者bkrepo_token)，类似bkartifacts://action=download&url=XXXX&bkrepo_token=xxxxx
+            // 现阶段使用分享链接去下载(访问次数不限制,过期时间不限制，防止客户端暂停下载后续失败)
+            // 分享链接下载文件夹属性会转变为zip包，需传递文件夹属性
+            async buildExeDownloadUrl (row) {
+                const [{ url }] = await this.shareArtifactory({
+                    projectId: this.projectId,
+                    repoName: this.repoName,
+                    fullPathSet: [row.fullPath],
+                    type: 'DOWNLOAD',
+                    host: new URL(window.BK_SUBPATH, location.origin) + 'generic'
+                })
+                return BK_ARTIFACT_SCHEME + 'action=download&url=' + encodeURIComponent(url) + '&isFolder=' + row.folder
+            },
+            async handlerDownload (row) {
+                try {
+                    const target = await this.buildExeDownloadUrl(row)
+                    ElectronProtocolCheck(
+                        target,
+                        () => {
+                            // 成功回调：客户端已唤起
+                            console.log('callClient->success!')
+                        },
+                        () => {
+                            // 失败回调：未检测到客户端
+                            console.log('callClient->failed!')
+                            this.downloadFromWeb(row)
+                        },
+                        () => {
+                            // 不支持回调：浏览器环境不支持自定义协议
+                            console.log('callClient->unsupported!')
+                            this.downloadFromWeb(row)
+                        }
+                    )
+                } catch (e) {
+                    this.downloadFromWeb(row)
+                }
             },
             timerDownload (url, fullPath, name) {
                 if (this.timer) return
