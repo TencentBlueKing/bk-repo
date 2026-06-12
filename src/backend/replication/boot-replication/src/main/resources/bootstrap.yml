@@ -2,3 +2,4 @@ spring.application.name: replication
 server.port: 25903
 fdtp.server.port: 25903
 fdtp.server.enabled: false
+request.trailing.slash.enable: false
