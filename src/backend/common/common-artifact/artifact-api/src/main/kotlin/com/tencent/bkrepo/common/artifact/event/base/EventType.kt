@@ -173,6 +173,20 @@ enum class EventType(val msgKey: String) {
     SCAN_TRIGGERED("artifact.event.scan.started"),
     SCAN_FINISHED("artifact.event.scan.finished"),
 
+    // DRIVE
+    DRIVE_BLOCK_READ("artifact.event.drive.block-read"),
+    DRIVE_BLOCK_WRITE("artifact.event.drive.block-write"),
+    DRIVE_NODE_LIST("artifact.event.drive.node-list"),
+    DRIVE_NODE_MODIFIED_LIST("artifact.event.drive.node-modified-list"),
+    DRIVE_NODE_CREATE("artifact.event.drive.node-create"),
+    DRIVE_NODE_UPDATE("artifact.event.drive.node-update"),
+    DRIVE_NODE_DELETE("artifact.event.drive.node-delete"),
+    DRIVE_NODE_RENAME("artifact.event.drive.node-rename"),
+    DRIVE_SNAPSHOT_CREATE("artifact.event.drive.snapshot-create"),
+    DRIVE_SNAPSHOT_LIST("artifact.event.drive.snapshot-list"),
+    DRIVE_SNAPSHOT_UPDATE("artifact.event.drive.snapshot-update"),
+    DRIVE_SNAPSHOT_DELETE("artifact.event.drive.snapshot-delete"),
+
     // 第三方同步
     REPLICATION_THIRD_PARTY("artifact.event.replication-third-party");
 

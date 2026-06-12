@@ -92,7 +92,7 @@ class CoroutineRateLimiter(permitsPerSecond: Int = 0) {
             val now = System.nanoTime()
             resync(now)
             val waitNanos = maxOf(nextFreeNanos - now, 0L)
-            if (deadlineNanos != Long.MAX_VALUE && waitNanos > deadlineNanos - now) {
+            if (deadlineNanos != Long.MAX_VALUE && waitNanos > maxOf(deadlineNanos - now, 0L)) {
                 return@withLock null
             }
             val storedToSpend = minOf(permits.toDouble(), storedPermits)
