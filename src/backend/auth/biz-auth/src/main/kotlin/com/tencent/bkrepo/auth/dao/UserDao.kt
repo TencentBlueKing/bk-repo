@@ -18,16 +18,30 @@ import org.springframework.stereotype.Repository
 @Repository
 class UserDao : SimpleMongoDao<TUser>() {
 
+    /**
+     * 分批为用户添加角色，避免单次 updateMulti 操作文档数过多导致慢查询
+     */
     fun addRoleToUsers(userIdList: List<String>, roleId: String) {
-        val query = UserQueryHelper.getUserByIdList(userIdList)
         val update = UserUpdateHelper.buildAddRole(roleId)
-        this.updateMulti(query, update)
+        userIdList.chunked(BATCH_SIZE).forEach { batch ->
+            val query = UserQueryHelper.getUserByIdList(batch)
+            this.updateMulti(query, update)
+        }
     }
 
+    /**
+     * 分批从用户中移除角色，避免单次 updateMulti 操作文档数过多导致慢查询。
+     *
+     * 由于底层使用 \$pull 实现真删除（而非位置 \$unset），无需额外限定
+     * `roles == roleId`，按 userId 范围批量执行即可；
+     * 命令同时会把数组中残留的 null 一并清掉，对历史脏数据具备自愈能力。
+     */
     fun removeRoleFromUsers(userIdList: List<String>, roleId: String) {
-        val query = UserQueryHelper.getUserByIdListAndRoleId(userIdList, roleId)
-        val update = UserUpdateHelper.buildUnsetRoles()
-        this.updateMulti(query, update)
+        val update = UserUpdateHelper.buildUnsetRoles(roleId)
+        userIdList.chunked(BATCH_SIZE).forEach { batch ->
+            val query = UserQueryHelper.getUserByIdList(batch)
+            this.updateMulti(query, update)
+        }
     }
 
     fun addUserToRole(userId: String, roleId: String) {
@@ -39,7 +53,7 @@ class UserDao : SimpleMongoDao<TUser>() {
 
     fun removeUserFromRole(userId: String, roleId: String) {
         val query = UserQueryHelper.getUserByIdAndRoleId(userId, roleId)
-        val update = UserUpdateHelper.buildUnsetRoles()
+        val update = UserUpdateHelper.buildUnsetRoles(roleId)
         this.upsert(query, update)
     }
 
@@ -193,6 +207,11 @@ class UserDao : SimpleMongoDao<TUser>() {
             )
         )
         return this.find(query)
+    }
+
+    companion object {
+        /** 批量更新时每批处理的用户数量，避免单次操作持锁时间过长 */
+        private const val BATCH_SIZE = 50
     }
 
 }

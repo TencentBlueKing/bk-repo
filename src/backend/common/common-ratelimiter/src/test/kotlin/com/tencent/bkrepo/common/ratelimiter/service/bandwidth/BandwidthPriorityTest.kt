@@ -312,6 +312,8 @@ class BandwidthPriorityTest : DistributedTest() {
         inject("uploadBandwidthRateLimiterService", uploadSvc)
         inject("userUploadBandwidthRateLimiterService", userUploadSvc)
         listOf(
+            "urlPrefixDownloadBandwidthRateLimiterService",
+            "urlPrefixUploadBandwidthRateLimiterService",
             "urlRepoRateLimiterService", "urlRateLimiterService", "userUrlRepoRateLimiterService",
             "uploadUsageRateLimiterService", "userUrlRateLimiterService", "userUploadUsageRateLimiterService",
             "downloadUsageRateLimiterService", "userDownloadUsageRateLimiterService",

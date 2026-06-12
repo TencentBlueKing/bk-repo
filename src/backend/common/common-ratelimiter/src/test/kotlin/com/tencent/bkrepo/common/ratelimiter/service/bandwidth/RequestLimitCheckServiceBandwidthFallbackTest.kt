@@ -143,6 +143,8 @@ class RequestLimitCheckServiceBandwidthFallbackTest : DistributedTest() {
         inject("userUploadBandwidthRateLimiterService", userUploadSvc)
         // 其他非带宽服务用 Mock 填充，避免 NPE
         listOf(
+            "urlPrefixDownloadBandwidthRateLimiterService",
+            "urlPrefixUploadBandwidthRateLimiterService",
             "urlRepoRateLimiterService", "urlRateLimiterService", "userUrlRepoRateLimiterService",
             "uploadUsageRateLimiterService", "userUrlRateLimiterService", "userUploadUsageRateLimiterService",
             "downloadUsageRateLimiterService", "userDownloadUsageRateLimiterService",

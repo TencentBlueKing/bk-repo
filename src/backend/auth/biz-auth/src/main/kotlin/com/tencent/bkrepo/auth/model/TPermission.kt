@@ -46,10 +46,15 @@ import java.time.LocalDateTime
     CompoundIndex(name = "projectId_idx", def = "{'projectId': 1}", background = true),
     CompoundIndex(name = "includePattern_idx", def = "{'includePattern': 1}", background = true),
     CompoundIndex(name = "excludePattern_idx", def = "{'excludePattern': 1}", background = true),
-    CompoundIndex(name = "users_iid_idx", def = "{'users._id': 1}", background = true),
-    CompoundIndex(name = "users_action_idx", def = "{'users.action': 1}", background = true),
-    CompoundIndex(name = "roles_iid_idx", def = "{'roles._id': 1}", background = true),
-    CompoundIndex(name = "roles_action_idx", def = "{'roles.action': 1}", background = true)
+    CompoundIndex(name = "users_idx", def = "{'users': 1}", background = true),
+    CompoundIndex(name = "roles_idx", def = "{'roles': 1}", background = true),
+    CompoundIndex(name = "projectId_users_idx", def = "{'projectId': 1, 'users': 1}", background = true),
+    CompoundIndex(name = "projectId_roles_idx", def = "{'projectId': 1, 'roles': 1}", background = true),
+    CompoundIndex(
+        name = "projectId_repos_resourceType_idx",
+        def = "{'projectId': 1, 'repos': 1, 'resourceType': 1}",
+        background = true
+    )
 )
 
 data class TPermission(

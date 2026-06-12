@@ -49,7 +49,6 @@ import com.tencent.bkrepo.opdata.pojo.ProjectBillStatementRequest
 import com.tencent.bkrepo.opdata.pojo.ProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.ProjectMetricsOption
 import com.tencent.bkrepo.opdata.pojo.ProjectMetricsRequest
-import com.tencent.bkrepo.opdata.pojo.enums.ProjectType
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import com.tencent.bkrepo.opdata.util.EasyExcelUtils
 import com.tencent.bkrepo.opdata.util.MetricsCacheUtil
@@ -113,7 +112,7 @@ class ProjectMetricsService (
         }
         CacheBuilder.newBuilder()
             .maximumSize(10)
-            .expireAfterWrite(1, TimeUnit.HOURS)
+            .expireAfterWrite(1, TimeUnit.DAYS)
             .build(cacheLoader)
     }
 
@@ -320,7 +319,7 @@ class ProjectMetricsService (
     /**
      * 定时将db中的数据更新到缓存中
      */
-    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = INIT_DELAY, timeUnit = TimeUnit.MINUTES)
+    @Scheduled(cron = "0 0 5 * * ?")
     fun loadCache() {
         val createdDate = StatDateUtil.getStatDate()
         val cacheDateList = listOf(
@@ -333,10 +332,6 @@ class ProjectMetricsService (
             MetricsCacheUtil.getProjectMetrics(
                 it.format(DateTimeFormatter.ISO_DATE_TIME)
             )
-        }
-
-        ProjectType.values().forEach {
-            MetricsCacheUtil.gerProjectNodeNum(it.name)
         }
 
         listOf(ACTIVE_PROJECTS, DOWNLOAD_ACTIVE_PROJECTS, UPLOAD_ACTIVE_PROJECTS).forEach {
@@ -590,8 +585,6 @@ class ProjectMetricsService (
         private val logger = LoggerFactory.getLogger(ProjectMetricsService::class.java)
 
         private const val DEFAULT_PROJECT_CACHE_SIZE = 100_000L
-        private const val FIXED_DELAY = 30L
-        private const val INIT_DELAY = 3L
         private const val DOWNLOAD_ACTIVE_PROJECTS = "downloadActiveProjects"
         private const val ACTIVE_PROJECTS = "activeProjects"
         private const val UPLOAD_ACTIVE_PROJECTS = "uploadActiveProjects"

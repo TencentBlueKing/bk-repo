@@ -231,6 +231,39 @@ class UploadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
     }
 
     @Test
+    fun wildcardRuleIsolatesProjectsTest() {
+        // 通配符规则 /*/ 应为每个项目生成独立的 bucket（key 包含实际项目名）
+        val wildcardRule = ResourceLimit(
+            algo = Algorithms.FIXED_WINDOW.name,
+            resource = "/*/",
+            limitDimension = LimitDimension.UPLOAD_BANDWIDTH.name,
+            limit = 100,
+            duration = Duration.ofSeconds(1),
+            scope = WorkScope.LOCAL.name
+        )
+        rateLimiterProperties.rules = listOf(wildcardRule)
+        (rateLimiterService as UploadBandwidthRateLimiterService).refreshRateLimitRule()
+
+        request.requestURI = "/blueking/generic-local/test.txt"
+        val resource = (rateLimiterService as UploadBandwidthRateLimiterService).buildResource(request)
+        val extra = (rateLimiterService as UploadBandwidthRateLimiterService).buildExtraResource(request)
+        val limitInfo = (rateLimiterService as UploadBandwidthRateLimiterService)
+            .rateLimitRule?.getRateLimitRule(ResInfo(resource, extra))
+
+        Assertions.assertNotNull(limitInfo)
+        // 通配符规则通过 extraResource /blueking/ 精确匹配，resource 应为 /blueking/
+        Assertions.assertEquals("/blueking/", limitInfo?.resource)
+        val key = (rateLimiterService as UploadBandwidthRateLimiterService)
+            .generateKey(limitInfo!!.resource, limitInfo.resourceLimit)
+        Assertions.assertEquals(KEY_PREFIX + "UploadBandwidth:/blueking/", key)
+
+        // 恢复
+        l1.resource = "/*/"
+        rateLimiterProperties.rules = listOf(l1)
+        (rateLimiterService as UploadBandwidthRateLimiterService).refreshRateLimitRule()
+    }
+
+    @Test
     fun limitTest() {
         Assertions.assertThrows(UnsupportedOperationException::class.java) {
             (rateLimiterService as UploadBandwidthRateLimiterService).limit(request)

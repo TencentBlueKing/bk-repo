@@ -45,6 +45,10 @@ import com.tencent.bkrepo.common.ratelimiter.service.connection.UserConcurrentCo
 import com.tencent.bkrepo.common.ratelimiter.service.concurrent.UrlConcurrentRequestLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.concurrent.UserUrlConcurrentRequestLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.ip.IpRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.url.UrlPrefixDownloadBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.url.UrlPrefixDownloadRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.url.UrlPrefixUploadBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.url.UrlPrefixUploadRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRepoRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.user.UserUrlRateLimiterService
@@ -230,6 +234,58 @@ class RateLimiterAutoConfiguration {
         rateLimiterConfigService: RateLimiterConfigService
     ): UserUrlRateLimiterService {
         return UserUrlRateLimiterService(
+            taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService
+        )
+    }
+
+    @Bean(URL_PREFIX_UPLOAD_RATE_RATELIMITER_SERVICE)
+    fun urlPrefixUploadRateLimiterService(
+        taskScheduler: ThreadPoolTaskScheduler,
+        rateLimiterProperties: RateLimiterProperties,
+        rateLimiterMetrics: RateLimiterMetrics,
+        redisTemplate: RedisTemplate<String, String>,
+        rateLimiterConfigService: RateLimiterConfigService
+    ): UrlPrefixUploadRateLimiterService {
+        return UrlPrefixUploadRateLimiterService(
+            taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService
+        )
+    }
+
+    @Bean(URL_PREFIX_DOWNLOAD_RATE_RATELIMITER_SERVICE)
+    fun urlPrefixDownloadRateLimiterService(
+        taskScheduler: ThreadPoolTaskScheduler,
+        rateLimiterProperties: RateLimiterProperties,
+        rateLimiterMetrics: RateLimiterMetrics,
+        redisTemplate: RedisTemplate<String, String>,
+        rateLimiterConfigService: RateLimiterConfigService
+    ): UrlPrefixDownloadRateLimiterService {
+        return UrlPrefixDownloadRateLimiterService(
+            taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService
+        )
+    }
+
+    @Bean(URL_PREFIX_UPLOAD_BANDWIDTH_RATELIMITER_SERVICE)
+    fun urlPrefixUploadBandwidthRateLimiterService(
+        taskScheduler: ThreadPoolTaskScheduler,
+        rateLimiterProperties: RateLimiterProperties,
+        rateLimiterMetrics: RateLimiterMetrics,
+        redisTemplate: RedisTemplate<String, String>,
+        rateLimiterConfigService: RateLimiterConfigService
+    ): UrlPrefixUploadBandwidthRateLimiterService {
+        return UrlPrefixUploadBandwidthRateLimiterService(
+            taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService
+        )
+    }
+
+    @Bean(URL_PREFIX_DOWNLOAD_BANDWIDTH_RATELIMITER_SERVICE)
+    fun urlPrefixDownloadBandwidthRateLimiterService(
+        taskScheduler: ThreadPoolTaskScheduler,
+        rateLimiterProperties: RateLimiterProperties,
+        rateLimiterMetrics: RateLimiterMetrics,
+        redisTemplate: RedisTemplate<String, String>,
+        rateLimiterConfigService: RateLimiterConfigService
+    ): UrlPrefixDownloadBandwidthRateLimiterService {
+        return UrlPrefixDownloadBandwidthRateLimiterService(
             taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService
         )
     }
@@ -464,6 +520,10 @@ class RateLimiterAutoConfiguration {
         const val URL_DOWNLOAD_BANDWIDTH_RATELIMITER_SERVICE = "urlDownloadBandwidthRateLimiterService"
         const val URL_CONCURRENT_REQUEST_RATELIMITER_SERVICE = "urlConcurrentRequestLimiterService"
         const val USER_URL_CONCURRENT_REQUEST_RATELIMITER_SERVICE = "userUrlConcurrentRequestLimiterService"
+        const val URL_PREFIX_UPLOAD_RATE_RATELIMITER_SERVICE = "urlPrefixUploadRateLimiterService"
+        const val URL_PREFIX_DOWNLOAD_RATE_RATELIMITER_SERVICE = "urlPrefixDownloadRateLimiterService"
+        const val URL_PREFIX_UPLOAD_BANDWIDTH_RATELIMITER_SERVICE = "urlPrefixUploadBandwidthRateLimiterService"
+        const val URL_PREFIX_DOWNLOAD_BANDWIDTH_RATELIMITER_SERVICE = "urlPrefixDownloadBandwidthRateLimiterService"
     }
 
 }
