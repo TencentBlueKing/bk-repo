@@ -97,7 +97,8 @@ module.exports = ({ entry, publicPath, dist, port = 8080, argv, env }) => {
         externals: {
             vue: 'Vue',
             'vue-router': 'VueRouter',
-            vuex: 'Vuex'
+            vuex: 'Vuex',
+            'bk-magic-vue': 'bkMagicVue'
         },
         resolve: {
             extensions: ['.js', '.vue', '.json', '.ts', '.scss', '.css'],
@@ -105,7 +106,12 @@ module.exports = ({ entry, publicPath, dist, port = 8080, argv, env }) => {
             alias: {
                 '@': path.resolve('src'),
                 '@repository': path.resolve(__dirname, 'core/devops-repository/src'),
-                '@locale': path.resolve(__dirname, 'locale')
+                '@locale': path.resolve(__dirname, 'locale'),
+                // 修复 xlsx 预览白屏：
+                // vue-demi 的 ESM 导出在 Vue 2 模式下与 webpack ESM/CJS 互操作不兼容，
+                // 导致 @vue-office/excel 内部 import { ref, reactive, ... } from 'vue-demi' 拿到 undefined。
+                // 在 Vue 2 环境下 vue-demi 的 API 与 @vue/composition-api 完全一致，直接重定向即可。
+                'vue-demi$': path.resolve(__dirname, 'node_modules/@vue/composition-api')
             }
         },
         devServer: {

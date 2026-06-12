@@ -59,14 +59,16 @@ class CoArtifactFileTest {
     private fun buildArtifactFile(
         threshold: Long
     ): CoArtifactFile {
-        val storageProperties = StorageProperties(
-            filesystem = storageCredentials,
+        val monitorConfig = MonitorProperties()
+        val storageProperties = StorageProperties().apply {
+            filesystem = storageCredentials
             receive = ReceiveProperties(
                 fileSizeThreshold = DataSize.ofBytes(threshold)
-            ),
-            monitor = MonitorProperties()
-        )
-        val monitor = StorageHealthMonitor(storageProperties, tempDir)
+            )
+            monitor = monitorConfig
+        }
+
+        val monitor = StorageHealthMonitor(monitorConfig, tempDir)
         return CoArtifactFile(storageCredentials, storageProperties, monitor)
     }
 

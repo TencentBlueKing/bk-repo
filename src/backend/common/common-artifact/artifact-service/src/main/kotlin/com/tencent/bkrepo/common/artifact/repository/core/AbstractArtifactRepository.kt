@@ -195,6 +195,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      */
     open fun onUploadBefore(context: ArtifactUploadContext) {
         artifactMetrics.uploadingCount.incrementAndGet()
+        ArtifactMetrics.getUploadTotalCounter().increment()
     }
 
     /**
@@ -217,6 +218,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      * 上传失败回调
      */
     open fun onUploadFailed(context: ArtifactUploadContext, exception: Exception) {
+        ArtifactMetrics.getUploadFailedCounter().increment()
         // 默认向上抛异常，由全局异常处理器处理
         throw exception
     }
@@ -228,6 +230,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         // 控制浏览器直接下载，或打开预览
         context.useDisposition = context.request.getParameter(PARAM_DOWNLOAD)?.toBoolean() ?: false
         artifactMetrics.downloadingCount.incrementAndGet()
+        ArtifactMetrics.getDownloadTotalCounter().increment()
     }
 
     /**

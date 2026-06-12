@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.rule.PathResourceLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.common.PathNode
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
+import com.tencent.bkrepo.common.ratelimiter.utils.ResourcePathUtils
 import com.tencent.bkrepo.common.ratelimiter.utils.ResourcePathUtils.getUserAndPath
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -53,7 +54,12 @@ class UserUrlRepoResourceLimitRule(
             throw InvalidResourceException(urlPath)
         }
         user = userId
-        val resourceLimitCopy = resourceLimit.copy(resource = urlPath)
+        val resourceLimitCopy = resourceLimit.copy(
+            resource = ResourcePathUtils.buildRequestPathResource(
+                resourceLimit.requestPath,
+                urlPath
+            )
+        )
         addPathResourceLimit(resourceLimitCopy, userUrlRepoDimensionList)
     }
 

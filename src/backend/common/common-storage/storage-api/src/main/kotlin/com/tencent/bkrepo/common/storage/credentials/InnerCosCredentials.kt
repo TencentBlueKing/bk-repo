@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.metadata.handler.MaskPartString
 import com.tencent.bkrepo.common.storage.config.CacheProperties
 import com.tencent.bkrepo.common.storage.config.CompressProperties
 import com.tencent.bkrepo.common.storage.config.EncryptProperties
+import com.tencent.bkrepo.common.storage.config.MonitorConfig
 import com.tencent.bkrepo.common.storage.config.UploadProperties
 
 /**
@@ -59,12 +60,21 @@ data class InnerCosCredentials(
      * 分片上传/下载阈值，单位 MB
      */
     var multipartThreshold: Long = 10,
+    /**
+     * COS 直传模式（凭证级）
+     * - OFF：关闭直连
+     * - ON_CHECK_FAILED：当存储 monitor 出现至少一次检查失败时直连，比 ON_UNHEALTHY 更灵敏
+     * - ON_UNHEALTHY：仅当存储 monitor 判定为不健康时直连（需连续失败达到 timesToFallback 阈值）
+     * - ALWAYS：全部直连（仍受 ReceiveProperties.enableCosDirectUploadRepos 白名单约束）
+     */
+    var cosDirectUploadMode: String = COS_DIRECT_UPLOAD_MODE_OFF,
     var download: DownloadProperties = DownloadProperties(),
     override var key: String? = null,
     override var cache: CacheProperties = CacheProperties(),
     override var upload: UploadProperties = UploadProperties(),
     override var encrypt: EncryptProperties = EncryptProperties(),
     override var compress: CompressProperties = CompressProperties(),
+    override var monitor: MonitorConfig? = null,
     override var allowRepoTypes: Set<String>? = null,
     override var notAllowRepoTypes: Set<String>? = setOf(RepositoryType.DRIVE.name),
 ) : StorageCredentials(key, cache, upload, encrypt, compress) {
@@ -72,6 +82,11 @@ data class InnerCosCredentials(
     companion object {
         const val type = "innercos"
         const val MB = 1024 * 1024
+
+        const val COS_DIRECT_UPLOAD_MODE_OFF = "OFF"
+        const val COS_DIRECT_UPLOAD_MODE_ON_CHECK_FAILED = "ON_CHECK_FAILED"
+        const val COS_DIRECT_UPLOAD_MODE_ON_UNHEALTHY = "ON_UNHEALTHY"
+        const val COS_DIRECT_UPLOAD_MODE_ALWAYS = "ALWAYS"
     }
 
     data class DownloadProperties(

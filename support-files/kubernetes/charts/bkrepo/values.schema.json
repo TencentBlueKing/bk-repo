@@ -189,6 +189,16 @@
                     "form": true
                 }
             }
+        },
+        "huggingface": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "title": "是否部署huggingface registry",
+                    "form": true
+                }
+            }
         }
     }
 }

@@ -33,8 +33,8 @@ import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildDeletedEvent
-import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
+import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper
 import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildCriteria
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -44,6 +44,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
+import kotlinx.coroutines.reactor.awaitSingle
 import java.time.LocalDateTime
 
 /**
@@ -108,8 +109,22 @@ open class RNodeDeleteSupport(
             "/$projectId/$repoName$fullPaths"
         }
         try {
-            val updateResult = nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
-            deletedNum = updateResult.modifiedCount
+            val collectionName = nodeDao.determineCollectionName(query)
+            deletedNum = NodeDeleteHelper.deleteNodes(
+                query = query,
+                deleteMode = nodeBaseService.repositoryProperties.getDeleteMode(projectId),
+                batchSize = nodeBaseService.repositoryProperties.deleteBatchSize,
+                concurrency = nodeBaseService.repositoryProperties.deleteNodesConcurrency,
+                maxDeleteNodeCount = nodeBaseService.repositoryProperties.maxDeleteNodeCount,
+                operator = operator,
+                deleteTime = deleteTime,
+                findByQuery = { q -> nodeDao.find(q, Map::class.java) },
+                updateMulti = { q, u ->
+                    nodeDao.determineReactiveMongoOperations()
+                        .updateMulti(q, u, collectionName).awaitSingle().modifiedCount
+                },
+                countByQuery = { q -> nodeDao.count(q) }
+            )
             if (deletedNum == 0L) {
                 return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
             }

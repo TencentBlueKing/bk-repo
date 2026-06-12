@@ -90,3 +90,7 @@ const val AUTH_BUILTIN_VIEWER = "repo_viewer"
 const val REPLICATION_MANAGE_ID = "replication_manage"
 
 const val REPLICATION_MANAGE_NAME = "同步管理员"
+
+const val GLOBAL_PREVIEW_ROLE_ID = "global_preview"
+
+const val GLOBAL_PREVIEW_ROLE_NAME = "全局预览"

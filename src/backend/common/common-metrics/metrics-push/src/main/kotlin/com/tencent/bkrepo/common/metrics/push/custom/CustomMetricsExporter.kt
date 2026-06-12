@@ -7,7 +7,6 @@ import com.tencent.bkrepo.common.metrics.push.custom.config.CustomEventConfig
 import com.tencent.bkrepo.common.metrics.push.custom.config.CustomPushConfig
 import com.tencent.bkrepo.common.metrics.push.custom.config.CustomReportConfig
 import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
-import io.prometheus.client.CollectorRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.boot.actuate.autoconfigure.metrics.export.prometheus.PrometheusProperties
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
@@ -39,7 +38,12 @@ class CustomMetricsExporter(
 
     /** metrics push 路径：drive 为 null 时（仅开启 event）不创建，避免空指针 */
     private val scheduleMetricsExporter: ScheduleMetricsExporter? = drive?.let {
-        ScheduleMetricsExporter(CollectorRegistry(), it, scheduler, prometheusProperties.pushgateway.pushRate)
+        ScheduleMetricsExporter(
+            drive = it,
+            scheduler = scheduler,
+            pushRate = prometheusProperties.pushgateway.pushRate,
+            labelIncludes = customPushConfig.labelIncludes,
+        )
     }
 
     fun reportMetrics(item: MetricsItem) {
@@ -79,17 +83,7 @@ class CustomMetricsExporter(
 
     private fun reportAsMetric(item: MetricsItem) {
         if (!customPushConfig.enabled) return
-        scheduleMetricsExporter?.queue?.offer(pruneLabelsForMetric(item))
-    }
-
-    /**
-     * 根据 labelIncludes 配置裁剪 metrics 路径的 label，event 路径不经过此方法。
-     * 未配置该指标名时原样返回。
-     */
-    private fun pruneLabelsForMetric(item: MetricsItem): MetricsItem {
-        val keepKeys = customPushConfig.labelIncludes[item.name] ?: return item
-        val pruned = item.labels.filterKeys { it in keepKeys }
-        return item.copy(labels = pruned)
+        scheduleMetricsExporter?.queue?.offer(item)
     }
 
     private fun reportAsEvent(item: MetricsItem) {

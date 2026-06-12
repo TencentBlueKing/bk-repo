@@ -10,13 +10,11 @@ import com.tencent.bkrepo.common.ratelimiter.model.RateLimiterStatistics
 import com.tencent.bkrepo.common.ratelimiter.model.ResourceRateLimiterStatistics
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.search.Search
-import org.springframework.stereotype.Service
 
 /**
  * 限流统计服务
  * 提供限流运营数据查询能力
  */
-@Service
 class RateLimiterStatisticsService(
     private val registry: MeterRegistry
 ) {

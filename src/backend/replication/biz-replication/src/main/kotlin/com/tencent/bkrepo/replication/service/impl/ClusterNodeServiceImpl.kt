@@ -57,22 +57,27 @@ import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeStatusUpdateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeUpdateRequest
+import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.util.ClusterQueryHelper
+import com.tencent.secapi.checkurl.CheckUrl
+import com.tencent.secapi.checkurl.Config
 import com.tencent.bkrepo.replication.util.HttpUtils
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 import java.io.ByteArrayInputStream
+import java.net.MalformedURLException
+import java.util.ArrayList
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.regex.Pattern
 import kotlin.random.Random
 
 @Service
 class ClusterNodeServiceImpl(
     private val clusterNodeDao: ClusterNodeDao,
+    private val replicationProperties: ReplicationProperties,
 ) : ClusterNodeService {
 
     override fun getByClusterId(id: String): ClusterNodeInfo? {
@@ -169,9 +174,7 @@ class ClusterNodeServiceImpl(
             val tClusterNode = clusterNodeDao.findByName(name)
                 ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
             Preconditions.checkNotBlank(url, this::url.name)
-            if (!Pattern.matches(CLUSTER_NODE_URL_PATTERN, url)) {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::url.name)
-            }
+            checkClusterNodeUrl(url!!, request::url.name)
             tClusterNode.url = url!!
             tClusterNode.apply {
                 username = request.username
@@ -316,6 +319,35 @@ class ClusterNodeServiceImpl(
         }
     }
 
+    private fun checkClusterNodeUrl(rawUrl: String, fieldName: String) {
+        if ('\r' in rawUrl || '\n' in rawUrl) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, fieldName)
+        }
+        val formatted = try {
+            UrlFormatter.formatUrl(rawUrl.trim())
+        } catch (_: IllegalArgumentException) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, fieldName)
+        }
+        val p = replicationProperties.clusterNodeUrl
+        val cfg = Config().apply {
+            schemes = ArrayList(p.schemes)
+            if (p.rules.isEmpty()) {
+                mode = "regex"
+                rules = ArrayList(listOf(".*"))
+            } else {
+                mode = p.mode
+                rules = ArrayList(p.rules)
+            }
+        }
+        try {
+            CheckUrl.checkUrl(formatted, cfg)
+        } catch (_: IllegalArgumentException) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, fieldName)
+        } catch (_: MalformedURLException) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, fieldName)
+        }
+    }
+
     private fun checkCenterNodeExist(): Boolean {
         val clusterNodeList = clusterNodeDao.listByNameAndType(type = ClusterNodeType.CENTER)
         return clusterNodeList.isNotEmpty() && clusterNodeList.size == 1
@@ -331,15 +363,12 @@ class ClusterNodeServiceImpl(
             ) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::name.name)
             }
-            if (!Pattern.matches(CLUSTER_NODE_URL_PATTERN, url)) {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::url.name)
-            }
+            checkClusterNodeUrl(url, request::url.name)
         }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ClusterNodeServiceImpl::class.java)
-        private const val CLUSTER_NODE_URL_PATTERN = "[a-zA-z]+://[^\\s]*"
         private const val CLUSTER_NAME_LENGTH_MIN = 2
         private const val CLUSTER_NAME_LENGTH_MAX = 256
         private const val RETRY_COUNT = 2

@@ -215,12 +215,16 @@ class RequestLimitCheckServiceTest : DistributedTest() {
 
         // Bandwidth services: use mocks to avoid real service setup
         listOf(
+            "urlPrefixUploadRateLimiterService",
+            "urlPrefixDownloadRateLimiterService",
             "downloadBandwidthRateLimiterService",
             "uploadBandwidthRateLimiterService",
             "userUploadBandwidthRateLimiterService",
             "userDownloadBandwidthRateLimiterService",
             "urlUploadBandwidthRateLimiterService",
             "urlDownloadBandwidthRateLimiterService",
+            "urlPrefixUploadBandwidthRateLimiterService",
+            "urlPrefixDownloadBandwidthRateLimiterService",
         ).forEach { name ->
             runCatching {
                 val f = RequestLimitCheckService::class.java.getDeclaredField(name)

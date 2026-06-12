@@ -49,7 +49,8 @@ class RateLimitController(
         val tRateLimit = rateLimiterConfigService.findByModuleNameAndLimitDimensionAndResource(
             request.resource,
             request.moduleName,
-            request.limitDimension
+            request.limitDimension,
+            request.requestPath
         )
         if (tRateLimit == null || !tRateLimit.id.equals(request.id)) {
             checkResource(request)
@@ -60,9 +61,10 @@ class RateLimitController(
 
     private fun checkResource(request: RateLimitCreatOrUpdateRequest) {
         with(request) {
-            val tRateLimits = rateLimiterConfigService.findByResourceAndLimitDimension(
+            val tRateLimits = rateLimiterConfigService.findByResourceAndLimitDimensionAndRequestPath(
                 resource = resource,
-                limitDimension = limitDimension
+                limitDimension = limitDimension,
+                requestPath = requestPath
             )
             val modules = ArrayList<String>()
             tRateLimits.forEach { tRateLimit ->
@@ -109,10 +111,15 @@ class RateLimitController(
 
     // 获取数据库里面的模块名
     @PostMapping("/getExistModule")
-    fun getExistModule(@RequestParam resource: String, @RequestParam limitDimension: String): Response<List<String>> {
-        val tRateLimits = rateLimiterConfigService.findByResourceAndLimitDimension(
+    fun getExistModule(
+        @RequestParam resource: String,
+        @RequestParam limitDimension: String,
+        @RequestParam(required = false) requestPath: String?
+    ): Response<List<String>> {
+        val tRateLimits = rateLimiterConfigService.findByResourceAndLimitDimensionAndRequestPath(
             resource = resource,
-            limitDimension = limitDimension
+            limitDimension = limitDimension,
+            requestPath = requestPath
         )
         val modules = ArrayList<String>()
         tRateLimits.forEach { tRateLimit -> modules.addAll(tRateLimit.moduleName) }

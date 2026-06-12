@@ -165,6 +165,14 @@ object PackageKeys {
     }
 
     /**
+     * 生成skill格式key
+     * 例子: skill://test
+     */
+    fun ofSkill(name: String): String {
+        return ofName(PackageType.SKILL.schema, name)
+    }
+
+    /**
      * 生成gav格式key
      */
     fun resolveGav(gavKey: String): String {
