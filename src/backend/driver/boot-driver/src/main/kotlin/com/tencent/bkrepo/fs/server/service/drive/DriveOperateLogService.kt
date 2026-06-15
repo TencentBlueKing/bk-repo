@@ -4,8 +4,8 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.metadata.pojo.log.OperateLog
 import com.tencent.bkrepo.common.metadata.service.log.ROperateLogService
 import com.tencent.bkrepo.fs.server.config.properties.drive.DriveOperateLogProperties
-import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchOperation
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchOp
+import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchOperation
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchRequest
 import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResult
 import com.tencent.bkrepo.fs.server.utils.CoroutineRateLimiter
@@ -19,14 +19,14 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.nanoseconds
-import kotlin.time.toKotlinDuration
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.nanoseconds
+import kotlin.time.toKotlinDuration
 
 @Service
 class DriveOperateLogService(
@@ -175,8 +175,8 @@ class DriveOperateLogService(
         logRateLimited(
             lastDropErrorLogTime,
             "Drive operate log queue is full, dropped audit log[type=${log.type}, projectId=${log.projectId}, " +
-                "repoName=${log.repoName}, userId=${log.userId}, resourceKey=${log.resourceKey}], " +
-                "totalDropped[$dropped]",
+                    "repoName=${log.repoName}, userId=${log.userId}, resourceKey=${log.resourceKey}], " +
+                    "totalDropped[$dropped]",
         )
     }
 

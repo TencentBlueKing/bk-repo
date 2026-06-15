@@ -185,7 +185,10 @@ class CoroutineRateLimiterTest {
         val debtLimiter = CoroutineRateLimiter(100)
         debtLimiter.acquire(100)
         val debtElapsedMs = measureMs { debtLimiter.acquire(10) }
-        assertTrue(debtElapsedMs >= 800, "Next caller should wait for previous debt, but only waited ${debtElapsedMs}ms")
+        assertTrue(
+            debtElapsedMs >= 800,
+            "Next caller should wait for previous debt, but only waited ${debtElapsedMs}ms"
+        )
         assertTrue(debtElapsedMs < 2000, "Debt wait should not exceed ~1s, but took ${debtElapsedMs}ms")
     }
 
