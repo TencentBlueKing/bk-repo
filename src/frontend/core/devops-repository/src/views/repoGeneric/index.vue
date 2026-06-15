@@ -293,6 +293,7 @@
                 moveBarWidth: 10,
                 isLoading: false,
                 treeLoading: false,
+                treeNavigating: false,
                 // 左侧树处于打开状态的目录
                 sideTreeOpenList: [],
                 sortType: 'lastModifiedDate',
@@ -576,8 +577,9 @@
                     roadMap: '0'
                 }])
             },
-            pathChange () {
-                const paths = (this.$route.query.path || '').split('/').filter(Boolean)
+            pathChange (path) {
+                const queryPath = path || this.$route.query.path || ''
+                const paths = queryPath.split('/').filter(Boolean)
                 paths.pop() // 定位到文件/文件夹的上级目录
                 const tempPaths = paths
                 const num = paths.length
@@ -604,7 +606,7 @@
                         tempPaths.shift()
                     }
                     if (num !== 0) {
-                        this.itemClickHandler(destNode)
+                        this.itemClickHandler(destNode || this.genericTree[0])
                     } else {
                         this.itemClickHandler(this.genericTree[0])
                     }
@@ -778,6 +780,9 @@
                 this.debounceClickTreeNode(node)
             },
             clickTreeNodeHandler (node) {
+                if (this.treeNavigating) return
+                // 清除搜索全路径，使用目录树选中的节点路径
+                this.searchFullPath = ''
                 if (node.fullPath + '/default' === this.$route.query.path) {
                     this.selectedTreeNode = node
 
@@ -805,6 +810,7 @@
                 }
             },
             iconClickHandler (node) {
+                if (this.treeNavigating) return
                 // 更新已展开文件夹数据
                 const reg = new RegExp(`^${node.roadMap}`)
                 const openList = this.sideTreeOpenList
@@ -886,6 +892,36 @@
                     repoName: pathSegments[pathSegments.length - 1]
                 }
             },
+            // 根据路径片段在目录树中查找并选中节点（懒加载树节点）
+            findTreeNodeAndSelect (pathParts) {
+                const root = this.genericTree[0]
+                if (!root || pathParts.length === 0) {
+                    this.itemClickHandler(root)
+                    return
+                }
+                this.treeNavigating = true
+                // 沿路径逐级加载并展开目录树
+                pathParts.reduce(async (chain, path) => {
+                    const node = await chain
+                    if (!node) return null
+                    // 子节点未加载则先加载
+                    if (!node.leaf && node.children.length === 0) {
+                        await this.updateGenericTreeNode(node)
+                    }
+                    // 展开当前节点
+                    if (!this.sideTreeOpenList.includes(node.roadMap)) {
+                        this.sideTreeOpenList.push(node.roadMap)
+                    }
+                    // 查找下一级子节点
+                    const child = node.children.find(n => n.name === path)
+                    return child
+                }, Promise.resolve(root)).then(finalNode => {
+                    this.treeNavigating = false
+                    this.itemClickHandler(finalNode || root)
+                }).catch(() => {
+                    this.treeNavigating = false
+                })
+            },
             // 双击table打开文件夹
             openFolder (row) {
                 if (!row.folder) {
@@ -895,10 +931,19 @@
                     return
                 }
                 if (this.searchFileName) {
-                    // 搜索中打开文件夹
+                    // 搜索中打开文件夹，退出搜索模式，显示目录树
                     this.inFolderSearchName = ''
                     this.searchFullPath = row.fullPath
-                    this.handlerPaginationChange()
+                    const query = { ...this.$route.query }
+                    delete query.fileName
+                    this.$router.replace({ query })
+                    // 尝试选中目录树中对应的节点
+                    const pathParts = (row.fullPath || '').split('/').filter(Boolean)
+                    if (pathParts.length === 0) {
+                        this.itemClickHandler(this.genericTree[0])
+                    } else {
+                        this.findTreeNodeAndSelect(pathParts)
+                    }
                 } else {
                     const node = this.selectedTreeNode.children.find(v => v.fullPath === row.fullPath)
                     this.itemClickHandler(node)

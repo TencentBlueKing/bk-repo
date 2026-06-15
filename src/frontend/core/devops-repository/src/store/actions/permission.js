@@ -1,12 +1,14 @@
 import Vue from 'vue'
 
 const authPrefix = 'auth/api'
+// 用户信息查询走 opdata 微服务，使得 auth 微服务不可用时前端仍能获取用户身份进入页面
+const userInfoPrefix = 'opdata/api'
 
 export default {
     // 查询用户信息
     ajaxUserInfo ({ dispatch, commit }) {
         return Vue.prototype.$ajax.get(
-            `${authPrefix}/user/info`
+            `${userInfoPrefix}/user/info`
         ).then(res => {
             commit('SET_USER_INFO', {
                 displayName: res.displayName ? res.displayName : ''
@@ -16,7 +18,7 @@ export default {
     },
     getUserInfo ({ state, commit }, userId) {
         return Vue.prototype.$ajax.get(
-            `${authPrefix}/user/userinfo/${userId}`
+            `${userInfoPrefix}/user/userinfo/${userId}`
         ).then(res => {
             res && commit('SET_USER_INFO', {
                 ...res,
