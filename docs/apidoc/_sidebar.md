@@ -22,6 +22,7 @@
 - **Generic通用制品仓库**
   - [简单文件操作](/apidoc/generic/simple.md)
   - [分块文件操作](/apidoc/generic/block.md)
+  - [分块文件操作v2](/apidoc/generic/separate-block.md)
   - [临时访问凭证](/apidoc/generic/temporary-access.md)
 - **Drive仓库**
   - [文件操作](/apidoc/drive/file.md)

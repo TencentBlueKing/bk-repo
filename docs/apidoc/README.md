@@ -24,6 +24,7 @@
 - **Generic通用制品仓库**
   - [简单文件操作](generic/simple.md)
   - [分块文件操作](generic/block.md)
+  - [分块文件操作v2](generic/separate-block.md)
   - [临时访问凭证](generic/temporary-access.md)
 - **Drive仓库**
   - [文件操作](drive/file.md)
