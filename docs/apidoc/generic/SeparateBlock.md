@@ -35,23 +35,23 @@
     "code": 0,
     "message": null,
     "data": {
-      "uploadId": "8be31384f82a45b0aafb6c6add29e94f/xxxxxxxx",
+      "uploadId": "8be31384f82a45b0aafb6c6add29e94f/00000000FIRSTUPLOAD",
       "expireSeconds": 43200
     },
-    "traceId": null
+    "traceId": "682f731fcf240de38b657c36e2148000"
   }
   ```
 
 - **字段说明**
 
-  | 字段            | 类型    | 描述                            | Description                          |
-  | --------------- | ------- | ------------------------------- | ------------------------------------ |
-  | code            | int     | 错误编码，0 表示成功            | 0: success, others: failure          |
-  | message         | string  | 错误消息                        | The failure message                  |
-  | data            | object  | 返回数据                        | Response data                        |
-  | ├── uploadId    | string  | 分块上传 ID                     | Block upload ID                      |
-  | ├── expireSeconds | long  | 上传 ID 过期时间，单位：秒      | Upload ID expiration in seconds      |
-  | traceId         | string  | 请求跟踪 ID                     | Trace ID                             |
+  | 字段            | 类型     | 描述              | Description                     |
+  |---------------|--------|-----------------|---------------------------------|
+  | code          | int    | 错误编码，0 表示成功     | 0: success, others: failure     |
+  | message       | string | 错误消息            | The failure message             |
+  | data          | object | 返回数据            | Response data                   |
+  | uploadId      | string | 分块上传 ID         | Block upload ID                 |
+  | expireSeconds | long   | 上传 ID 过期时间，单位：秒 | Upload ID expiration in seconds |
+  | traceId       | string | 请求跟踪 ID         | Trace ID                        |
 
 ---
 
@@ -81,6 +81,7 @@
   | X-BKREPO-OFFSET    | long    | 是   | 无   | 分块偏移量，起始值为 0  | Block offset (starting from 0)  |
   | X-BKREPO-SHA256    | string  | 否   | 无   | 分块文件的 SHA256 校验值 | SHA256 checksum of the block    |
   | X-BKREPO-MD5       | string  | 否   | 无   | 分块文件的 MD5 校验值 | MD5 checksum of the block       |
+  | X-BKREPO-CRC64ECMA | string  | 否   | 无   | 分块文件的 CRC64ECMA 校验值 | CRC64ECMA checksum of the block |
   | UPLOAD-TYPE        | string  | 是   | 无   | 上传类型，值为 `SEPARATE-UPLOAD` | Upload type (`SEPARATE-UPLOAD`) |
 
 - **请求体**
@@ -95,8 +96,14 @@
   {
     "code": 0,
     "message": null,
-    "data": null,
-    "traceId": null
+    "data": {
+      "size": 10240,
+      "sha256": "abc123def456...",
+      "crc64ecma": "14529005747808976418",
+      "startPos": 0,
+      "uploadId": "8be31384f82a45b0aafb6c6add29e94f/00000000FIRSTUPLOAD"
+    },
+    "traceId": "682f731fcf240de38b657c36e2148000"
   }
   ```
 
@@ -106,8 +113,18 @@
   | ------- | ------ | ------------------------------- | ---------------------------- |
   | code    | int    | 错误编码，0 表示成功            | 0: success, others: failure  |
   | message | string | 错误消息                        | The failure message          |
-  | data    | null   | 返回数据（为空）                | Response data (null)         |
+  | data    | object | 分块信息                        | Block information            |
   | traceId | string | 请求跟踪 ID                     | Trace ID                     |
+
+- **分块信息字段说明**
+
+  | 字段      | 类型   | 描述                    | Description                      |
+  | --------- | ------ | ----------------------- | -------------------------------- |
+  | size      | long   | 分块大小（字节）        | Block size (in bytes)            |
+  | sha256    | string | 分块的 SHA256 值        | SHA256 checksum of the block     |
+  | crc64ecma | string | 分块的 CRC64ECMA 校验值 | CRC64ECMA checksum of the block  |
+  | startPos  | long   | 分块起始位置            | Block start position             |
+  | uploadId  | string | 分块上传 ID             | Block upload ID                  |
 
 ---
 
@@ -135,6 +152,7 @@
   | ------------------ | ------- | ---- | ------ | ------------------------------- | ---------------------- |
   | X-BKREPO-UPLOAD-ID | string  | 是   | 无     | 分块上传 ID                     | Block upload ID        |
   | X-BKREPO-SIZE      | long    | 是   | 0      | 文件总大小                       | Total size of the file |
+  | X-BKREPO-CRC64ECMA | string  | 否   | 无     | 文件整体的 CRC64ECMA 校验值，由各分块 CRC64 合并计算得出，用于完整性校验 | CRC64ECMA checksum of the whole file, combined from all blocks |
   | X-BKREPO-OVERWRITE | boolean | 否   | false  | 是否覆盖已存在文件               | Overwrite existing file|
 
 - **请求体**
@@ -150,7 +168,7 @@
     "code": 0,
     "message": null,
     "data": null,
-    "traceId": ""
+    "traceId": "682f731fcf240de38b657c36e2148000"
   }
   ```
 
@@ -202,7 +220,7 @@
     "code": 0,
     "message": null,
     "data": null,
-    "traceId": null
+    "traceId": "682f731fcf240de38b657c36e2148000"
   }
   ```
 
@@ -257,17 +275,19 @@
       {
         "size": 10240,
         "sha256": "abc123def456...",
+        "crc64ecma": "14529005747808976418",
         "startPos": 0,
-        "uploadId": "1.0"
+        "uploadId": "8be31384f82a45b0aafb6c6add29e94f/00000000FIRSTUPLOAD"
       },
       {
         "size": 10240,
         "sha256": "def456ghi789...",
+        "crc64ecma": "12345678901234567890",
         "startPos": 10240,
-        "uploadId": "1.0"
+        "uploadId": "8be31384f82a45b0aafb6c6add29e94f/00000000FIRSTUPLOAD"
       }
     ],
-    "traceId": null
+    "traceId": "682f731fcf240de38b657c36e2148000"
   }
   ```
 
@@ -282,21 +302,10 @@
 
 - **分块信息字段说明**
 
-  | 字段     | 类型   | 描述               | Description                    |
-  | -------- | ------ | ------------------ | ------------------------------ |
-  | size     | long   | 分块大小（字节）   | Block size (in bytes)          |
-  | sha256   | string | 分块的 SHA256 值   | SHA256 checksum of the block   |
-  | startPos | long   | 分块起始位置       | Block start position           |
-  | uploadId | string | 分块上传 ID        | Block upload ID                |
-
----
-
-以上是优化后的 Markdown 格式的通用制品仓库分块文件操作指南。主要改进了以下方面：
-
-- **标题和章节编号**：增加了明确的章节编号，改善了文档结构，方便阅读和引用。
-- **表格格式**：修正了表格的对齐和格式，使其在 Markdown 渲染时显示正确。
-- **字段说明**：对响应参数中的嵌套字段使用了更清晰的表示方式，便于理解。
-- **一致性**：统一了字段描述、命名和表格格式，保持全篇文档风格一致。
-- **示例数据**：在示例的 JSON 响应中，提供了更贴近实际的示例数据，帮助用户更直观地理解接口返回内容。
-
-希望以上优化能够帮助您更好地使用和理解该操作指南。如有任何疑问，欢迎随时提问！
+  | 字段      | 类型   | 描述                    | Description                      |
+  | --------- | ------ | ----------------------- | -------------------------------- |
+  | size      | long   | 分块大小（字节）        | Block size (in bytes)            |
+  | sha256    | string | 分块的 SHA256 值        | SHA256 checksum of the block     |
+  | crc64ecma | string | 分块的 CRC64ECMA 校验值 | CRC64ECMA checksum of the block  |
+  | startPos  | long   | 分块起始位置            | Block start position             |
+  | uploadId  | string | 分块上传 ID             | Block upload ID                  |
