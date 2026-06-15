@@ -14,6 +14,7 @@ import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.PrincipalManager
+import com.tencent.bkrepo.common.security.spi.UserAuthProvider
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.dao.ScheduledDownloadRuleDao
@@ -66,6 +67,9 @@ class ScheduledDownloadRuleServiceTest @Autowired constructor(
 
     @MockBean
     private lateinit var userClient: ServiceUserClient
+
+    @MockBean
+    private lateinit var userAuthProvider: UserAuthProvider
 
     @MockBean
     private lateinit var projectService: ProjectService
