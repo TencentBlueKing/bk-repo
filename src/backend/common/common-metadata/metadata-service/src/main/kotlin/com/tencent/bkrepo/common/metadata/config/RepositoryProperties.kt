@@ -42,6 +42,10 @@ class RepositoryProperties {
     var defaultStorageCredentialsKey: String? = null
     var listCountLimit: Long = 100000L
     var slowLogTimeThreshold: Long = 1_000
+    /**
+     * 节点 search 查询超时时间（毫秒），对应 MongoDB maxTimeMS
+     */
+    var nodeSearchQueryTimeoutMs: Long = 600_000
     @NestedConfigurationProperty
     var job: RepoJobProperties = RepoJobProperties()
     @NestedConfigurationProperty

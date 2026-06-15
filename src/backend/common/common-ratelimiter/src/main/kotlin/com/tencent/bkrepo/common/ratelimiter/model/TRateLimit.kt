@@ -46,6 +46,16 @@ import java.time.Duration
         name = "limitDimension_idx",
         def = "{'limitDimension': 1}",
         background = true
+    ),
+    CompoundIndex(
+        name = "moduleName_limitDimension_idx",
+        def = "{'moduleName': 1,'limitDimension': 1}",
+        background = true
+    ),
+    CompoundIndex(
+        name = "resource_limitDimension_requestPath_idx",
+        def = "{'resource': 1,'limitDimension': 1,'requestPath': 1}",
+        background = true
     )
 )
 data class TRateLimit(
@@ -72,4 +82,6 @@ data class TRateLimit(
     var keepConnection: Boolean = true,
     // 规则优先级，值越大越优先；同优先级时路径越具体越优先（默认 0）
     var priority: Int = 0,
+    // 指定请求路径，主要用于项目/仓库维度下区分接口
+    var requestPath: String? = null,
 )

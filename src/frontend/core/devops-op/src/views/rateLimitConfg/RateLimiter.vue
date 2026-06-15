@@ -28,6 +28,7 @@
     </el-form>
     <el-table v-loading="loading" :data="rateLimits" style="width: 100%">
       <el-table-column prop="resource" label="资源标识" />
+      <el-table-column prop="requestPath" label="请求路径" />
       <el-table-column prop="limitDimension" label="资源维度">
         <template slot-scope="scope">
           <span>{{ formatLimitDimension(scope.row.limitDimension) }}</span>
@@ -50,6 +51,7 @@
       </el-table-column>
       <el-table-column prop="limit" label="限流值" />
       <el-table-column prop="duration" label="限流周期(秒)" />
+      <el-table-column prop="priority" label="优先级" />
       <el-table-column prop="capacity" label="桶容量" />
       <el-table-column prop="scope" label="生效范围" />
       <el-table-column prop="moduleName" label="作用模块">
@@ -122,6 +124,18 @@ export default {
         label: 'url维度请求频率',
         value: 'URL'
       }, {
+        value: 'URL_PREFIX_UPLOAD_RATE',
+        label: 'url前缀上传请求频率'
+      }, {
+        value: 'URL_PREFIX_DOWNLOAD_RATE',
+        label: 'url前缀下载请求频率'
+      }, {
+        value: 'URL_PREFIX_UPLOAD_BANDWIDTH',
+        label: 'url前缀上传带宽'
+      }, {
+        value: 'URL_PREFIX_DOWNLOAD_BANDWIDTH',
+        label: 'url前缀下载带宽'
+      }, {
         label: '项目/仓库维度请求频率',
         value: 'URL_REPO'
       }, {
@@ -148,6 +162,33 @@ export default {
       }, {
         value: 'DOWNLOAD_BANDWIDTH',
         label: '项目/仓库维度下载带宽'
+      }, {
+        value: 'USER_UPLOAD_BANDWIDTH',
+        label: '用户+项目/仓库维度上传带宽'
+      }, {
+        value: 'USER_DOWNLOAD_BANDWIDTH',
+        label: '用户+项目/仓库维度下载带宽'
+      }, {
+        value: 'URL_UPLOAD_BANDWIDTH',
+        label: 'url维度上传带宽'
+      }, {
+        value: 'URL_DOWNLOAD_BANDWIDTH',
+        label: 'url维度下载带宽'
+      }, {
+        value: 'SERVICE_INSTANCE_CONNECTION',
+        label: '服务实例并发连接数'
+      }, {
+        value: 'USER_CONCURRENT_CONNECTION',
+        label: '用户并发连接数'
+      }, {
+        value: 'IP',
+        label: 'IP请求频率'
+      }, {
+        value: 'URL_CONCURRENT_REQUEST',
+        label: 'url维度并发请求数'
+      }, {
+        value: 'USER_URL_CONCURRENT_REQUEST',
+        label: '用户+url维度并发请求数'
       }],
       algoOptions: [
         {
@@ -239,7 +280,8 @@ export default {
       return this.algoOptions.find(option => option.value === value).label
     },
     formatLimitDimension(value) {
-      return this.options.find(option => option.value === value).label
+      const option = this.options.find(option => option.value === value)
+      return option ? option.label : value
     }
   }
 }

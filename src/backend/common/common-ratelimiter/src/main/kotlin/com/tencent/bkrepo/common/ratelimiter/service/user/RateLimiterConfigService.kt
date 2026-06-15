@@ -52,6 +52,7 @@ class RateLimiterConfigService(
 
     fun create(fileCacheRequest: RateLimitCreatOrUpdateRequest) {
         with(fileCacheRequest) {
+            val normalizedRequestPath = normalizeRequestPath(requestPath)
             rateLimitRepository.insert(
                 TRateLimit(
                     id = null,
@@ -63,7 +64,9 @@ class RateLimiterConfigService(
                     capacity = capacity,
                     scope = scope,
                     moduleName = moduleName,
-                    keepConnection = keepConnection
+                    keepConnection = keepConnection,
+                    priority = priority,
+                    requestPath = normalizedRequestPath
                 )
             )
         }
@@ -89,6 +92,7 @@ class RateLimiterConfigService(
 
     fun update(fileCacheRequest: RateLimitCreatOrUpdateRequest) {
         with(fileCacheRequest) {
+            val normalizedRequestPath = normalizeRequestPath(requestPath)
             targets?.let {
                 rateLimitRepository.save(
                     TRateLimit(
@@ -102,7 +106,9 @@ class RateLimiterConfigService(
                         scope = scope,
                         moduleName = moduleName,
                         targets = it,
-                        keepConnection = keepConnection
+                        keepConnection = keepConnection,
+                        priority = priority,
+                        requestPath = normalizedRequestPath
                     )
                 )
             } ?: run {
@@ -117,7 +123,9 @@ class RateLimiterConfigService(
                         capacity = capacity,
                         scope = scope,
                         moduleName = moduleName,
-                        keepConnection = keepConnection
+                        keepConnection = keepConnection,
+                        priority = priority,
+                        requestPath = normalizedRequestPath
                     )
                 )
             }
@@ -132,11 +140,33 @@ class RateLimiterConfigService(
         return rateLimitRepository.findByResourceAndLimitDimension(resource, limitDimension)
     }
 
+    fun findByResourceAndLimitDimensionAndRequestPath(
+        resource: String,
+        limitDimension: String,
+        requestPath: String?
+    ): List<TRateLimit> {
+        return rateLimitRepository.findByResourceAndLimitDimensionAndRequestPath(
+            resource,
+            limitDimension,
+            normalizeRequestPath(requestPath)
+        )
+    }
+
     fun findByModuleNameAndLimitDimensionAndResource(
         resource: String,
         moduleName: List<String>,
-        limitDimension: String
+        limitDimension: String,
+        requestPath: String?
     ): TRateLimit? {
-        return rateLimitRepository.findByModuleNameAndLimitDimensionAndResource(resource, moduleName, limitDimension)
+        return rateLimitRepository.findByModuleNameAndLimitDimensionAndResource(
+            resource,
+            moduleName,
+            limitDimension,
+            normalizeRequestPath(requestPath)
+        )
+    }
+
+    private fun normalizeRequestPath(requestPath: String?): String? {
+        return requestPath?.takeIf { it.isNotBlank() }
     }
 }

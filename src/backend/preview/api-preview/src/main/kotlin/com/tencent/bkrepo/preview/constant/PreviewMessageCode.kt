@@ -40,7 +40,28 @@ enum class PreviewMessageCode(private val key: String) : MessageCode {
     PREVIEW_FIlE_CONVERT_ERROR("preview.file.convert.error"),
     PREVIEW_FILE_SIZE_LIMIT_ERROR("preview.file.size.limit.error"),
     PREVIEW_FILE_NOT_SUPPORT_ERROR("preview.file.not-support"),
-    PREVIEW_PARAMETER_INVALID("preview.parameter.invalid")
+    PREVIEW_PARAMETER_INVALID("preview.parameter.invalid"),
+
+    /**
+     * 临时 token 越权：访问的 fullPath / projectId / repoName 不在 token 声明范围内。
+     * 由 PreviewTokenAuthHandler.validateTokenScope 触发。
+     */
+    PREVIEW_TEMPORARY_TOKEN_OUT_OF_SCOPE("preview.temporary-token.out-of-scope"),
+
+    /**
+     * 定向分享模式下，请求携带的网关登录用户不在 token 的 authorizedUserList 内。
+     */
+    PREVIEW_TEMPORARY_TOKEN_USER_FORBIDDEN("preview.temporary-token.user-forbidden"),
+
+    /**
+     * token 的 permits 剩余次数为 0。
+     */
+    PREVIEW_TEMPORARY_TOKEN_PERMITS_EXHAUSTED("preview.temporary-token.permits-exhausted"),
+
+    /**
+     * 定向分享模式下访客未登录，需先跳转网关登录页。
+     */
+    PREVIEW_LOGIN_REQUIRED("preview.login.required")
     ;
 
     override fun getBusinessCode() = ordinal + 1
