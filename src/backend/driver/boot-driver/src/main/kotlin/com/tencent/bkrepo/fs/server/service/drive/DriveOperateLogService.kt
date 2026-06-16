@@ -1,12 +1,20 @@
 package com.tencent.bkrepo.fs.server.service.drive
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.metadata.model.TOperateLog
 import com.tencent.bkrepo.common.metadata.pojo.log.OperateLog
-import com.tencent.bkrepo.common.metadata.service.log.ROperateLogService
+import com.tencent.bkrepo.common.metadata.pojo.log.OperateLogResponse
+import com.tencent.bkrepo.common.metadata.util.OperateLogServiceHelper.convert
+import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.fs.server.config.properties.drive.DriveOperateLogProperties
+import com.tencent.bkrepo.fs.server.repository.drive.DriveOperateLogDao
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchOp
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchOperation
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchRequest
+import com.tencent.bkrepo.fs.server.request.drive.DriveOpLogPageRequest
 import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResult
 import com.tencent.bkrepo.fs.server.utils.CoroutineRateLimiter
 import jakarta.annotation.PreDestroy
@@ -20,8 +28,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
+import java.text.ParseException
+import java.text.SimpleDateFormat
 import java.time.LocalDateTime
+import java.time.ZoneId
+import java.util.TimeZone
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration.Companion.milliseconds
@@ -31,7 +46,7 @@ import kotlin.time.toKotlinDuration
 @Service
 class DriveOperateLogService(
     private val properties: DriveOperateLogProperties,
-    private val operateLogService: ROperateLogService,
+    private val operateLogDao: DriveOperateLogDao,
     coroutineScope: CoroutineScope,
 ) {
     private val channel = Channel<OperateLog>(Channel.UNLIMITED)
@@ -252,13 +267,14 @@ class DriveOperateLogService(
         }
         writeRateLimiter.setRate(properties.writeLimitQps)
         val writeLimitQps = properties.writeLimitQps
-        val chunks = if (writeLimitQps > 0) logs.chunked(writeLimitQps) else listOf(logs)
+        val entities = logs.map { it.toEntity() }
+        val chunks = if (writeLimitQps > 0) entities.chunked(writeLimitQps) else listOf(entities)
         for (chunk in chunks) {
             try {
                 if (writeLimitQps > 0) {
                     writeRateLimiter.acquire(chunk.size)
                 }
-                operateLogService.save(chunk)
+                operateLogDao.insert(chunk)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -271,6 +287,37 @@ class DriveOperateLogService(
             }
         }
     }
+
+    /**
+     * 分页查询 Drive 操作审计日志
+     */
+    suspend fun page(request: DriveOpLogPageRequest): Page<OperateLogResponse> {
+        val criteria = Criteria.where(TOperateLog::projectId.name).`is`(request.projectId)
+            .and(TOperateLog::repoName.name).`is`(request.repoName)
+        request.type?.let { criteria.and(TOperateLog::type.name).`is`(it) }
+        request.operator?.let { criteria.and(TOperateLog::userId.name).`is`(it) }
+
+        val localStart = parseTime(request.startTime, LocalDateTime.now().minusDays(1L))
+        val localEnd = parseTime(request.endTime, LocalDateTime.now())
+        criteria.and(TOperateLog::createdDate.name).gte(localStart).lte(localEnd)
+
+        val query = Query(criteria).with(Sort.by(TOperateLog::createdDate.name).descending())
+        val pageReq = Pages.ofRequest(request.pageNumber, request.pageSize)
+        val totalCount = operateLogDao.count(query)
+        val records = operateLogDao.find(query.with(pageReq)).map { convert(it) }
+        return Pages.ofResponse(pageReq, totalCount, records)
+    }
+
+    private fun OperateLog.toEntity() = TOperateLog(
+        createdDate = createdDate,
+        type = type,
+        projectId = projectId,
+        repoName = repoName,
+        resourceKey = resourceKey,
+        userId = userId,
+        clientAddress = clientAddress,
+        description = description,
+    )
 
     private fun logRateLimited(lastLogTime: AtomicLong, message: String, cause: Throwable? = null) {
         val intervalMillis = properties.errorLogInterval.toMillis()
@@ -290,6 +337,7 @@ class DriveOperateLogService(
     }
 
     companion object {
+        private const val TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
         private val WORKER_RESTART_DELAY = 1_000.milliseconds
         private const val OVERFLOW_STRATEGY_BLOCK = "BLOCK"
         private const val BATCH_SUCCESS_CODE = 0
@@ -301,6 +349,17 @@ class DriveOperateLogService(
                 DriveNodeBatchOp.UPDATE -> EventType.DRIVE_NODE_UPDATE.name
                 DriveNodeBatchOp.DELETE -> EventType.DRIVE_NODE_DELETE.name
                 DriveNodeBatchOp.RENAME -> EventType.DRIVE_NODE_RENAME.name
+            }
+        }
+
+        private fun parseTime(value: String?, default: LocalDateTime): LocalDateTime {
+            if (value.isNullOrBlank()) return default
+            val sdf = SimpleDateFormat(TIME_FORMAT)
+            sdf.timeZone = TimeZone.getTimeZone("GMT")
+            try {
+                return sdf.parse(value).toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
+            } catch (_: ParseException) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, value)
             }
         }
 

@@ -43,6 +43,7 @@ import com.tencent.bkrepo.fs.server.handler.ClientHandler
 import com.tencent.bkrepo.fs.server.handler.FileOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.LoginHandler
 import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
+import com.tencent.bkrepo.fs.server.handler.drive.DriveOperateLogHandler
 import com.tencent.bkrepo.fs.server.handler.drive.DriveOperationHandler
 import com.tencent.bkrepo.fs.server.handler.drive.DriveNodeOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.drive.DriveRepositoryHandler
@@ -78,6 +79,7 @@ class RouteConfiguration(
     private val driveNodeOperationsHandler: DriveNodeOperationsHandler,
     private val driveRepositoryHandler: DriveRepositoryHandler,
     private val driveSnapshotHandler: DriveSnapshotHandler,
+    private val driveOperateLogHandler: DriveOperateLogHandler,
     private val authHandlerFilterFunction: AuthHandlerFilterFunction,
     private val serverMetrics: ServerMetrics,
     private val devXAccessFilter: DevXAccessFilter,
@@ -155,6 +157,9 @@ class RouteConfiguration(
                 GET("/page/{projectId}/{repoName}", driveSnapshotHandler::listSnapshotsPage)
                 PUT("/update/{projectId}/{repoName}/{id}", driveSnapshotHandler::updateSnapshot)
                 DELETE("/delete/{projectId}/{repoName}/{id}", driveSnapshotHandler::deleteSnapshot)
+            }
+            "/oplog".nest {
+                GET("/page/{projectId}/{repoName}", driveOperateLogHandler::page)
             }
         }
 
