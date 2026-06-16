@@ -25,14 +25,14 @@ class DriveOperateLogHandler(
      */
     suspend fun page(request: ServerRequest): ServerResponse {
         val pageRequest = DriveOpLogPageRequest(request)
-        checkManagePermission(pageRequest.projectId, pageRequest.repoName)
+        checkManagePermission(pageRequest.projectId)
         val page = driveOperateLogService.page(pageRequest)
         return ReactiveResponseBuilder.success(page)
     }
 
-    private suspend fun checkManagePermission(projectId: String, repoName: String) {
+    private suspend fun checkManagePermission(projectId: String) {
         val userId = ReactiveSecurityUtils.getUser()
-        if (!permissionService.checkPermission(projectId, repoName, PermissionAction.MANAGE, userId)) {
+        if (!permissionService.checkProjectPermission(projectId, PermissionAction.MANAGE, userId)) {
             throw PermissionException()
         }
     }
