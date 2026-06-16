@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.fs.server.config.properties.drive
 
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.NestedConfigurationProperty
 import java.time.Duration
@@ -20,7 +21,9 @@ class DriveOperateLogProperties {
      * 按事件类型关闭审计，值为 EventType 枚举名（如 `DRIVE_BLOCK_READ`）。
      * 适用于关闭高频读/查询类操作，只保留写入与变更类审计。
      */
-    var disabledTypes: MutableList<String> = mutableListOf()
+    var disabledTypes: MutableList<String> = mutableListOf(
+        EventType.DRIVE_NODE_MODIFIED_LIST.name
+    )
 
     /**
      * 后台 worker 单次批量落库的最大条数，默认 200。
@@ -86,10 +89,10 @@ class DriveOperateLogProperties {
          * 写入、删除、更新、重命名等变更类操作不应加入此列表。
          */
         var types: MutableList<String> = mutableListOf(
-            "DRIVE_BLOCK_READ",
-            "DRIVE_NODE_LIST",
-            "DRIVE_NODE_MODIFIED_LIST",
-            "DRIVE_SNAPSHOT_LIST",
+            EventType.DRIVE_BLOCK_READ.name,
+            EventType.DRIVE_NODE_LIST.name,
+            EventType.DRIVE_NODE_MODIFIED_LIST.name,
+            EventType.DRIVE_SNAPSHOT_LIST.name,
         )
     }
 }
