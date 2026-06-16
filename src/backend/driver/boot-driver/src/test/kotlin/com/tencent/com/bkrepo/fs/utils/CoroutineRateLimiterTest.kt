@@ -57,7 +57,8 @@ class CoroutineRateLimiterTest {
         val expectedMinMs = ((totalPermits - qps).toLong() * 1000) / qps - 200
         assertTrue(
             sustainedElapsedMs >= expectedMinMs,
-            "Acquiring $totalPermits permits at $qps QPS should take at least ${expectedMinMs}ms, but took ${sustainedElapsedMs}ms",
+            "Acquiring $totalPermits permits at $qps QPS should take at least ${expectedMinMs}ms," +
+                    " but took ${sustainedElapsedMs}ms",
         )
 
         val prepayLimiter = CoroutineRateLimiter(10)
@@ -157,7 +158,8 @@ class CoroutineRateLimiterTest {
         val expectedMinMs = ((totalPermits - qps).toLong() * 1000) / qps - 300
         assertTrue(
             concurrentElapsedMs >= expectedMinMs,
-            "Concurrent acquire should respect rate, expected at least ${expectedMinMs}ms, but took ${concurrentElapsedMs}ms",
+            "Concurrent acquire should respect rate, expected at least ${expectedMinMs}ms," +
+                    " but took ${concurrentElapsedMs}ms",
         )
 
         val fifoLimiter = CoroutineRateLimiter(10)

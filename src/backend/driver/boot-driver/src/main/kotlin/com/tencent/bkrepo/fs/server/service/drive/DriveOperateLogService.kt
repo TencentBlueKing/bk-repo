@@ -205,7 +205,7 @@ class DriveOperateLogService(
             } catch (e: Exception) {
                 logRateLimited(
                     lastFlushErrorLogTime,
-                    "Drive operate log worker crashed, will restart after ${WORKER_RESTART_DELAY.inWholeMilliseconds}ms",
+                    "Drive op log worker crashed, restart after ${WORKER_RESTART_DELAY.inWholeMilliseconds}ms",
                     e,
                 )
                 delay(WORKER_RESTART_DELAY)
@@ -281,7 +281,7 @@ class DriveOperateLogService(
                 val dropped = droppedCount.addAndGet(chunk.size.toLong())
                 logRateLimited(
                     lastFlushErrorLogTime,
-                    "Failed to flush drive operate logs[count=${chunk.size}], dropped audit logs, totalDropped[$dropped]",
+                    "Failed to flush drive op logs[count=${chunk.size}], dropped logs, totalDropped[$dropped]",
                     e,
                 )
             }
