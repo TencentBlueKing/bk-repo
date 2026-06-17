@@ -126,6 +126,8 @@ class DriveOperateLogService(
         )
         try {
             enqueue(operateLog)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             logRateLimited(lastFlushErrorLogTime, "Failed to record drive operate log[type=$type]", e)
         }
