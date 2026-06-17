@@ -20,6 +20,7 @@ import com.tencent.bkrepo.fs.server.utils.CoroutineRateLimiter
 import jakarta.annotation.PreDestroy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -27,6 +28,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.selects.onTimeout
+import kotlinx.coroutines.selects.select
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
@@ -148,33 +151,27 @@ class DriveOperateLogService(
     }
 
     private suspend fun enqueue(log: OperateLog) {
-        when (properties.overflowStrategy.trim().uppercase()) {
-            OVERFLOW_STRATEGY_BLOCK -> {
-                while (!acquireQueueSlot()) {
-                    delay(properties.queueBlockRetryInterval.toKotlinDuration())
-                }
-                var sent = false
-                try {
-                    channel.send(log)
-                    sent = true
-                } finally {
-                    if (!sent) {
-                        releaseQueueSlot()
-                    }
-                }
-            }
-
-            else -> {
-                if (!acquireQueueSlot()) {
-                    onDropped(log)
-                    return
-                }
-                if (channel.trySend(log).isFailure) {
-                    releaseQueueSlot()
-                    onDropped(log)
-                }
-            }
+        if (!acquireQueueSlotByStrategy(log)) {
+            return
         }
+        if (channel.trySend(log).isFailure) {
+            releaseQueueSlot()
+            onDropped(log)
+        }
+    }
+
+    private suspend fun acquireQueueSlotByStrategy(log: OperateLog): Boolean {
+        if (properties.overflowStrategy.trim().uppercase() == OVERFLOW_STRATEGY_BLOCK) {
+            while (!acquireQueueSlot()) {
+                delay(properties.queueBlockRetryInterval.toKotlinDuration())
+            }
+            return true
+        }
+        if (acquireQueueSlot()) {
+            return true
+        }
+        onDropped(log)
+        return false
     }
 
     private fun acquireQueueSlot(): Boolean {
@@ -195,6 +192,18 @@ class DriveOperateLogService(
 
     private suspend fun receiveFromQueue(): OperateLog? {
         return channel.receiveCatching().getOrNull()?.also { releaseQueueSlot() }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private suspend fun receiveFromQueueWithin(timeoutNanos: Long): OperateLog? {
+        return select {
+            channel.onReceiveCatching { result ->
+                result.getOrNull()?.also { releaseQueueSlot() }
+            }
+            onTimeout(timeoutNanos.nanoseconds) {
+                null
+            }
+        }
     }
 
     private fun onUndeliveredLog(log: OperateLog) {
@@ -248,9 +257,7 @@ class DriveOperateLogService(
                 if (remainingNanos <= 0) {
                     break
                 }
-                val next = withTimeoutOrNull(remainingNanos.nanoseconds) {
-                    receiveFromQueue()
-                } ?: break
+                val next = receiveFromQueueWithin(remainingNanos) ?: break
                 batch.add(next)
             }
             flushBatch(batch)
