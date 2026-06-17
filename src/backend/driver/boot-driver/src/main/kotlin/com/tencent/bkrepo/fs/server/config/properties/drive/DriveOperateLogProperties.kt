@@ -55,6 +55,11 @@ class DriveOperateLogProperties {
     var queueBlockRetryInterval: Duration = Duration.ofMillis(100)
 
     /**
+     * 服务关闭时等待后台 worker 刷完队列的最大时间，默认 30 秒。
+     */
+    var shutdownTimeout: Duration = Duration.ofSeconds(30)
+
+    /**
      * 错误日志输出间隔，默认不限制。
      * 设置为大于 0 的时间后，同类错误在间隔内只输出一次。
      */

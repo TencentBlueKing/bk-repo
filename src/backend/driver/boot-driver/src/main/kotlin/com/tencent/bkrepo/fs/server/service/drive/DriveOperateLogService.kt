@@ -49,7 +49,10 @@ class DriveOperateLogService(
     private val operateLogDao: DriveOperateLogDao,
     coroutineScope: CoroutineScope,
 ) {
-    private val channel = Channel<OperateLog>(Channel.UNLIMITED)
+    private val channel = Channel<OperateLog>(
+        capacity = Channel.UNLIMITED,
+        onUndeliveredElement = { log -> onUndeliveredLog(log) },
+    )
     private val queuedCount = AtomicInteger(0)
     private val droppedCount = AtomicLong(0)
     private val lastDropErrorLogTime = AtomicLong(0)
@@ -127,8 +130,21 @@ class DriveOperateLogService(
 
     @PreDestroy
     fun shutdown() {
-        workerJob.cancel()
-        flushRemaining()
+        runBlocking {
+            channel.close()
+            val completed = withTimeoutOrNull(properties.shutdownTimeout.toKotlinDuration()) {
+                workerJob.join()
+                true
+            } ?: false
+            if (!completed) {
+                workerJob.cancel()
+                channel.cancel()
+                logRateLimited(
+                    lastFlushErrorLogTime,
+                    "Timeout waiting drive op log worker shutdown, queuedCount[${queuedCount.get()}]",
+                )
+            }
+        }
     }
 
     private suspend fun enqueue(log: OperateLog) {
@@ -177,12 +193,19 @@ class DriveOperateLogService(
         queuedCount.updateAndGet { current -> if (current > 0) current - 1 else 0 }
     }
 
-    private suspend fun receiveFromQueue(): OperateLog {
-        return channel.receive().also { releaseQueueSlot() }
+    private suspend fun receiveFromQueue(): OperateLog? {
+        return channel.receiveCatching().getOrNull()?.also { releaseQueueSlot() }
     }
 
-    private fun pollFromQueue(): OperateLog? {
-        return channel.tryReceive().getOrNull()?.also { releaseQueueSlot() }
+    private fun onUndeliveredLog(log: OperateLog) {
+        releaseQueueSlot()
+        val dropped = droppedCount.incrementAndGet()
+        logRateLimited(
+            lastDropErrorLogTime,
+            "Drive operate log was not delivered[type=${log.type}, projectId=${log.projectId}, " +
+                    "repoName=${log.repoName}, userId=${log.userId}, resourceKey=${log.resourceKey}], " +
+                    "totalDropped[$dropped]",
+        )
     }
 
     private fun onDropped(log: OperateLog) {
@@ -216,8 +239,9 @@ class DriveOperateLogService(
     private suspend fun runWorker() {
         val batchSize = properties.batchSize.coerceAtLeast(1)
         val batch = ArrayList<OperateLog>(batchSize)
-        while (currentCoroutineContext().isActive) {
-            batch.add(receiveFromQueue())
+        while (true) {
+            val first = receiveFromQueue() ?: break
+            batch.add(first)
             val flushDeadline = System.nanoTime() + properties.flushInterval.toNanos()
             while (batch.size < batchSize) {
                 val remainingNanos = flushDeadline - System.nanoTime()
@@ -229,27 +253,8 @@ class DriveOperateLogService(
                 } ?: break
                 batch.add(next)
             }
-            if (batch.isNotEmpty()) {
-                flushBatch(batch)
-                batch.clear()
-            }
-        }
-    }
-
-    private fun flushRemaining() {
-        runBlocking {
-            val batchSize = properties.batchSize.coerceAtLeast(1)
-            while (true) {
-                val batch = ArrayList<OperateLog>(batchSize)
-                while (batch.size < batchSize) {
-                    val log = pollFromQueue() ?: break
-                    batch.add(log)
-                }
-                if (batch.isEmpty()) {
-                    break
-                }
-                flushBatch(batch)
-            }
+            flushBatch(batch)
+            batch.clear()
         }
     }
 
