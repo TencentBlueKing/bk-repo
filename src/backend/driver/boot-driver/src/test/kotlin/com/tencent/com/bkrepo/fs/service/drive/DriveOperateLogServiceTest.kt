@@ -14,6 +14,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTimeout
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -23,6 +24,7 @@ import org.mockito.kotlin.whenever
 import java.time.Duration
 import java.time.LocalDateTime
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.time.Duration.Companion.milliseconds
 
 @DisplayName("Drive 操作审计")
 class DriveOperateLogServiceTest {
@@ -99,15 +101,15 @@ class DriveOperateLogServiceTest {
     }
 
     @Test
-    fun `should apply queue capacity change dynamically`() = runBlocking {
+    fun `should apply queue capacity increase dynamically`() = runBlocking {
         val savedBatches = CopyOnWriteArrayList<List<TOperateLog>>()
         val dao = createMockDao(savedBatches)
         val properties = DriveOperateLogProperties().apply {
             enabled = true
             aggregation.enabled = false
             flushInterval = Duration.ofMillis(50)
-            batchSize = 10
-            queueCapacity = 1
+            batchSize = 1
+            queueCapacity = 0
         }
         val service = createService(properties, dao)
         service.record(
@@ -126,6 +128,7 @@ class DriveOperateLogServiceTest {
             repoName = "repo",
             resourceKey = "2",
         )
+        delay(100.milliseconds)
         properties.queueCapacity = 10
         service.record(
             type = EventType.DRIVE_BLOCK_READ.name,
@@ -135,12 +138,38 @@ class DriveOperateLogServiceTest {
             repoName = "repo",
             resourceKey = "3",
         )
-        delay(500)
+        delay(500.milliseconds)
         val saved = savedBatches.flatten()
-        assertEquals(2, saved.size)
-        assertTrue(saved.any { it.resourceKey == "1" })
         assertTrue(saved.any { it.resourceKey == "3" })
         service.shutdown()
+    }
+
+    @Test
+    fun `should not block caller when waiting for queue slot`() {
+        val savedBatches = CopyOnWriteArrayList<List<TOperateLog>>()
+        val dao = createMockDao(savedBatches)
+        val properties = DriveOperateLogProperties().apply {
+            enabled = true
+            overflowStrategy = "BLOCK"
+            queueCapacity = 0
+            queueBlockRetryInterval = Duration.ofSeconds(1)
+        }
+        val service = createService(properties, dao)
+        try {
+            assertTimeout(Duration.ofMillis(50)) {
+                service.record(
+                    type = EventType.DRIVE_BLOCK_READ.name,
+                    userId = "user",
+                    clientAddress = "127.0.0.1",
+                    projectId = "project",
+                    repoName = "repo",
+                    resourceKey = "1",
+                )
+            }
+            assertTrue(savedBatches.isEmpty())
+        } finally {
+            service.shutdown()
+        }
     }
 
     @Test

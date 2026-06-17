@@ -21,6 +21,8 @@ import jakarta.annotation.PreDestroy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -52,6 +54,8 @@ class DriveOperateLogService(
     private val operateLogDao: DriveOperateLogDao,
     coroutineScope: CoroutineScope,
 ) {
+    private val serviceJob = SupervisorJob(coroutineScope.coroutineContext[Job])
+    private val serviceScope = CoroutineScope(coroutineScope.coroutineContext + serviceJob)
     private val channel = Channel<OperateLog>(
         capacity = Channel.UNLIMITED,
         onUndeliveredElement = { log -> onUndeliveredLog(log) },
@@ -61,7 +65,7 @@ class DriveOperateLogService(
     private val lastDropErrorLogTime = AtomicLong(0)
     private val lastFlushErrorLogTime = AtomicLong(0)
     private val writeRateLimiter = CoroutineRateLimiter(properties.writeLimitQps)
-    private val workerJob = coroutineScope.launch {
+    private val workerJob = serviceScope.launch {
         runWorkerWithRecovery()
     }
 
@@ -72,7 +76,7 @@ class DriveOperateLogService(
     /**
      * 批量节点操作成功后，按子操作分别记录审计日志。
      */
-    suspend fun recordBatchResults(
+    fun recordBatchResults(
         batchRequest: DriveNodeBatchRequest,
         batchResult: List<DriveNodeBatchResult>,
         userId: String,
@@ -81,6 +85,17 @@ class DriveOperateLogService(
         if (!properties.enabled || batchResult.isEmpty()) {
             return
         }
+        serviceScope.launch {
+            recordBatchResultsInternal(batchRequest, batchResult, userId, clientAddress)
+        }
+    }
+
+    private suspend fun recordBatchResultsInternal(
+        batchRequest: DriveNodeBatchRequest,
+        batchResult: List<DriveNodeBatchResult>,
+        userId: String,
+        clientAddress: String,
+    ) {
         batchRequest.operations.zip(batchResult).forEach { (operation, result) ->
             if (result.code != BATCH_SUCCESS_CODE) {
                 return@forEach
@@ -90,7 +105,7 @@ class DriveOperateLogService(
                 return@forEach
             }
             val resourceKey = result.ino?.toString() ?: "unknown"
-            record(
+            recordInternal(
                 type = type,
                 userId = userId,
                 clientAddress = clientAddress,
@@ -102,7 +117,32 @@ class DriveOperateLogService(
         }
     }
 
-    suspend fun record(
+    fun record(
+        type: String,
+        userId: String,
+        clientAddress: String,
+        projectId: String,
+        repoName: String,
+        resourceKey: String,
+        description: Map<String, Any> = emptyMap(),
+    ) {
+        if (!isEnabled(type)) {
+            return
+        }
+        serviceScope.launch {
+            recordInternal(
+                type = type,
+                userId = userId,
+                clientAddress = clientAddress,
+                projectId = projectId,
+                repoName = repoName,
+                resourceKey = resourceKey,
+                description = description,
+            )
+        }
+    }
+
+    private suspend fun recordInternal(
         type: String,
         userId: String,
         clientAddress: String,
@@ -149,6 +189,7 @@ class DriveOperateLogService(
                     "Timeout waiting drive op log worker shutdown, queuedCount[${queuedCount.get()}]",
                 )
             }
+            serviceJob.cancel()
         }
     }
 
@@ -250,27 +291,75 @@ class DriveOperateLogService(
     private suspend fun runWorker() {
         val batchSize = properties.batchSize.coerceAtLeast(1)
         val batch = ArrayList<OperateLog>(batchSize)
-        while (true) {
-            val first = receiveFromQueue() ?: break
-            batch.add(first)
-            val flushDeadline = System.nanoTime() + properties.flushInterval.toNanos()
-            while (batch.size < batchSize) {
-                val remainingNanos = flushDeadline - System.nanoTime()
-                if (remainingNanos <= 0) {
-                    break
-                }
-                val next = receiveFromQueueWithin(remainingNanos) ?: break
-                batch.add(next)
+        try {
+            while (collectBatch(batch, batchSize)) {
+                val batchToFlush = batch.toList()
+                batch.clear()
+                flushBatch(batchToFlush)
             }
-            flushBatch(batch)
-            batch.clear()
+        } catch (e: CancellationException) {
+            recordPendingBatchDropped(batch, e)
+            throw e
         }
+    }
+
+    private suspend fun collectBatch(batch: MutableList<OperateLog>, batchSize: Int): Boolean {
+        val first = receiveFromQueue() ?: return false
+        batch.add(first)
+        collectUntilFlushDeadline(batch, batchSize)
+        return true
+    }
+
+    private suspend fun collectUntilFlushDeadline(batch: MutableList<OperateLog>, batchSize: Int) {
+        val flushDeadline = System.nanoTime() + properties.flushInterval.toNanos()
+        while (batch.size < batchSize) {
+            val remainingNanos = flushDeadline - System.nanoTime()
+            if (remainingNanos <= 0) {
+                return
+            }
+            batch.add(receiveFromQueueWithin(remainingNanos) ?: return)
+        }
+    }
+
+    private fun recordPendingBatchDropped(batch: List<OperateLog>, cause: CancellationException) {
+        if (batch.isEmpty()) {
+            return
+        }
+        val droppedLogCount = batch.size.toLong()
+        val dropped = recordDroppedCount(droppedLogCount)
+        logRateLimited(
+            lastFlushErrorLogTime,
+            "Canceled drive op log worker with pending logs[count=$droppedLogCount], " +
+                "dropped logs, totalDropped[$dropped]",
+            cause,
+        )
     }
 
     private suspend fun flushBatch(batch: List<OperateLog>) {
         if (batch.isEmpty()) {
             return
         }
+        writeRateLimiter.setRate(properties.writeLimitQps)
+        val writeLimitQps = properties.writeLimitQps
+        val chunks = buildFlushChunks(batch, writeLimitQps)
+        for ((index, chunk) in chunks.withIndex()) {
+            try {
+                flushChunk(chunk, writeLimitQps)
+            } catch (e: CancellationException) {
+                recordUnflushedChunksDropped(chunks, index, e)
+                throw e
+            } catch (e: Exception) {
+                val dropped = recordDroppedChunk(chunk)
+                logRateLimited(
+                    lastFlushErrorLogTime,
+                    "Failed to flush drive op logs[count=${chunk.size}], dropped logs, totalDropped[$dropped]",
+                    e,
+                )
+            }
+        }
+    }
+
+    private fun buildFlushChunks(batch: List<OperateLog>, writeLimitQps: Int): List<List<TOperateLog>> {
         val logs = if (properties.aggregation.enabled) {
             DriveOperateLogAggregator.aggregate(
                 batch,
@@ -279,27 +368,37 @@ class DriveOperateLogService(
         } else {
             batch
         }
-        writeRateLimiter.setRate(properties.writeLimitQps)
-        val writeLimitQps = properties.writeLimitQps
         val entities = logs.map { it.toEntity() }
-        val chunks = if (writeLimitQps > 0) entities.chunked(writeLimitQps) else listOf(entities)
-        for (chunk in chunks) {
-            try {
-                if (writeLimitQps > 0) {
-                    writeRateLimiter.acquire(chunk.size)
-                }
-                operateLogDao.insert(chunk)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                val dropped = droppedCount.addAndGet(chunk.size.toLong())
-                logRateLimited(
-                    lastFlushErrorLogTime,
-                    "Failed to flush drive op logs[count=${chunk.size}], dropped logs, totalDropped[$dropped]",
-                    e,
-                )
-            }
+        return if (writeLimitQps > 0) entities.chunked(writeLimitQps) else listOf(entities)
+    }
+
+    private suspend fun flushChunk(chunk: Collection<TOperateLog>, writeLimitQps: Int) {
+        if (writeLimitQps > 0) {
+            writeRateLimiter.acquire(chunk.size)
         }
+        operateLogDao.insert(chunk)
+    }
+
+    private fun recordUnflushedChunksDropped(
+        chunks: List<List<TOperateLog>>,
+        firstDroppedIndex: Int,
+        cause: CancellationException,
+    ) {
+        val droppedLogCount = chunks.drop(firstDroppedIndex).sumOf { it.size.toLong() }
+        val dropped = recordDroppedCount(droppedLogCount)
+        logRateLimited(
+            lastFlushErrorLogTime,
+            "Canceled flushing drive op logs[count=$droppedLogCount], dropped logs, totalDropped[$dropped]",
+            cause,
+        )
+    }
+
+    private fun recordDroppedCount(count: Long): Long {
+        return droppedCount.addAndGet(count)
+    }
+
+    private fun recordDroppedChunk(chunk: Collection<TOperateLog>): Long {
+        return recordDroppedCount(chunk.size.toLong())
     }
 
     /**
