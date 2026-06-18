@@ -5,13 +5,16 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.fs.server.bodyToArtifactFile
 import com.tencent.bkrepo.fs.server.config.properties.drive.DriveProperties
+import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 import com.tencent.bkrepo.fs.server.request.drive.DriveBlockRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveBlockWriteRequest
 import com.tencent.bkrepo.fs.server.resolveRange
 import com.tencent.bkrepo.fs.server.service.drive.DriveFileOperationService
 import com.tencent.bkrepo.fs.server.service.drive.DriveNodeService
+import com.tencent.bkrepo.fs.server.service.drive.DriveOperateLogService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import com.tencent.bkrepo.fs.server.utils.ResponseWriter.writeStream
@@ -35,6 +38,7 @@ class DriveOperationHandler(
     private val driveFileOperationService: DriveFileOperationService,
     private val driveNodeService: DriveNodeService,
     private val driveProperties: DriveProperties,
+    private val driveOperateLogService: DriveOperateLogService,
 ) {
 
     /**
@@ -42,6 +46,8 @@ class DriveOperationHandler(
      * 支持按范围读取，支持读取指定快照的数据
      */
     suspend fun read(request: ServerRequest): ServerResponse {
+        val userId = ReactiveSecurityUtils.getUser()
+        val clientAddress = ReactiveRequestContextHolder.getClientAddress()
         with(DriveBlockRequest(request)) {
             val node = driveNodeService.getNodeByIno(projectId, repoName, ino, snapSeq)
             val range = try {
@@ -53,6 +59,20 @@ class DriveOperationHandler(
             val artifactInputStream = driveFileOperationService.read(node, range, snapSeq)
                 ?: throw ArtifactNotFoundException("$projectId/$repoName/$ino")
             request.exchange().response.writeStream(artifactInputStream, range)
+            driveOperateLogService.record(
+                type = EventType.DRIVE_BLOCK_READ.name,
+                userId = userId,
+                clientAddress = clientAddress,
+                projectId = projectId,
+                repoName = repoName,
+                resourceKey = ino.toString(),
+                description = mapOf(
+                    "ino" to ino,
+                    "snapSeq" to snapSeq,
+                    "rangeStart" to range.start,
+                    "rangeEnd" to range.end,
+                ).filterValues { it != null } as Map<String, Any>,
+            )
             return ok().buildAndAwait()
         }
     }
@@ -64,7 +84,8 @@ class DriveOperationHandler(
     suspend fun write(request: ServerRequest): ServerResponse {
         val hasAcquired = tryAcquireWriteQuota()
         try {
-            val user = ReactiveSecurityUtils.getUser()
+            val userId = ReactiveSecurityUtils.getUser()
+            val clientAddress = ReactiveRequestContextHolder.getClientAddress()
             val artifactFile = request.bodyToArtifactFile()
             val blockRequest = DriveBlockWriteRequest(request)
 
@@ -83,7 +104,21 @@ class DriveOperationHandler(
             }
 
             // 写入数据
-            val blockNode = driveFileOperationService.write(artifactFile, blockRequest, user)
+            val blockNode = driveFileOperationService.write(artifactFile, blockRequest, userId)
+            driveOperateLogService.record(
+                type = EventType.DRIVE_BLOCK_WRITE.name,
+                userId = userId,
+                clientAddress = clientAddress,
+                projectId = blockRequest.projectId,
+                repoName = blockRequest.repoName,
+                resourceKey = "${blockRequest.ino}/${blockRequest.offset}",
+                description = mapOf(
+                    "ino" to blockRequest.ino,
+                    "offset" to blockRequest.offset,
+                    "size" to blockNode.size,
+                    "sha256" to blockNode.sha256,
+                ),
+            )
             return ReactiveResponseBuilder.success(blockNode)
         } finally {
             if (hasAcquired) {
