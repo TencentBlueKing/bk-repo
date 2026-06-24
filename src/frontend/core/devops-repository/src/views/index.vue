@@ -33,7 +33,7 @@
         </div>
         <div class="m10 bkrepo-view-main flex-column flex-1">
             <breadcrumb class="mb10 repo-breadcrumb" v-if="routerStatus">
-                <bk-breadcrumb-item :to="{ name: 'repositories' }">{{$t('repoList')}}</bk-breadcrumb-item>
+                <bk-breadcrumb-item :to="{ name: 'repositories', params: { projectId: currentProjectId } }">{{$t('repoList')}}</bk-breadcrumb-item>
             </breadcrumb>
             <router-view class="flex-1"></router-view>
         </div>
