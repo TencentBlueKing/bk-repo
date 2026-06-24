@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.metadata.util.OperateLogServiceHelper.convert
 import com.tencent.bkrepo.common.metadata.util.OperateLogServiceHelper.match
 import com.tencent.bkrepo.common.metadata.util.OperateLogServiceHelper.transfer
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.scheduling.annotation.Async
 
@@ -52,6 +53,7 @@ import org.springframework.scheduling.annotation.Async
 open class OperateLogServiceImpl(
     private val operateProperties: OperateProperties,
     private val operateLogDao: OperateLogDao,
+    private val operateLogCompensationService: OperateLogCompensationService? = null,
 ) : OperateLogService {
 
     @Async
@@ -60,7 +62,7 @@ open class OperateLogServiceImpl(
             return
         }
         val log = buildLog(event, address)
-        operateLogDao.insert(log)
+        insertWithCompensation(log)
     }
 
     override fun save(operateLog: OperateLog) {
@@ -68,7 +70,44 @@ open class OperateLogServiceImpl(
             if (notNeedRecord(type, projectId, repoName)) {
                 return
             }
-            operateLogDao.insert(convert(operateLog))
+            insertWithCompensation(convert(operateLog))
+        }
+    }
+
+    private fun insertWithCompensation(log: TOperateLog) {
+        try {
+            operateLogDao.insert(log)
+        } catch (e: Exception) {
+            val compensation = operateLogCompensationService
+            if (compensation != null && compensation.enabled()) {
+                logger.warn(
+                    "artifact_oplog insert failed, enqueued compensation: projectId={} {}",
+                    log.projectId,
+                    e.message,
+                )
+                compensation.enqueue(log, e)
+            } else {
+                throw e
+            }
+        }
+    }
+
+    private fun insertAllWithCompensation(logs: List<TOperateLog>) {
+        if (logs.isEmpty()) return
+        try {
+            operateLogDao.insert(logs)
+        } catch (e: Exception) {
+            val compensation = operateLogCompensationService
+            if (compensation != null && compensation.enabled()) {
+                logger.warn(
+                    "artifact_oplog batch insert failed, enqueued {} tasks: {}",
+                    logs.size,
+                    e.message,
+                )
+                logs.forEach { compensation.enqueue(it, e) }
+            } else {
+                throw e
+            }
         }
     }
 
@@ -82,7 +121,7 @@ open class OperateLogServiceImpl(
         }
 
         if (logs.isNotEmpty()) {
-            operateLogDao.insert(logs)
+            insertAllWithCompensation(logs)
         }
     }
 
@@ -106,7 +145,7 @@ open class OperateLogServiceImpl(
             logs.add(buildLog(it, address))
         }
         if (logs.isNotEmpty()) {
-            operateLogDao.insert(logs)
+            insertAllWithCompensation(logs)
         }
     }
 
@@ -147,5 +186,9 @@ open class OperateLogServiceImpl(
             return true
         }
         return false
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(OperateLogServiceImpl::class.java)
     }
 }

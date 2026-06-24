@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.api.collection.groupBySimilar
 import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
@@ -68,6 +69,8 @@ class SystemGcJob(
     val properties: SystemGcJobProperties,
     private val mongoTemplate: MongoTemplate,
     private val archiveClient: ArchiveClient,
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private val routingRegistry: MongoRoutingRegistry? = null,
 ) : DefaultContextJob(properties) {
 
     private var lastId = MIN_OBJECT_ID
@@ -106,7 +109,8 @@ class SystemGcJob(
         lastId = MIN_OBJECT_ID
         val seq = HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
         val collectionName = "node_$seq"
-        var nodes = mongoTemplate.find(buildQuery(projectId, repoName), Node::class.java, collectionName)
+        val readTemplate = routingRegistry?.routeRead(collectionName, projectId) ?: mongoTemplate
+        var nodes = readTemplate.find(buildQuery(projectId, repoName), Node::class.java, collectionName)
         var total: Long = 0
         var totalSize: Long = 0
         var gcCount: Long = 0
@@ -133,7 +137,7 @@ class SystemGcJob(
                         compressNode(node, newest, credentials)
                     }
                 }
-            nodes = mongoTemplate.find(buildQuery(projectId, repoName), Node::class.java, collectionName)
+            nodes = readTemplate.find(buildQuery(projectId, repoName), Node::class.java, collectionName)
         }
         return GcMetric(gcCount, total, gcSize, totalSize)
     }

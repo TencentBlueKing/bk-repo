@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.job.batch.file
 
 import com.tencent.bkrepo.common.lock.service.LockOperation
+import com.tencent.bkrepo.common.metadata.routing.NodeShardReadSupport
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileRetainResolver
 import com.tencent.bkrepo.job.config.properties.ExpiredCacheFileCleanupJobProperties
 import com.tencent.bkrepo.job.service.FileCacheService
@@ -19,7 +20,8 @@ class ExpireFileResolverConfig {
         fileCacheService: FileCacheService,
         mongoTemplate: MongoTemplate,
         redisTemplate: RedisTemplate<String, String>,
-        lockOperation: LockOperation
+        lockOperation: LockOperation,
+        nodeShardReadSupport: NodeShardReadSupport? = null,
     ): FileRetainResolver {
         return BasedRepositoryNodeRetainResolver(
             expiredCacheFileCleanupJobProperties.repoConfig,
@@ -27,7 +29,8 @@ class ExpireFileResolverConfig {
             fileCacheService,
             mongoTemplate,
             redisTemplate,
-            lockOperation
+            lockOperation,
+            nodeShardReadSupport,
         )
     }
 }

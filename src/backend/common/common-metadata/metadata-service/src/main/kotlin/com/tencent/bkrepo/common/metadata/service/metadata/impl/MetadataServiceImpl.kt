@@ -81,6 +81,7 @@ import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 import java.util.concurrent.Executors
 
 /**
@@ -156,6 +157,7 @@ class MetadataServiceImpl(
         } else {
             MetadataUtils.merge(oldMetadata, newMetadata)
         }
+        node.lastModifiedDate = LocalDateTime.now()
 
         nodeDao.save(node)
         return newMetadata
@@ -196,7 +198,8 @@ class MetadataServiceImpl(
             val update = Update().pull(
                 TNode::metadata.name,
                 Query.query(where(TMetadata::key).inValues(keyList))
-            )
+            ).set(TNode::lastModifiedDate.name, LocalDateTime.now())
+                .set(TNode::lastModifiedBy.name, SecurityUtils.getUserId())
             nodeDao.updateMulti(query, update)
             publishEvent(buildMetadataDeletedEvent(this))
             pipelineArtifactCallback(node, request.keyList.toList())

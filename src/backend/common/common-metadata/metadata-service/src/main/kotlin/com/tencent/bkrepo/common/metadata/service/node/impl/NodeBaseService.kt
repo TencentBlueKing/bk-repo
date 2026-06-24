@@ -85,10 +85,13 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.DeletedNodeReplicationRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.service.file.impl.FileRefCompensationService
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -117,6 +120,18 @@ abstract class NodeBaseService(
     open val metadataCustomizer: MetadataCustomizer?,
     open val metadataLabelCacheService: MetadataLabelCacheService,
 ) : NodeService {
+
+    @Suppress("LateinitUsage")
+    @Autowired(required = false)
+    private var routingRegistry: MongoRoutingRegistry? = null
+
+    @Suppress("LateinitUsage")
+    @Autowired(required = false)
+    private var fileRefCompensationService: FileRefCompensationService? = null
+
+    @Suppress("LateinitUsage")
+    @Autowired(required = false)
+    private var sha256ProjectIdCache: com.tencent.bkrepo.common.metadata.routing.Sha256ProjectIdCache? = null
 
     override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
         with(artifact) {
@@ -417,22 +432,35 @@ abstract class NodeBaseService(
             if (!node.folder) {
                 // 软链接node或fs-server创建的node的sha256为FAKE_SHA256不会关联实际文件，无需增加引用数
                 if (node.sha256 != FAKE_SHA256) {
-                    incrementFileReference(node, repository)
+                    val compensation = fileRefCompensationService
+                    if (compensation != null && shouldUseFileRefCompensation(node.projectId)) {
+                        val credentialsKey = findCredentialsKey(node, repository)
+                        compensation.enqueue(node.sha256!!, credentialsKey)
+                    } else {
+                        incrementFileReference(node, repository)
+                    }
                 }
                 if (node.deleted == null) {
                     quotaService.increaseUsedVolume(node.projectId, node.repoName, node.size)
                 }
             }
         } catch (exception: DuplicateKeyException) {
-            if (separate){
+            if (separate) {
                 logger.warn("Insert block base node[$node] error: [${exception.message}]")
                 throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, node.fullPath)
             }
             logger.warn("Insert node[$node] error: [${exception.message}]")
         }
-
+        invalidateSha256Cache(node.sha256)
         return node
     }
+
+    protected fun invalidateSha256Cache(sha256: String?) {
+        if (sha256.isNullOrBlank() || sha256 == FAKE_SHA256) return
+        sha256ProjectIdCache?.invalidate(sha256)
+    }
+
+    fun invalidateSha256CacheForRouting(sha256: String?) = invalidateSha256Cache(sha256)
 
     /**
      * 递归创建目录
@@ -543,6 +571,17 @@ abstract class NodeBaseService(
     }
 
     /**
+     * node 写 Heavy 时 file_reference 留在 Default，需异步补偿 increment。
+     */
+    private fun shouldUseFileRefCompensation(projectId: String): Boolean {
+        val registry = routingRegistry ?: return false
+        if (!registry.isRoutingEnabled(NODE_RULE)) return false
+        if (projectId !in registry.allKnownProjectIds(NODE_RULE)) return false
+        return registry.isProjectInDualWrite(NODE_RULE, projectId) ||
+            registry.isProjectRoutedOut(NODE_RULE, projectId)
+    }
+
+    /**
      * 获取用户无权限路径列表
      */
     private fun getPermissionPaths(
@@ -557,6 +596,7 @@ abstract class NodeBaseService(
     }
 
     companion object {
+        private const val NODE_RULE = "node"
         private val logger = LoggerFactory.getLogger(NodeBaseService::class.java)
     }
 }

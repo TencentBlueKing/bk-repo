@@ -53,12 +53,15 @@ import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.context.FileJobContext
 import com.tencent.bkrepo.job.batch.utils.DriveUtils
+import com.tencent.bkrepo.common.mongo.routing.MigrationGate
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils.Companion.buildBlockNodeBloomFilter
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.job.exception.RepoMigratingException
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -82,6 +85,7 @@ class FileReferenceCleanupJob(
     private val archiveClient: ArchiveClient,
     private val blockNodeProperties: BlockNodeProperties,
     private val storageProperties: StorageProperties,
+    @Autowired(required = false) private val migrationGate: MigrationGate? = null,
 ) : MongoDbBatchJob<FileReferenceCleanupJob.FileReferenceData, FileJobContext>(properties) {
 
     /**
@@ -154,6 +158,23 @@ class FileReferenceCleanupJob(
         val id = row.id
         val storageCredentials = credentialsKey?.let { getCredentials(credentialsKey) }
         try {
+            // ─── 第〇层（迁移期主防线）：GC 全局暂停（§3.14.5 / §3.18.2） ───
+            if (isGcFrozenDueToMigration()) {
+                logger.info(
+                    "GC frozen due to active project migration, skipping " +
+                        "file_reference cleanup for sha256[$sha256] on [$credentialsKey]"
+                )
+                return
+            }
+
+            // ─── 第一层：GC 安全窗口（§3.14.5） ───
+            if (isWithinGcSafeWindow(row.lastRefCountUpdate)) {
+                logger.debug(
+                    "File[$sha256] refCount recently updated (lastRefCountUpdate=${row.lastRefCountUpdate}), " +
+                        "within gc-safe-window(${properties.gcSafeWindowMinutes}m), skipping GC"
+                )
+                return
+            }
             /*
             * 我们认为大部分的情况下，引用计数应该是正确的，并且为了确保文件没有被节点或者压缩root等资源引用
             * 我们需要进行强制判断，同时文件丢失的情况，我们认为也是小概率事件，因此我们选择先进行文件是否可以
@@ -196,6 +217,15 @@ class FileReferenceCleanupJob(
                             "existsRefOfMappingStorage[$existsRefOfMappingStorage], skip cleaning up."
                 )
             }
+
+            // ─── 第三层：物理删除前二次确认 refCount（§3.14.5） ───
+            if (!confirmRefCountStillDeletable(sha256, credentialsKey, collectionName)) {
+                logger.warn(
+                    "File[$sha256] refCount changed since GC scan, skipping deletion on [$credentialsKey]"
+                )
+                return
+            }
+
             mongoTemplate.remove(Query(Criteria(ID).isEqualTo(id)), collectionName)
         } catch (e: Exception) {
             if (e is RepoMigratingException) {
@@ -318,6 +348,51 @@ class FileReferenceCleanupJob(
         return mongoTemplate.findOne(query, Node::class.java, COLLECTION_NAME_COMPRESS_FILE) != null
     }
 
+    // ─── 第〇层 / 第一层 / 第三层 防护辅助方法 ──────────────────────
+
+    /**
+     * §3.14.5 / §3.18.2：迁移期全局 GC 暂停。
+     * 任一项目处于迁移过程中（INITIAL_SYNC ~ CLEANUP），file_reference GC 全局暂停。
+     */
+    private fun isGcFrozenDueToMigration(): Boolean {
+        val gate = migrationGate ?: return false
+        return gate.isGcFrozen()
+    }
+
+    /**
+     * §3.14.5 / §3.18.5：GC 安全窗口检查。
+     * file_reference 的 refCount 变更后 [gcSafeWindowMinutes] 分钟内跳过 GC，
+     * 等待异步补偿消费完成。
+     *
+     * 若 [lastRefCountUpdate] 为 null（历史数据未回填），视为处于安全窗口内（保守策略）。
+     */
+    private fun isWithinGcSafeWindow(lastRefCountUpdate: java.time.LocalDateTime?): Boolean {
+        if (lastRefCountUpdate == null) {
+            // 历史数据暂无 lastRefCountUpdate 字段，保守跳过
+            return properties.gcSafeWindowMinutes > 0
+        }
+        val elapsed = java.time.Duration.between(lastRefCountUpdate, java.time.LocalDateTime.now())
+        return elapsed.toMinutes() < properties.gcSafeWindowMinutes
+    }
+
+    /**
+     * §3.14.5 第三层：物理删除前二次确认 refCount ≤ 0。
+     * 防止在 GC 判定后、删除执行前 refCount 被补偿消费更新为正数。
+     */
+    private fun confirmRefCountStillDeletable(
+        sha256: String,
+        credentialsKey: String?,
+        collectionName: String,
+    ): Boolean {
+        val criteria = Criteria.where(SHA256).isEqualTo(sha256)
+            .and(CREDENTIALS).isEqualTo(credentialsKey)
+        val query = Query.query(criteria)
+        query.fields().include(COUNT)
+        val doc = mongoTemplate.findOne(query, org.bson.Document::class.java, collectionName)
+        val currentCount = doc?.getInteger(COUNT) ?: 0
+        return currentCount <= 0
+    }
+
     private val cacheMap: ConcurrentHashMap<String, StorageCredentials?> = ConcurrentHashMap()
 
     companion object {
@@ -325,12 +400,20 @@ class FileReferenceCleanupJob(
         private const val STORAGE_CREDENTIALS = "storageCredentialsKey"
         private const val BASE_SHA256 = "baseSha256"
         private const val STATUS = "status"
+        private const val LAST_REF_COUNT_UPDATE = "lastRefCountUpdate"
     }
 
     data class FileReferenceData(private val map: Map<String, Any?>) {
         val id: String? by map
         val sha256: String by map
         val credentialsKey: String? = map[CREDENTIALS] as String?
+        val count: Number? = map[COUNT] as? Number
+        /** §3.18.5：refCount 最后变更时间，GC 安全窗口依赖此字段 */
+        val lastRefCountUpdate: java.time.LocalDateTime? = when (val v = map[LAST_REF_COUNT_UPDATE]) {
+            is java.util.Date -> v.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime()
+            is java.time.LocalDateTime -> v
+            else -> null
+        }
     }
 
     data class Node(

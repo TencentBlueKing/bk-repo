@@ -17,7 +17,10 @@ class NodeCompressSupport(
     override fun compressedNode(nodeCompressedRequest: NodeCompressedRequest) {
         with(nodeCompressedRequest) {
             val query = NodeQueryHelper.nodeQuery(projectId, repoName, fullPath)
-            val update = Update().set(TNode::compressed.name, true)
+            val update = NodeQueryHelper.touchLastModified(
+                Update().set(TNode::compressed.name, true),
+                operator,
+            )
             nodeDao.updateFirst(query, update)
             logger.info("Success to compress node $projectId/$repoName/$fullPath")
         }
@@ -26,8 +29,11 @@ class NodeCompressSupport(
     override fun uncompressedNode(nodeUnCompressedRequest: NodeUnCompressedRequest) {
         with(nodeUnCompressedRequest) {
             val query = NodeQueryHelper.nodeQuery(projectId, repoName, fullPath)
-            val update = Update().unset(TNode::compressed.name)
-                .set(TNode::lastAccessDate.name, LocalDateTime.now())
+            val update = NodeQueryHelper.touchLastModified(
+                Update().unset(TNode::compressed.name)
+                    .set(TNode::lastAccessDate.name, LocalDateTime.now()),
+                operator,
+            )
             nodeDao.updateFirst(query, update)
             logger.info("Success to uncompress node $projectId/$repoName/$fullPath")
         }

@@ -225,7 +225,6 @@ class EdgeNodeServiceImpl(
         )
     }
 
-    @Transactional(rollbackFor = [Throwable::class])
     override fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail {
         ignoreException(
             projectId = moveRequest.projectId,
@@ -242,7 +241,6 @@ class EdgeNodeServiceImpl(
         return NodeMoveCopySupport(this).moveNode(moveRequest)
     }
 
-    @Transactional(rollbackFor = [Throwable::class])
     override fun copyNode(copyRequest: NodeMoveCopyRequest): NodeDetail {
         ignoreException(
             projectId = copyRequest.projectId,

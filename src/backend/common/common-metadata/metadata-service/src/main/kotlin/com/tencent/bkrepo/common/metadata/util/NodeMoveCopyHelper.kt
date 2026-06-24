@@ -31,6 +31,9 @@ object NodeMoveCopyHelper {
         }
     }
 
+    fun isCrossProject(context: MoveCopyContext): Boolean =
+        context.srcNode.projectId != context.dstProjectId
+
     /**
      * 判断能否忽略执行
      */

@@ -36,11 +36,19 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.metadata.routing.NodeScatterQueryService
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.mongo.reactive.dao.HashShardingMongoReactiveDao
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -56,7 +64,14 @@ import java.time.LocalDateTime
  */
 @Component
 @Conditional(ReactiveCondition::class)
-class RNodeDao: HashShardingMongoReactiveDao<TNode>() {
+class RNodeDao : HashShardingMongoReactiveDao<TNode>() {
+
+    @Autowired(required = false)
+    private var scatterQueryService: NodeScatterQueryService? = null
+
+    @Autowired(required = false)
+    private var routingRegistry: MongoRoutingRegistry? = null
+
     /**
      * 查询节点
      */
@@ -142,10 +157,37 @@ class RNodeDao: HashShardingMongoReactiveDao<TNode>() {
             query.fields().exclude(TNode::metadata.name)
         }
 
+        if (shouldScatterRead()) {
+            if (pageRequest.offset > MAX_SCATTER_OFFSET) {
+                throw BadRequestException(
+                    CommonMessageCode.PARAMETER_INVALID,
+                    "Scatter query does not support deep pagination (offset > $MAX_SCATTER_OFFSET)",
+                )
+            }
+            val all = withContext(Dispatchers.IO) {
+                scatterQueryService!!.scatterFind(query, TNode::class.java, allCollectionNames())
+            }
+            val offset = pageRequest.offset.toInt().coerceAtMost(all.size)
+            val end = (offset + pageRequest.pageSize).coerceAtMost(all.size)
+            return PageImpl(all.subList(offset, end), pageRequest, all.size.toLong())
+        }
         return pageWithoutShardingKey(pageRequest, query)
     }
 
+    private fun shouldScatterRead(): Boolean {
+        val registry = routingRegistry ?: return false
+        return scatterQueryService != null &&
+            (registry.routedProjectIds(NODE_RULE).isNotEmpty() ||
+                registry.shardRoutedCollections(NODE_RULE).isNotEmpty())
+    }
+
+    private fun allCollectionNames(): List<String> =
+        (0 until shardingCount).map { parseSequenceToCollectionName(it) }
+
     companion object {
+        private const val NODE_RULE = "node"
+        private const val MAX_SCATTER_OFFSET = 10_000L
+
         fun buildRootNode(projectId: String, repoName: String): TNode {
             return TNode(
                 createdBy = StringPool.EMPTY,

@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.metadata.interceptor.ProjectUsageStatisticsInte
 import com.tencent.bkrepo.common.metadata.properties.OperateProperties
 import com.tencent.bkrepo.common.metadata.properties.ProjectUsageStatisticsProperties
 import com.tencent.bkrepo.common.metadata.service.log.impl.CommitEdgeOperateLogServiceImpl
+import com.tencent.bkrepo.common.metadata.service.log.impl.OperateLogCompensationService
 import com.tencent.bkrepo.common.metadata.service.log.impl.OperateLogServiceImpl
 import com.tencent.bkrepo.common.metadata.service.project.ProjectUsageStatisticsService
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
@@ -56,7 +57,8 @@ class OperateLogConfiguration {
     fun operateLogService(
         operateProperties: OperateProperties,
         operateLogDao: OperateLogDao,
-        clusterProperties: ClusterProperties
+        clusterProperties: ClusterProperties,
+        operateLogCompensationService: OperateLogCompensationService? = null,
     ): OperateLogService {
         return if (clusterProperties.role == ClusterNodeType.EDGE &&
             clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE &&
@@ -64,7 +66,7 @@ class OperateLogConfiguration {
         ) {
             CommitEdgeOperateLogServiceImpl(operateProperties, operateLogDao, clusterProperties)
         } else {
-            OperateLogServiceImpl(operateProperties, operateLogDao)
+            OperateLogServiceImpl(operateProperties, operateLogDao, operateLogCompensationService)
         }
     }
 

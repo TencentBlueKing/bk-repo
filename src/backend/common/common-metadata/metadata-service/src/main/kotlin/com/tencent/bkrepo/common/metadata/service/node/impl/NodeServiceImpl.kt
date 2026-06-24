@@ -190,12 +190,10 @@ class NodeServiceImpl(
         )
     }
 
-    @Transactional(rollbackFor = [Throwable::class])
     override fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail {
         return NodeMoveCopySupport(this).moveNode(moveRequest)
     }
 
-    @Transactional(rollbackFor = [Throwable::class])
     override fun copyNode(copyRequest: NodeMoveCopyRequest): NodeDetail {
         return NodeMoveCopySupport(this).copyNode(copyRequest)
     }

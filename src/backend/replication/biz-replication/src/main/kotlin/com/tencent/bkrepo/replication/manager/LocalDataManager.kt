@@ -49,6 +49,8 @@ import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.routing.NodeShardReadSupport
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
@@ -80,6 +82,7 @@ import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -105,8 +108,16 @@ class LocalDataManager(
     private val storageProperties: StorageProperties,
     private val mongoTemplate: MongoTemplate,
     private val blockNodeService: BlockNodeService,
-    private val clusterNodeService: ClusterNodeService
+    private val clusterNodeService: ClusterNodeService,
+    @Autowired(required = false) private val nodeDao: NodeDao? = null,
+    @Autowired(required = false) private val nodeShardReadSupport: NodeShardReadSupport? = null,
 ) {
+
+    private fun nodeCollectionName(projectId: String): String =
+        "node_${HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)}"
+
+    private fun nodeReadTemplate(projectId: String, collectionName: String): MongoTemplate =
+        nodeShardReadSupport?.readTemplate(projectId, collectionName) ?: mongoTemplate
 
     /**
      * 获取blob文件数据
@@ -309,11 +320,14 @@ class LocalDataManager(
      * 通过id查询node
      */
     fun findNodeById(projectId: String, nodeId: String): NodeInfo? {
-        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
+        nodeDao?.findById(projectId, nodeId)?.let { return convert(it.toLocalNode()) }
+        val collectionName = nodeCollectionName(projectId)
         val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
             .and(ID).isEqualTo(nodeId)
         val query = Query(criteria)
-        return convert(mongoTemplate.findOne(query, Node::class.java, collectionName))
+        return convert(
+            nodeReadTemplate(projectId, collectionName).findOne(query, Node::class.java, collectionName),
+        )
     }
 
     /**
@@ -380,7 +394,7 @@ class LocalDataManager(
         pageSize: Int,
         includeDeleted: Boolean = false
     ): List<NodeInfo> {
-        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
+        val collectionName = nodeCollectionName(projectId)
         val nodePath = PathUtils.toPath(fullPath)
         val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
             .and(REPO_NAME).isEqualTo(repoName)
@@ -399,16 +413,17 @@ class LocalDataManager(
         pageNumber: Int,
         pageSize: Int
     ): List<NodeInfo> {
-        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
+        val collectionName = nodeCollectionName(projectId)
         val query = Query(criteria).with(Pages.ofRequest(pageNumber, pageSize))
-        return mongoTemplate.find(query, Node::class.java, collectionName).mapNotNull { convert(it) }
+        return nodeReadTemplate(projectId, collectionName)
+            .find(query, Node::class.java, collectionName).mapNotNull { convert(it) }
     }
 
     /**
      * 统计文件节点数量（不包含文件夹）
      */
     fun countFileNode(projectId: String, repoName: String, rootPath: String = "/"): Long {
-        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
+        val collectionName = nodeCollectionName(projectId)
         val nodePath = PathUtils.toPath(rootPath)
         val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
             .and(REPO_NAME).isEqualTo(repoName)
@@ -416,7 +431,7 @@ class LocalDataManager(
             .and(FOLDER).isEqualTo(false)
             .and(DELETED).isEqualTo(null)
         val query = Query(criteria)
-        return mongoTemplate.count(query, collectionName)
+        return nodeReadTemplate(projectId, collectionName).count(query, collectionName)
     }
 
     /**
@@ -457,7 +472,7 @@ class LocalDataManager(
         pageNumber: Int = 1,
         pageSize: Int = DirectChildrenRequest.DEFAULT_PAGE_SIZE
     ): DirectChildrenPage {
-        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
+        val collectionName = nodeCollectionName(projectId)
         val normalizedPath = PathUtils.toPath(parentPath)
 
         val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
@@ -465,8 +480,8 @@ class LocalDataManager(
             .and(NODE_PATH).isEqualTo(normalizedPath)
             .and(DELETED).isEqualTo(null)
 
-        // 计算总数
-        val totalRecords = mongoTemplate.count(Query(criteria), collectionName)
+        val readTemplate = nodeReadTemplate(projectId, collectionName)
+        val totalRecords = readTemplate.count(Query(criteria), collectionName)
 
         // 限制每页大小
         val actualPageSize = pageSize.coerceIn(1, DirectChildrenRequest.MAX_PAGE_SIZE)
@@ -478,7 +493,7 @@ class LocalDataManager(
             .skip(((actualPageNumber - 1) * actualPageSize).toLong())
             .limit(actualPageSize)
 
-        val records = mongoTemplate.find(query, Node::class.java, collectionName).map { node ->
+        val records = readTemplate.find(query, Node::class.java, collectionName).map { node ->
             DirectChildInfo(
                 fullPath = node.fullPath,
                 folder = node.folder,
@@ -511,7 +526,7 @@ class LocalDataManager(
         repoName: String,
         path: String
     ): Long {
-        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
+        val collectionName = nodeCollectionName(projectId)
         val normalizedPath = PathUtils.toPath(path)
 
         val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
@@ -521,7 +536,7 @@ class LocalDataManager(
             .and(DELETED).isEqualTo(null)
 
         val query = Query(criteria)
-        return mongoTemplate.count(query, collectionName)
+        return nodeReadTemplate(projectId, collectionName).count(query, collectionName)
     }
 
     /**
@@ -659,10 +674,9 @@ class LocalDataManager(
         repoName: String,
         path: String
     ): PathStatisticsData {
-        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
+        val collectionName = nodeCollectionName(projectId)
         val normalizedPath = PathUtils.toPath(path)
 
-        // 使用 MongoDB Aggregation 计算统计
         val matchCriteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
             .and(REPO_NAME).isEqualTo(repoName)
             .and(NODE_PATH).regex("^${EscapeUtils.escapeRegex(normalizedPath)}")
@@ -680,7 +694,8 @@ class LocalDataManager(
                 .push("sha256").`as`("sha256List")
         )
 
-        val result = mongoTemplate.aggregate(aggregation, collectionName, AggregateResult::class.java)
+        val result = nodeReadTemplate(projectId, collectionName)
+            .aggregate(aggregation, collectionName, AggregateResult::class.java)
         val aggregateResult = result.uniqueMappedResult
 
         if (aggregateResult == null || aggregateResult.fileCount == 0L) {
@@ -823,6 +838,35 @@ class LocalDataManager(
         var repoName: String,
         var id: String? = null,
         var federatedSource: String? = null,
+    )
+
+    private fun TNode.toLocalNode() = Node(
+        id = id,
+        createdBy = createdBy,
+        createdDate = createdDate,
+        lastModifiedBy = lastModifiedBy,
+        lastModifiedDate = lastModifiedDate,
+        lastAccessDate = lastAccessDate,
+        folder = folder,
+        path = path,
+        name = name,
+        fullPath = fullPath,
+        size = size,
+        expireDate = expireDate,
+        sha256 = sha256,
+        md5 = md5,
+        crc64ecma = crc64ecma,
+        deleted = deleted,
+        copyFromCredentialsKey = copyFromCredentialsKey,
+        copyIntoCredentialsKey = copyIntoCredentialsKey,
+        metadata = metadata?.map { MetadataModel(it.key, it.value, it.system) }?.toMutableList(),
+        clusterNames = clusterNames,
+        nodeNum = nodeNum,
+        archived = archived,
+        compressed = compressed,
+        projectId = projectId,
+        repoName = repoName,
+        federatedSource = federatedSource,
     )
 
     private fun convert(node: Node?): NodeInfo? {
