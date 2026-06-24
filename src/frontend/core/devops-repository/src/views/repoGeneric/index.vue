@@ -1151,23 +1151,13 @@
                     }
                 })
             },
-            // 由于cookie部分是HttpOnly属性，无法使用cookie。
-            // 其实客户端是支持携带cookie的(bk_token或者bkrepo_token)，类似bkartifacts://action=download&url=XXXX&bkrepo_token=xxxxx
-            // 现阶段使用分享链接去下载(访问次数不限制,过期时间不限制，防止客户端暂停下载后续失败)
-            // 分享链接下载文件夹属性会转变为zip包，需传递文件夹属性
-            async buildExeDownloadUrl (row) {
-                const [{ url }] = await this.shareArtifactory({
-                    projectId: this.projectId,
-                    repoName: this.repoName,
-                    fullPathSet: [row.fullPath],
-                    type: 'DOWNLOAD',
-                    host: new URL(window.BK_SUBPATH, location.origin) + 'generic'
-                })
-                return BK_ARTIFACT_SCHEME + 'action=download&url=' + encodeURIComponent(url) + '&isFolder=' + row.folder
+            // 客户端下载，传递类似bkartifacts://download/XXXX
+            buildExeDownloadUrl (row) {
+                return BK_ARTIFACT_SCHEME + 'download/${this.projectId}/${this.repoName}' + encodeURIComponent(row.fullPath)
             },
-            async handlerDownload (row) {
+            handlerDownload (row) {
                 try {
-                    const target = await this.buildExeDownloadUrl(row)
+                    const target = this.buildExeDownloadUrl(row)
                     ElectronProtocolCheck(
                         target,
                         () => {
