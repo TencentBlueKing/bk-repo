@@ -29,6 +29,8 @@ package com.tencent.bkrepo.replication.dao
 
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.replication.model.TReplicaTask
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
@@ -62,5 +64,17 @@ class ReplicaTaskDao : SimpleMongoDao<TReplicaTask>() {
         }
         val query = Query(TReplicaTask::key.isEqualTo(key))
         this.remove(query)
+    }
+
+    /**
+     * 列出 replicaType ∈ [types] 的全部任务（仅启用的）。
+     */
+    fun listByReplicaTypes(types: Collection<ReplicaType>, onlyEnabled: Boolean = true): List<TReplicaTask> {
+        if (types.isEmpty()) return emptyList()
+        val criteria = Criteria.where(TReplicaTask::replicaType.name).`in`(types)
+        if (onlyEnabled) {
+            criteria.and(TReplicaTask::enabled.name).`is`(true)
+        }
+        return find(Query(criteria))
     }
 }

@@ -57,7 +57,8 @@ enum class ReplicationMessageCode(private val businessCode: Int, private val key
     FEDERATION_REPOSITORY_UPDATE_ERROR(22, "federation.repository.update.error"),
     FEDERATION_REPOSITORY_NAME_EXISTS(23, "federation.repository.name.exists"),
     FEDERATION_TRACKING_RECORD_NOT_FOUND(24, "federation.tracking.record.not.found"),
-    REPLICA_FAILURE_RECORD_NOT_FOUND(25, "replica.failure.record.not.found")
+    REPLICA_FAILURE_RECORD_NOT_FOUND(25, "replica.failure.record.not.found"),
+    UPSTREAM_CLUSTER_NOT_REGISTERED(26, "upstream.cluster.not.registered")
     ;
 
     override fun getBusinessCode() = businessCode
