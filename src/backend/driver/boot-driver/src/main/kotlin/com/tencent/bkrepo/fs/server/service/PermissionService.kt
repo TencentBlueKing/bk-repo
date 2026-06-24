@@ -53,16 +53,28 @@ class PermissionService(
             resourceType = ResourceType.REPO.toString(),
             action = action.toString(),
             projectId = projectId,
-            repoName = repoName
+            repoName = repoName,
         )
+        return doCheckPermission(checkRequest)
+    }
 
+    suspend fun checkProjectPermission(projectId: String, action: PermissionAction, uid: String): Boolean {
+        val checkRequest = CheckPermissionRequest(
+            uid = uid,
+            resourceType = ResourceType.PROJECT.toString(),
+            action = action.toString(),
+            projectId = projectId,
+        )
+        return doCheckPermission(checkRequest)
+    }
+
+    private suspend fun doCheckPermission(checkRequest: CheckPermissionRequest): Boolean {
         if (devXProperties.enabled) {
             val headerValue = ReactiveRequestContextHolder.getRequest().headers[devXProperties.srcHeaderName!!]
             if (headerValue?.first() == devXProperties.srcHeaderValues[1]) {
                 checkRequest.requestSource = DEVX_ACCESS_FROM_OFFICE
             }
         }
-
         return rAuthClient.checkPermission(checkRequest).awaitSingle().data ?: false
     }
 

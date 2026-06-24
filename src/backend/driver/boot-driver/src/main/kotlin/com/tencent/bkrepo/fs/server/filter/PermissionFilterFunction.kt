@@ -134,7 +134,8 @@ class PermissionFilterFunction(
         )
         private val uncheckedUrlPrefixList = listOf(
             "/login", "/devx/login", "/user/login",
-            "/service", "/token", "/ioa", "/client/metrics/push", "/drive/repository/init/"
+            "/service", "/token", "/ioa", "/client/metrics/push", "/drive/repository/init/",
+            "/drive/oplog/"
         )
     }
 }
