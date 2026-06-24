@@ -37,5 +37,15 @@ package com.tencent.bkrepo.auth.pojo.token
 enum class TokenType {
     UPLOAD,
     DOWNLOAD,
-    ALL
+    ALL,
+
+    /**
+     * 仅用于文件预览（只读）的临时 token 类型。
+     * 与 DOWNLOAD 的差异：
+     *  - 仅允许在预览相关端点上使用，被用于 generic /temporary/upload、/temporary/download 等端点时由
+     *    TemporaryAccessService.checkAccessType 拒收返回 403；
+     *  - 在 common-security 的 TemporaryTokenAuthHandler 中走 validateTokenScope 严格范围校验链路，
+     *    避免被滥用为"借用创建者身份的全权登录态"。
+     */
+    PREVIEW
 }

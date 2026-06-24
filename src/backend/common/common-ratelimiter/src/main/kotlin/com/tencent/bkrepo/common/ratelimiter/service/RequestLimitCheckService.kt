@@ -36,6 +36,10 @@ import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.UrlDownloadBandwi
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.user.UserDownloadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.user.UserUploadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.ip.IpRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.url.UrlPrefixDownloadBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.url.UrlPrefixDownloadRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.url.UrlPrefixUploadBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.url.UrlPrefixUploadRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRepoRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.user.UserUrlRateLimiterService
@@ -77,6 +81,14 @@ class RequestLimitCheckService(
     private lateinit var userUrlRateLimiterService: UserUrlRateLimiterService
 
     @Autowired
+    @Qualifier(RateLimiterAutoConfiguration.URL_PREFIX_UPLOAD_RATE_RATELIMITER_SERVICE)
+    private lateinit var urlPrefixUploadRateLimiterService: UrlPrefixUploadRateLimiterService
+
+    @Autowired
+    @Qualifier(RateLimiterAutoConfiguration.URL_PREFIX_DOWNLOAD_RATE_RATELIMITER_SERVICE)
+    private lateinit var urlPrefixDownloadRateLimiterService: UrlPrefixDownloadRateLimiterService
+
+    @Autowired
     @Qualifier(RateLimiterAutoConfiguration.USER_UPLOAD_USAGE_RATELIMITER_SERVICE)
     private lateinit var userUploadUsageRateLimiterService: UserUploadUsageRateLimiterService
 
@@ -112,6 +124,14 @@ class RequestLimitCheckService(
     @Qualifier(RateLimiterAutoConfiguration.URL_DOWNLOAD_BANDWIDTH_RATELIMITER_SERVICE)
     private lateinit var urlDownloadBandwidthRateLimiterService: UrlDownloadBandwidthRateLimiterService
 
+    @Autowired
+    @Qualifier(RateLimiterAutoConfiguration.URL_PREFIX_UPLOAD_BANDWIDTH_RATELIMITER_SERVICE)
+    private lateinit var urlPrefixUploadBandwidthRateLimiterService: UrlPrefixUploadBandwidthRateLimiterService
+
+    @Autowired
+    @Qualifier(RateLimiterAutoConfiguration.URL_PREFIX_DOWNLOAD_BANDWIDTH_RATELIMITER_SERVICE)
+    private lateinit var urlPrefixDownloadBandwidthRateLimiterService: UrlPrefixDownloadBandwidthRateLimiterService
+
     @Autowired(required = false)
     @Qualifier(RateLimiterAutoConfiguration.IP_RATELIMITER_SERVICE)
     private var ipRateLimiterService: IpRateLimiterService? = null
@@ -139,6 +159,8 @@ class RequestLimitCheckService(
         ipRateLimiterService?.limit(request)
         urlRepoRateLimiterService.limit(request)
         urlRateLimiterService.limit(request)
+        urlPrefixUploadRateLimiterService.limit(request)
+        urlPrefixDownloadRateLimiterService.limit(request)
     }
 
     fun postLimitCheck(applyPermits: Long) {
@@ -148,16 +170,13 @@ class RequestLimitCheckService(
         val request = getRequest() ?: return
         downloadUsageRateLimiterService.limit(request, applyPermits)
         userDownloadUsageRateLimiterService.limit(request, applyPermits)
-
     }
 
     /**
      * 下载带宽检查：
      * 1. 遍历所有下载带宽服务，收集各服务匹配到的规则优先级
-     * 2. 选取优先级最高的服务（同优先级时 URL > 项目 > 用户，与列表顺序一致）
+     * 2. 选取优先级最高的服务（同优先级时按列表顺序）
      * 3. 将选中的服务写入 request attribute 供 bandwidthFinish 使用
-     *
-     * 这同时修复了：first-match 静默失效、下载路径混入上传服务、check/finish 服务不一致
      */
     fun bandwidthCheck(
         inputStream: InputStream,
@@ -169,11 +188,11 @@ class RequestLimitCheckService(
         }
         val request = getRequest() ?: return null
         val candidates = listOf(
+            BANDWIDTH_URL_PREFIX_DOWNLOAD to urlPrefixDownloadBandwidthRateLimiterService,
             BANDWIDTH_URL_DOWNLOAD to urlDownloadBandwidthRateLimiterService,
             BANDWIDTH_PROJECT_DOWNLOAD to downloadBandwidthRateLimiterService,
             BANDWIDTH_USER_DOWNLOAD to userDownloadBandwidthRateLimiterService,
         )
-        // 找出所有有匹配规则的服务，按 priority 降序排，同 priority 保持原列表顺序（stable sort）
         val best = candidates
             .mapNotNull { (name, svc) ->
                 val result = svc.getMatchedRuleResult(request) ?: return@mapNotNull null
@@ -200,6 +219,8 @@ class RequestLimitCheckService(
         }
         val request = getRequest() ?: return
         when (request.getAttribute(SELECTED_DOWNLOAD_BANDWIDTH_SERVICE) as? String) {
+            BANDWIDTH_URL_PREFIX_DOWNLOAD ->
+                urlPrefixDownloadBandwidthRateLimiterService.bandwidthRateLimitFinish(request, exception)
             BANDWIDTH_URL_DOWNLOAD ->
                 urlDownloadBandwidthRateLimiterService.bandwidthRateLimitFinish(request, exception)
             BANDWIDTH_PROJECT_DOWNLOAD ->
@@ -212,7 +233,7 @@ class RequestLimitCheckService(
 
     /**
      * 上传流带宽检查（如 ArtifactDataReceiver 读请求体）：与 [bandwidthCheck] 对称，
-     * 仅在 URL/项目/用户三类上传带宽服务间按规则 priority 选最高者，避免下载限流误用。
+     * 仅在 URL前缀/URL/项目/用户四类上传带宽服务间按规则 priority 选最高者。
      */
     fun uploadBandwidthStreamCheck(
         inputStream: InputStream,
@@ -224,6 +245,7 @@ class RequestLimitCheckService(
         }
         val request = getRequest() ?: return null
         val candidates = listOf(
+            BANDWIDTH_URL_PREFIX_UPLOAD to urlPrefixUploadBandwidthRateLimiterService,
             BANDWIDTH_URL_UPLOAD to urlUploadBandwidthRateLimiterService,
             BANDWIDTH_PROJECT_UPLOAD to uploadBandwidthRateLimiterService,
             BANDWIDTH_USER_UPLOAD to userUploadBandwidthRateLimiterService,
@@ -251,6 +273,8 @@ class RequestLimitCheckService(
         }
         val request = getRequest() ?: return
         when (request.getAttribute(SELECTED_UPLOAD_BANDWIDTH_SERVICE) as? String) {
+            BANDWIDTH_URL_PREFIX_UPLOAD ->
+                urlPrefixUploadBandwidthRateLimiterService.bandwidthRateLimitFinish(request, exception)
             BANDWIDTH_URL_UPLOAD ->
                 urlUploadBandwidthRateLimiterService.bandwidthRateLimitFinish(request, exception)
             BANDWIDTH_PROJECT_UPLOAD ->
@@ -261,7 +285,6 @@ class RequestLimitCheckService(
         request.removeAttribute(SELECTED_UPLOAD_BANDWIDTH_SERVICE)
     }
 
-
     fun uploadBandwidthCheck(
         applyPermits: Long,
         circuitBreakerPerSecond: DataSize,
@@ -270,17 +293,18 @@ class RequestLimitCheckService(
             return
         }
         val request = getRequest() ?: return
-        // 同一请求的后续 chunk 直接复用首次选定的服务，避免每块都做 3 服务规则查询
+        // 同一请求的后续 chunk 直接复用首次选定的服务，避免每块都做多服务规则查询
         val service: AbstractBandwidthRateLimiterService = when (
             request.getAttribute(CACHED_UPLOAD_BANDWIDTH_CHECK_SERVICE) as? String
         ) {
+            BANDWIDTH_URL_PREFIX_UPLOAD -> urlPrefixUploadBandwidthRateLimiterService
             BANDWIDTH_URL_UPLOAD -> urlUploadBandwidthRateLimiterService
             BANDWIDTH_PROJECT_UPLOAD -> uploadBandwidthRateLimiterService
             BANDWIDTH_USER_UPLOAD -> userUploadBandwidthRateLimiterService
-            BANDWIDTH_NONE -> return  // 已确认无规则，直接跳过
+            BANDWIDTH_NONE -> return
             else -> {
-                // 首个 chunk：选出最高优先级服务并缓存到 request attribute
                 val candidates = listOf(
+                    BANDWIDTH_URL_PREFIX_UPLOAD to urlPrefixUploadBandwidthRateLimiterService,
                     BANDWIDTH_URL_UPLOAD to urlUploadBandwidthRateLimiterService,
                     BANDWIDTH_PROJECT_UPLOAD to uploadBandwidthRateLimiterService,
                     BANDWIDTH_USER_UPLOAD to userUploadBandwidthRateLimiterService,
@@ -319,9 +343,11 @@ class RequestLimitCheckService(
         private const val CACHED_UPLOAD_BANDWIDTH_CHECK_SERVICE = "CACHED_UPLOAD_BANDWIDTH_CHECK_SERVICE"
         /** 标记首次查询后确认无规则，后续 chunk 直接跳过 */
         private const val BANDWIDTH_NONE = "none"
+        private const val BANDWIDTH_URL_PREFIX_DOWNLOAD = "urlPrefixDownload"
         private const val BANDWIDTH_URL_DOWNLOAD = "urlDownload"
         private const val BANDWIDTH_PROJECT_DOWNLOAD = "projectDownload"
         private const val BANDWIDTH_USER_DOWNLOAD = "userDownload"
+        private const val BANDWIDTH_URL_PREFIX_UPLOAD = "urlPrefixUpload"
         private const val BANDWIDTH_URL_UPLOAD = "urlUpload"
         private const val BANDWIDTH_PROJECT_UPLOAD = "projectUpload"
         private const val BANDWIDTH_USER_UPLOAD = "userUpload"

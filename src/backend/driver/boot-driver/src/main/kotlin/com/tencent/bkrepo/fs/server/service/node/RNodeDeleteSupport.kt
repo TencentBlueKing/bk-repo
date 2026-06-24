@@ -33,8 +33,8 @@ import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildDeletedEvent
-import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
+import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper
 import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildCriteria
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -44,6 +44,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
+import kotlinx.coroutines.reactor.awaitSingle
 import java.time.LocalDateTime
 
 /**
@@ -95,7 +96,8 @@ open class RNodeDeleteSupport(
         projectId: String,
         repoName: String,
         fullPaths: List<String>? = null,
-        decreaseVolume: Boolean = true
+        decreaseVolume: Boolean = true,
+        useFullPathIndex: Boolean = true
     ): NodeDeleteResult {
         var deletedNum = 0L
         var deletedSize = 0L
@@ -108,8 +110,22 @@ open class RNodeDeleteSupport(
             "/$projectId/$repoName$fullPaths"
         }
         try {
-            val updateResult = nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
-            deletedNum = updateResult.modifiedCount
+            val collectionName = nodeDao.determineCollectionName(query)
+            deletedNum = NodeDeleteHelper.deleteNodes(
+                query = query,
+                deleteMode = nodeBaseService.repositoryProperties.getDeleteMode(projectId),
+                batchSize = nodeBaseService.repositoryProperties.deleteBatchSize,
+                concurrency = nodeBaseService.repositoryProperties.deleteNodesConcurrency,
+                maxDeleteNodeCount = nodeBaseService.repositoryProperties.maxDeleteNodeCount,
+                operator = operator,
+                deleteTime = deleteTime,
+                findByQuery = { q -> nodeDao.find(q, Map::class.java) },
+                updateMulti = { q, u ->
+                    nodeDao.determineReactiveMongoOperations()
+                        .updateMulti(q, u, collectionName).awaitSingle().modifiedCount
+                },
+                countByQuery = { q -> nodeDao.count(q) }
+            )
             if (deletedNum == 0L) {
                 return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
             }
@@ -118,9 +134,9 @@ open class RNodeDeleteSupport(
                 fullPaths?.let {
                     // 节点删除接口返回的数据排除目录
                     deletedCriteria = deletedCriteria.and(TNode::folder).isEqualTo(false)
-                    deletedNum = nodeDao.count(Query(deletedCriteria))
+                    deletedNum = countWithHint(deletedCriteria, useFullPathIndex)
                 }
-                deletedSize = nodeBaseService.aggregateComputeSize(deletedCriteria)
+                deletedSize = nodeBaseService.aggregateComputeSize(deletedCriteria, useFullPathIndex)
                 quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
             }
             fullPaths?.forEach {
@@ -136,6 +152,12 @@ open class RNodeDeleteSupport(
         return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
     }
 
+
+    private suspend fun countWithHint(criteria: Criteria, useHint: Boolean): Long {
+        val query = Query(criteria)
+        if (useHint) query.withHint(TNode.FULL_PATH_IDX)
+        return nodeDao.count(query)
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(RNodeDeleteSupport::class.java)

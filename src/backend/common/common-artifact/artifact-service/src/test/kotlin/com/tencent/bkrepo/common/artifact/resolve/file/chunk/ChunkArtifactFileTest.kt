@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.artifact.resolve.file.chunk
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.common.storage.config.MonitorProperties
 import com.tencent.bkrepo.common.storage.config.UploadProperties
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.config.ReceiveProperties
@@ -54,11 +55,13 @@ class ChunkArtifactFileTest {
     private val storageCredentials = FileSystemCredentials(upload = uploadProperties)
 
     private fun buildArtifactFile(): ChunkedArtifactFile {
-        val storageProperties = StorageProperties(
-            filesystem = storageCredentials,
+        val monitorConfig = MonitorProperties()
+        val storageProperties = StorageProperties().apply {
+            filesystem = storageCredentials
             receive = ReceiveProperties(fileSizeThreshold = DataSize.ofBytes(DEFAULT_BUFFER_SIZE.toLong()))
-        )
-        val monitor = StorageHealthMonitor(storageProperties, storageCredentials.upload.location)
+            monitor = monitorConfig
+        }
+        val monitor = StorageHealthMonitor(monitorConfig, storageCredentials.upload.location)
         return ChunkedArtifactFile(monitor, storageProperties, storageCredentials, ObservationRegistry.NOOP)
     }
 

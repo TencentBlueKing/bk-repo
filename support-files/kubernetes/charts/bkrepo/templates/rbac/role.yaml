@@ -18,7 +18,6 @@ rules:
     resources: 
     - configmaps
     - services
-    - secrets
     - endpoints
     - persistentvolumeclaims
     - pods

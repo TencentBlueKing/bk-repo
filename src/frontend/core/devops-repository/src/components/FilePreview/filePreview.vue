@@ -40,6 +40,7 @@
 <script>
     import VueOfficeExcel from '@vue-office/excel'
     import {
+        capturePreviewTokenFromUrl,
         customizePreviewLocalOfficeFile,
         customizePreviewRemoteOfficeFile,
         getPreviewLocalOfficeFileInfo, getPreviewRemoteOfficeFileInfo
@@ -136,6 +137,8 @@
             }
         },
         async created () {
+            // 需求 5.6：从 URL ?token=... 解析预览 token 并写入 sessionStorage（幂等）
+            capturePreviewTokenFromUrl()
             this.loading = true
             if (!this.checkRepoType()) {
                 this.showError()

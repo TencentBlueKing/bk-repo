@@ -188,11 +188,9 @@ class UserServiceImpl constructor(
         logger.info("add user to role userId : [$userId, $roleId]")
         // check user
         userHelper.checkUserExist(userId)
-        // check role
-        userHelper.checkRoleExist(roleId)
-        // check is role bind to role
+        // 复用批量逻辑以保证全局预览角色互斥规则生效，避免单用户路径绕过互斥
         if (!userHelper.checkUserRoleBind(userId, roleId)) {
-            userDao.addUserToRole(userId, roleId)
+            userHelper.addUserToRoleBatchCommon(listOf(userId), roleId)
         }
         return getUserById(userId)
     }

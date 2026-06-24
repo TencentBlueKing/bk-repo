@@ -42,6 +42,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.common.metadata.service.node.NodeDeleteOperation
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.router.RouterControllerService
+import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper
 import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildCriteria
 import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildFileCriteria
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildDeletedEvent
@@ -229,7 +230,7 @@ open class NodeDeleteSupport(
         publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator, deleteTime.toString(), source))
         logger.info(
             "Delete old block base node: $fullPath, operator: $operator, delete num : $deletedNum, " +
-                    "delete time: $deleteTime success"
+                "delete time: $deleteTime success"
         )
         return NodeDeleteResult(deletedNum, 0, deleteTime)
     }
@@ -243,7 +244,8 @@ open class NodeDeleteSupport(
         fullPaths: List<String>? = null,
         decreaseVolume: Boolean = true,
         source: String? = null,
-        deleteTime: LocalDateTime = LocalDateTime.now()
+        deleteTime: LocalDateTime = LocalDateTime.now(),
+        useFullPathIndex: Boolean = true
     ): NodeDeleteResult {
         var deletedNum = 0L
         var deletedSize = 0L
@@ -255,8 +257,22 @@ open class NodeDeleteSupport(
             "/$projectId/$repoName$fullPaths"
         }
         try {
-            val updateResult = nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
-            deletedNum = updateResult.modifiedCount
+            val collectionName = nodeDao.determineCollectionName(query)
+            deletedNum = NodeDeleteHelper.deleteNodes(
+                query = query,
+                deleteMode = nodeBaseService.repositoryProperties.getDeleteMode(projectId),
+                batchSize = nodeBaseService.repositoryProperties.deleteBatchSize,
+                concurrency = nodeBaseService.repositoryProperties.deleteNodesConcurrency,
+                maxDeleteNodeCount = nodeBaseService.repositoryProperties.maxDeleteNodeCount,
+                operator = operator,
+                deleteTime = deleteTime,
+                findByQuery = { q -> nodeDao.find(q, Map::class.java) },
+                updateMulti = { q, u ->
+                    nodeDao.determineMongoTemplate().updateMulti(q, u, collectionName).modifiedCount
+                },
+                countByQuery = { q -> nodeDao.count(q) },
+                useFullPathIndex = useFullPathIndex
+            )
             if (deletedNum == 0L) {
                 logger.info("Delete node[$resourceKey] by [$operator] success. No nodes were deleted.")
                 return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
@@ -266,9 +282,9 @@ open class NodeDeleteSupport(
                 fullPaths?.let {
                     // 节点删除接口返回的数据排除目录
                     deletedCriteria = deletedCriteria.and(TNode::folder).isEqualTo(false)
-                    deletedNum = nodeDao.count(Query(deletedCriteria))
+                    deletedNum = countWithHint(deletedCriteria, useFullPathIndex)
                 }
-                deletedSize = nodeBaseService.aggregateComputeSize(deletedCriteria)
+                deletedSize = nodeBaseService.aggregateComputeSize(deletedCriteria, useFullPathIndex)
                 quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
             }
             fullPaths?.forEach { fullPath ->
@@ -297,6 +313,12 @@ open class NodeDeleteSupport(
         } else {
             buildCriteria(projectId, repoName, fullPath)
         }
+    }
+
+    private fun countWithHint(criteria: Criteria, useHint: Boolean): Long {
+        val query = Query(criteria)
+        if (useHint) query.withHint(TNode.FULL_PATH_IDX)
+        return nodeDao.count(query)
     }
 
     companion object {

@@ -48,7 +48,7 @@ import java.time.Duration
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class IpRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
 
-    private val testIp = "192.168.1.100"
+    private val testIp = "127.0.0.1"
 
     val l1 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "/ip/$testIp",
