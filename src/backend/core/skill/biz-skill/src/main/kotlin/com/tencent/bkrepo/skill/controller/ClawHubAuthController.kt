@@ -52,7 +52,7 @@ class ClawHubAuthController {
      */
     @Operation(summary = "验证token并获取当前用户信息")
     @Principal(PrincipalType.GENERAL)
-    @GetMapping("/api/v1/whoami")
+    @GetMapping("/api/v1/whoami", "/api/cli/whoami")
     fun whoami(): ClawHubWhoamiResponse {
         val userId = SecurityUtils.getUserId()
         return ClawHubWhoamiResponse(

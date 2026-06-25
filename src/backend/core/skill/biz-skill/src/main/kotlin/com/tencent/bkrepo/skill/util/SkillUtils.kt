@@ -96,27 +96,50 @@ object SkillUtils {
         )
     }
 
-    @Suppress("LoopWithTooManyJumpStatements")
+    fun normalizeZipPath(path: String): String {
+        return path
+            .replace("\\", "/")
+            .removePrefix("/")
+            .split("/")
+            .filter { it != "." && it != ".." && it.isNotBlank() }
+            .joinToString("/")
+    }
+
     fun extractFileFromZip(inputStream: InputStream, filePath: String): ByteArray? {
-        ZipInputStream(inputStream).use { inputStream ->
-            while (true) {
-                val entry = inputStream.nextEntry ?: break
-                if (entry.isDirectory || entry.name.removePrefix("/") != filePath) continue
-                if (entry.size > MAX_EXTRACT_FILE_SIZE)
-                    throw ErrorCodeException(
-                        ArtifactMessageCode.ARTIFACT_SIZE_TOO_LARGE,
-                        HumanReadable.size(MAX_EXTRACT_FILE_SIZE)
-                    )
-                val buffer = ByteArrayOutputStream()
-                val chunk = ByteArray(8192)
-                var bytesRead: Int
-                while (inputStream.read(chunk).also { bytesRead = it } != -1) {
-                    buffer.write(chunk, 0, bytesRead)
-                }
-                return buffer.toByteArray()
-            }
+        val normalizedFilePath = normalizeZipPath(filePath)
+        return ZipInputStream(inputStream).use { zipInputStream ->
+            findZipEntryBytes(zipInputStream, normalizedFilePath)
         }
-        return null
+    }
+
+    private fun findZipEntryBytes(zipInputStream: ZipInputStream, normalizedFilePath: String): ByteArray? {
+        return generateSequence { zipInputStream.nextEntry }
+            .firstOrNull { !it.isDirectory && normalizeZipPath(it.name) == normalizedFilePath }
+            ?.let { readZipEntryBytes(zipInputStream, it.size) }
+    }
+
+    private fun readZipEntryBytes(zipInputStream: ZipInputStream, declaredSize: Long): ByteArray {
+        checkExtractFileSize(declaredSize)
+        val buffer = ByteArrayOutputStream()
+        val chunk = ByteArray(8192)
+        var totalRead = 0L
+        while (true) {
+            val bytesRead = zipInputStream.read(chunk)
+            if (bytesRead == -1) break
+            totalRead += bytesRead
+            checkExtractFileSize(totalRead)
+            buffer.write(chunk, 0, bytesRead)
+        }
+        return buffer.toByteArray()
+    }
+
+    private fun checkExtractFileSize(size: Long) {
+        if (size > MAX_EXTRACT_FILE_SIZE) {
+            throw ErrorCodeException(
+                ArtifactMessageCode.ARTIFACT_SIZE_TOO_LARGE,
+                HumanReadable.size(MAX_EXTRACT_FILE_SIZE)
+            )
+        }
     }
 
     /**
