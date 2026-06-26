@@ -983,5 +983,7 @@
     "remoteUrl": "远程地址",
     "remoteUrlPlaceholder": "请输入远程地址",
     "accessToken": "访问令牌",
-    "accessTokenInputPlaceholder": "请输入访问令牌"
+    "accessTokenInputPlaceholder": "请输入访问令牌",
+    "prefixMatch": "前缀搜索",
+    "fuzzyMatch": "模糊搜索"
 }
