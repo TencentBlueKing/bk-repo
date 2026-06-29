@@ -33,7 +33,10 @@ package com.tencent.bkrepo.common.artifact.config
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
+import com.tencent.bkrepo.common.artifact.resolve.response.DefaultArtifactResourceWriter
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory
 import org.springframework.beans.factory.support.BeanDefinitionRegistry
@@ -68,6 +71,9 @@ abstract class ArtifactConfigurerSupport : ArtifactConfigurer, BeanDefinitionReg
     override fun getExceptionResponseTranslator() = object : ExceptionResponseTranslator {
         override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse) = payload
     }
+
+    override fun getArtifactResourceWriter(): ArtifactResourceWriter =
+        SpringContextUtils.getBean(DefaultArtifactResourceWriter::class.java, "defaultArtifactResourceWriter")
 
     companion object {
         private val logger = LoggerFactory.getLogger(ArtifactConfigurerSupport::class.java)
