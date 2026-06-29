@@ -111,6 +111,13 @@ class FederatedRepositoryDao : SimpleMongoDao<TFederatedRepository>() {
     }
 
     /**
+     * 列出本地全部联邦仓库记录（拓扑同步任务全表扫描使用）。
+     */
+    fun listAll(): List<TFederatedRepository> {
+        return find(Query())
+    }
+
+    /**
      * 更新联邦仓库的集群列表
      */
     fun updateFederatedClusters(

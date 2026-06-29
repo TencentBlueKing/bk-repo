@@ -144,6 +144,34 @@ data class ReplicationProperties(
      */
     @NestedConfigurationProperty
     var clusterNodeUrl: ClusterNodeUrlCheckProperties = ClusterNodeUrlCheckProperties(),
+
+    /**
+     * 链式拓扑追溯（UpstreamEdge）相关配置
+     */
+    @NestedConfigurationProperty
+    var topology: TopologyProperties = TopologyProperties(),
+)
+
+/**
+ * 链式拓扑追溯配置
+ */
+data class TopologyProperties(
+    /**
+     * 周期同步间隔，默认 5 分钟
+     */
+    var syncInterval: Duration = Duration.ofMinutes(5),
+    /**
+     * 链式追溯深度上限，默认 10 层
+     */
+    var maxDepth: Int = 10,
+    /**
+     * 跨集群单跳 RPC 超时
+     */
+    var rpcTimeout: Duration = Duration.ofSeconds(3),
+    /**
+     * 单父节点同层最大并发展开数
+     */
+    var expandConcurrency: Int = 5,
 )
 
 data class ClusterNodeUrlCheckProperties(
