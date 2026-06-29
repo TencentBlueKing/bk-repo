@@ -66,7 +66,19 @@ const excelType = [
 ]
 
 const picType = [
-    'jpg', 'jpeg', 'png', 'gif', 'bmp', 'ico', 'jfif', 'webp'
+    'jpg', 'jpeg', 'png', 'gif', 'bmp', 'ico', 'jfif', 'webp', 'svg'
+]
+
+const markdownType = [
+    'md'
+]
+
+const jsxType = [
+    'jsx'
+]
+
+const xmindType = [
+    'xmind'
 ]
 
 // 判断文本类型
@@ -92,14 +104,26 @@ export function isExcel (param) {
     return excelType.find(type => param.endsWith(type))
 }
 
+export function isMarkdown (param) {
+    return markdownType.find(type => param.endsWith(type))
+}
+
+export function isJsx (param) {
+    return jsxType.find(type => param.endsWith(type))
+}
+
+export function isXmind (param) {
+    return xmindType.find(type => param.endsWith(type))
+}
+
 // 判断可预览的类型(不包括pic)
 export function isDisplayType (param) {
     const isExcel = excelType.find(type => param.endsWith(type))
-    return isText(param) || isFormatType(param) || isExcel
+    return isText(param) || isFormatType(param) || isExcel || isXmind(param)
 }
 
 // 判断可预览的类型(包括pic)
 export function isOutDisplayType (param) {
     const isExcel = excelType.find(type => param.endsWith(type))
-    return isText(param) || isFormatType(param) || isExcel || isPic(param)
+    return isText(param) || isFormatType(param) || isExcel || isPic(param) || isMarkdown(param) || isJsx(param) || isXmind(param)
 }
