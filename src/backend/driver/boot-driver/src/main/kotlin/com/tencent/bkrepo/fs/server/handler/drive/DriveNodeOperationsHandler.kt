@@ -1,14 +1,18 @@
 package com.tencent.bkrepo.fs.server.handler.drive
 
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.fs.server.readBodyOrNull
+import com.tencent.bkrepo.fs.server.bodyToArtifactFile
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
+import com.tencent.bkrepo.fs.server.readBodyOrNull
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchPayload
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeModifiedPageRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodePageRequest
+import com.tencent.bkrepo.fs.server.request.drive.DriveNodeUploadRequest
 import com.tencent.bkrepo.fs.server.service.drive.DriveNodeService
 import com.tencent.bkrepo.fs.server.service.drive.DriveOperateLogService
+import com.tencent.bkrepo.fs.server.service.drive.DriveUploadService
+import com.tencent.bkrepo.fs.server.resolveBkRepoMetadata
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.springframework.stereotype.Component
@@ -18,12 +22,13 @@ import org.springframework.web.reactive.function.server.ServerResponse
 /**
  * Drive 节点操作处理器
  *
- * 仅处理节点分页与增量变更查询
+ * 处理节点分页、增量变更查询与完整文件上传
  */
 @Component
 class DriveNodeOperationsHandler(
     private val driveNodeService: DriveNodeService,
     private val driveOperateLogService: DriveOperateLogService,
+    private val driveUploadService: DriveUploadService,
 ) {
     suspend fun batch(request: ServerRequest): ServerResponse {
         val userId = ReactiveSecurityUtils.getUser()
@@ -95,5 +100,31 @@ class DriveNodeOperationsHandler(
             )
             return ReactiveResponseBuilder.success(page)
         }
+    }
+
+    suspend fun upload(request: ServerRequest): ServerResponse {
+        val userId = ReactiveSecurityUtils.getUser()
+        val clientAddress = ReactiveRequestContextHolder.getClientAddress()
+        val uploadRequest = DriveNodeUploadRequest(request)
+        driveUploadService.checkUploadTargetBeforeBody(uploadRequest, userId)
+        val metadata = request.resolveBkRepoMetadata()
+        val artifactFile = request.bodyToArtifactFile()
+        val result = driveUploadService.uploadCompleteFile(uploadRequest, artifactFile, metadata, userId)
+        driveOperateLogService.record(
+            type = EventType.DRIVE_NODE_UPLOAD.name,
+            userId = userId,
+            clientAddress = clientAddress,
+            projectId = uploadRequest.projectId,
+            repoName = uploadRequest.repoName,
+            resourceKey = uploadRequest.fullPath,
+            description = mapOf(
+                "fullPath" to uploadRequest.fullPath,
+                "ino" to result.ino,
+                "size" to result.size,
+                "sha256" to artifactFile.getFileSha256(),
+                "metadata" to (metadata?.associate { it.key to it.value } ?: emptyMap()),
+            ),
+        )
+        return ReactiveResponseBuilder.success(result)
     }
 }

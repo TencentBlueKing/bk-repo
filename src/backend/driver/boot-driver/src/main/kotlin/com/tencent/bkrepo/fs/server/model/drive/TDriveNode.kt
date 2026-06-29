@@ -3,8 +3,11 @@ package com.tencent.bkrepo.fs.server.model.drive
 import com.tencent.bkrepo.common.api.mongo.ShardingDocument
 import com.tencent.bkrepo.common.api.mongo.ShardingKeys
 import com.tencent.bkrepo.common.metadata.constant.SHARDING_COUNT
+import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.INO_IDX
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.INO_IDX_DEF
+import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.METADATA_IDX
+import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.METADATA_IDX_DEF
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PARENT_NAME_IDX
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PARENT_NAME_IDX_DEF
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PARENT_SNAP_IDX
@@ -39,6 +42,7 @@ import java.time.LocalDateTime
     CompoundIndex(name = PROJECT_REPO_IDX, def = PROJECT_REPO_IDX_DEF, background = true),
     CompoundIndex(name = PROJECT_REPO_MODIFIED_IDX, def = PROJECT_REPO_MODIFIED_IDX_DEF, background = true),
     CompoundIndex(name = PROJECT_REPO_DELETED_IDX, def = PROJECT_REPO_DELETED_IDX_DEF, background = true),
+    CompoundIndex(name = METADATA_IDX, def = METADATA_IDX_DEF, background = true),
 )
 @ShardingKeys(columns = [PROJECT_ID, REPO_NAME], count = SHARDING_COUNT)
 data class TDriveNode(
@@ -152,6 +156,11 @@ data class TDriveNode(
      * 节点删除时的快照序列号，Long.MAX_VALUE 表示未删除
      */
     var deleteSnapSeq: Long = Long.MAX_VALUE,
+
+    /**
+     * 节点元数据
+     */
+    var metadata: MutableList<TMetadata>? = null,
 ) {
 
     companion object {
@@ -182,5 +191,7 @@ data class TDriveNode(
          */
         const val PROJECT_REPO_DELETED_IDX = "project_repo_deleted_idx"
         const val PROJECT_REPO_DELETED_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'deleted': 1}"
+        const val METADATA_IDX = "metadata_idx"
+        const val METADATA_IDX_DEF = "{'metadata.key': 1, 'metadata.value': 1}"
     }
 }

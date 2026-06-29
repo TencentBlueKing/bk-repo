@@ -564,6 +564,7 @@ class DriveNodeService(
             mtime = updateRequest.mtime ?: srcNode.mtime,
             ctime = updateRequest.ctime ?: srcNode.ctime,
             atime = updateRequest.atime ?: srcNode.atime,
+            metadata = updateRequest.metadata ?: srcNode.metadata,
             lastModifiedBy = operator,
             lastModifiedClientId = clientId,
             lastModifiedDate = now,
