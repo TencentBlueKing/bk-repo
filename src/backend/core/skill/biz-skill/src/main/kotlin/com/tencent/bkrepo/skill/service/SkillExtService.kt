@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.skill.config.SkillProperties
+import com.tencent.bkrepo.skill.constant.FIELD_CHANGELOG
 import com.tencent.bkrepo.skill.constant.KEY_SKILL_MD
 import com.tencent.bkrepo.skill.pojo.artifact.SkillExtInfo
 import com.tencent.bkrepo.skill.pojo.response.SkillVersionInfo
@@ -53,7 +54,8 @@ class SkillExtService(
     fun getVersionDetail(userId: String, artifactInfo: ArtifactInfo): SkillVersionInfo {
         with(artifactInfo as SkillExtInfo) {
             val version = getArtifactVersion()!!
-            val packageVersion = packageService.findVersionByName(projectId, repoName, getPackageKey(), version)
+            val packageKey = getPackageKey()
+            val packageVersion = packageService.findVersionByName(projectId, repoName, packageKey, version)
                 ?: throw VersionNotFoundException(version)
             val basic = BasicInfo(
                 projectId = projectId,
@@ -72,7 +74,8 @@ class SkillExtService(
                 federatedSource = packageVersion.federatedSource,
             )
             val skillMd = packageVersion.extension[KEY_SKILL_MD]?.toString()
-            return SkillVersionInfo(basic, packageVersion.packageMetadata, skillMd)
+            val changelog = packageVersion.extension[FIELD_CHANGELOG]?.toString()
+            return SkillVersionInfo(basic, packageVersion.packageMetadata, changelog, skillMd)
         }
     }
 

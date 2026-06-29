@@ -35,6 +35,7 @@ class ClawHubFileDownloadInfo(
     repoName: String,
     slug: String,
     version: String?,
+    val tag: String? = null,
     val path: String,
 ) : SkillArtifactInfo(projectId, repoName, slug, version) {
 

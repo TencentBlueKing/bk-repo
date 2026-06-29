@@ -67,6 +67,7 @@ const val SORT_DOWNLOADS = "downloads"
 
 // properties
 const val LATEST = "latest"
+const val MODERATION_VERDICT_CLEAN = "clean"
 const val DOWNLOADS = "downloads"
 const val VERSIONS = "versions"
 const val PACKAGE_KEY = "packageKey"

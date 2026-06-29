@@ -38,4 +38,6 @@ data class ClawHubSearchResultItem(
     val summary: String,
     val version: String? = null,
     val updatedAt: Long,
+    val ownerHandle: String? = null,
+    val owner: ClawHubUser? = null,
 )

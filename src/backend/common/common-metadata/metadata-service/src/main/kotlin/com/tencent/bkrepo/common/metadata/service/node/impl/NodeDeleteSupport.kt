@@ -230,7 +230,7 @@ open class NodeDeleteSupport(
         publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator, deleteTime.toString(), source))
         logger.info(
             "Delete old block base node: $fullPath, operator: $operator, delete num : $deletedNum, " +
-                    "delete time: $deleteTime success"
+                "delete time: $deleteTime success"
         )
         return NodeDeleteResult(deletedNum, 0, deleteTime)
     }
@@ -282,9 +282,9 @@ open class NodeDeleteSupport(
                 fullPaths?.let {
                     // 节点删除接口返回的数据排除目录
                     deletedCriteria = deletedCriteria.and(TNode::folder).isEqualTo(false)
-                    deletedNum = nodeDao.count(Query(deletedCriteria))
+                    deletedNum = countWithHint(deletedCriteria, useFullPathIndex)
                 }
-                deletedSize = nodeBaseService.aggregateComputeSize(deletedCriteria)
+                deletedSize = nodeBaseService.aggregateComputeSize(deletedCriteria, useFullPathIndex)
                 quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
             }
             fullPaths?.forEach { fullPath ->
@@ -313,6 +313,12 @@ open class NodeDeleteSupport(
         } else {
             buildCriteria(projectId, repoName, fullPath)
         }
+    }
+
+    private fun countWithHint(criteria: Criteria, useHint: Boolean): Long {
+        val query = Query(criteria)
+        if (useHint) query.withHint(TNode.FULL_PATH_IDX)
+        return nodeDao.count(query)
     }
 
     companion object {

@@ -57,10 +57,12 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.search.PackageQueryBuilder
 import com.tencent.bkrepo.skill.constant.DOWNLOADS
+import com.tencent.bkrepo.skill.constant.KEY_FINGERPRINT
 import com.tencent.bkrepo.skill.constant.FIELD_CHANGELOG
 import com.tencent.bkrepo.skill.constant.FIELD_DISPLAY_NAME
 import com.tencent.bkrepo.skill.constant.KEY_FILE_LIST
 import com.tencent.bkrepo.skill.constant.LATEST
+import com.tencent.bkrepo.skill.constant.MODERATION_VERDICT_CLEAN
 import com.tencent.bkrepo.skill.constant.SORT_CREATED
 import com.tencent.bkrepo.skill.constant.SORT_DOWNLOADS
 import com.tencent.bkrepo.skill.constant.SORT_NEWEST
@@ -68,12 +70,18 @@ import com.tencent.bkrepo.skill.constant.VERSIONS
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubArchiveDownloadInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubFileDownloadInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubPublishInfo
+import com.tencent.bkrepo.skill.pojo.artifact.ClawHubResolveInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubSearchInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubSkillInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubSkillListInfo
+import com.tencent.bkrepo.skill.pojo.artifact.ClawHubSkillModerationInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubSkillVersionInfo
 import com.tencent.bkrepo.skill.pojo.artifact.ClawHubSkillVersionListInfo
 import com.tencent.bkrepo.skill.pojo.artifact.SkillExtInfo
+import com.tencent.bkrepo.skill.pojo.response.ClawHubModeration
+import com.tencent.bkrepo.skill.pojo.response.ClawHubModerationResponse
+import com.tencent.bkrepo.skill.pojo.response.ClawHubResolveResponse
+import com.tencent.bkrepo.skill.pojo.response.ClawHubResolveVersion
 import com.tencent.bkrepo.skill.pojo.response.ClawHubSearchResultItem
 import com.tencent.bkrepo.skill.pojo.response.ClawHubSkill
 import com.tencent.bkrepo.skill.pojo.response.ClawHubSkillBasicInfo
@@ -104,6 +112,8 @@ class SkillLocalRepository(
             is ClawHubSkillInfo -> getSkillDetail(context.artifactInfo as ClawHubSkillInfo)
             is ClawHubSkillVersionListInfo -> listSkillVersions(context.artifactInfo as ClawHubSkillVersionListInfo)
             is ClawHubSkillVersionInfo -> getSkillVersionDetail(context.artifactInfo as ClawHubSkillVersionInfo)
+            is ClawHubResolveInfo -> resolveSkill(context.artifactInfo as ClawHubResolveInfo)
+            is ClawHubSkillModerationInfo -> getSkillModeration(context.artifactInfo as ClawHubSkillModerationInfo)
             else -> throw MethodNotAllowedException()
         }
     }
@@ -131,7 +141,9 @@ class SkillLocalRepository(
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         return when (context.artifactInfo) {
             is ClawHubArchiveDownloadInfo -> super.onDownload(context)
-            is ClawHubFileDownloadInfo -> downloadSingleFileFromZip(context.artifactInfo as ClawHubFileDownloadInfo)
+            is ClawHubFileDownloadInfo -> downloadSingleFileFromZip(
+                context.artifactInfo as ClawHubFileDownloadInfo,
+            )
             else -> throw MethodNotAllowedException()
         }
     }
@@ -153,28 +165,41 @@ class SkillLocalRepository(
 
     override fun search(context: ArtifactSearchContext): List<ClawHubSearchResultItem> {
         with((context.artifactInfo as ClawHubSearchInfo)) {
+            if (q.isBlank()) {
+                return emptyList()
+            }
             val queryModel = PackageQueryBuilder()
                 .select(
                     TPackage::name.name,
                     TPackage::description.name,
                     TPackage::lastModifiedDate.name,
                     TPackage::extension.name,
+                    TPackage::latest.name,
+                    TPackage::createdBy.name,
                 )
                 .page(1, limit)
                 .projectId(projectId)
                 .repoName(repoName)
                 .or()
-                .name("*$q*", OperationType.MATCH)
-                .rule(TPackage::description.name, "*$q*", OperationType.MATCH)
+                .name("*$q*", OperationType.MATCH_I)
+                .rule(TPackage::description.name, "*$q*", OperationType.MATCH_I)
+                .rule("extension.$FIELD_DISPLAY_NAME", "*$q*", OperationType.MATCH_I)
                 .build()
             val page = packageService.searchPackage(queryModel)
             return page.records.map {
+                val slug = it[NAME]!!.toString()
+                val ownerHandle = it[TPackage::createdBy.name]?.toString()
                 ClawHubSearchResultItem(
-                    slug = it[NAME]!!.toString(),
+                    slug = slug,
                     displayName = (it[TPackage::extension.name] as Map<String, Any>?)
                         ?.get(FIELD_DISPLAY_NAME)?.toString() ?: slug,
                     summary = it[TPackage::description.name]?.toString() ?: "",
+                    version = it[TPackage::latest.name]?.toString(),
                     updatedAt = (it[TPackage::lastModifiedDate.name]!! as Date).time,
+                    ownerHandle = ownerHandle,
+                    owner = ownerHandle?.let { handle ->
+                        ClawHubUser(handle = handle, displayName = handle)
+                    },
                 )
             }
         }
@@ -257,6 +282,43 @@ class SkillLocalRepository(
         }
     }
 
+    private fun resolveSkill(artifactInfo: ClawHubResolveInfo): ClawHubResolveResponse {
+        with(artifactInfo) {
+            val packageKey = getPackageKey()
+            val pkg = packageService.findPackageByKey(projectId, repoName, packageKey)
+                ?: return ClawHubResolveResponse()
+            val latestVersion = pkg.latest?.takeIf { it.isNotBlank() }
+                ?.let { ClawHubResolveVersion(version = it) }
+            var matchedVersion: ClawHubResolveVersion? = null
+            var pageNumber = 1
+            while (matchedVersion == null) {
+                val option = VersionListOption(pageNumber = pageNumber, pageSize = 100)
+                val page = packageService.listVersionPage(projectId, repoName, packageKey, option)
+                matchedVersion = page.records.firstOrNull {
+                    it.extension[KEY_FINGERPRINT]?.toString() == hash
+                }?.let { ClawHubResolveVersion(version = it.name) }
+                if (pageNumber >= page.totalPages) break
+                pageNumber++
+            }
+            return ClawHubResolveResponse(match = matchedVersion, latestVersion = latestVersion)
+        }
+    }
+
+    private fun getSkillModeration(artifactInfo: ClawHubSkillModerationInfo): ClawHubModerationResponse {
+        with(artifactInfo) {
+            packageService.findPackageByKey(projectId, repoName, getPackageKey())
+                ?: throw PackageNotFoundException(slug)
+            return ClawHubModerationResponse(
+                moderation = ClawHubModeration(
+                    isSuspicious = false,
+                    isMalwareBlocked = false,
+                    verdict = MODERATION_VERDICT_CLEAN,
+                    reasonCodes = emptyList(),
+                ),
+            )
+        }
+    }
+
     private fun getSkillDetail(artifactInfo: ClawHubSkillInfo): ClawHubSkillDetailResponse {
         with(artifactInfo) {
             val packageKey = getPackageKey()
@@ -330,16 +392,17 @@ class SkillLocalRepository(
     @Suppress("ThrowsCount")
     private fun downloadSingleFileFromZip(artifactInfo: ClawHubFileDownloadInfo): ArtifactResource {
         with(artifactInfo) {
-            val node = nodeService.getNodeDetail(artifactInfo) ?: throw NodeNotFoundException(getArtifactFullPath())
+            val node = nodeService.getNodeDetail(artifactInfo)
+                ?: throw NodeNotFoundException(getArtifactFullPath())
             val credentials = ArtifactContextHolder.getRepoDetail()!!.storageCredentials
-            val inputStream = storageManager.loadArtifactInputStream(node, credentials)
+            val inputStream = storageManager.loadFullArtifactInputStream(node, credentials)
                 ?: throw ArtifactNotFoundException(getArtifactFullPath())
 
-            val normalizedPath = path.removePrefix("/")
+            val normalizedPath = SkillUtils.normalizeZipPath(path)
             val fileBytes = SkillUtils.extractFileFromZip(inputStream, normalizedPath)
                 ?: throw ArtifactNotFoundException("${getArtifactFullPath()}/$normalizedPath")
             val artifactStream = fileBytes.inputStream().artifactStream(Range.full(fileBytes.size.toLong()))
-            val responseName = normalizedPath.substringAfterLast("/")
+            val responseName = normalizedPath.substringAfterLast('/')
             return ArtifactResource(artifactStream, responseName, null, ArtifactChannel.LOCAL, false)
         }
     }

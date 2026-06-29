@@ -10,13 +10,12 @@ export default {
         )
     },
     // 新增用户token
-    addToken (_, { projectId, username, name, expiredAt = '' }) {
+    addToken (_, { username, name, expiredAt = '' }) {
         return Vue.prototype.$ajax.post(
             `${prefix}/user/token/${username}/${name}`,
             null,
             {
                 params: {
-                    projectId,
                     expiredAt
                 }
             }

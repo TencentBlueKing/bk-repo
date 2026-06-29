@@ -38,6 +38,8 @@ data class SkillVersionInfo(
     override val basic: BasicInfo,
     @get:Schema(title = "元数据信息")
     val metadata: List<MetadataModel>,
+    @get:Schema(title = "版本变更日志")
+    val changelog: String? = null,
     @get:Schema(title = "SKILL.md内容")
     val skillMd: String?,
 ) : PackageVersionInfo

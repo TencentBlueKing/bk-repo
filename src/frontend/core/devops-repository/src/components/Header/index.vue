@@ -3,7 +3,7 @@
         <div class="flex-align-center">
             <router-link
                 class="flex-align-center bkrepo-logo"
-                :to="{ name: 'repositories' }"
+                :to="{ name: 'repositories', params: { projectId: currentProjectId } }"
                 :event="showProjectSelect ? 'click' : ''"
             >
                 <svg
@@ -164,6 +164,9 @@
             ...mapState(['projectList', 'userInfo', 'versionLogs']),
             projectId () {
                 return this.$route.params.projectId
+            },
+            currentProjectId () {
+                return this.$route.params.projectId || localStorage.getItem('projectId')
             }
         },
         watch: {
@@ -185,6 +188,7 @@
         methods: {
             ...mapActions(['checkPM', 'getPermissionUrl']),
             changeProject (projectId) {
+                if (!projectId) return
                 localStorage.setItem('projectId', projectId)
                 if (this.projectId === projectId) return
                 this.checkPM({ projectId })

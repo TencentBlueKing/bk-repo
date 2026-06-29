@@ -1069,6 +1069,126 @@ export default {
         gitInstall () {
             return []
         },
+        skillGuide () {
+            return [
+                {
+                    title: this.$t('setCredentials'),
+                    optionType: 'setCredentials',
+                    main: [
+                        {
+                            subTitle: '安装 clawhub v0.11.0',
+                            codeList: [
+                                'npm i -g clawhub --registry https://registry.npmmirror.com'
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('setCredentials'),
+                            codeList: [
+                                `clawhub login --registry ${this.repoUrl} --token ${this.accessToken}`,
+                                `clawhub whoami --registry ${this.repoUrl}`,
+                                `clawhub logout --registry ${this.repoUrl}`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: this.$t('push'),
+                    optionType: 'push',
+                    main: [
+                        {
+                            subTitle: this.$t('pushGuideSubTitle'),
+                            codeList: [
+                                'clawhub publish <SKILL_DIR> --slug <SKILL_SLUG> '
+                                + `--version <VERSION> --registry ${this.repoUrl}`,
+                                'clawhub skill publish <SKILL_DIR> --slug <SKILL_SLUG> '
+                                + `--version <VERSION> --registry ${this.repoUrl}`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: this.$t('pull'),
+                    optionType: 'pull',
+                    inputBoxList: [
+                        {
+                            key: 'dependInputValue1',
+                            label: 'slug',
+                            placeholder: this.$t('pleaseInput') + ' slug',
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE1'
+                        },
+                        {
+                            key: 'dependInputValue2',
+                            label: this.$t('artifactVersion'),
+                            placeholder: this.$t('packageVersionPlaceholder'),
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE2'
+                        },
+                        {
+                            key: 'dependInputValue3',
+                            label: this.$t('filePath'),
+                            placeholder: this.$t('pleaseInput') + this.$t('filePath'),
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE3'
+                        }
+                    ],
+                    main: [
+                        {
+                            subTitle: this.$t('search'),
+                            codeList: [
+                                `clawhub search ${this.dependInputValue1 || '<KEYWORD>'} `
+                                + `--registry ${this.repoUrl}`
+                            ]
+                        },
+                        {
+                            subTitle: '查询列表',
+                            codeList: [
+                                `clawhub explore --registry ${this.repoUrl}`,
+                                `clawhub explore --limit 25 --sort newest --registry ${this.repoUrl}`,
+                                `clawhub explore --limit 25 --sort downloads --registry ${this.repoUrl}`
+                            ]
+                        },
+                        {
+                            subTitle: '安装 Skill',
+                            codeList: [
+                                `clawhub install ${this.dependInputValue1 || '<SKILL_SLUG>'} `
+                                + `--version ${this.dependInputValue2 || '<VERSION>'} `
+                                + `--registry ${this.repoUrl}`,
+                                `clawhub install ${this.dependInputValue1 || '<SKILL_SLUG>'} `
+                                + `--version ${this.dependInputValue2 || '<VERSION>'} `
+                                + `--registry ${this.repoUrl} --force`
+                            ]
+                        },
+                        {
+                            subTitle: '检查 Skill',
+                            codeList: [
+                                `clawhub inspect ${this.dependInputValue1 || '<SKILL_SLUG>'} `
+                                + `--registry ${this.repoUrl}`,
+                                `clawhub inspect ${this.dependInputValue1 || '<SKILL_SLUG>'} `
+                                + `--version ${this.dependInputValue2 || '<VERSION>'} `
+                                + `--files --registry ${this.repoUrl}`,
+                                `clawhub inspect ${this.dependInputValue1 || '<SKILL_SLUG>'} `
+                                + `--version ${this.dependInputValue2 || '<VERSION>'} `
+                                + `--file ${this.dependInputValue3 || '<FILE_PATH>'} `
+                                + `--registry ${this.repoUrl}`
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        skillInstall () {
+            return [
+                {
+                    main: [
+                        {
+                            subTitle: this.$t('useSubTips'),
+                            codeList: [
+                                `clawhub install ${this.packageName} --version ${this.versionLabel} `
+                                + `--registry ${this.repoUrl}`
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
         nugetGuide () {
             return [
                 {

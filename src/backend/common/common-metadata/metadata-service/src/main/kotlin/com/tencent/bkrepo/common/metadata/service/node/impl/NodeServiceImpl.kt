@@ -111,8 +111,8 @@ class NodeServiceImpl(
         return NodeStatsSupport(this).computeSizeBeforeClean(artifact, before)
     }
 
-    override fun aggregateComputeSize(criteria: Criteria): Long {
-        return NodeStatsSupport(this).aggregateComputeSize(criteria)
+    override fun aggregateComputeSize(criteria: Criteria, useFullPathIndex: Boolean): Long {
+        return NodeStatsSupport(this).aggregateComputeSize(criteria, useFullPathIndex)
     }
 
     override fun countFileNode(artifact: ArtifactInfo): Long {
