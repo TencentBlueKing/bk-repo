@@ -36,9 +36,12 @@ dependencies {
     api(project(":common:common-mongo"))
     api(project(":driver:api-driver"))
     api(project(":job:api-job"))
+    api(project(":replication:api-replication"))
     implementation(project(":common:common-notify:notify-service"))
     implementation("org.influxdb:influxdb-java")
     implementation("io.fabric8:kubernetes-client:7.4.0")
     compileOnly("org.springframework.cloud:spring-cloud-starter-consul-discovery")
     compileOnly("org.springframework.cloud:spring-cloud-starter-consul-config")
+    testImplementation("org.mockito.kotlin:mockito-kotlin")
+    testImplementation("org.springframework:spring-test")
 }
