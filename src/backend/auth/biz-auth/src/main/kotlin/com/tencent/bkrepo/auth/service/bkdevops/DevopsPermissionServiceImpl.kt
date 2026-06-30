@@ -98,8 +98,11 @@ class DevopsPermissionServiceImpl constructor(
         }
         // Devops 项目成员：全量可见，但严格模式仓库需有显式授权才可见
         if (isDevopsProjectMember(userId, projectId, READ.name, null)) {
+            // 与 checkPermission 路径保持一致：取用户在 Devops 项目中的完整角色集
+            // （TUser.roles ⊕ Devops 角色组实时映射），否则严格模式 + 仅按外部组织
+            // 架构组授权的仓库会在列表中被错误过滤
             val user = getUserInfo(userId)
-            val roles = user?.roles.orEmpty()
+            val roles = if (user != null) getDevopsUserRole(user, projectId) else emptyList()
             return filterByStrictMode(projectId, userId, roles, getAllRepoByProjectId(projectId))
         }
 
