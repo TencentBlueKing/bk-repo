@@ -73,7 +73,8 @@ class ArtifactMetadataHeaderResolverTest {
         @Test
         fun `should handle mixed plus and percent encodings correctly`() {
             // + 是字面量加号，%20 是空格
-            assertEquals("2025-01-01 00:00:00+08:00", ArtifactMetadataHeaderResolver.decodeHeaderValue("2025-01-01%2000%3A00%3A00+08%3A00"))
+            val input = "2025-01-01%2000%3A00%3A00+08%3A00"
+            assertEquals("2025-01-01 00:00:00+08:00", ArtifactMetadataHeaderResolver.decodeHeaderValue(input))
         }
 
         @Test
