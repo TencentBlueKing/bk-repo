@@ -38,7 +38,7 @@ object ArtifactMetadataHeaderResolver {
     fun decodeHeaderValue(headerValue: String?): String? {
         return headerValue?.let {
             try {
-                URLDecoder.decode(it, Charsets.UTF_8)
+                URLDecoder.decode(it.replace("+", "%2B"), Charsets.UTF_8)
             } catch (_: IllegalArgumentException) {
                 it
             }
