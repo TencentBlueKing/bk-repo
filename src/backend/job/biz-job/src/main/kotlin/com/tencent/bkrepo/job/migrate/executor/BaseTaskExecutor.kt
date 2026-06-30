@@ -29,6 +29,8 @@ package com.tencent.bkrepo.job.migrate.executor
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration.Companion.SERVICE_INSTANCE_ID
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -51,6 +53,7 @@ import com.tencent.bkrepo.job.service.MigrateArchivedFileService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import java.io.FileNotFoundException
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -63,6 +66,7 @@ abstract class BaseTaskExecutor(
     private val storageService: StorageService,
     private val executingTaskRecorder: ExecutingTaskRecorder,
     private val migrateArchivedFileService: MigrateArchivedFileService,
+    private val blockNodeService: BlockNodeService,
 ) : TaskExecutor {
 
     @Value(SERVICE_INSTANCE_ID)
@@ -160,21 +164,25 @@ abstract class BaseTaskExecutor(
 
     protected fun correctNode(context: MigrationContext, node: Node) {
         checkNode(node)
+        if (node.sha256 == FAKE_SHA256) {
+            correctBlockNode(context, node)
+            return
+        }
         val sha256 = node.sha256
         val task = context.task
         val projectId = node.projectId
         val repoName = node.repoName
         // 文件已存在于目标存储则不处理
-        val dstFileReferenceExists = fileReferenceService.count(sha256, context.task.dstStorageKey) > 0
+        val dstFileReferenceExists = fileReferenceService.count(sha256, task.dstStorageKey) > 0
         val fileExist = storageService.exist(sha256, context.dstCredentials)
         val archivedFileExist = node.archived == true &&
-                migrateArchivedFileService.archivedFileCompleted(context.task.dstStorageKey, sha256)
+                migrateArchivedFileService.archivedFileCompleted(task.dstStorageKey, sha256)
         if (fileExist || archivedFileExist) {
             if (!dstFileReferenceExists) {
-                updateFileReference(context.task.srcStorageKey, context.task.dstStorageKey, sha256)
+                updateFileReference(task.srcStorageKey, task.dstStorageKey, sha256)
                 logger.info("correct reference[$sha256] success, task[$projectId/$repoName], state[${task.state}]")
             }
-            logger.info("file[$sha256] already exists in dst credentials[${context.task.dstStorageKey}]")
+            logger.info("file[$sha256] already exists in dst credentials[${task.dstStorageKey}]")
             return
         }
 
@@ -183,7 +191,7 @@ abstract class BaseTaskExecutor(
               可能由于在上传制品时使用的旧存储，而创建Node时由于会重新查一遍仓库的存储凭据而使用新存储
               这种情况会导致目标存储引用大于0但是文件不再目标存储，此时仅迁移存储不修改引用数
              */
-            transferData(context, node)
+            transferDataWithArchive(context, node)
             logger.info("correct success, transfer file[$sha256], task[$projectId/$repoName], state[${task.state}]")
         } else {
             // dst data和reference都不存在，migrate
@@ -194,18 +202,64 @@ abstract class BaseTaskExecutor(
 
     protected fun migrateNode(context: MigrationContext, node: Node) {
         checkNode(node)
-        val srcStorageKey = context.task.srcStorageKey
-        val dstStorageKey = context.task.dstStorageKey
-        val sha256 = node.sha256
-
-        // 跨存储迁移数据
-        transferData(context, node)
-
-        // 更新引用
-        updateFileReference(srcStorageKey, dstStorageKey, sha256)
+        if (node.sha256 == FAKE_SHA256) {
+            migrateBlockNode(context, node)
+        } else {
+            // 跨存储迁移数据
+            transferDataWithArchive(context, node)
+            // 更新引用
+            updateFileReference(context.task.srcStorageKey, context.task.dstStorageKey, node.sha256)
+        }
     }
 
     open fun close(timeout: Long, unit: TimeUnit) {}
+
+    private fun migrateBlockNode(context: MigrationContext, node: Node) {
+        require(node.sha256 == FAKE_SHA256)
+        val blocks = listBlocks(node)
+        if (blocks.isEmpty()) {
+            logger.warn("No blocks found for node[${node.fullPath}], task[${node.projectId}/${node.repoName}]")
+            return
+        }
+        blocks.forEach { block ->
+            transferData(context, block.sha256, block.size)
+            updateFileReference(context.task.srcStorageKey, context.task.dstStorageKey, block.sha256)
+        }
+        logger.info(
+            "migrate block node[${node.fullPath}] success, blocks[${blocks.size}], " +
+                    "task[${node.projectId}/${node.repoName}]"
+        )
+    }
+
+    private fun correctBlockNode(context: MigrationContext, node: Node) {
+        require(node.sha256 == FAKE_SHA256)
+        val blocks = listBlocks(node)
+        if (blocks.isEmpty()) {
+            logger.warn("No blocks found for node[${node.fullPath}], task[${node.projectId}/${node.repoName}]")
+            return
+        }
+        blocks.forEach { block -> correctFile(context, block.sha256, block.size) }
+        logger.info(
+            "correct block node[${node.fullPath}] success, blocks[${blocks.size}], " +
+                    "task[${node.projectId}/${node.repoName}]"
+        )
+    }
+
+    private fun correctFile(context: MigrationContext, sha256: String, size: Long) {
+        val task = context.task
+        val dstRefExists = fileReferenceService.count(sha256, task.dstStorageKey) > 0
+        val fileExist = storageService.exist(sha256, context.dstCredentials)
+        if (fileExist) {
+            if (!dstRefExists) {
+                updateFileReference(task.srcStorageKey, task.dstStorageKey, sha256)
+            }
+        } else if (dstRefExists) {
+            transferData(context, sha256, size)
+        } else {
+            transferData(context, sha256, size)
+            updateFileReference(task.srcStorageKey, task.dstStorageKey, sha256)
+        }
+    }
 
     private fun updateFileReference(srcStorageKey: String?, dstStorageKey: String?, sha256: String) {
         // FileReferenceCleanupJob 会定期清理引用为0的文件数据，所以不需要删除文件数据
@@ -224,19 +278,13 @@ abstract class BaseTaskExecutor(
     /**
      * 执行数据迁移
      */
-    private fun transferData(context: MigrationContext, node: Node) {
+    private fun transferDataWithArchive(context: MigrationContext, node: Node) {
         // 处于归档/恢复中状态时将抛出异常，待归档完成再继续迁移
         val archivedFileMigrated = migrateArchivedFileService.migrateArchivedFile(context, node)
 
         // 可能存在同sha256文件被归档后又重新上传的情况，所以被归档的文件也需要尝试迁移数据
         try {
-            val throughput = measureThroughput {
-                storageService.copy(node.sha256, context.srcCredentials, context.dstCredentials)
-                node.size
-            }
-            // 输出迁移速率
-            val msg = "Success to transfer file[${node.sha256}], $throughput, task[${node.projectId}/${node.repoName}]"
-            logger.info(msg)
+            transferData(context, node.sha256, node.size)
         } catch (e: FileNotFoundException) {
             if (node.archived != true || !archivedFileMigrated) {
                 throw e
@@ -245,14 +293,26 @@ abstract class BaseTaskExecutor(
         }
     }
 
+    private fun transferData(context: MigrationContext, sha256: String, size: Long) {
+        val throughput = measureThroughput {
+            storageService.copy(sha256, context.srcCredentials, context.dstCredentials)
+            size
+        }
+        logger.info(
+            "Success to transfer file[$sha256], $throughput, task[${context.task.projectId}/${context.task.repoName}]"
+        )
+    }
+
+    private fun listBlocks(node: Node): List<TBlockNode> {
+        val createdDate = node.createdDate.format(DateTimeFormatter.ISO_DATE_TIME)
+        return blockNodeService.listAllBlocks(node.projectId, node.repoName, node.fullPath, createdDate)
+    }
+
     private fun checkNode(node: Node) {
-        with(node) {
-            if (sha256 == FAKE_SHA256) {
-                throw IllegalArgumentException("can not migrate fake node[$fullPath], task[$projectId/$repoName]")
-            }
-            if (node.compressed == true) {
-                throw IllegalArgumentException("node[$fullPath] was compressed, task[$projectId/$repoName]")
-            }
+        if (node.compressed == true) {
+            throw IllegalArgumentException(
+                "node[${node.fullPath}] was compressed, task[${node.projectId}/${node.repoName}]"
+            )
         }
     }
 

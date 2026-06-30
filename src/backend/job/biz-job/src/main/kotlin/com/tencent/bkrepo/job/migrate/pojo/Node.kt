@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.job.migrate.pojo
 
+import java.time.LocalDateTime
+
 data class Node(
     val id: String,
     val projectId: String,
@@ -35,6 +37,7 @@ data class Node(
     val size: Long,
     val sha256: String,
     val md5: String,
+    val createdDate: LocalDateTime,
     val archived: Boolean? = null,
     val compressed: Boolean? = null,
 )

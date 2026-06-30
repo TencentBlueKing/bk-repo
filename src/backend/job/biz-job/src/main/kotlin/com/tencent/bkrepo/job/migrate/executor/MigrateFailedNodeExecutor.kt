@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.migrate.executor
 
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -60,6 +61,7 @@ class MigrateFailedNodeExecutor(
     storageService: StorageService,
     executingTaskRecorder: ExecutingTaskRecorder,
     migrateArchivedFileService: MigrateArchivedFileService,
+    blockNodeService: BlockNodeService,
     private val transferDataExecutor: TransferDataExecutor,
     private val migrateFailedNodeFixer: MigrateFailedNodeFixer,
     private val nodeDao: NodeDao,
@@ -71,6 +73,7 @@ class MigrateFailedNodeExecutor(
     storageService,
     executingTaskRecorder,
     migrateArchivedFileService,
+    blockNodeService,
 ) {
     /**
      * 用于重新迁移失败的node
@@ -124,7 +127,10 @@ class MigrateFailedNodeExecutor(
 
     private fun convert(failedNode: TMigrateFailedNode): Node {
         val criteria = Node::projectId.isEqualTo(failedNode.projectId).and(ID).isEqualTo(failedNode.nodeId)
-        val node = nodeDao.findOne(Query(criteria))
+        val node = requireNotNull(nodeDao.findOne(Query(criteria))) {
+            "Node[${failedNode.projectId}/${failedNode.repoName}${failedNode.fullPath}] not found, " +
+                "nodeId[${failedNode.nodeId}]"
+        }
         return Node(
             id = failedNode.nodeId,
             projectId = failedNode.projectId,
@@ -133,8 +139,9 @@ class MigrateFailedNodeExecutor(
             size = failedNode.size,
             sha256 = failedNode.sha256,
             md5 = failedNode.md5,
-            archived = node?.archived,
-            compressed = node?.compressed,
+            createdDate = node.createdDate,
+            archived = node.archived,
+            compressed = node.compressed,
         )
     }
 

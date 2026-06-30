@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
@@ -54,6 +55,7 @@ class CorrectExecutor(
     storageService: StorageService,
     executingTaskRecorder: ExecutingTaskRecorder,
     migrateArchivedFileService: MigrateArchivedFileService,
+    blockNodeService: BlockNodeService,
     private val migrateFailedHandler: MigrateFailedHandler,
     private val transferDataExecutor: TransferDataExecutor,
     private val mongoTemplate: MongoTemplate,
@@ -65,6 +67,7 @@ class CorrectExecutor(
     storageService,
     executingTaskRecorder,
     migrateArchivedFileService,
+    blockNodeService,
 ) {
     /**
      * 用于执行数据矫正的线程池
