@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.fs.server.response.drive
 
 import com.fasterxml.jackson.annotation.JsonFormat
+import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
 import java.time.LocalDateTime
 
@@ -39,6 +40,7 @@ data class DriveNode(
     val symlinkTarget: String? = null,
     @get:JsonFormat(pattern = DATE_TIME_FORMAT)
     val deleted: LocalDateTime? = null,
+    val metadata: List<TMetadata>? = null,
 )
 
 fun TDriveNode.toDriveNode(snap: Boolean = false): DriveNode {
@@ -69,5 +71,6 @@ fun TDriveNode.toDriveNode(snap: Boolean = false): DriveNode {
         flags = flags,
         symlinkTarget = symlinkTarget,
         deleted = if (snap) null else deleted,
+        metadata = metadata?.toList(),
     )
 }
