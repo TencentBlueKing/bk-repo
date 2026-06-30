@@ -166,7 +166,9 @@ class DriveUploadServiceTest {
         assertEquals(ArtifactMessageCode.NODE_EXISTED, exception.messageCode)
         runBlocking {
             verify(driveNodeService, never()).createNode(any<DriveNodeCreateRequest>(), anyOrNull(), anyOrNull())
-            verify(driveFileOperationService, never()).write(any<CoArtifactFile>(), any<DriveBlockWriteRequest>(), any())
+            verify(
+                driveFileOperationService, never()
+            ).write(any<CoArtifactFile>(), any<DriveBlockWriteRequest>(), any())
         }
     }
 

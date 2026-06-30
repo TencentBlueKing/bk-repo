@@ -17,14 +17,17 @@ object ArtifactMetadataHeaderResolver {
     ): Map<String, String> {
         val metadata = mutableMapOf<String, String>()
         for (headerName in headerNames) {
-            if (headerName.startsWith(BKREPO_META_PREFIX, ignoreCase = true)) {
-                val key = headerName.substring(BKREPO_META_PREFIX.length).trim().lowercase(Locale.getDefault())
-                if (key.isNotBlank()) {
-                    val value = decodeHeaderValue(headerValue(headerName))
-                    if (!value.isNullOrBlank()) {
-                        metadata[key] = value
-                    }
-                }
+            if (!headerName.startsWith(BKREPO_META_PREFIX, ignoreCase = true)) {
+                continue
+            }
+            val key = headerName.substring(BKREPO_META_PREFIX.length)
+                .trim().lowercase(Locale.getDefault())
+            if (key.isBlank()) {
+                continue
+            }
+            val value = decodeHeaderValue(headerValue(headerName)) ?: continue
+            if (value.isNotBlank()) {
+                metadata[key] = value
             }
         }
         headerValue(BKREPO_META)?.let { metadata.putAll(decodeMetadata(it)) }
