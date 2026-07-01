@@ -54,8 +54,8 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
-import com.tencent.bkrepo.common.artifact.constant.BKREPO_META
-import com.tencent.bkrepo.common.artifact.constant.BKREPO_META_PREFIX
+import com.tencent.bkrepo.generic.constant.BKREPO_META
+import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.proxy.artifact.resource.ProxyNodeResource

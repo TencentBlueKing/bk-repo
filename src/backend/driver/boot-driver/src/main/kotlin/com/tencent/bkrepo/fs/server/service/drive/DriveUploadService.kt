@@ -221,6 +221,7 @@ class DriveUploadService(
             parentIno = parentIno,
             name = name,
             overwrite = false,
+            reuseExistingDirectory = true,
             buildCreateRequest = { ino ->
                 DriveNodeCreateRequest(
                     projectId = projectId,
@@ -260,10 +261,13 @@ class DriveUploadService(
         parentIno: Long,
         name: String,
         overwrite: Boolean,
+        reuseExistingDirectory: Boolean = false,
         buildCreateRequest: (Long) -> DriveNodeCreateRequest,
         overwriteNode: suspend (TDriveNode) -> DriveNode,
     ): DriveNode {
-        resolveExistingNode(projectId, repoName, parentIno, name, overwrite, overwriteNode)?.let { return it }
+        resolveExistingNode(
+            projectId, repoName, parentIno, name, overwrite, reuseExistingDirectory, overwriteNode,
+        )?.let { return it }
 
         repeat(MAX_CREATE_RETRY) {
             val ino = driveInoAllocator.allocate(projectId, repoName)
@@ -273,7 +277,9 @@ class DriveUploadService(
                 if (e.messageCode != ArtifactMessageCode.NODE_EXISTED) {
                     throw e
                 }
-                resolveExistingNode(projectId, repoName, parentIno, name, overwrite, overwriteNode)?.let { return it }
+                resolveExistingNode(
+                    projectId, repoName, parentIno, name, overwrite, reuseExistingDirectory, overwriteNode,
+                )?.let { return it }
             }
         }
         throw DuplicateKeyException("Failed to create drive node[$projectId/$repoName/$parentIno/$name]")
@@ -285,10 +291,13 @@ class DriveUploadService(
         parentIno: Long,
         name: String,
         overwrite: Boolean,
+        reuseExistingDirectory: Boolean,
         overwriteNode: suspend (TDriveNode) -> DriveNode,
     ): DriveNode? {
         val existing = driveNodeDao.findCurrentNode(projectId, repoName, parentIno, name) ?: return null
-        validateTargetNameConflict(existing, name, overwrite)
+        if (!reuseExistingDirectory || existing.type != TYPE_DIRECTORY) {
+            validateTargetNameConflict(existing, name, overwrite)
+        }
         return overwriteNode(existing)
     }
 

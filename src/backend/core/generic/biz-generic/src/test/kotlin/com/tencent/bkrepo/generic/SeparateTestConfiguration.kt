@@ -1,4 +1,4 @@
-package com.tencent.com.bkrepo.generic
+package com.tencent.bkrepo.generic
 
 import org.springframework.boot.SpringBootConfiguration
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration

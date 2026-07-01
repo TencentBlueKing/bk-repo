@@ -1,4 +1,4 @@
-package com.tencent.com.bkrepo.fs.utils
+package com.tencent.bkrepo.fs.utils
 
 import com.tencent.bkrepo.fs.server.utils.CoroutineRateLimiter
 import kotlinx.coroutines.async

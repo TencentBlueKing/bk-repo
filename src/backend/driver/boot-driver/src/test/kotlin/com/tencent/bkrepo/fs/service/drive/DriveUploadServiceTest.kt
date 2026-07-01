@@ -1,8 +1,9 @@
-package com.tencent.com.bkrepo.fs.service.drive
+package com.tencent.bkrepo.fs.service.drive
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
+import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TYPE_DIRECTORY
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TYPE_FILE
 import com.tencent.bkrepo.fs.server.repository.drive.RDriveNodeDao
 import com.tencent.bkrepo.fs.server.request.drive.DriveBlockWriteRequest
@@ -213,6 +214,46 @@ class DriveUploadServiceTest {
         }
     }
 
+    @Test
+    fun `should reuse concurrently created parent directory`() {
+        val directoryNode = existingDirectoryNode()
+        val artifactFile = artifactFile(sha256 = "abc", size = 4)
+        val uploadRequest = DriveNodeUploadRequest(
+            projectId = PROJECT_ID,
+            repoName = REPO_NAME,
+            fullPath = "/new-dir/a.txt",
+            overwrite = false,
+        )
+        val fileIno = 2002L
+        val createdNode = driveNode(ino = fileIno)
+
+        runBlocking {
+            whenever(driveRepositoryInitService.ensureInitialized(any(), any(), any())).thenReturn(Unit)
+            whenever(
+                driveNodeDao.findCurrentNode(PROJECT_ID, REPO_NAME, DriveNodeQueryHelper.ROOT_INO, "new-dir"),
+            ).thenReturn(null, directoryNode)
+            whenever(
+                driveNodeDao.findCurrentNode(PROJECT_ID, REPO_NAME, DIRECTORY_INO, "a.txt"),
+            ).thenReturn(null)
+            whenever(driveInoAllocator.allocate(PROJECT_ID, REPO_NAME)).thenReturn(2001L, fileIno)
+            whenever(driveNodeService.createNode(any<DriveNodeCreateRequest>(), anyOrNull(), anyOrNull()))
+                .thenThrow(ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, "new-dir"))
+                .thenReturn(createdNode)
+            whenever(
+                driveFileOperationService.write(any<CoArtifactFile>(), any<DriveBlockWriteRequest>(), any()),
+            ).thenReturn(mock<DriveBlockNode>())
+        }
+
+        val result = runBlocking {
+            driveUploadService.uploadCompleteFile(uploadRequest, artifactFile, null, USER_ID)
+        }
+
+        assertEquals(fileIno, result.ino)
+        runBlocking {
+            verify(driveFileOperationService).write(any<CoArtifactFile>(), any<DriveBlockWriteRequest>(), any())
+        }
+    }
+
     private fun existingFileNode(): TDriveNode {
         val now = LocalDateTime.now()
         return TDriveNode(
@@ -230,6 +271,34 @@ class DriveUploadServiceTest {
             mode = 0,
             type = TYPE_FILE,
             nlink = 1,
+            uid = 0,
+            gid = 0,
+            rdev = 0,
+            flags = 0,
+            mtime = 0,
+            ctime = 0,
+            atime = 0,
+        )
+    }
+
+    private fun existingDirectoryNode(): TDriveNode {
+        val now = LocalDateTime.now()
+        return TDriveNode(
+            id = "directory-id",
+            createdBy = USER_ID,
+            createdDate = now,
+            lastModifiedBy = USER_ID,
+            lastModifiedDate = now,
+            projectId = PROJECT_ID,
+            repoName = REPO_NAME,
+            ino = DIRECTORY_INO,
+            realIno = DIRECTORY_INO,
+            parent = DriveNodeQueryHelper.ROOT_INO,
+            name = "new-dir",
+            size = 0,
+            mode = 0,
+            type = TYPE_DIRECTORY,
+            nlink = 2,
             uid = 0,
             gid = 0,
             rdev = 0,
@@ -279,5 +348,6 @@ class DriveUploadServiceTest {
         private const val PROJECT_ID = "demo"
         private const val REPO_NAME = "drive-local"
         private const val USER_ID = "admin"
+        private const val DIRECTORY_INO = 1000L
     }
 }

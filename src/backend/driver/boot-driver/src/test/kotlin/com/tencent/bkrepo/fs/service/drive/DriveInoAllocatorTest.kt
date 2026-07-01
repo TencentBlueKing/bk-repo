@@ -1,4 +1,4 @@
-package com.tencent.com.bkrepo.fs.service.drive
+package com.tencent.bkrepo.fs.service.drive
 
 import com.tencent.bkrepo.fs.server.repository.drive.RDriveNodeDao
 import com.tencent.bkrepo.fs.server.service.drive.DriveInoAllocator
