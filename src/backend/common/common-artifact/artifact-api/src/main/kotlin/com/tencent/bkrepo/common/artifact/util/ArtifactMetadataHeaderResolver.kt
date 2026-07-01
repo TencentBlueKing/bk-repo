@@ -4,7 +4,7 @@ import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.artifact.constant.BKREPO_META
 import com.tencent.bkrepo.common.artifact.constant.BKREPO_META_PREFIX
 import org.slf4j.LoggerFactory
-import java.net.URLDecoder
+import org.springframework.web.util.UriUtils
 import java.util.Base64
 import java.util.Locale
 
@@ -22,12 +22,8 @@ object ArtifactMetadataHeaderResolver {
             }
             val key = headerName.substring(BKREPO_META_PREFIX.length)
                 .trim().lowercase(Locale.getDefault())
-            if (key.isBlank()) {
-                continue
-            }
-            val value = decodeHeaderValue(headerValue(headerName)) ?: continue
-            if (value.isNotBlank()) {
-                metadata[key] = value
+            if (key.isNotBlank()) {
+                metadata[key] = decodeHeaderValue(headerValue(headerName))!!
             }
         }
         headerValue(BKREPO_META)?.let { metadata.putAll(decodeMetadata(it)) }
@@ -38,7 +34,7 @@ object ArtifactMetadataHeaderResolver {
     fun decodeHeaderValue(headerValue: String?): String? {
         return headerValue?.let {
             try {
-                URLDecoder.decode(it.replace("+", "%2B"), Charsets.UTF_8)
+                UriUtils.decode(it, Charsets.UTF_8)
             } catch (_: IllegalArgumentException) {
                 it
             }
@@ -52,13 +48,13 @@ object ArtifactMetadataHeaderResolver {
             metadataUrl.split(CharPool.AND).forEach { part ->
                 val pair = part.trim().split(CharPool.EQUAL, limit = 2)
                 if (pair.size > 1 && pair[0].isNotBlank() && pair[1].isNotBlank()) {
-                    val key = decodeHeaderValue(pair[0])!!
-                    val value = decodeHeaderValue(pair[1])!!
+                    val key = UriUtils.decode(pair[0], Charsets.UTF_8)
+                    val value = UriUtils.decode(pair[1], Charsets.UTF_8)
                     metadata[key] = value
                 }
             }
         } catch (_: IllegalArgumentException) {
-            logger.warn("[$header] is not in valid Base64 scheme.")
+            logger.warn("$header is not in valid Base64 scheme.")
         }
         return metadata
     }

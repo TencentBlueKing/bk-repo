@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.artifact.util
 
+import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.artifact.constant.BKREPO_META
 import com.tencent.bkrepo.common.artifact.constant.BKREPO_META_PREFIX
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -8,7 +9,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.util.Base64
-
+import java.util.Locale
 @DisplayName("制品元数据请求头解析")
 class ArtifactMetadataHeaderResolverTest {
 
@@ -155,6 +156,98 @@ class ArtifactMetadataHeaderResolverTest {
             )
             assertEquals("val+1", metadata["b64key"])
             assertEquals("val with space", metadata["prefixkey"])
+        }
+
+        @Test
+        fun `should keep blank prefixed header value`() {
+            val metadata = ArtifactMetadataHeaderResolver.resolveMetadata(
+                headerNames = listOf("X-BKREPO-META-empty"),
+                headerValue = { "" },
+            )
+            assertEquals("", metadata["empty"])
+        }
+    }
+
+    @Nested
+    @DisplayName("与 master GenericLocalRepository 行为对齐")
+    inner class MasterGenericLocalRepositoryParity {
+
+        private fun masterResolveMetadata(
+            headerNames: Iterable<String>,
+            headerValue: (String) -> String?,
+            extraMetadata: Map<String, String>? = null,
+        ): Map<String, String> {
+            val metadata = mutableMapOf<String, String>()
+            for (headerName in headerNames) {
+                if (headerName.startsWith(BKREPO_META_PREFIX, ignoreCase = true)) {
+                    val key = headerName.substring(BKREPO_META_PREFIX.length)
+                        .trim().lowercase(Locale.getDefault())
+                    if (key.isNotBlank()) {
+                        metadata[key] = decodeLikeHeaderUtils(headerValue(headerName))!!
+                    }
+                }
+            }
+            headerValue(BKREPO_META)?.let { metadata.putAll(masterDecodeMetadata(it)) }
+            extraMetadata?.let { metadata.putAll(it) }
+            return metadata
+        }
+
+        private fun decodeLikeHeaderUtils(headerValue: String?): String? {
+            return headerValue?.let {
+                try {
+                    org.springframework.web.util.UriUtils.decode(it, Charsets.UTF_8)
+                } catch (_: IllegalArgumentException) {
+                    it
+                }
+            }
+        }
+
+        private fun masterDecodeMetadata(header: String): Map<String, String> {
+            val metadata = mutableMapOf<String, String>()
+            try {
+                val metadataUrl = String(Base64.getDecoder().decode(header))
+                metadataUrl.split(CharPool.AND).forEach { part ->
+                    val pair = part.trim().split(CharPool.EQUAL, limit = 2)
+                    if (pair.size > 1 && pair[0].isNotBlank() && pair[1].isNotBlank()) {
+                        val key = org.springframework.web.util.UriUtils.decode(pair[0], Charsets.UTF_8)
+                        val value = org.springframework.web.util.UriUtils.decode(pair[1], Charsets.UTF_8)
+                        metadata[key] = value
+                    }
+                }
+            } catch (_: IllegalArgumentException) {
+                // ignore, same as master
+            }
+            return metadata
+        }
+
+        @Test
+        fun `should match master resolveMetadata for representative inputs`() {
+            val headerNames = listOf(
+                "X-BKREPO-META-ProjectId",
+                "x-bkrepo-meta-buildId",
+                "X-BKREPO-META-timezone",
+                "X-BKREPO-META-path",
+                "X-BKREPO-META-empty",
+                BKREPO_META,
+            )
+            val encoded = Base64.getEncoder().encodeToString("foo=bar&key=UTC+08%3A00".toByteArray())
+            val headerValue: (String) -> String? = { name ->
+                when (name) {
+                    "X-BKREPO-META-ProjectId" -> "demo"
+                    "x-bkrepo-meta-buildId" -> "100"
+                    "X-BKREPO-META-timezone" -> "UTC+08:00"
+                    "X-BKREPO-META-path" -> "dir%2Fsub%20file"
+                    "X-BKREPO-META-empty" -> ""
+                    BKREPO_META -> encoded
+                    else -> null
+                }
+            }
+            val extra = mapOf("pipeline" to "p1")
+
+            val expected = masterResolveMetadata(headerNames, headerValue, extra)
+            val actual = ArtifactMetadataHeaderResolver.resolveMetadata(headerNames, headerValue, extra)
+
+            assertEquals(expected, actual)
         }
     }
 }
