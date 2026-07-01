@@ -8,6 +8,7 @@ import com.tencent.bkrepo.archive.repository.CompressFileDao
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
@@ -78,6 +79,9 @@ class FileNotFoundAutoFixStrategyTest @Autowired constructor(
 
     @MockitoBean
     private lateinit var storageService: StorageService
+
+    @MockitoBean
+    private lateinit var blockNodeService: BlockNodeService
 
     @BeforeEach
     fun beforeEach() {

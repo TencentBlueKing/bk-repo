@@ -138,6 +138,27 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
         assertEquals(0, migrateFailedNodeDao.findOne(Query())!!.retryTimes)
     }
 
+    @Test
+    fun testConvertThrowsWhenNodeNotFound() {
+        var task = createTask()
+        updateTask(task.id!!, CORRECT_FINISHED.name, LocalDateTime.now())
+
+        createFailedNode(task.id!!, "non-existent-node-id")
+        assertTrue(migrateFailedNodeDao.existsFailedNode(UT_PROJECT_ID, UT_REPO_NAME))
+
+        val context = executor.execute(
+            buildContext(migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!)
+        )!!
+
+        Thread.sleep(1000L)
+        context.waitAllTransferFinished()
+
+        task = migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!
+        assertEquals(MIGRATING_FAILED_NODE.name, task.state)
+        assertTrue(migrateFailedNodeDao.existsFailedNode(UT_PROJECT_ID, UT_REPO_NAME))
+        assertFalse(executingTaskRecorder.executing(task.id!!))
+    }
+
     private fun createFailedNode(taskId: String, nodeId: String = "") {
         migrateFailedNodeDao.insert(
             TMigrateFailedNode(
