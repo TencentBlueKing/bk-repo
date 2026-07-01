@@ -7,7 +7,9 @@ import com.tencent.bkrepo.archive.repository.ArchiveFileDao
 import com.tencent.bkrepo.archive.repository.CompressFileDao
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
@@ -15,6 +17,9 @@ import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
+import com.tencent.bkrepo.job.UT_PROJECT_ID
+import com.tencent.bkrepo.job.UT_REPO_NAME
+import com.tencent.bkrepo.job.UT_USER
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.migrate.dao.ArchiveMigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
@@ -153,5 +158,89 @@ class FileNotFoundAutoFixStrategyTest @Autowired constructor(
         assertTrue(strategy.fix(failedNode))
         assertEquals(0, migrateFailedNodeDao.count(Query()))
         assertEquals(1, archiveMigrateFailedNodeDao.count(Query()))
+    }
+
+    @Test
+    fun testFixBlockNodeAllBlocksExist() {
+        whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(true)
+        doFixBlockNodeTest(
+            expectedResult = true, expectedFailedCount = 1, expectedArchivedCount = 0, expectedCopyTimes = 0
+        )
+    }
+
+    @Test
+    fun testFixBlockNodeCopyFromOtherStorage() {
+        whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(false)
+        whenever(storageService.load(anyString(), any(), anyOrNull()))
+            .thenReturn(ByteSource.wrap(ByteArray(1)).openStream().artifactStream(Range.full(1)))
+        doNothing().whenever(storageService).copy(anyString(), anyOrNull(), anyOrNull())
+        doFixBlockNodeTest(
+            expectedResult = true, expectedFailedCount = 1, expectedArchivedCount = 0, expectedCopyTimes = 2
+        )
+        verify(fileReferenceService, times(2)).increment(anyString(), anyOrNull(), any())
+    }
+
+    @Test
+    fun testFixBlockNodeSomeBlocksLost() {
+        whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(false)
+        whenever(storageService.load(anyString(), any(), anyOrNull())).thenReturn(null)
+        doFixBlockNodeTest(
+            expectedResult = true, expectedFailedCount = 0, expectedArchivedCount = 1, expectedCopyTimes = 0
+        )
+    }
+
+    @Test
+    fun testFixBlockNodeCopyException() {
+        whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(false)
+        whenever(storageService.load(anyString(), any(), anyOrNull()))
+            .thenThrow(RuntimeException("network error"))
+        doFixBlockNodeTest(
+            expectedResult = false, expectedFailedCount = 1, expectedArchivedCount = 0, expectedCopyTimes = 0
+        )
+    }
+
+    private fun doFixBlockNodeTest(
+        expectedResult: Boolean,
+        expectedFailedCount: Long,
+        expectedArchivedCount: Long,
+        expectedCopyTimes: Int,
+    ) {
+        val node = nodeDao.createNode(sha256 = FAKE_SHA256)
+        whenever(blockNodeService.listAllBlocks(anyString(), anyString(), anyString(), anyString()))
+            .thenReturn(buildBlocks())
+
+        val failedNode = migrateFailedNodeDao.insertFailedNode(
+            fullPath = node.fullPath, nodeId = node.id!!, sha256 = FAKE_SHA256
+        )
+        assertEquals(expectedResult, strategy.fix(failedNode))
+        assertEquals(expectedFailedCount, migrateFailedNodeDao.count(Query()))
+        assertEquals(expectedArchivedCount, archiveMigrateFailedNodeDao.count(Query()))
+        verify(storageService, times(expectedCopyTimes)).copy(anyString(), anyOrNull(), anyOrNull())
+    }
+
+    private fun buildBlocks(): List<TBlockNode> {
+        val now = LocalDateTime.now()
+        return listOf(
+            TBlockNode(
+                createdBy = UT_USER,
+                createdDate = now,
+                nodeFullPath = "/a/b/c.txt",
+                startPos = 0,
+                sha256 = "da39a3ee5e6b4b0d3255bfef95601890afd80709da39a3ee5e6b4b0d3255bfef",
+                projectId = UT_PROJECT_ID,
+                repoName = UT_REPO_NAME,
+                size = 50,
+            ),
+            TBlockNode(
+                createdBy = UT_USER,
+                createdDate = now,
+                nodeFullPath = "/a/b/c.txt",
+                startPos = 50,
+                sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                projectId = UT_PROJECT_ID,
+                repoName = UT_REPO_NAME,
+                size = 50,
+            ),
+        )
     }
 }
