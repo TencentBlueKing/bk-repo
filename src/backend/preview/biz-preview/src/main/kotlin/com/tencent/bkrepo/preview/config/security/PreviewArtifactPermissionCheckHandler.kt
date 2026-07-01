@@ -10,8 +10,13 @@
 
 package com.tencent.bkrepo.preview.config.security
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionCheckHandler
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.PermissionCheckHandler
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -48,9 +53,40 @@ import org.slf4j.LoggerFactory
  */
 class PreviewArtifactPermissionCheckHandler(
     private val delegate: ArtifactPermissionCheckHandler,
+    private val permissionManager: PermissionManager,
 ) : PermissionCheckHandler by delegate {
 
     override fun onPermissionCheck(userId: String, permission: Permission) {
+        if (isDriveRepoNodePermission(permission)) {
+            onDriveRepoPermissionCheck(userId, permission)
+            return
+        }
+        onDefaultPermissionCheck(userId, permission)
+    }
+
+    private fun onDriveRepoPermissionCheck(userId: String, permission: Permission) {
+        val tokenInfo = currentTemporaryTokenInfo()
+        if (tokenInfo != null) {
+            if (tokenInfo.authorizedUserList.isEmpty()) {
+                checkDriveRepoPermission(tokenInfo.createdBy, permission.action)
+                return
+            }
+            if (logger.isInfoEnabled) {
+                logger.info(
+                    "PreviewArtifactPermissionCheck(directed-share) bypass ACL: " +
+                        "createdBy=${tokenInfo.createdBy}, visitor=$userId, " +
+                        "authorizedUserList=${tokenInfo.authorizedUserList}, " +
+                        "permission=${permission.type}/${permission.action}, " +
+                        "projectId=${tokenInfo.projectId}, repoName=${tokenInfo.repoName}, " +
+                        "fullPath=${tokenInfo.fullPath}"
+                )
+            }
+            return
+        }
+        checkDriveRepoPermission(userId, permission.action)
+    }
+
+    private fun onDefaultPermissionCheck(userId: String, permission: Permission) {
         val tokenInfo = currentTemporaryTokenInfo()
         if (tokenInfo != null) {
             if (tokenInfo.authorizedUserList.isEmpty()) {
@@ -81,6 +117,29 @@ class PreviewArtifactPermissionCheckHandler(
             return
         }
         delegate.onPermissionCheck(userId, permission)
+    }
+
+    private fun isDriveRepoNodePermission(permission: Permission): Boolean {
+        if (permission.type != ResourceType.NODE) {
+            return false
+        }
+        if (permission.action != PermissionAction.READ && permission.action != PermissionAction.DOWNLOAD) {
+            return false
+        }
+        return ArtifactContextHolder.getRepoDetail()?.type == RepositoryType.DRIVE
+    }
+
+    private fun checkDriveRepoPermission(userId: String, action: PermissionAction) {
+        with(ArtifactContextHolder.getRepoDetail()!!) {
+            permissionManager.checkRepoPermission(
+                action = action,
+                projectId = projectId,
+                repoName = name,
+                public = public,
+                anonymous = false,
+                userId = userId,
+            )
+        }
     }
 
     /**
