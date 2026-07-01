@@ -981,5 +981,7 @@
   "remoteUrl": "リモートアドレス",
   "remoteUrlPlaceholder": "リモートアドレスを入力してください",
   "accessToken": "アクセストークン",
-  "accessTokenInputPlaceholder": "アクセストークンを入力してください"
+  "accessTokenInputPlaceholder": "アクセストークンを入力してください",
+  "prefixMatch": "プレフィックスマッチ",
+  "fuzzyMatch": "あいまい検索"
 }

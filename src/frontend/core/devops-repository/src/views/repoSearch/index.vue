@@ -3,6 +3,22 @@
         <div class="repo-search-tools flex-column">
             <div class="name-tool flex-center">
                 <type-select :repo-list="repoEnum" :repo-type="repoType" @change="changeRepoType"></type-select>
+                <div
+                    class="match-mode-select"
+                    :class="{ 'active': showMatchModeDropdown }"
+                    @click="showMatchModeDropdown = !showMatchModeDropdown"
+                    v-bk-clickoutside="hiddenMatchModeDropdown">
+                    <span class="match-mode-name">{{ matchModeName }}</span>
+                    <i class="ml10 devops-icon" :class="showMatchModeDropdown ? 'icon-angle-up' : 'icon-angle-down'"></i>
+                    <div v-show="showMatchModeDropdown" class="match-mode-dropdown" @click.stop="() => {}">
+                        <div class="match-mode-option flex-center" :class="{ 'active': matchMode === matchModeEnum.PREFIX }" @click="changeMatchMode(matchModeEnum.PREFIX)">
+                            {{ $t('prefixMatch') }}
+                        </div>
+                        <div class="match-mode-option flex-center" :class="{ 'active': matchMode === matchModeEnum.FUZZY }" @click="changeMatchMode(matchModeEnum.FUZZY)">
+                            {{ $t('fuzzyMatch') }}
+                        </div>
+                    </div>
+                </div>
                 <bk-input
                     v-focus
                     style="width:390px"
@@ -88,6 +104,12 @@
     import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
     import { repoEnum } from '@repository/store/publicEnum'
+
+    const MATCH_MODE = {
+        PREFIX: 'PREFIX',
+        FUZZY: 'FUZZY'
+    }
+
     export default {
         name: 'repoSearch',
         components: { repoTree, packageCard, InfiniteScroll, typeSelect, genericDetail, genericShareDialog },
@@ -101,11 +123,13 @@
         data () {
             return {
                 repoEnum,
+                matchModeEnum: MATCH_MODE,
                 isLoading: false,
                 property: this.$route.query.property || 'lastModifiedDate',
                 direction: this.$route.query.direction || 'DESC',
                 packageName: this.$route.query.packageName || '',
                 repoType: this.$route.query.repoType || 'generic',
+                matchMode: this.$route.query.matchMode || MATCH_MODE.PREFIX,
                 repoList: [{
                     name: this.$t('total'),
                     roadMap: '0',
@@ -124,6 +148,7 @@
                 focusContent: this.$t('toggle'),
                 repoNames: [],
                 init: false,
+                showMatchModeDropdown: false,
                 projectShareEnabled: true
             }
         },
@@ -131,6 +156,9 @@
             ...mapState(['userList']),
             projectId () {
                 return this.$route.params.projectId
+            },
+            matchModeName () {
+                return this.matchMode === MATCH_MODE.PREFIX ? this.$t('prefixMatch') : this.$t('fuzzyMatch')
             },
             isSearching () {
                 const { packageName, repoType, repoName } = this.$route.query
@@ -155,6 +183,7 @@
                         repoType: this.repoType,
                         repoName: this.repoName,
                         packageName: this.packageName,
+                        matchMode: this.matchMode,
                         property: this.property,
                         direction: this.direction
                     }
@@ -164,7 +193,8 @@
                 this.searchRepoList({
                     projectId: this.projectId,
                     repoType: this.repoType,
-                    packageName: this.packageName || ''
+                    packageName: this.packageName || '',
+                    matchMode: this.matchMode
                 }).then(([item]) => {
                     this.repoList = [{
                         name: this.$t('total'),
@@ -192,6 +222,7 @@
                     repoName: this.repoName,
                     repoNames: this.repoNames,
                     packageName: this.packageName,
+                    matchMode: this.matchMode,
                     property: this.property,
                     direction: this.direction,
                     current: this.pagination.current,
@@ -219,6 +250,14 @@
                 this.direction = this.direction === 'ASC' ? 'DESC' : 'ASC'
                 this.refreshRoute()
                 this.handlerPaginationChange()
+            },
+            hiddenMatchModeDropdown () {
+                this.showMatchModeDropdown = false
+            },
+            changeMatchMode (matchMode) {
+                this.matchMode = matchMode
+                this.hiddenMatchModeDropdown()
+                this.changePackageName()
             },
             changeRepoType (repoType) {
                 // 制品搜索页，当切换制品类型时将搜索的包名参数重置为空，否则不重置，解决复制url导致搜索参数丢失的问题
@@ -307,7 +346,8 @@
                     this.searchRepoList({
                         projectId: this.projectId,
                         repoType: this.repoType,
-                        packageName: this.packageName || ''
+                        packageName: this.packageName || '',
+                        matchMode: this.matchMode
                     }).then(([item]) => {
                         item.repos.forEach(item => {
                             this.repoNames.push(item.repoName)
@@ -337,6 +377,57 @@
         border-bottom: 1px solid var(--borderColor);
         .name-tool {
             height: 48px;
+            .match-mode-select {
+                position: relative;
+                display: flex;
+                align-items: center;
+                width: 120px;
+                height: 48px;
+                margin-right: -1px;
+                border: 1px solid var(--borderWeightColor);
+                border-radius: 0;
+                cursor: pointer;
+                &.active {
+                    color: var(--primaryColor);
+                    border-color: var(--primaryColor);
+                    z-index: 1;
+                }
+                .match-mode-name {
+                    width: 100%;
+                    padding: 0 24px;
+                    text-align: center;
+                    box-sizing: border-box;
+                }
+                .icon-angle-up,
+                .icon-angle-down {
+                    position: absolute;
+                    right: 20px;
+                    top: 50%;
+                    color: var(--fontSubsidiaryColor);
+                    font-size: 12px;
+                    font-weight: bold;
+                    transform: translateY(-50%) scale(0.8);
+                }
+                .match-mode-dropdown {
+                    position: absolute;
+                    top: 100%;
+                    left: -1px;
+                    width: calc(100% + 2px);
+                    background-color: white;
+                    border: 1px solid var(--borderWeightColor);
+                    box-shadow: 0px 2px 6px 0px rgba(167, 167, 167, 0.3);
+                    z-index: 1;
+                    .match-mode-option {
+                        height: 36px;
+                        color: var(--fontPrimaryColor);
+                        &:hover,
+                        &.active {
+                            color: var(--primaryColor);
+                            background-color: var(--bgHoverLighterColor);
+                        }
+                    }
+                }
+            }
             ::v-deep .bk-input-large {
                 border-radius: 0;
                 height: 48px;

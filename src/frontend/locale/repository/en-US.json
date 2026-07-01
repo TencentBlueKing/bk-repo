@@ -979,5 +979,7 @@
     "remoteUrl": "Remote URL",
     "remoteUrlPlaceholder": "Please enter remote URL",
     "accessToken": "Access Token",
-    "accessTokenInputPlaceholder": "Please enter access token"
+    "accessTokenInputPlaceholder": "Please enter access token",
+    "prefixMatch": "Prefix Match",
+    "fuzzyMatch": "Fuzzy Match"
 }
