@@ -87,7 +87,12 @@ const val HELM_SERVICE_NAME = "\${service.prefix:}helm\${service.suffix:}"
 const val OCI_SERVICE_NAME = "\${service.prefix:}docker\${service.suffix:}"
 const val JOB_SERVICE_NAME = "\${service.prefix:}job\${service.suffix:}"
 const val SCHEDULE_SERVICE_NAME = "\${service.prefix:}job-schedule\${service.suffix:}"
-const val FS_SERVER_SERVICE_NAME = "\${service.prefix:}driver\${service.suffix:}"
+/**
+ * driver / fs-server 微服务在 Feign 与 Consul 中的逻辑服务名。
+ * 默认 `${service.prefix}driver${service.suffix}`；线上若注册为 fs-server，在配置中心设置
+ * `fs-server.service-name`（例如 `bkrepo-fs-server`）即可，无需改代码。
+ */
+const val FS_SERVER_SERVICE_NAME = "\${fs-server.service-name}"
 const val MAVEN_SERVICE_NAME = "\${service.prefix:}maven\${service.suffix:}"
 const val ARCHIVE_SERVICE_NAME = "\${service.prefix:}archive\${service.suffix:}"
 const val OPDATA_SERVICE_NAME = "\${service.prefix:}opdata\${service.suffix:}"
