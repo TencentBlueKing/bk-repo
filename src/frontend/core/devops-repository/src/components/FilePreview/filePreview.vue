@@ -326,6 +326,7 @@
                         }
                     })
                 } else if (isXmind(this.filePath)) {
+                    this.xmindShow = true
                     const target = await res.data.arrayBuffer()
                     this.$nextTick(() => {
                         if (!this.xmindViewer) {
