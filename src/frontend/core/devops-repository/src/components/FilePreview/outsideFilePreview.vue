@@ -231,6 +231,7 @@
                                     }
                                 })
                             } else if (isXmind(res.data.data.suffix)) {
+                                this.xmindShow = true
                                 const target = await fileDate.data.arrayBuffer()
                                 this.$nextTick(() => {
                                     if (!this.xmindViewer) {
