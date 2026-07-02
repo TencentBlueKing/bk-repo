@@ -27,8 +27,11 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
+import com.tencent.bkrepo.job.UT_USER
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.CORRECT_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FINISHED
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.createNode
@@ -41,7 +44,10 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyString
+import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Query
@@ -109,5 +115,99 @@ class CorrectExecutorTest @Autowired constructor(
         Thread.sleep(1000L)
         context.waitAllTransferFinished()
         assertTrue(migrateFailedNodeDao.existsFailedNode(UT_PROJECT_ID, UT_REPO_NAME))
+    }
+
+    @Test
+    fun testCorrectFakeSha256NodeFileNotExistAndRefNotExist() {
+        doCorrectBlockNodeTest(
+            fileExist = false, refCount = 0,
+            expectedCopyTimes = 2, expectedIncrementTimes = 2, expectedDecrementTimes = 2
+        )
+    }
+
+    @Test
+    fun testCorrectFakeSha256NodeFileExistAndRefNotExist() {
+        doCorrectBlockNodeTest(
+            fileExist = true, refCount = 0,
+            expectedCopyTimes = 0, expectedIncrementTimes = 2, expectedDecrementTimes = 2
+        )
+    }
+
+    @Test
+    fun testCorrectFakeSha256NodeFileExistAndRefExist() {
+        doCorrectBlockNodeTest(
+            fileExist = true, refCount = 1,
+            expectedCopyTimes = 0, expectedIncrementTimes = 0, expectedDecrementTimes = 0
+        )
+    }
+
+    @Test
+    fun testCorrectFakeSha256NodeFileNotExistAndRefExist() {
+        doCorrectBlockNodeTest(
+            fileExist = false, refCount = 1,
+            expectedCopyTimes = 2, expectedIncrementTimes = 0, expectedDecrementTimes = 0
+        )
+    }
+
+    private fun doCorrectBlockNodeTest(
+        fileExist: Boolean,
+        refCount: Long,
+        expectedCopyTimes: Int,
+        expectedIncrementTimes: Int,
+        expectedDecrementTimes: Int,
+    ) {
+        val now = LocalDateTime.now()
+        val blocks = buildBlocks(now)
+        whenever(blockNodeService.listAllBlocks(anyString(), anyString(), anyString(), anyString()))
+            .thenReturn(blocks)
+        whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull())).then { }
+        whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(fileExist)
+        whenever(fileReferenceService.count(anyString(), anyOrNull())).thenReturn(refCount)
+
+        mongoTemplate.createNode(
+            sha256 = FAKE_SHA256, fullPath = "/a/b/block.txt", createDate = now.plusMinutes(1L)
+        )
+
+        val task = createTask()
+        updateTask(task.id!!, MIGRATE_FINISHED.name, now)
+        val context = executor.execute(
+            buildContext(migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!)
+        )!!
+
+        Thread.sleep(500L)
+        context.waitAllTransferFinished()
+        Thread.sleep(1000L)
+
+        val finishedTask = migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!
+        assertEquals(CORRECT_FINISHED.name, finishedTask.state)
+
+        verify(storageService, times(expectedCopyTimes)).copy(anyString(), anyOrNull(), anyOrNull())
+        verify(fileReferenceService, times(expectedIncrementTimes)).increment(anyString(), anyOrNull(), any())
+        verify(fileReferenceService, times(expectedDecrementTimes)).decrement(anyString(), anyOrNull())
+    }
+
+    private fun buildBlocks(now: LocalDateTime = LocalDateTime.now()): List<TBlockNode> {
+        return listOf(
+            TBlockNode(
+                createdBy = UT_USER,
+                createdDate = now,
+                nodeFullPath = "/a/b/block.txt",
+                startPos = 0,
+                sha256 = "da39a3ee5e6b4b0d3255bfef95601890afd80709da39a3ee5e6b4b0d3255bfef",
+                projectId = UT_PROJECT_ID,
+                repoName = UT_REPO_NAME,
+                size = 50,
+            ),
+            TBlockNode(
+                createdBy = UT_USER,
+                createdDate = now,
+                nodeFullPath = "/a/b/block.txt",
+                startPos = 50,
+                sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                projectId = UT_PROJECT_ID,
+                repoName = UT_REPO_NAME,
+                size = 50,
+            ),
+        )
     }
 }

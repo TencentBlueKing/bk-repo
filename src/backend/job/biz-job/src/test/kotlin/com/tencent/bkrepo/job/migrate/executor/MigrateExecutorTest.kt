@@ -38,7 +38,6 @@ import java.util.concurrent.TimeUnit
 @DisplayName("迁移执行器测试")
 class MigrateExecutorTest @Autowired constructor(
     private val executor: MigrateExecutor,
-    private val correctExecutor: CorrectExecutor,
 ) : ExecutorBaseTest() {
 
     @BeforeAll
@@ -168,75 +167,6 @@ class MigrateExecutorTest @Autowired constructor(
         assertTaskFinished(task.id!!, 1L)
 
         verify(storageService, times(0)).copy(anyString(), anyOrNull(), anyOrNull())
-    }
-
-    @Test
-    fun testCorrectFakeSha256NodeFileNotExistAndRefNotExist() {
-        doCorrectBlockNodeTest(
-            fileExist = false, refCount = 0,
-            expectedCopyTimes = 2, expectedIncrementTimes = 2, expectedDecrementTimes = 2
-        )
-    }
-
-    @Test
-    fun testCorrectFakeSha256NodeFileExistAndRefNotExist() {
-        doCorrectBlockNodeTest(
-            fileExist = true, refCount = 0,
-            expectedCopyTimes = 0, expectedIncrementTimes = 2, expectedDecrementTimes = 2
-        )
-    }
-
-    @Test
-    fun testCorrectFakeSha256NodeFileExistAndRefExist() {
-        doCorrectBlockNodeTest(
-            fileExist = true, refCount = 1,
-            expectedCopyTimes = 0, expectedIncrementTimes = 0, expectedDecrementTimes = 0
-        )
-    }
-
-    @Test
-    fun testCorrectFakeSha256NodeFileNotExistAndRefExist() {
-        doCorrectBlockNodeTest(
-            fileExist = false, refCount = 1,
-            expectedCopyTimes = 2, expectedIncrementTimes = 0, expectedDecrementTimes = 0
-        )
-    }
-
-    private fun doCorrectBlockNodeTest(
-        fileExist: Boolean,
-        refCount: Long,
-        expectedCopyTimes: Int,
-        expectedIncrementTimes: Int,
-        expectedDecrementTimes: Int,
-    ) {
-        val now = LocalDateTime.now()
-        val blocks = buildBlocks(now)
-        whenever(blockNodeService.listAllBlocks(anyString(), anyString(), anyString(), anyString()))
-            .thenReturn(blocks)
-        whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull())).then { }
-        whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(fileExist)
-        whenever(fileReferenceService.count(anyString(), anyOrNull())).thenReturn(refCount)
-
-        mongoTemplate.createNode(
-            sha256 = FAKE_SHA256, fullPath = "/a/b/block.txt", createDate = now.plusMinutes(1L)
-        )
-
-        val task = createTask()
-        updateTask(task.id!!, MigrateRepoStorageTaskState.MIGRATE_FINISHED.name, now)
-        val context = correctExecutor.execute(
-            buildContext(migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!)
-        )!!
-
-        Thread.sleep(500L)
-        context.waitAllTransferFinished()
-        Thread.sleep(1000L)
-
-        val finishedTask = migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!
-        assertEquals(MigrateRepoStorageTaskState.CORRECT_FINISHED.name, finishedTask.state)
-
-        verify(storageService, times(expectedCopyTimes)).copy(anyString(), anyOrNull(), anyOrNull())
-        verify(fileReferenceService, times(expectedIncrementTimes)).increment(anyString(), anyOrNull(), any())
-        verify(fileReferenceService, times(expectedDecrementTimes)).decrement(anyString(), anyOrNull())
     }
 
     @Test
