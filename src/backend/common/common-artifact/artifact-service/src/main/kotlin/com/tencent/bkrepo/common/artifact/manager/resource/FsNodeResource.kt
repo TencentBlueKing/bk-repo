@@ -52,6 +52,8 @@ class FsNodeResource(
     private val isFederating: Boolean = false,
     private val clusterInfo: ClusterInfo? = null
 ) : AbstractNodeResource() {
+    private val storageCredentialsCache = mutableMapOf<String, StorageCredentials?>()
+
     override fun getArtifactInputStream(): ArtifactInputStream? {
         with(node) {
             val blocks = blockNodeService.info(nodeDetail = NodeDetail(this), range = range)
@@ -59,11 +61,13 @@ class FsNodeResource(
              * 顺序查找
              * 1.当前仓库存储实例 (正常情况)
              * 2.拷贝存储实例（节点快速拷贝场景）
+             * 3.旧存储实例（仓库迁移场景）
              * */
             val copyFromCredentialsKey = node.copyFromCredentialsKey
             return storageService.load(blocks, range) { regionResource ->
                 var input = storageService.loadResource(regionResource, storageCredentials)
                     ?: loadFromCopyIfNecessary(regionResource, copyFromCredentialsKey)
+                    ?: loadFromRepoOldIfNecessary(regionResource)
                 if (isFederating && clusterInfo != null) {
                     val blockRange = Range(
                         regionResource.off, regionResource.off + regionResource.len - 1, regionResource.size
@@ -96,6 +100,36 @@ class FsNodeResource(
             return storageService.loadResource(resource, storageCredentialService.findByKey(it))
         }
         return null
+    }
+
+    /**
+     * 仓库迁移场景
+     * 仓库还在迁移中，旧的分块数据还未存储到新的存储实例上，所以从仓库之前的存储实例中加载。
+     * */
+    private fun loadFromRepoOldIfNecessary(resource: RegionResource): ArtifactInputStream? {
+        val repositoryDetail = NodeResourceHelper.getRepoDetail(node)
+        val oldCredentials = findStorageCredentialsByKey(repositoryDetail.oldCredentialsKey)
+        if (storageCredentials != oldCredentials) {
+            logger.info(
+                "load region [${node.projectId}/${node.repoName}/${node.fullPath}] " +
+                    "digest[${resource.digest}] from repo old credentialsKey [${repositoryDetail.oldCredentialsKey}]"
+            )
+            return storageService.loadResource(resource, oldCredentials)
+        }
+        return null
+    }
+
+    /**
+     * 根据credentialsKey查找StorageCredentials
+     * */
+    private fun findStorageCredentialsByKey(credentialsKey: String?): StorageCredentials? {
+        credentialsKey ?: return null
+        if (storageCredentialsCache.containsKey(credentialsKey)) {
+            return storageCredentialsCache[credentialsKey]
+        }
+        val storageCredentials = storageCredentialService.findByKey(credentialsKey)
+        storageCredentialsCache[credentialsKey] = storageCredentials
+        return storageCredentials
     }
 
     companion object {
