@@ -111,7 +111,7 @@ class FsNodeResource(
         val oldCredentials = findStorageCredentialsByKey(repositoryDetail.oldCredentialsKey)
         if (storageCredentials != oldCredentials) {
             logger.info(
-                "load region [${node.projectId}/${node.repoName}/${node.fullPath}] " +
+                "load region [${node.projectId}/${node.repoName}${node.fullPath}] " +
                     "digest[${resource.digest}] from repo old credentialsKey [${repositoryDetail.oldCredentialsKey}]"
             )
             return storageService.loadResource(resource, oldCredentials)
