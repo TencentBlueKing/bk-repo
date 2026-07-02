@@ -268,7 +268,7 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
 
     companion object {
         private val logger = LoggerHolder.jobLogger
-        private const val SPAN_NAME = "mongodb.batch.collection"
+        private const val SPAN_NAME = "job.batch.mongo.execute"
         private const val COLLECTION_NAME_KEY = "mongodb.collection.name"
 
         // 用于dao层转换

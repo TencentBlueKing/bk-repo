@@ -317,7 +317,7 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
 
     companion object {
         private val logger = LoggerHolder.jobLogger
-        private const val SPAN_NAME = "batch.job.execute"
+        private const val SPAN_NAME = "job.batch.execute"
         private const val JOB_NAME_KEY = "job.name"
         private const val SLEEP_TIME_INTERVAL = 1000L
         private const val DEFAULT_STOP_TIMEOUT = 30000L
