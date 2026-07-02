@@ -147,6 +147,8 @@
     "repoToken": "个人令牌",
     "userManage": "用户管理",
     "userCenter": "个人中心",
+    "enterpriseSpace": "企业空间",
+    "defaultTimeZone": "默认时区",
     "projectManage": "项目管理",
     "projectConfig": "项目设置",
     "nodeManage": "节点管理",
