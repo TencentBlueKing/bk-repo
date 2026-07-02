@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.fs.server.request.drive
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
 import com.tencent.bkrepo.fs.server.utils.DriveServiceUtils.toNanoTimestamp
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -25,6 +26,7 @@ data class DriveNodeCreateRequest(
     val mtime: Long? = null,
     val ctime: Long? = null,
     val atime: Long? = null,
+    val metadata: MutableList<TMetadata>? = null,
 ) : DriveNodeBaseRequest(
     projectId = projectId,
     repoName = repoName,
@@ -71,5 +73,6 @@ fun DriveNodeCreateRequest.toDriveNode(
         flags = flags,
         symlinkTarget = symlinkTarget?.let { PathUtils.normalizeFullPath(it) },
         snapSeq = snapSeq,
+        metadata = metadata,
     )
 }

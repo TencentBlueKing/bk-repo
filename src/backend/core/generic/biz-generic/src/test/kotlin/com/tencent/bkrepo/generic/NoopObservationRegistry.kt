@@ -1,4 +1,4 @@
-package com.tencent.com.bkrepo.generic
+package com.tencent.bkrepo.generic
 
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationRegistry

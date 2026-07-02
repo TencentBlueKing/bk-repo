@@ -1,4 +1,4 @@
-package com.tencent.com.bkrepo.fs
+package com.tencent.bkrepo.fs
 
 const val UT_PROJECT_ID = "ut-project"
 const val UT_REPO_NAME = "ut-repo"
