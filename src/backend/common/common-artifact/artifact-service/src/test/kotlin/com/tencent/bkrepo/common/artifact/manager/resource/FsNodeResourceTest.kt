@@ -94,7 +94,12 @@ class FsNodeResourceTest {
         whenever(blockNodeService.info(any(), eq(range))).thenReturn(listOf(block, secondBlock))
         whenever(storageService.loadResource(any<RegionResource>(), eq(currentCredentials))).thenReturn(null)
         whenever(storageCredentialService.findByKey(CACHE_OLD_STORAGE_KEY)).thenReturn(oldCredentials)
-        whenever(storageService.loadResource(any<RegionResource>(), eq(oldCredentials))).thenAnswer { artifactInputStream() }
+        whenever(
+            storageService.loadResource(
+                any<RegionResource>(),
+                eq(oldCredentials)
+            )
+        ).thenAnswer { artifactInputStream() }
 
         fsNodeResource().getArtifactInputStream()
 
