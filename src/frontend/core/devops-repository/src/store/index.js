@@ -40,7 +40,8 @@ const storeObject = {
             phone: '',
             admin: false,
             manage: false,
-            displayName: ''
+            displayName: '',
+            tenantId: ''
         },
         domain: {
             docker: '',

@@ -12,6 +12,16 @@
             <i class="devops-icon icon-down-shape ml5" />
         </div>
         <template slot="content">
+            <div v-if="showAccountInfo" class="user-account-info">
+                <div v-if="showEnterpriseSpace" class="user-account-row">
+                    <span class="user-account-label">{{ $t('enterpriseSpace') }}</span>
+                    <span class="user-account-value">{{ tenantId }}</span>
+                </div>
+                <div class="user-account-row">
+                    <span class="user-account-label">{{ $t('defaultTimeZone') }}</span>
+                    <span class="user-account-value">{{ defaultTimeZone }}</span>
+                </div>
+            </div>
             <li class="bkci-dropdown-item" v-for="name in menuList" :key="name" @click="changeRoute(name)">
                 <router-link
                     class="flex-align-center"
@@ -28,6 +38,7 @@
 </template>
 <script>
     import { mapState, mapActions } from 'vuex'
+    import { getTimeZone } from '@repository/utils'
     export default {
         name: 'bkrepoUser',
         data () {
@@ -43,6 +54,31 @@
                     'repoToken'
                     // 'repoHelp'
                 ]
+            },
+            // 独立部署模式才在下拉里展示企业空间/时区信息
+            isStandalone () {
+                return MODE_CONFIG === 'standalone'
+            },
+            // 多租户环境开关
+            isMultiTenant () {
+                return BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true'
+            },
+            tenantId () {
+                return this.userInfo.tenantId || ''
+            },
+            // 企业空间仅在多租户环境且存在租户时展示
+            showEnterpriseSpace () {
+                return this.isMultiTenant && Boolean(this.tenantId)
+            },
+            showAccountInfo () {
+                return this.isStandalone
+            },
+            defaultTimeZone () {
+                try {
+                    return Intl.DateTimeFormat().resolvedOptions().timeZone || getTimeZone() || ''
+                } catch (e) {
+                    return getTimeZone() || ''
+                }
             }
         },
         watch: {
@@ -77,13 +113,36 @@
     width: 100%;
     text-align: center;
 }
+.user-account-info {
+    min-width: 200px;
+    padding: 6px 0;
+    background-color: #fff;
+    border-bottom: 1px solid #f0f1f5;
+    .user-account-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 32px;
+        padding: 0 16px;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+    .user-account-label {
+        color: #979ba5;
+        margin-right: 24px;
+    }
+    .user-account-value {
+        color: #63656e;
+    }
+}
 .bkci-dropdown-item {
     display: flex;
     align-items: center;
     height: 32px;
     line-height: 33px;
     padding: 0;
-    width: 90px;
+    width: 100%;
+    min-width: 90px;
     color: #63656e;
     font-size: 12px;
     text-decoration: none;
