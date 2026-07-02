@@ -34,6 +34,8 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.job.config.JobProperties
 import com.tencent.bkrepo.job.config.properties.BatchJobProperties
 import com.tencent.bkrepo.job.listener.event.TaskExecutedEvent
+import io.micrometer.common.KeyValue
+import io.micrometer.common.KeyValues
 import io.micrometer.observation.ObservationRegistry
 import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.core.LockProvider
@@ -123,7 +125,12 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
         if (!shouldExecute()) {
             return false
         }
-        return TraceUtils.newSpan(registry, getJobName(), init = true) {
+        return TraceUtils.newSpan(
+            registry,
+            SPAN_NAME,
+            KeyValues.of(KeyValue.of(JOB_NAME_KEY, getJobName())),
+            init = true,
+        ) {
             logger.info("Start to execute async job[${getJobName()}]")
             val wasExecuted = if (isExclusive) {
                 var wasExecuted = false
@@ -310,6 +317,8 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
 
     companion object {
         private val logger = LoggerHolder.jobLogger
+        private const val SPAN_NAME = "batch.job.execute"
+        private const val JOB_NAME_KEY = "job.name"
         private const val SLEEP_TIME_INTERVAL = 1000L
         private const val DEFAULT_STOP_TIMEOUT = 30000L
     }
