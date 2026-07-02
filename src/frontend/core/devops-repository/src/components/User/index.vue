@@ -18,20 +18,27 @@
                     <span class="user-account-value">{{ tenantId }}</span>
                 </div>
                 <div class="user-account-row">
-                    <span class="user-account-label">{{ $t('defaultTimeZone') }}</span>
+                    <span class="user-account-label">
+                        <Icon class="user-menu-icon" name="time" size="14" />
+                        {{ $t('defaultTimeZone') }}
+                    </span>
                     <span class="user-account-value">{{ defaultTimeZone }}</span>
                 </div>
             </div>
             <li class="bkci-dropdown-item" v-for="name in menuList" :key="name" @click="changeRoute(name)">
                 <router-link
-                    class="flex-align-center"
+                    class="user-menu-item"
                     :to="{ name }"
                     @click.stop.prevent="() => {}">
-                    <span class="user-menu-item">{{ $t(name) }}</span>
+                    <Icon class="user-menu-icon" :name="name" size="15" />
+                    <span class="user-menu-text">{{ $t(name) }}</span>
                 </router-link>
             </li>
-            <li class="bkci-dropdown-item" @click="logout" style="padding: 0px">
-                <span class="user-menu-item">{{ $t('logout') }}</span>
+            <li class="bkci-dropdown-item" @click="logout">
+                <span class="user-menu-item">
+                    <Icon class="user-menu-icon" name="repoLogout" size="15" />
+                    <span class="user-menu-text">{{ $t('logout') }}</span>
+                </span>
             </li>
         </template>
     </bk-popover>
@@ -128,8 +135,13 @@
         white-space: nowrap;
     }
     .user-account-label {
+        display: flex;
+        align-items: center;
         color: #979ba5;
         margin-right: 24px;
+        .user-menu-icon {
+            margin-right: 6px;
+        }
     }
     .user-account-value {
         color: #63656e;
@@ -158,12 +170,23 @@
     }
 }
 .user-menu-item {
-    color: #737987;
-    cursor: pointer;
+    display: flex;
+    align-items: center;
     width: 100%;
-    text-align: center;
+    height: 100%;
+    padding: 0 16px;
+    color: #63656e;
+    cursor: pointer;
     &:hover {
-        background-color: #EAF3FF;
+        color: #3a84ff;
+        background-color: #f5f7fb;
+    }
+    .user-menu-icon {
+        margin-right: 8px;
+        flex-shrink: 0;
+    }
+    .user-menu-text {
+        flex: 1;
     }
 }
 .bkrepo-user-container {
