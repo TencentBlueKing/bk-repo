@@ -1,25 +1,25 @@
-package com.tencent.bkrepo.fs.server.model.drive
+package com.tencent.bkrepo.common.metadata.model.drive
 
 import com.tencent.bkrepo.common.api.mongo.ShardingDocument
 import com.tencent.bkrepo.common.api.mongo.ShardingKeys
 import com.tencent.bkrepo.common.metadata.constant.SHARDING_COUNT
 import com.tencent.bkrepo.common.metadata.model.TMetadata
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.INO_IDX
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.INO_IDX_DEF
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.METADATA_IDX
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.METADATA_IDX_DEF
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PARENT_NAME_IDX
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PARENT_NAME_IDX_DEF
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PARENT_SNAP_IDX
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PARENT_SNAP_IDX_DEF
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_DELETED_IDX
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_DELETED_IDX_DEF
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_IDX
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_IDX_DEF
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_MODIFIED_IDX
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_MODIFIED_IDX_DEF
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.REAL_INO_IDX
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.REAL_INO_IDX_DEF
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.INO_IDX
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.INO_IDX_DEF
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.METADATA_IDX
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.METADATA_IDX_DEF
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.PARENT_NAME_IDX
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.PARENT_NAME_IDX_DEF
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.PARENT_SNAP_IDX
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.PARENT_SNAP_IDX_DEF
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.PROJECT_REPO_DELETED_IDX
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.PROJECT_REPO_DELETED_IDX_DEF
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.PROJECT_REPO_IDX
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.PROJECT_REPO_IDX_DEF
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.PROJECT_REPO_MODIFIED_IDX
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.PROJECT_REPO_MODIFIED_IDX_DEF
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.REAL_INO_IDX
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.REAL_INO_IDX_DEF
 import com.tencent.bkrepo.repository.constant.PROJECT_ID
 import com.tencent.bkrepo.repository.constant.REPO_NAME
 import org.springframework.data.mongodb.core.index.CompoundIndex
@@ -162,7 +162,6 @@ data class TDriveNode(
      */
     var metadata: MutableList<TMetadata>? = null,
 ) {
-
     companion object {
         const val TYPE_FILE = 1
         const val TYPE_DIRECTORY = 2
@@ -178,17 +177,9 @@ data class TDriveNode(
         const val PARENT_SNAP_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'parent': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
         const val PROJECT_REPO_IDX = "project_repo_idx"
         const val PROJECT_REPO_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
-
-        /**
-         * 用于获取指定时间段有变更的drive-node给客户端
-         */
         const val PROJECT_REPO_MODIFIED_IDX = "project_repo_modified_idx"
         const val PROJECT_REPO_MODIFIED_IDX_DEF =
             "{'projectId': 1, 'repoName': 1, 'lastModifiedDate': 1, 'lastModifiedClientId': 1}"
-
-        /**
-         * 用于删除仓库时遍历该仓库未删除的drive-node
-         */
         const val PROJECT_REPO_DELETED_IDX = "project_repo_deleted_idx"
         const val PROJECT_REPO_DELETED_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'deleted': 1}"
         const val METADATA_IDX = "metadata_idx"

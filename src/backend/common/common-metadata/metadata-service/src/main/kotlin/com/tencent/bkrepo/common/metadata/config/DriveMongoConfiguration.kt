@@ -1,6 +1,7 @@
-package com.tencent.bkrepo.job.config
+package com.tencent.bkrepo.common.metadata.config
 
 import com.mongodb.MongoClientSettings
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.mongo.MongoAutoConfiguration
 import com.tencent.bkrepo.common.mongo.api.properties.MongoConnectionPoolProperties
 import com.tencent.bkrepo.common.mongo.api.properties.MongoSslProperties
@@ -16,6 +17,7 @@ import org.springframework.boot.autoconfigure.mongo.StandardMongoClientSettingsB
 import org.springframework.boot.context.properties.bind.Binder
 import org.springframework.boot.ssl.SslBundles
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
 import org.springframework.data.mongodb.MongoDatabaseFactory
@@ -24,12 +26,12 @@ import org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory
 import org.springframework.data.mongodb.core.convert.MappingMongoConverter
 
 /**
- * job 模块 BKDrive 独立数据库配置。
+ * BKDrive 独立数据库同步访问配置。
  *
- * 通过 spring.data.mongodb.drive 配置 drive 专用连接，
- * 未配置时回落到默认 mongoTemplate，保持兼容。
+ * 通过 spring.data.mongodb.drive 指定连接；未配置时回落到默认 mongoTemplate。
  */
 @Configuration
+@Conditional(SyncCondition::class)
 class DriveMongoConfiguration {
 
     @Bean
@@ -70,30 +72,22 @@ class DriveMongoConfiguration {
         registry: ObservationRegistry,
     ): MongoDatabaseFactory {
         val settingsBuilder = MongoClientSettings.builder()
-        // standard
         StandardMongoClientSettingsBuilderCustomizer(
             PropertiesMongoConnectionDetails(properties).getConnectionString(),
             properties.uuidRepresentation,
             properties.ssl,
-            sslBundles.getIfAvailable()
+            sslBundles.getIfAvailable(),
         ).customize(settingsBuilder)
-
-        // custom
         MongoAutoConfiguration
             .MongoClientCustomizer(sslProperties, mongoConnectionPoolProperties)
             .customize(settingsBuilder)
-
-        // otel
         OtelMongoConfiguration.OtelMongoCustomizer(registry).customize(settingsBuilder)
-
-        // metrics
         mongoMetricsConnectionPoolListener.ifAvailable?.let { listener ->
             settingsBuilder.applyToConnectionPoolSettings { it.addConnectionPoolListener(listener) }
         }
         mongoMetricsCommandListener.ifAvailable?.let { listener ->
             settingsBuilder.addCommandListener(listener)
         }
-
         val client = MongoClientFactory(emptyList()).createMongoClient(settingsBuilder.build())
         val database = properties.database ?: PropertiesMongoConnectionDetails(properties).connectionString.database
         return SimpleMongoClientDatabaseFactory(client, database)
