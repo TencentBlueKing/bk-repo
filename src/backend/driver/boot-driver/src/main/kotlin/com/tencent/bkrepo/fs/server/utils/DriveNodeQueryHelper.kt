@@ -7,6 +7,11 @@ import java.time.LocalDateTime
 object DriveNodeQueryHelper {
     const val ROOT_INO = DriveNodePathHelper.ROOT_INO
 
+    /**
+     * 基于旧版本节点构造 COW 新副本。
+     *
+     * 新副本保持相同 ino，重置文档主键，挂到当前快照序列号。
+     */
     fun buildCowNode(
         origin: TDriveNode,
         currentSnapSeq: Long,

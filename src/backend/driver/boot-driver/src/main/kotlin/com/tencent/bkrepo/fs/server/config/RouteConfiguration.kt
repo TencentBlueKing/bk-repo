@@ -43,12 +43,11 @@ import com.tencent.bkrepo.fs.server.handler.ClientHandler
 import com.tencent.bkrepo.fs.server.handler.FileOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.LoginHandler
 import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
+import com.tencent.bkrepo.fs.server.handler.drive.DriveNodeOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.drive.DriveOperateLogHandler
 import com.tencent.bkrepo.fs.server.handler.drive.DriveOperationHandler
-import com.tencent.bkrepo.fs.server.handler.drive.DriveNodeOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.drive.DriveRepositoryHandler
 import com.tencent.bkrepo.fs.server.handler.drive.DriveSnapshotHandler
-import com.tencent.bkrepo.fs.server.handler.service.DriveServiceHandler
 import com.tencent.bkrepo.fs.server.handler.service.FsNodeHandler
 import com.tencent.bkrepo.fs.server.metrics.ServerMetrics
 import org.slf4j.LoggerFactory
@@ -75,7 +74,6 @@ class RouteConfiguration(
     private val fileOperationsHandler: FileOperationsHandler,
     private val loginHandler: LoginHandler,
     private val fsNodeHandler: FsNodeHandler,
-    private val driveServiceHandler: DriveServiceHandler,
     private val clientHandler: ClientHandler,
     private val driveOperationHandler: DriveOperationHandler,
     private val driveNodeOperationsHandler: DriveNodeOperationsHandler,
@@ -104,10 +102,6 @@ class RouteConfiguration(
 
         "/service/block".nest {
             GET("/list$DEFAULT_MAPPING_URI", fsNodeHandler::listBlocks)
-        }
-
-        "/service/drive/block".nest {
-            GET("/list$DEFAULT_MAPPING_URI", driveServiceHandler::listBlocks)
         }
 
         "/node".nest {

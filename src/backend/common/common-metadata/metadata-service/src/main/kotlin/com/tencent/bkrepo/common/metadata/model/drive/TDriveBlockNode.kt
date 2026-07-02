@@ -14,6 +14,12 @@ import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import java.time.LocalDateTime
 
+/**
+ * Drive 文件系统块节点
+ *
+ * 通过 ino 与 TDriveNode 关联，使用 ino 分表。
+ * 保留 projectId/repoName 用于批量操作和运维查询
+ */
 @ShardingDocument("drive_block_node")
 @CompoundIndexes(
     CompoundIndex(name = BLOCK_IDX, def = BLOCK_IDX_DEF),
@@ -32,6 +38,9 @@ data class TDriveBlockNode(
     var crc64ecma: String? = null,
     val size: Long,
     val endPos: Long = startPos + size - 1,
+    /**
+     * 记录创建时的快照序列号
+     */
     var snapSeq: Long = 0,
 ) {
     companion object {
