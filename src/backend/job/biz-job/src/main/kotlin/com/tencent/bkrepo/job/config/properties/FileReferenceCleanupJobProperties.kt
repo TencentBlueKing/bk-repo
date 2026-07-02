@@ -58,4 +58,12 @@ class FileReferenceCleanupJobProperties: MongodbJobProperties() {
      * 忽略的存储凭据，这些存储的缓存将不执行清理
      */
     var ignoredStorageCredentialsKeys: Set<String> = emptySet()
+
+    /**
+     * GC 安全窗口（分钟），§3.14.5 / §3.18.5。
+     * file_reference 的 refCount 变更后 T 分钟内跳过 GC，
+     * 等待异步补偿消费完成。
+     * 默认 5 分钟。
+     */
+    var gcSafeWindowMinutes: Long = 5
 }

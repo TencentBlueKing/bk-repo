@@ -29,9 +29,11 @@ package com.tencent.bkrepo.common.mongo.reactive.dao
 
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
+import com.tencent.bkrepo.common.mongo.reactive.routing.MongoReactiveRoutingRegistry
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.MongoCollectionUtils
 import org.springframework.data.mongodb.core.FindAndModifyOptions
@@ -44,6 +46,10 @@ import reactor.core.publisher.Flux
 import java.lang.reflect.ParameterizedType
 
 abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
+
+    @Suppress("LateinitUsage")
+    @Autowired(required = false)
+    private var reactiveRoutingRegistry: MongoReactiveRoutingRegistry? = null
 
     @Suppress("UNCHECKED_CAST")
     protected open val classType = (javaClass.genericSuperclass as ParameterizedType).actualTypeArguments[0] as Class<E>
@@ -73,16 +79,17 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao stream: [$query] [$clazz]")
         }
-        return determineReactiveMongoOperations()
-            .find(query, clazz, determineCollectionName(query))
+        val col = determineCollectionName(query)
+        return readTemplate(col, query).find(query, clazz, col)
     }
 
     override suspend fun <T> find(query: Query, clazz: Class<T>): List<T> {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao find: [$query] [$clazz]")
         }
-        return determineReactiveMongoOperations()
-            .find(query, clazz, determineCollectionName(query))
+        val col = determineCollectionName(query)
+        return readTemplate(col, query)
+            .find(query, clazz, col)
             .collectList().awaitSingle()
     }
 
@@ -117,8 +124,9 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao findOne: [$query] [$clazz]")
         }
-        return determineReactiveMongoOperations()
-            .findOne(query, clazz, determineCollectionName(query))
+        val col = determineCollectionName(query)
+        return readTemplate(col, query)
+            .findOne(query, clazz, col)
             .awaitSingleOrNull()
     }
 
@@ -168,16 +176,16 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao count: [$query]")
         }
-        val mongoOperations = determineReactiveMongoOperations()
-        val collectName = determineCollectionName(query)
-        return mongoOperations.count(query, collectName).awaitSingle()
+        val col = determineCollectionName(query)
+        return readTemplate(col, query).count(query, col).awaitSingle()
     }
 
     override suspend fun exists(query: Query): Boolean {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao exists: [$query]")
         }
-        return determineReactiveMongoOperations().exists(query, determineCollectionName(query)).awaitSingle()
+        val col = determineCollectionName(query)
+        return readTemplate(col, query).exists(query, col).awaitSingle()
     }
 
     override suspend fun <T> findAndModify(
@@ -217,6 +225,32 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
     }
 
     abstract fun determineReactiveMongoOperations(): ReactiveMongoTemplate
+
+    /**
+     * 写操作模板选择钩子，优先通过 [MongoReactiveRoutingRegistry] 路由，未命中回退到子类实现。
+     */
+    open fun determineReactiveMongoOperations(collectionName: String, context: Any? = null): ReactiveMongoTemplate {
+        val default = determineReactiveMongoOperations()
+        val registry = reactiveRoutingRegistry ?: return default
+        val route = registry.resolveWriteRoute(collectionName, context, default)
+        registry.assertWriteNotZombie(route, collectionName, default)
+        return route.primary
+    }
+
+    /**
+     * 读操作模板选择钩子，优先使用 Secondary，未命中回退到 [determineReactiveMongoOperations]。
+     */
+    open fun determineReadReactiveMongoOperations(
+        collectionName: String,
+        context: Any? = null,
+    ): ReactiveMongoTemplate = readTemplate(collectionName, context)
+
+    private fun readTemplate(collectionName: String, context: Any?): ReactiveMongoTemplate {
+        val default = determineReactiveMongoOperations()
+        val registry = reactiveRoutingRegistry ?: return default
+        val route = registry.resolveReadRoute(collectionName, context, default)
+        return route.template
+    }
 
     abstract fun determineCollectionName(query: Query): String
 

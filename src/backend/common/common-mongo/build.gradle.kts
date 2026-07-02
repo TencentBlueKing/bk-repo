@@ -37,4 +37,9 @@ dependencies {
     api("org.springframework.boot:spring-boot-starter-actuator")
     compileOnly("jakarta.servlet:jakarta.servlet-api")
     compileOnly("org.springframework.boot:spring-boot-starter-web")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("io.mockk:mockk")
+    testImplementation("org.mockito.kotlin:mockito-kotlin")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
 }

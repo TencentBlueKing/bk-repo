@@ -285,7 +285,9 @@ object NodeQueryHelper {
     }
 
     fun nodeRestoreUpdate(): Update {
-        return Update().unset(TNode::deleted.name)
+        return Update()
+            .unset(TNode::deleted.name)
+            .set(TNode::lastModifiedDate.name, LocalDateTime.now())
     }
 
     fun nodePathUpdate(path: String, name: String, operator: String): Update {
@@ -308,10 +310,20 @@ object NodeQueryHelper {
     }
 
     fun nodeDeleteUpdate(operator: String, deleteTime: LocalDateTime = LocalDateTime.now()): Update {
-        return Update()
-            .set(TNode::lastModifiedBy.name, operator)
+        return touchLastModified(Update(), operator)
             .set(TNode::deleted.name, deleteTime)
     }
+
+    /** §3.19.1 / G-08：非 DAO 写路径统一 touch */
+    fun touchLastModified(update: Update, operator: String? = null): Update {
+        val result = update.set(TNode::lastModifiedDate.name, LocalDateTime.now())
+        if (operator != null) {
+            result.set(TNode::lastModifiedBy.name, operator)
+        }
+        return result
+    }
+
+    private fun update(operator: String): Update = touchLastModified(Update(), operator)
 
     /**
      * 查询有权限与无权限的路径
@@ -369,11 +381,5 @@ object NodeQueryHelper {
         criteriaList.add(TNode::fullPath.isEqualTo(path))
         criteriaList.add(TNode::fullPath.regex("^${escapeRegex(path).ensureSuffix("/")}"))
         criteriaList
-    }
-
-    private fun update(operator: String): Update {
-        return Update()
-            .set(TNode::lastModifiedDate.name, LocalDateTime.now())
-            .set(TNode::lastModifiedBy.name, operator)
     }
 }

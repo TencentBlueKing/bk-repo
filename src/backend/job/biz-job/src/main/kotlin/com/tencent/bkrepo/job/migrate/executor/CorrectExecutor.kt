@@ -39,7 +39,9 @@ import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageUtils.buildThreadP
 import com.tencent.bkrepo.job.migrate.utils.NodeIterator
 import com.tencent.bkrepo.job.migrate.utils.TransferDataExecutor
 import com.tencent.bkrepo.job.service.MigrateArchivedFileService
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
 import java.util.concurrent.ThreadPoolExecutor
@@ -57,6 +59,7 @@ class CorrectExecutor(
     private val migrateFailedHandler: MigrateFailedHandler,
     private val transferDataExecutor: TransferDataExecutor,
     private val mongoTemplate: MongoTemplate,
+    @Autowired(required = false) private val routingRegistry: MongoRoutingRegistry? = null,
 ) : BaseTaskExecutor(
     properties,
     migrateRepoStorageTaskDao,
@@ -82,7 +85,7 @@ class CorrectExecutor(
 
     override fun doExecute(context: MigrationContext) {
         with(context) {
-            val iterator = NodeIterator(task, mongoTemplate)
+            val iterator = NodeIterator(task, mongoTemplate, routingRegistry = routingRegistry)
             iterator.forEach { node ->
                 context.incTransferringCount()
                 transferDataExecutor.execute(node) {

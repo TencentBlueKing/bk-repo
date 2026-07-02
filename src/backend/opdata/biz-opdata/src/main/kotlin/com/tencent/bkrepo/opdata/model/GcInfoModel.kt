@@ -33,6 +33,7 @@ package com.tencent.bkrepo.opdata.model
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.retry
+import com.tencent.bkrepo.common.metadata.routing.NodeShardReadSupport
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.opdata.config.OpArchiveOrGcProperties
 import com.tencent.bkrepo.replication.constant.SHA256
@@ -59,6 +60,7 @@ import java.util.concurrent.atomic.AtomicLong
 class GcInfoModel @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
     private val opArchiveOrGcProperties: OpArchiveOrGcProperties,
+    @Autowired(required = false) private val nodeShardReadSupport: NodeShardReadSupport? = null,
 ) {
 
     private var gcInfo: Map<String, Array<Long>> = emptyMap()
@@ -98,25 +100,33 @@ class GcInfoModel @Autowired constructor(
 
     private fun processAllProjects(statistics: ConcurrentHashMap<String, Array<AtomicLong>>, criteria: Criteria) {
         val query = Query(criteria).cursorBatchSize(BATCH_SIZE)
-        forEachCollectionAsync {
-            processNodes(query, it, statistics)
+        val collections = (0 until SHARDING_COUNT).map { "${COLLECTION_NAME}_$it" }
+        if (nodeShardReadSupport != null) {
+            nodeShardReadSupport.forEachShardGroup(collections) { template, collection, customizer ->
+                processNodes(customizer(query), collection, statistics, template)
+            }
+        } else {
+            forEachCollectionAsync { processNodes(query, it, statistics) }
         }
     }
 
     private fun processSpecificProjects(statistics: ConcurrentHashMap<String, Array<AtomicLong>>, criteria: Criteria) {
-        // 处理指定项目的gc数据
         opArchiveOrGcProperties.gcProjects.forEach { project ->
             val collectionName = "node_${HashShardingUtils.shardingSequenceFor(project, SHARDING_COUNT)}"
             val query = Query(Criteria.where("projectId").isEqualTo(project).andOperator(criteria))
                 .cursorBatchSize(BATCH_SIZE)
-            processNodes(query, collectionName, statistics)
+            val template = nodeShardReadSupport?.readTemplate(project, collectionName) ?: mongoTemplate
+            processNodes(query, collectionName, statistics, template)
         }
     }
 
     private fun processNodes(
-        query: Query, collection: String, statistics: ConcurrentHashMap<String, Array<AtomicLong>>
+        query: Query,
+        collection: String,
+        statistics: ConcurrentHashMap<String, Array<AtomicLong>>,
+        template: MongoTemplate = mongoTemplate,
     ) {
-        mongoTemplate.stream<Node>(query, collection).use { nodes ->
+        template.stream<Node>(query, collection).use { nodes ->
             nodes.forEach { node ->
                 updateStatistics(statistics, node)
             }

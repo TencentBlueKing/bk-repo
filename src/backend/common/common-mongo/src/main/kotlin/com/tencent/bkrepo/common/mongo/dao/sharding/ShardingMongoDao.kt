@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper.shardingValues
 import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper.shardingValuesOf
 import com.tencent.bkrepo.common.mongo.api.util.sharding.ShardingUtils
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
+import com.tencent.bkrepo.common.mongo.routing.MigrationDdlGuard
 import com.tencent.bkrepo.common.mongo.dao.util.MongoIndexResolver
 import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
@@ -82,6 +83,9 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         determineShardingUtils()
     }
 
+    @Autowired(required = false)
+    private var migrationDdlGuard: MigrationDdlGuard? = null
+
     @PostConstruct
     private fun init() {
         this.shardingFields = determineShardingFields(classType, customShardingColumns())
@@ -100,6 +104,7 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
             for (i in 1..shardingCount) {
                 val mongoTemplate = determineMongoTemplate()
                 val collectionName = parseSequenceToCollectionName(i - 1)
+                migrationDdlGuard?.assertDdlAllowed(collectionName)
                 mongoTemplate.indexOps(collectionName).ensureIndex(it)
             }
         }
@@ -188,13 +193,13 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         val result = ArrayList<E>()
 
         // 遍历所有分表进行查询
-        val template = determineMongoTemplate()
         for (sequence in 0 until shardingCount) {
             // 重置需要跳过的记录数量和limit
             query.skip(0L)
             query.limit(0)
 
             val collectionName = parseSequenceToCollectionName(sequence)
+            val template = determineReadMongoTemplate(collectionName, query)
 
             // 统计总数
             val count = template.count(query, classType, collectionName)
@@ -227,7 +232,7 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
             AbstractMongoDao.logger.debug("Mongo Dao insert many: [$entityCollection]")
         }
         checkCollectionConsistency(entityCollection)
-        return determineMongoTemplate().insert(entityCollection, determineCollectionName(entityCollection.first()))
+        return super.insert(entityCollection)
     }
 
     private fun checkCollectionConsistency(entityCollection: Collection<E>) {

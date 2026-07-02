@@ -40,6 +40,8 @@ import com.tencent.bkrepo.common.metadata.pojo.file.FileReference
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.util.FileReferenceQueryHelper.buildQuery
 import org.slf4j.LoggerFactory
+import com.tencent.bkrepo.common.metadata.routing.Sha256ProjectIdCache
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Update
@@ -52,27 +54,34 @@ import org.springframework.stereotype.Service
 @Conditional(SyncCondition::class)
 class FileReferenceServiceImpl(
     private val fileReferenceDao: FileReferenceDao,
+    @Autowired(required = false)
+    private val sha256ProjectIdCache: Sha256ProjectIdCache? = null,
 ) : FileReferenceService {
 
     override fun increment(sha256: String, credentialsKey: String?, inc: Long): Boolean {
         val query = buildQuery(sha256, credentialsKey)
         val update = Update().inc(TFileReference::count.name, inc)
+            .set(TFileReference::lastRefCountUpdate.name, java.time.LocalDateTime.now())  // §3.18.5
         try {
             fileReferenceDao.upsert(query, update)
         } catch (exception: DuplicateKeyException) {
-            // retry because upsert operation is not atomic
             fileReferenceDao.upsert(query, update)
         }
+        sha256ProjectIdCache?.invalidate(sha256)
         logger.info("Increment reference of file [$sha256] on credentialsKey [$credentialsKey].")
         return true
     }
 
     override fun decrement(sha256: String, credentialsKey: String?): Boolean {
         val query = buildQuery(sha256, credentialsKey, 0)
-        val update = Update().apply { inc(TFileReference::count.name, -1) }
+        val update = Update().apply {
+            inc(TFileReference::count.name, -1)
+            set(TFileReference::lastRefCountUpdate.name, java.time.LocalDateTime.now())  // §3.18.5
+        }
         val result = fileReferenceDao.updateFirst(query, update)
 
         if (result.modifiedCount == 1L) {
+            sha256ProjectIdCache?.invalidate(sha256)
             logger.info("Decrement references of file [$sha256] on credentialsKey [$credentialsKey].")
             return true
         }

@@ -158,10 +158,9 @@ open class NodeMoveCopySupport(
             }
             // 创建dst block node，此处只需要复制，如果是move操作在src node被删除时对应的src block node也会一起删除
             copyBlockNode(context, node, dstFullPath)
-            // 创建dst节点
+            // 创建dst节点（跨项目时经 DAO 路由写入各自 Heavy/Default 实例）
             nodeBaseService.doCreate(dstNode, dstRepo)
-            // move操作，创建dst节点后，还需要删除src节点
-            // 因为分表所以不能直接更新src节点，必须创建新的并删除旧的
+            // move：先建后删；跨副本集无 @Transactional，删失败则留下 dst 副本需人工处理
             if (move) {
                 val query = NodeQueryHelper.nodeQuery(node.projectId, node.repoName, node.fullPath)
                 val update = NodeQueryHelper.nodeDeleteUpdate(operator)
@@ -169,6 +168,7 @@ open class NodeMoveCopySupport(
                     quotaService.decreaseUsedVolume(node.projectId, node.repoName, node.size)
                 }
                 nodeDao.updateFirst(query, update)
+                nodeBaseService.invalidateSha256CacheForRouting(node.sha256)
             }
         }
     }

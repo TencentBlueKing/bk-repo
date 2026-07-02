@@ -57,6 +57,7 @@ class RFileReferenceServiceImpl(
     override suspend fun increment(sha256: String, credentialsKey: String?, inc: Long): Boolean {
         val query = buildQuery(sha256, credentialsKey)
         val update = Update().inc(TFileReference::count.name, inc)
+            .set(TFileReference::lastRefCountUpdate.name, java.time.LocalDateTime.now())  // §3.18.5
         try {
             fileReferenceDao.upsert(query, update)
         } catch (exception: DuplicateKeyException) {
@@ -69,7 +70,10 @@ class RFileReferenceServiceImpl(
 
     override suspend fun decrement(sha256: String, credentialsKey: String?): Boolean {
         val query = buildQuery(sha256, credentialsKey, 0)
-        val update = Update().apply { inc(TFileReference::count.name, -1) }
+        val update = Update().apply {
+            inc(TFileReference::count.name, -1)
+            set(TFileReference::lastRefCountUpdate.name, java.time.LocalDateTime.now())  // §3.18.5
+        }
         val result = fileReferenceDao.updateFirst(query, update)
 
         if (result.modifiedCount == 1L) {

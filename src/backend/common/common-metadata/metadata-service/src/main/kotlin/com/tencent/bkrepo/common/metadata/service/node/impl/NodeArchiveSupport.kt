@@ -30,7 +30,10 @@ class NodeArchiveSupport(
     override fun archiveNode(nodeArchiveRequest: NodeArchiveRequest) {
         with(nodeArchiveRequest) {
             val query = NodeQueryHelper.nodeQuery(projectId, repoName, fullPath)
-            val update = Update().set(TNode::archived.name, true)
+            val update = NodeQueryHelper.touchLastModified(
+                Update().set(TNode::archived.name, true),
+                operator,
+            )
             nodeDao.updateFirst(query, update)
             logger.info("Archive node $projectId/$repoName/$fullPath.")
         }
@@ -39,8 +42,11 @@ class NodeArchiveSupport(
     override fun restoreNode(nodeArchiveRequest: NodeArchiveRequest) {
         with(nodeArchiveRequest) {
             val query = NodeQueryHelper.nodeQuery(projectId, repoName, fullPath)
-            val update = Update().set(TNode::archived.name, false)
-                .set(TNode::lastAccessDate.name, LocalDateTime.now())
+            val update = NodeQueryHelper.touchLastModified(
+                Update().set(TNode::archived.name, false)
+                    .set(TNode::lastAccessDate.name, LocalDateTime.now()),
+                operator,
+            )
             nodeDao.updateFirst(query, update)
             logger.info("Restore node $projectId/$repoName/$fullPath.")
         }
