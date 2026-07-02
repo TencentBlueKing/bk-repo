@@ -102,7 +102,8 @@ object MigrateTestUtils {
 
     fun MigrateFailedNodeDao.insertFailedNode(
         fullPath: String = "/a/b/c.txt",
-        nodeId: String = ""
+        nodeId: String = "",
+        sha256: String = UT_SHA256,
     ): TMigrateFailedNode {
         val now = LocalDateTime.now()
         return insert(
@@ -115,7 +116,7 @@ object MigrateTestUtils {
                 projectId = UT_PROJECT_ID,
                 repoName = UT_REPO_NAME,
                 fullPath = fullPath,
-                sha256 = UT_SHA256,
+                sha256 = sha256,
                 size = 1000L,
                 md5 = UT_MD5,
                 retryTimes = 0,

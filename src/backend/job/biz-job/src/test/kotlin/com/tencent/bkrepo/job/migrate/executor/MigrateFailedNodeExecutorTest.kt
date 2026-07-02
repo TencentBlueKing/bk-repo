@@ -38,6 +38,7 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_F
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING_FAILED_NODE
 import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeFixer
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.createNode
+import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.removeNodes
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -75,6 +76,7 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
         initMock()
         migrateRepoStorageTaskDao.remove(Query())
         migrateFailedNodeDao.remove(Query())
+        nodeDao.removeNodes()
     }
 
     @Test
@@ -117,7 +119,8 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
         // 创建任务
         var task = createTask()
         updateTask(task.id!!, CORRECT_FINISHED.name, LocalDateTime.now())
-        createFailedNode(task.id!!)
+        val node = nodeDao.createNode()
+        createFailedNode(task.id!!, node.id!!)
 
         // 测试达到最大重试次数后自动修复成功将重试次数重置为0
         migrateFailedNodeDao.updateFirst(
@@ -136,6 +139,27 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
         assertEquals(MIGRATING_FAILED_NODE.name, task.state)
         assertTrue(migrateFailedNodeDao.existsFailedNode(UT_PROJECT_ID, UT_REPO_NAME))
         assertEquals(0, migrateFailedNodeDao.findOne(Query())!!.retryTimes)
+    }
+
+    @Test
+    fun testConvertThrowsWhenNodeNotFound() {
+        var task = createTask()
+        updateTask(task.id!!, CORRECT_FINISHED.name, LocalDateTime.now())
+
+        createFailedNode(task.id!!, "non-existent-node-id")
+        assertTrue(migrateFailedNodeDao.existsFailedNode(UT_PROJECT_ID, UT_REPO_NAME))
+
+        val context = executor.execute(
+            buildContext(migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!)
+        )!!
+
+        Thread.sleep(1000L)
+        context.waitAllTransferFinished()
+
+        task = migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!
+        assertEquals(MIGRATING_FAILED_NODE.name, task.state)
+        assertTrue(migrateFailedNodeDao.existsFailedNode(UT_PROJECT_ID, UT_REPO_NAME))
+        assertFalse(executingTaskRecorder.executing(task.id!!))
     }
 
     private fun createFailedNode(taskId: String, nodeId: String = "") {

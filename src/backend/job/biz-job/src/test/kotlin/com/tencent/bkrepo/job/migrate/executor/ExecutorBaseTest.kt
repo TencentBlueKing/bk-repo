@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.migrate.executor
 
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
@@ -114,6 +115,9 @@ open class ExecutorBaseTest {
     protected lateinit var storageService: StorageService
 
     @MockitoBean
+    protected lateinit var blockNodeService: BlockNodeService
+
+    @MockitoBean
     protected lateinit var migrateArchivedFileService: MigrateArchivedFileService
 
     @MockitoBean
@@ -139,6 +143,8 @@ open class ExecutorBaseTest {
             Thread.sleep(1000L)
         }
         whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(false)
+        whenever(blockNodeService.listAllBlocks(anyString(), anyString(), anyString(), anyString()))
+            .thenReturn(emptyList())
         whenever(fileNotFoundAutoFixStrategy.fix(any())).thenReturn(true)
         whenever(archivedFileAutoFixStrategy.fix(any())).thenReturn(true)
         whenever(migrateArchivedFileService.archivedFileCompleted(anyOrNull(), anyString())).thenReturn(true)

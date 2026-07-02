@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.job.migrate.executor
 
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
 import com.tencent.bkrepo.job.UT_STORAGE_CREDENTIALS_KEY
@@ -25,6 +26,8 @@ import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Query
@@ -128,7 +131,42 @@ class MigrateExecutorTest @Autowired constructor(
         // 等待任务执行完
         Thread.sleep(1000L)
         context.waitAllTransferFinished()
-        assertEquals(4, migrateFailedNodeDao.count(Query()))
+        assertEquals(3, migrateFailedNodeDao.count(Query()))
+    }
+
+    @Test
+    fun testMigrateFakeSha256NodeWithBlocks() {
+        val blocks = buildBlocks()
+        whenever(blockNodeService.listAllBlocks(anyString(), anyString(), anyString(), anyString()))
+            .thenReturn(blocks)
+        whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull())).then { }
+
+        mongoTemplate.createNode(sha256 = FAKE_SHA256, fullPath = "/a/b/block.txt")
+        val context = executor.execute(buildContext(createTask()))!!
+        val task = migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!
+
+        Thread.sleep(500L)
+        context.waitAllTransferFinished()
+        assertTaskFinished(task.id!!, 1L)
+
+        verify(storageService, times(blocks.size)).copy(anyString(), anyOrNull(), anyOrNull())
+        verify(fileReferenceService, times(blocks.size)).increment(anyString(), anyOrNull(), any())
+        verify(fileReferenceService, times(blocks.size)).decrement(anyString(), anyOrNull())
+    }
+
+    @Test
+    fun testMigrateFakeSha256NodeWithEmptyBlocks() {
+        whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull())).then { }
+
+        mongoTemplate.createNode(sha256 = FAKE_SHA256, fullPath = "/a/b/block.txt")
+        val context = executor.execute(buildContext(createTask()))!!
+        val task = migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!
+
+        Thread.sleep(500L)
+        context.waitAllTransferFinished()
+        assertTaskFinished(task.id!!, 1L)
+
+        verify(storageService, times(0)).copy(anyString(), anyOrNull(), anyOrNull())
     }
 
     @Test
@@ -168,5 +206,30 @@ class MigrateExecutorTest @Autowired constructor(
         assertEquals(totalCount, task.totalCount)
         assertEquals(totalCount, task.migratedCount)
         assertEquals(MigrateRepoStorageTaskState.MIGRATE_FINISHED.name, task.state)
+    }
+
+    private fun buildBlocks(now: LocalDateTime = LocalDateTime.now()): List<TBlockNode> {
+        return listOf(
+            TBlockNode(
+                createdBy = UT_USER,
+                createdDate = now,
+                nodeFullPath = "/a/b/block.txt",
+                startPos = 0,
+                sha256 = "da39a3ee5e6b4b0d3255bfef95601890afd80709da39a3ee5e6b4b0d3255bfef",
+                projectId = UT_PROJECT_ID,
+                repoName = UT_REPO_NAME,
+                size = 50,
+            ),
+            TBlockNode(
+                createdBy = UT_USER,
+                createdDate = now,
+                nodeFullPath = "/a/b/block.txt",
+                startPos = 50,
+                sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                projectId = UT_PROJECT_ID,
+                repoName = UT_REPO_NAME,
+                size = 50,
+            ),
+        )
     }
 }
