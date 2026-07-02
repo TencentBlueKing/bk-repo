@@ -161,7 +161,7 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
         TraceUtils.newSpan(
             registry,
             SPAN_NAME,
-            KeyValues.of(KeyValue.of(COLLECTION_NAME_KEY, collectionName)),
+            highCardinalityKeyValues = KeyValues.of(KeyValue.of(COLLECTION_NAME_KEY, collectionName)),
         ) {
             onRunCollectionStart(collectionName, context)
             logger.info("Job[${getJobName()}]: Start collection $collectionName.")

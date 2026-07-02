@@ -30,13 +30,13 @@ class TraceUtilsTest {
 
         val result = TraceUtils.newSpan(
             observationRegistry = registry,
-            spanName = "batch.job.execute",
+            spanName = "job.batch.execute",
             lowCardinalityKeyValues = KeyValues.of(KeyValue.of("job.name", "TestJob")),
             init = true,
         ) { "done" }
 
         assertEquals("done", result)
-        assertEquals("batch.job.execute", capturedName)
+        assertEquals("job.batch.execute", capturedName)
         assertEquals("TestJob", capturedLowCardinalityKeyValues?.get("job.name"))
     }
 
@@ -54,7 +54,7 @@ class TraceUtilsTest {
             },
         )
 
-        val result = TraceUtils.newSpan(registry, "batch.job.execute") { "done" }
+        val result = TraceUtils.newSpan(registry, "job.batch.execute") { "done" }
 
         assertEquals("done", result)
         assertEquals(false, spanStarted)
@@ -69,7 +69,7 @@ class TraceUtilsTest {
                 override fun supportsContext(context: Observation.Context): Boolean = true
 
                 override fun onStart(context: Observation.Context) {
-                    if (context.name == "mongodb.batch.collection") {
+                    if (context.name == "job.batch.mongo.execute") {
                         childSpanName = context.name
                     }
                 }
@@ -79,12 +79,12 @@ class TraceUtilsTest {
         Observation.createNotStarted("parent", registry).observe {
             TraceUtils.newSpan(
                 observationRegistry = registry,
-                spanName = "mongodb.batch.collection",
+                spanName = "job.batch.mongo.execute",
                 lowCardinalityKeyValues = KeyValues.of(KeyValue.of("mongodb.collection.name", "node")),
             ) { "done" }
         }
 
-        assertEquals("mongodb.batch.collection", childSpanName)
+        assertEquals("job.batch.mongo.execute", childSpanName)
     }
 }
 

@@ -128,7 +128,7 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
         return TraceUtils.newSpan(
             registry,
             SPAN_NAME,
-            KeyValues.of(KeyValue.of(JOB_NAME_KEY, getJobName())),
+            highCardinalityKeyValues = KeyValues.of(KeyValue.of(JOB_NAME_KEY, getJobName())),
             init = true,
         ) {
             logger.info("Start to execute async job[${getJobName()}]")
