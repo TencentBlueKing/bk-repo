@@ -35,6 +35,8 @@ import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
 import com.tencent.bkrepo.job.executor.IdentityTask
+import io.micrometer.common.KeyValue
+import io.micrometer.common.KeyValues
 import net.javacrumbs.shedlock.core.LockingTaskExecutor
 import org.bson.types.ObjectId
 import org.springframework.beans.factory.annotation.Autowired
@@ -156,7 +158,11 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
             logger.info("Job[${getJobName()}] already stopped.")
             return
         }
-        TraceUtils.newSpan(registry, collectionName) {
+        TraceUtils.newSpan(
+            registry,
+            SPAN_NAME,
+            highCardinalityKeyValues = KeyValues.of(KeyValue.of(COLLECTION_NAME_KEY, collectionName)),
+        ) {
             onRunCollectionStart(collectionName, context)
             logger.info("Job[${getJobName()}]: Start collection $collectionName.")
             val pageSize = batchSize
@@ -262,6 +268,8 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
 
     companion object {
         private val logger = LoggerHolder.jobLogger
+        private const val SPAN_NAME = "job.batch.mongo.execute"
+        private const val COLLECTION_NAME_KEY = "mongodb.collection.name"
 
         // 用于dao层转换
         private const val JAVA_ID = "id"

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.service.otel.mongodb
 
+import com.tencent.bkrepo.common.mongo.observability.LowCardinalityMongoHandlerObservationConvention
 import com.mongodb.MongoClientSettings
 import com.mongodb.client.internal.MongoClientImpl
 import io.micrometer.observation.ObservationRegistry
@@ -53,7 +54,9 @@ class OtelMongoConfiguration {
     class OtelMongoCustomizer(private val registry: ObservationRegistry) : MongoClientSettingsBuilderCustomizer {
         override fun customize(clientSettingsBuilder: MongoClientSettings.Builder) {
             clientSettingsBuilder.contextProvider(ContextProviderFactory.create(registry))
-                .addCommandListener(MongoObservationCommandListener(registry))
+                .addCommandListener(
+                    MongoObservationCommandListener(registry, null, LowCardinalityMongoHandlerObservationConvention()),
+                )
         }
     }
 }
