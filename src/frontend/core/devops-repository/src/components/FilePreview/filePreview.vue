@@ -17,6 +17,8 @@
         <div v-if="imgShow" style="width: 100%; height: 100%">
             <img id="image" :src="imgUrl" alt="Picture" style="display: none">
         </div>
+        <div v-if="monacoShow" id="editor" ref="contentRef" style="width: 100%; height: 100%" />
+        <div v-if="xmindShow" ref="container" style="width:100%; height: 100%"></div>
         <div v-if="previewBasic" class="flex-column flex-center">
             <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
             <div style="height: 700px; width: 100%">
@@ -47,8 +49,10 @@
     } from '@repository/utils/previewOfficeFile'
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
-    import { isExcel, isFormatType, isHtmlType, isPic, isText } from '@repository/utils/file'
+    import { isExcel, isFormatType, isHtmlType, isJsx, isMarkdown, isPic, isText, isXmind } from '@repository/utils/file'
     import Viewer from 'viewerjs'
+    import * as monaco from 'monaco-editor'
+    import { XMindEmbedViewer } from 'xmind-embed-viewer'
 
     const PDFJS = require('pdfjs-dist')
     PDFJS.GlobalWorkerOptions.isEvalSupported = false
@@ -116,6 +120,9 @@
                 csvShow: false,
                 imgShow: false,
                 pdfShow: false,
+                monacoShow: false,
+                xmindShow: false,
+                editor: null,
                 imgUrl: '',
                 pdfPages: [], // 页数
                 pdfWidth: '', // 宽度
@@ -194,7 +201,7 @@
                         this.dataSource = res.data
                     }).catch(() => this.showError())
                 }
-            } else if (isFormatType(this.filePath) || isPic(this.filePath)) {
+            } else if (isFormatType(this.filePath) || isPic(this.filePath) || isMarkdown(this.filePath) || isJsx(this.filePath) || isXmind(this.filePath)) {
                 if (this.repoType === 'local') {
                     customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
                         this.dealDate(res)
@@ -232,6 +239,11 @@
                 this.hasError = false
                 this.imgShow = false
                 this.imgUrl = ''
+                this.xmindShow = false
+                this.xmindViewer = null
+                this.pdfShow = false
+                this.monacoShow = false
+                this.editor = null
                 this.excelOptions.xls = false
                 window.resetWaterMark()
             },
@@ -271,10 +283,10 @@
             initWaterMark (param) {
                 window.initWaterMark(param)
             },
-            dealDate (res) {
+            async dealDate (res) {
                 this.loading = false
                 let url
-                if (!isHtmlType(this.filePath) && !isPic(this.filePath)) {
+                if (!isHtmlType(this.filePath) && !isPic(this.filePath) && !isJsx(this.filePath) && !isMarkdown(this.filePath) && !isXmind(this.filePath)) {
                     this.loadFile(URL.createObjectURL(res.data))
                     this.pdfShow = true
                     this.pageUrl = url
@@ -288,6 +300,42 @@
                                 viewer.zoomTo(1)
                             }
                         })
+                    })
+                } else if (isMarkdown(this.filePath) || isJsx(this.filePath)) {
+                    this.monacoShow = true
+                    let text = await res.data.text()
+                    const language = isMarkdown(this.filePath) ? 'markdown' : 'javascriptreact'
+                    if (isMarkdown(this.filePath)) {
+                        text = Base64.decode(text)
+                    }
+                    this.$nextTick(() => {
+                        if (!this.editor) {
+                            this.editor = monaco.editor.create(document.getElementById('editor'), {
+                                value: text, // 编辑器初始显示文字
+                                language: language, // 语言
+                                automaticLayout: true, // 自动布局
+                                theme: 'vs-dark', // 官方自带三种主题vs, hc-black, or vs-dark
+                                minimap: { // 关闭小地图
+                                    enabled: true
+                                },
+                                readOnly: true,
+                                lineNumbers: 'on' // 隐藏控制行号
+                            })
+                        } else {
+                            this.editor.setValue(text)
+                        }
+                    })
+                } else if (isXmind(this.filePath)) {
+                    this.xmindShow = true
+                    const target = await res.data.arrayBuffer()
+                    this.$nextTick(() => {
+                        if (!this.xmindViewer) {
+                            this.xmindViewer = new XMindEmbedViewer({
+                                el: this.$refs.container,
+                                theme: 'light'
+                            })
+                        }
+                        this.xmindViewer.load(target)
                     })
                 } else {
                     url = URL.createObjectURL(res.data)
@@ -327,7 +375,7 @@
                         this.renderPage(num + 1)
                     }
                 })
-            },
+            }
 
         }
     }

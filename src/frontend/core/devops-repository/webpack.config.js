@@ -2,6 +2,7 @@ const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
 const webpackBaseConfig = require('../../webpack.base')
+const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin')
 
 module.exports = (env, argv) => {
     const isProd = argv.mode === 'production'
@@ -32,7 +33,8 @@ module.exports = (env, argv) => {
                 { from: path.join(__dirname, '../../../../versionLogs'), to: `${dist}/versionLogs` },
                 { from: path.join(__dirname, './public'), to: dist }
             ]
-        })
+        }),
+        new MonacoWebpackPlugin()
     ]
 
     config.devServer.historyApiFallback = {

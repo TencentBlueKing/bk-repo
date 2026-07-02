@@ -54,6 +54,14 @@ module.exports = ({ entry, publicPath, dist, port = 8080, argv, env }) => {
                         },
                         'sass-loader'
                     ]
+                },
+                {
+                    test: /\.css$/,
+                    include: /node_modules/,
+                    use: [
+                        MiniCssExtractPlugin.loader,
+                        'css-loader'
+                    ]
                 }
             ]
         },

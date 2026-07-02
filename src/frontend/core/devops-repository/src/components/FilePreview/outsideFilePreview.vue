@@ -23,6 +23,8 @@
         <div v-if="imgShow" style="width: 100%; height: 100%">
             <img id="image" :src="imgUrl" alt="Picture" style="display: none">
         </div>
+        <div v-if="monacoShow" id="editor" ref="contentRef" style="width: 100%; height: 100%" />
+        <div v-if="xmindShow" ref="container" style="width:100%; height: 100%"></div>
         <div v-if="hasError" class="empty-data-container flex-center" style="background-color: white; height: 100%">
             <div class="flex-column flex-center">
                 <img width="480" height="240" style="float: left;margin-right: 3px" :src="window.BK_SUBPATH + 'ui/440.svg'" />
@@ -46,8 +48,19 @@
     } from '@repository/utils/previewOfficeFile'
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
-    import { isExcel, isHtmlType, isOutDisplayType, isPic, isText } from '@repository/utils/file'
+    import {
+        isExcel,
+        isHtmlType,
+        isJsx,
+        isMarkdown,
+        isOutDisplayType,
+        isPic,
+        isText,
+        isXmind
+    } from '@repository/utils/file'
     import Viewer from 'viewerjs'
+    import * as monaco from 'monaco-editor'
+    import { XMindEmbedViewer } from 'xmind-embed-viewer'
 
     const PDFJS = require('pdfjs-dist')
     PDFJS.GlobalWorkerOptions.isEvalSupported = false
@@ -112,6 +125,9 @@
                 imgShow: false,
                 imgUrl: '',
                 pdfShow: false,
+                monacoShow: false,
+                xmindShow: false,
+                xmindViewer: null,
                 pdfPages: [], // 页数
                 pdfWidth: '', // 宽度
                 pdfSrc: '', // 地址
@@ -158,7 +174,7 @@
                         this.initWaterMark(res.data.data.watermark)
                     }
                     if (isOutDisplayType(res.data.data.suffix)) {
-                        customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(fileDate => {
+                        customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(async fileDate => {
                             this.loading = false
                             if (isExcel(res.data.data.suffix)) {
                                 this.previewExcel = true
@@ -189,6 +205,42 @@
                                             viewer.zoomTo(1)
                                         }
                                     })
+                                })
+                            } else if (isMarkdown(res.data.data.suffix) || isJsx(res.data.data.suffix)) {
+                                this.monacoShow = true
+                                let text = await fileDate.data.text()
+                                const language = isMarkdown(this.filePath) ? 'markdown' : 'javascriptreact'
+                                if (isMarkdown(this.filePath)) {
+                                    text = Base64.decode(text)
+                                }
+                                this.$nextTick(() => {
+                                    if (!this.editor) {
+                                        this.editor = monaco.editor.create(document.getElementById('editor'), {
+                                            value: text, // 编辑器初始显示文字
+                                            language: language, // 语言
+                                            automaticLayout: true, // 自动布局
+                                            theme: 'vs-dark', // 官方自带三种主题vs, hc-black, or vs-dark
+                                            minimap: { // 关闭小地图
+                                                enabled: true
+                                            },
+                                            readOnly: true,
+                                            lineNumbers: 'on' // 隐藏控制行号
+                                        })
+                                    } else {
+                                        this.editor.setValue(text)
+                                    }
+                                })
+                            } else if (isXmind(res.data.data.suffix)) {
+                                this.xmindShow = true
+                                const target = await fileDate.data.arrayBuffer()
+                                this.$nextTick(() => {
+                                    if (!this.xmindViewer) {
+                                        this.xmindViewer = new XMindEmbedViewer({
+                                            el: this.$refs.container,
+                                            theme: 'light'
+                                        })
+                                    }
+                                    this.xmindViewer.load(target)
                                 })
                             } else {
                                 this.pdfShow = true
@@ -225,6 +277,11 @@
                 this.imgUrl = ''
                 this.hasError = false
                 this.csvShow = false
+                this.xmindShow = false
+                this.xmindViewer = null
+                this.pdfShow = false
+                this.monacoShow = false
+                this.editor = null
                 this.excelOptions.xls = false
                 window.resetWaterMark()
             },
