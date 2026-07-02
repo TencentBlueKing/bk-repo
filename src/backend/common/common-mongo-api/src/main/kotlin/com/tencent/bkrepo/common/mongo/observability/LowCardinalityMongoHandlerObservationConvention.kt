@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.common.mongo.observability
 
+import io.micrometer.common.KeyValue
 import io.micrometer.common.KeyValues
 import org.springframework.data.mongodb.observability.MongoHandlerContext
 import org.springframework.data.mongodb.observability.MongoHandlerObservationConvention
-import org.springframework.data.mongodb.observability.MongoObservation.LowCardinalityCommandKeyNames
 import org.springframework.data.mongodb.util.MongoCompatibilityAdapter
 import org.springframework.util.ObjectUtils
 
@@ -20,44 +20,40 @@ class LowCardinalityMongoHandlerObservationConvention : MongoHandlerObservationC
 
     override fun getLowCardinalityKeyValues(context: MongoHandlerContext): KeyValues {
         var keyValues = KeyValues.of(
-            LowCardinalityCommandKeyNames.DB_SYSTEM.withValue("mongodb"),
-            LowCardinalityCommandKeyNames.MONGODB_COMMAND.withValue(context.commandName),
+            KeyValue.of(DB_SYSTEM, "mongodb"),
+            KeyValue.of(DB_OPERATION, context.commandName),
         )
 
         val connectionString = context.connectionString
         if (connectionString != null) {
-            keyValues = keyValues.and(
-                LowCardinalityCommandKeyNames.DB_CONNECTION_STRING.withValue(connectionString.connectionString),
-            )
+            keyValues = keyValues.and(KeyValue.of(DB_CONNECTION_STRING, connectionString.connectionString))
             val user = connectionString.username
             if (!ObjectUtils.isEmpty(user)) {
-                keyValues = keyValues.and(LowCardinalityCommandKeyNames.DB_USER.withValue(user))
+                keyValues = keyValues.and(KeyValue.of(DB_USER, user))
             }
         }
 
         if (!ObjectUtils.isEmpty(context.databaseName)) {
-            keyValues = keyValues.and(LowCardinalityCommandKeyNames.DB_NAME.withValue(context.databaseName))
+            keyValues = keyValues.and(KeyValue.of(DB_NAME, context.databaseName))
         }
 
         if (!ObjectUtils.isEmpty(context.collectionName)) {
-            keyValues = keyValues.and(
-                LowCardinalityCommandKeyNames.MONGODB_COLLECTION.withValue(context.collectionName),
-            )
+            keyValues = keyValues.and(KeyValue.of(DB_MONGODB_COLLECTION, context.collectionName))
         }
 
         val connectionDescription = context.commandStartedEvent.connectionDescription ?: return keyValues
         val serverAddress = connectionDescription.serverAddress
         if (serverAddress != null) {
             keyValues = keyValues.and(
-                LowCardinalityCommandKeyNames.NET_TRANSPORT.withValue("IP.TCP"),
-                LowCardinalityCommandKeyNames.NET_PEER_NAME.withValue(serverAddress.host),
-                LowCardinalityCommandKeyNames.NET_PEER_PORT.withValue(serverAddress.port.toString()),
+                KeyValue.of(NET_TRANSPORT, "IP.TCP"),
+                KeyValue.of(NET_PEER_NAME, serverAddress.host),
+                KeyValue.of(NET_PEER_PORT, serverAddress.port.toString()),
             )
             val socketAddress = MongoCompatibilityAdapter.serverAddressAdapter(serverAddress).socketAddress
             if (socketAddress != null) {
                 keyValues = keyValues.and(
-                    LowCardinalityCommandKeyNames.NET_SOCK_PEER_ADDR.withValue(socketAddress.hostName),
-                    LowCardinalityCommandKeyNames.NET_SOCK_PEER_PORT.withValue(socketAddress.port.toString()),
+                    KeyValue.of(NET_SOCK_PEER_ADDR, socketAddress.hostName),
+                    KeyValue.of(NET_SOCK_PEER_PORT, socketAddress.port.toString()),
                 )
             }
         }
@@ -65,9 +61,7 @@ class LowCardinalityMongoHandlerObservationConvention : MongoHandlerObservationC
         val connectionId = connectionDescription.connectionId
         if (connectionId != null) {
             keyValues = keyValues.and(
-                LowCardinalityCommandKeyNames.MONGODB_CLUSTER_ID.withValue(
-                    connectionId.serverId.clusterId.value,
-                ),
+                KeyValue.of(MONGODB_CLUSTER_ID, connectionId.serverId.clusterId.value),
             )
         }
 
@@ -78,5 +72,18 @@ class LowCardinalityMongoHandlerObservationConvention : MongoHandlerObservationC
 
     companion object {
         const val SPAN_NAME = "mongodb.command"
+
+        private const val DB_SYSTEM = "db.system"
+        private const val DB_CONNECTION_STRING = "db.connection_string"
+        private const val DB_USER = "db.user"
+        private const val DB_NAME = "db.name"
+        private const val DB_MONGODB_COLLECTION = "db.mongodb.collection"
+        private const val DB_OPERATION = "db.operation"
+        private const val NET_TRANSPORT = "net.transport"
+        private const val NET_PEER_NAME = "net.peer.name"
+        private const val NET_PEER_PORT = "net.peer.port"
+        private const val NET_SOCK_PEER_ADDR = "net.sock.peer.addr"
+        private const val NET_SOCK_PEER_PORT = "net.sock.peer.port"
+        private const val MONGODB_CLUSTER_ID = "spring.data.mongodb.cluster_id"
     }
 }
