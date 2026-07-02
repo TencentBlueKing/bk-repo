@@ -10,12 +10,12 @@
 
 package com.tencent.bkrepo.fs.service.drive
 
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TYPE_DIRECTORY
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TYPE_FILE
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.TYPE_DIRECTORY
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.TYPE_FILE
 import com.tencent.bkrepo.fs.server.repository.drive.RDriveNodeDao
 import com.tencent.bkrepo.fs.server.service.drive.DrivePathResolveService
-import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper
+import com.tencent.bkrepo.common.metadata.util.drive.DriveNodePathHelper
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -33,11 +33,11 @@ class DrivePathResolveServiceTest {
     fun `resolveFileNode returns file node when path exists`() = runBlocking {
         val projectId = "p1"
         val repoName = "drive-repo"
-        val dirNode = directoryNode(projectId, repoName, DriveNodeQueryHelper.ROOT_INO, "docs", 10L)
+        val dirNode = directoryNode(projectId, repoName, DriveNodePathHelper.ROOT_INO, "docs", 10L)
         val fileNode = fileNode(projectId, repoName, 10L, "readme.txt", 20L)
 
         whenever(
-            driveNodeDao.findCurrentNode(projectId, repoName, DriveNodeQueryHelper.ROOT_INO, "docs"),
+            driveNodeDao.findCurrentNode(projectId, repoName, DriveNodePathHelper.ROOT_INO, "docs"),
         ).thenReturn(dirNode)
         whenever(
             driveNodeDao.findCurrentNode(projectId, repoName, 10L, "readme.txt"),
@@ -54,7 +54,7 @@ class DrivePathResolveServiceTest {
         val repoName = "drive-repo"
 
         whenever(
-            driveNodeDao.findCurrentNode(projectId, repoName, DriveNodeQueryHelper.ROOT_INO, "missing"),
+            driveNodeDao.findCurrentNode(projectId, repoName, DriveNodePathHelper.ROOT_INO, "missing"),
         ).thenReturn(null)
 
         val resolved = service.resolveFileNode(projectId, repoName, "/missing/file.txt")
@@ -66,10 +66,10 @@ class DrivePathResolveServiceTest {
     fun `resolveFileNode returns null when target is directory`() = runBlocking {
         val projectId = "p1"
         val repoName = "drive-repo"
-        val dirNode = directoryNode(projectId, repoName, DriveNodeQueryHelper.ROOT_INO, "docs", 10L)
+        val dirNode = directoryNode(projectId, repoName, DriveNodePathHelper.ROOT_INO, "docs", 10L)
 
         whenever(
-            driveNodeDao.findCurrentNode(projectId, repoName, DriveNodeQueryHelper.ROOT_INO, "docs"),
+            driveNodeDao.findCurrentNode(projectId, repoName, DriveNodePathHelper.ROOT_INO, "docs"),
         ).thenReturn(dirNode)
 
         val resolved = service.resolveFileNode(projectId, repoName, "/docs")

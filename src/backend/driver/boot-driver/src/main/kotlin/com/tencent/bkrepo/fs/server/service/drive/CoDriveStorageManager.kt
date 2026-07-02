@@ -7,7 +7,7 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import com.tencent.bkrepo.fs.server.RepositoryCache
-import com.tencent.bkrepo.fs.server.model.drive.TDriveBlockNode
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveBlockNode
 import com.tencent.bkrepo.fs.server.utils.CoroutineContextUtils.withTraceContext
 import kotlinx.coroutines.Dispatchers
 import org.slf4j.LoggerFactory
