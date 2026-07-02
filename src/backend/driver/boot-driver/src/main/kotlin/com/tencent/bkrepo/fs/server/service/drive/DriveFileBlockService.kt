@@ -12,8 +12,7 @@ package com.tencent.bkrepo.fs.server.service.drive
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.storage.pojo.RegionResource
-import com.tencent.bkrepo.fs.server.model.drive.TDriveBlockNode
+import com.tencent.bkrepo.common.metadata.util.drive.DriveBlockResourceHelper
 import com.tencent.bkrepo.fs.server.pojo.DriveFileBlockInfo
 import org.springframework.stereotype.Service
 
@@ -33,22 +32,12 @@ class DriveFileBlockService(
             repoName = repoName,
             ino = node.ino,
             createdDate = node.createdDate,
-        ).map { it.toRegionResource() }
+        ).map { DriveBlockResourceHelper.toRegionResource(it) }
         return DriveFileBlockInfo(
             fullPath = normalizedPath,
             fileName = node.name,
             size = node.size,
             blocks = blocks,
-        )
-    }
-
-    private fun TDriveBlockNode.toRegionResource(): RegionResource {
-        return RegionResource(
-            digest = sha256,
-            pos = startPos,
-            size = size,
-            off = 0,
-            len = size,
         )
     }
 }
