@@ -138,7 +138,16 @@ class MigrateExecutorTest @Autowired constructor(
     @Test
     fun testMigrateFakeSha256NodeWithBlocks() {
         val blocks = buildBlocks()
-        whenever(blockNodeService.listAllBlocks(anyString(), anyString(), anyString(), anyString(), anyBoolean()))
+        whenever(
+            blockNodeService.listAllBlocks(
+                anyString(),
+                anyString(),
+                anyString(),
+                anyString(),
+                anyBoolean(),
+                anyOrNull()
+            )
+        )
             .thenReturn(blocks)
         whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull())).then { }
 

@@ -136,7 +136,14 @@ class FileNotFoundAutoFixStrategy(
         val fullPath = failedNode.fullPath
         val node = nodeDao.findById(projectId, failedNode.nodeId) ?: return false
         val createdDate = node.createdDate.format(DateTimeFormatter.ISO_DATE_TIME)
-        val blocks = blockNodeService.listAllBlocks(projectId, repoName, fullPath, createdDate, includeDeleted = true)
+        val blocks = blockNodeService.listAllBlocks(
+            projectId,
+            repoName,
+            fullPath,
+            createdDate,
+            includeDeleted = true,
+            createdBefore = node.deleted,
+        )
         if (blocks.isEmpty()) {
             logger.warn("No blocks found for node[$fullPath], task[$projectId/$repoName]")
             return true

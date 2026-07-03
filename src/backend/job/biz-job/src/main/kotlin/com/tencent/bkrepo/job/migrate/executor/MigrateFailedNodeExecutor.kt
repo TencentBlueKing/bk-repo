@@ -137,6 +137,7 @@ class MigrateFailedNodeExecutor(
             sha256 = failedNode.sha256,
             md5 = failedNode.md5,
             createdDate = node?.createdDate,
+            deleted = node?.deleted,
             archived = node?.archived,
             compressed = node?.compressed,
         )

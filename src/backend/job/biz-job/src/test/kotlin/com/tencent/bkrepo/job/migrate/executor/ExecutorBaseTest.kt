@@ -144,7 +144,16 @@ open class ExecutorBaseTest {
             Thread.sleep(1000L)
         }
         whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(false)
-        whenever(blockNodeService.listAllBlocks(anyString(), anyString(), anyString(), anyString(), anyBoolean()))
+        whenever(
+            blockNodeService.listAllBlocks(
+                anyString(),
+                anyString(),
+                anyString(),
+                anyString(),
+                anyBoolean(),
+                anyOrNull()
+            )
+        )
             .thenReturn(emptyList())
         whenever(fileNotFoundAutoFixStrategy.fix(any())).thenReturn(true)
         whenever(archivedFileAutoFixStrategy.fix(any())).thenReturn(true)

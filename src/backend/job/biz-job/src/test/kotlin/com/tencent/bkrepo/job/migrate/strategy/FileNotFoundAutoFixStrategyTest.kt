@@ -207,7 +207,16 @@ class FileNotFoundAutoFixStrategyTest @Autowired constructor(
         expectedCopyTimes: Int,
     ) {
         val node = nodeDao.createNode(sha256 = FAKE_SHA256)
-        whenever(blockNodeService.listAllBlocks(anyString(), anyString(), anyString(), anyString(), anyBoolean()))
+        whenever(
+            blockNodeService.listAllBlocks(
+                anyString(),
+                anyString(),
+                anyString(),
+                anyString(),
+                anyBoolean(),
+                anyOrNull()
+            )
+        )
             .thenReturn(buildBlocks())
 
         val failedNode = migrateFailedNodeDao.insertFailedNode(

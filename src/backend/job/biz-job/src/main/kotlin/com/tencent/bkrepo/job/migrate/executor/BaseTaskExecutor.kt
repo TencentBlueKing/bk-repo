@@ -313,6 +313,7 @@ abstract class BaseTaskExecutor(
             node.fullPath,
             createdDate,
             includeDeleted = true,
+            createdBefore = node.deleted,
         )
     }
 

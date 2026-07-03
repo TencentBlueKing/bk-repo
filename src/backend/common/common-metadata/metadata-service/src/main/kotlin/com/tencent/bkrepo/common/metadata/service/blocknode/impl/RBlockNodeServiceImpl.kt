@@ -83,10 +83,11 @@ class RBlockNodeServiceImpl(
         repoName: String,
         fullPath: String,
         createdDate: String,
-        includeDeleted: Boolean
+        includeDeleted: Boolean,
+        createdBefore: LocalDateTime?
     ): List<TBlockNode> {
         return rBlockNodeDao.find(
-            BlockNodeQueryHelper.listQuery(projectId, repoName, fullPath, createdDate, null, includeDeleted)
+            BlockNodeQueryHelper.listQuery(projectId, repoName, fullPath, createdDate, null, includeDeleted, createdBefore)
         )
     }
 

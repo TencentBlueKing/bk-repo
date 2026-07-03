@@ -159,7 +159,16 @@ class CorrectExecutorTest @Autowired constructor(
     ) {
         val now = LocalDateTime.now()
         val blocks = buildBlocks(now)
-        whenever(blockNodeService.listAllBlocks(anyString(), anyString(), anyString(), anyString(), anyBoolean()))
+        whenever(
+            blockNodeService.listAllBlocks(
+                anyString(),
+                anyString(),
+                anyString(),
+                anyString(),
+                anyBoolean(),
+                anyOrNull()
+            )
+        )
             .thenReturn(blocks)
         whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull())).then { }
         whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(fileExist)

@@ -55,7 +55,8 @@ interface BlockNodeService {
         repoName: String,
         fullPath: String,
         createdDate: String,
-        includeDeleted: Boolean = false
+        includeDeleted: Boolean = false,
+        createdBefore: LocalDateTime? = null
     ): List<TBlockNode>
 
     /**
