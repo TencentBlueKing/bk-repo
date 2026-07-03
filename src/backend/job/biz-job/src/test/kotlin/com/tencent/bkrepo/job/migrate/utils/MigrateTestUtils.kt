@@ -131,6 +131,7 @@ object MigrateTestUtils {
         fullPath: String = "/a/b/c.txt",
         archived: Boolean = false,
         compressed: Boolean = false,
+        deleted: LocalDateTime? = null,
     ): TNode {
         val node = TNode(
             id = null,
@@ -144,6 +145,7 @@ object MigrateTestUtils {
             folder = false,
             archived = archived,
             compressed = compressed,
+            deleted = deleted,
         )
         val sharding = HashShardingUtils.shardingSequenceFor(UT_PROJECT_ID, SHARDING_COUNT)
         val collectionName = "node_$sharding"

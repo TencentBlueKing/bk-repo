@@ -27,6 +27,7 @@ import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -34,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Query
 import java.io.FileNotFoundException
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
 @DisplayName("迁移执行器测试")
@@ -159,6 +161,49 @@ class MigrateExecutorTest @Autowired constructor(
         context.waitAllTransferFinished()
         assertTaskFinished(task.id!!, 1L)
 
+        verify(storageService, times(blocks.size)).copy(anyString(), anyOrNull(), anyOrNull())
+        verify(fileReferenceService, times(blocks.size)).increment(anyString(), anyOrNull(), any())
+        verify(fileReferenceService, times(blocks.size)).decrement(anyString(), anyOrNull())
+    }
+
+    @Test
+    fun testMigrateDeletedFakeSha256NodeWithBlocks() {
+        val createdDate = LocalDateTime.now().minusMinutes(10L).truncatedTo(ChronoUnit.MILLIS)
+        val deletedDate = LocalDateTime.now().minusMinutes(5L).truncatedTo(ChronoUnit.MILLIS)
+        val blocks = buildBlocks(createdDate.plusMinutes(1L)).map { it.copy(deleted = deletedDate) }
+        whenever(
+            blockNodeService.listAllBlocks(
+                eq(UT_PROJECT_ID),
+                eq(UT_REPO_NAME),
+                eq("/a/b/block.txt"),
+                anyString(),
+                eq(true),
+                eq(deletedDate)
+            )
+        ).thenReturn(blocks)
+        whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull())).then { }
+
+        mongoTemplate.createNode(
+            sha256 = FAKE_SHA256,
+            fullPath = "/a/b/block.txt",
+            createDate = createdDate,
+            deleted = deletedDate,
+        )
+        val context = executor.execute(buildContext(createTask()))!!
+        val task = migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!
+
+        Thread.sleep(500L)
+        context.waitAllTransferFinished()
+        assertTaskFinished(task.id!!, 1L)
+
+        verify(blockNodeService).listAllBlocks(
+            eq(UT_PROJECT_ID),
+            eq(UT_REPO_NAME),
+            eq("/a/b/block.txt"),
+            anyString(),
+            eq(true),
+            eq(deletedDate)
+        )
         verify(storageService, times(blocks.size)).copy(anyString(), anyOrNull(), anyOrNull())
         verify(fileReferenceService, times(blocks.size)).increment(anyString(), anyOrNull(), any())
         verify(fileReferenceService, times(blocks.size)).decrement(anyString(), anyOrNull())
