@@ -103,7 +103,15 @@ class BlockNodeServiceImpl(
         createdBefore: LocalDateTime?
     ): List<TBlockNode> {
         return blockNodeDao.find(
-            BlockNodeQueryHelper.listQuery(projectId, repoName, fullPath, createdDate, null, includeDeleted, createdBefore)
+            BlockNodeQueryHelper.listQuery(
+                projectId,
+                repoName,
+                fullPath,
+                createdDate,
+                null,
+                includeDeleted,
+                createdBefore
+            )
         )
     }
 
@@ -174,7 +182,7 @@ class BlockNodeServiceImpl(
         val result = blockNodeDao.updateMulti(Query(criteria), update)
         logger.info(
             "Restore ${result.modifiedCount} blocks node[$projectId/$repoName$fullPath] " +
-                "between $nodeCreateDate and $nodeDeleteDate success."
+                    "between $nodeCreateDate and $nodeDeleteDate success."
         )
     }
 
