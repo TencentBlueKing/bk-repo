@@ -307,7 +307,13 @@ abstract class BaseTaskExecutor(
         val createdDate = requireNotNull(node.createdDate) {
             "node[${node.fullPath}] createdDate is null, task[${node.projectId}/${node.repoName}]"
         }.format(DateTimeFormatter.ISO_DATE_TIME)
-        return blockNodeService.listAllBlocks(node.projectId, node.repoName, node.fullPath, createdDate)
+        return blockNodeService.listAllBlocks(
+            node.projectId,
+            node.repoName,
+            node.fullPath,
+            createdDate,
+            includeDeleted = true,
+        )
     }
 
     private fun checkNode(node: Node) {

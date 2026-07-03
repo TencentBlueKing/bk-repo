@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -158,7 +159,7 @@ class CorrectExecutorTest @Autowired constructor(
     ) {
         val now = LocalDateTime.now()
         val blocks = buildBlocks(now)
-        whenever(blockNodeService.listAllBlocks(anyString(), anyString(), anyString(), anyString()))
+        whenever(blockNodeService.listAllBlocks(anyString(), anyString(), anyString(), anyString(), anyBoolean()))
             .thenReturn(blocks)
         whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull())).then { }
         whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(fileExist)

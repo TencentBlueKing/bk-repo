@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -137,7 +138,7 @@ class MigrateExecutorTest @Autowired constructor(
     @Test
     fun testMigrateFakeSha256NodeWithBlocks() {
         val blocks = buildBlocks()
-        whenever(blockNodeService.listAllBlocks(anyString(), anyString(), anyString(), anyString()))
+        whenever(blockNodeService.listAllBlocks(anyString(), anyString(), anyString(), anyString(), anyBoolean()))
             .thenReturn(blocks)
         whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull())).then { }
 

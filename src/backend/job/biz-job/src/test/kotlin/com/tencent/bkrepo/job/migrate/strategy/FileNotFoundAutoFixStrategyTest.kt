@@ -34,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -206,7 +207,7 @@ class FileNotFoundAutoFixStrategyTest @Autowired constructor(
         expectedCopyTimes: Int,
     ) {
         val node = nodeDao.createNode(sha256 = FAKE_SHA256)
-        whenever(blockNodeService.listAllBlocks(anyString(), anyString(), anyString(), anyString()))
+        whenever(blockNodeService.listAllBlocks(anyString(), anyString(), anyString(), anyString(), anyBoolean()))
             .thenReturn(buildBlocks())
 
         val failedNode = migrateFailedNodeDao.insertFailedNode(

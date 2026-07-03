@@ -53,7 +53,8 @@ interface RBlockNodeService {
         projectId: String,
         repoName: String,
         fullPath: String,
-        createdDate: String
+        createdDate: String,
+        includeDeleted: Boolean = false
     ): List<TBlockNode>
 
     /**

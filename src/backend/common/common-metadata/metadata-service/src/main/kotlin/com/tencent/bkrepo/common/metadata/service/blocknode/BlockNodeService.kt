@@ -50,7 +50,13 @@ interface BlockNodeService {
     /**
      * 获取指定路径所有分块
      */
-    fun listAllBlocks(projectId: String, repoName: String, fullPath: String, createdDate: String): List<TBlockNode>
+    fun listAllBlocks(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        createdDate: String,
+        includeDeleted: Boolean = false
+    ): List<TBlockNode>
 
     /**
      * 查询出当前版本内的分块

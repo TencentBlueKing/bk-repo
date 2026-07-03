@@ -48,14 +48,17 @@ object BlockNodeQueryHelper {
         repoName: String,
         fullPath: String,
         createdDate: String,
-        range: Range?
+        range: Range?,
+        includeDeleted: Boolean = false,
     ): Query {
         val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
             .and(TBlockNode::projectId).isEqualTo(projectId)
             .and(TBlockNode::repoName).isEqualTo(repoName)
-            .and(TBlockNode::deleted).isEqualTo(null)
             .and(TBlockNode::createdDate).gt(LocalDateTime.parse(createdDate))
             .and(TBlockNode::uploadId).isEqualTo(null)
+        if (!includeDeleted) {
+            criteria.and(TBlockNode::deleted).isEqualTo(null)
+        }
         range?.let {
             criteria.norOperator(
                 TBlockNode::startPos.gt(it.end),

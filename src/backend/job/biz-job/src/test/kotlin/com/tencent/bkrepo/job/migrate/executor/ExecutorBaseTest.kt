@@ -53,6 +53,7 @@ import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils
 import com.tencent.bkrepo.job.service.MigrateArchivedFileService
 import org.junit.jupiter.api.TestInstance
+import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -143,7 +144,7 @@ open class ExecutorBaseTest {
             Thread.sleep(1000L)
         }
         whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(false)
-        whenever(blockNodeService.listAllBlocks(anyString(), anyString(), anyString(), anyString()))
+        whenever(blockNodeService.listAllBlocks(anyString(), anyString(), anyString(), anyString(), anyBoolean()))
             .thenReturn(emptyList())
         whenever(fileNotFoundAutoFixStrategy.fix(any())).thenReturn(true)
         whenever(archivedFileAutoFixStrategy.fix(any())).thenReturn(true)
