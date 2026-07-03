@@ -127,10 +127,7 @@ class MigrateFailedNodeExecutor(
 
     private fun convert(failedNode: TMigrateFailedNode): Node {
         val criteria = Node::projectId.isEqualTo(failedNode.projectId).and(ID).isEqualTo(failedNode.nodeId)
-        val node = requireNotNull(nodeDao.findOne(Query(criteria))) {
-            "Node[${failedNode.projectId}/${failedNode.repoName}${failedNode.fullPath}] not found, " +
-                "nodeId[${failedNode.nodeId}]"
-        }
+        val node = nodeDao.findOne(Query(criteria))
         return Node(
             id = failedNode.nodeId,
             projectId = failedNode.projectId,
@@ -139,9 +136,9 @@ class MigrateFailedNodeExecutor(
             size = failedNode.size,
             sha256 = failedNode.sha256,
             md5 = failedNode.md5,
-            createdDate = node.createdDate,
-            archived = node.archived,
-            compressed = node.compressed,
+            createdDate = node?.createdDate,
+            archived = node?.archived,
+            compressed = node?.compressed,
         )
     }
 

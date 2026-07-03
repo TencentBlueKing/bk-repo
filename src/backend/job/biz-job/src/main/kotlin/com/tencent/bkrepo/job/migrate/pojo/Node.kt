@@ -37,7 +37,7 @@ data class Node(
     val size: Long,
     val sha256: String,
     val md5: String,
-    val createdDate: LocalDateTime,
+    val createdDate: LocalDateTime? = null,
     val archived: Boolean? = null,
     val compressed: Boolean? = null,
 )

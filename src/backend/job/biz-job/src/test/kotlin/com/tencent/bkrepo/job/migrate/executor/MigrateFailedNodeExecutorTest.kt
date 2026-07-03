@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.migrate.executor
 
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.UT_MD5
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
@@ -36,6 +37,7 @@ import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.CORRECT_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FAILED_NODE_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING_FAILED_NODE
+import com.tencent.bkrepo.job.migrate.pojo.Node
 import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeFixer
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.createNode
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.removeNodes
@@ -46,6 +48,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
@@ -56,6 +59,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import java.io.FileNotFoundException
+import java.lang.reflect.InvocationTargetException
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
@@ -142,24 +146,26 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
     }
 
     @Test
-    fun testConvertThrowsWhenNodeNotFound() {
-        var task = createTask()
-        updateTask(task.id!!, CORRECT_FINISHED.name, LocalDateTime.now())
+    fun testListBlocksThrowsWhenCreatedDateIsNull() {
+        val node = Node(
+            id = "non-existent-node-id",
+            projectId = UT_PROJECT_ID,
+            repoName = UT_REPO_NAME,
+            fullPath = "/a/b/c.txt",
+            size = 100L,
+            sha256 = FAKE_SHA256,
+            md5 = UT_MD5,
+        )
+        val listBlocks = BaseTaskExecutor::class.java.getDeclaredMethod("listBlocks", Node::class.java)
+        listBlocks.isAccessible = true
 
-        createFailedNode(task.id!!, "non-existent-node-id")
-        assertTrue(migrateFailedNodeDao.existsFailedNode(UT_PROJECT_ID, UT_REPO_NAME))
+        val exception = assertThrows<InvocationTargetException> { listBlocks.invoke(executor, node) }
 
-        val context = executor.execute(
-            buildContext(migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!)
-        )!!
-
-        Thread.sleep(1000L)
-        context.waitAllTransferFinished()
-
-        task = migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!
-        assertEquals(MIGRATING_FAILED_NODE.name, task.state)
-        assertTrue(migrateFailedNodeDao.existsFailedNode(UT_PROJECT_ID, UT_REPO_NAME))
-        assertFalse(executingTaskRecorder.executing(task.id!!))
+        assertTrue(exception.cause is IllegalArgumentException)
+        assertEquals(
+            "node[${node.fullPath}] createdDate is null, task[${node.projectId}/${node.repoName}]",
+            exception.cause!!.message
+        )
     }
 
     private fun createFailedNode(taskId: String, nodeId: String = "") {

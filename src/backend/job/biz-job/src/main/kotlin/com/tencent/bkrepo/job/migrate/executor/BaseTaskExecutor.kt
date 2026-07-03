@@ -304,7 +304,9 @@ abstract class BaseTaskExecutor(
     }
 
     private fun listBlocks(node: Node): List<TBlockNode> {
-        val createdDate = node.createdDate.format(DateTimeFormatter.ISO_DATE_TIME)
+        val createdDate = requireNotNull(node.createdDate) {
+            "node[${node.fullPath}] createdDate is null, task[${node.projectId}/${node.repoName}]"
+        }.format(DateTimeFormatter.ISO_DATE_TIME)
         return blockNodeService.listAllBlocks(node.projectId, node.repoName, node.fullPath, createdDate)
     }
 
