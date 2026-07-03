@@ -1,4 +1,4 @@
-package com.tencent.com.bkrepo.fs.service
+package com.tencent.bkrepo.fs.service
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -8,10 +8,10 @@ import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.RBlockNodeService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
-import com.tencent.com.bkrepo.fs.UT_CRC64_ECMA
-import com.tencent.com.bkrepo.fs.UT_PROJECT_ID
-import com.tencent.com.bkrepo.fs.UT_REPO_NAME
-import com.tencent.com.bkrepo.fs.UT_USER
+import com.tencent.bkrepo.fs.UT_CRC64_ECMA
+import com.tencent.bkrepo.fs.UT_PROJECT_ID
+import com.tencent.bkrepo.fs.UT_REPO_NAME
+import com.tencent.bkrepo.fs.UT_USER
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach

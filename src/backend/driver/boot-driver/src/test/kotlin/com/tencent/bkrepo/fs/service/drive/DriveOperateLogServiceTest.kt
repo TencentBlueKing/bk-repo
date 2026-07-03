@@ -1,4 +1,4 @@
-package com.tencent.com.bkrepo.fs.service.drive
+package com.tencent.bkrepo.fs.service.drive
 
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.metadata.model.TOperateLog

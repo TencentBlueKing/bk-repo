@@ -30,6 +30,8 @@ package com.tencent.bkrepo.fs.server
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.ArtifactMetadataHeaderResolver
+import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.fs.server.storage.CoArtifactFile
 import com.tencent.bkrepo.fs.server.storage.CoArtifactFileFactory
 import kotlinx.coroutines.flow.onCompletion
@@ -96,6 +98,17 @@ suspend fun <T : Any> ServerRequest.readBodyOrNull(clazz: Class<T>): T? {
 
 fun ServerRequest.useRequestParam(param: String, consumer: (x: String) -> Unit) {
     this.queryParam(param).ifPresent { consumer(it) }
+}
+
+fun ServerRequest.resolveBkRepoMetadata(): MutableList<TMetadata>? {
+    val metadata = ArtifactMetadataHeaderResolver.resolveMetadata(
+        headerNames = headers().asHttpHeaders().keys,
+        headerValue = { headers().firstHeader(it) },
+    )
+    if (metadata.isEmpty()) {
+        return null
+    }
+    return metadata.map { (key, value) -> TMetadata(key = key, value = value) }.toMutableList()
 }
 
 /**

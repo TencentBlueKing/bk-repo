@@ -367,6 +367,51 @@
 - 响应体
 与“游标查询目录下节点”一致
 
+## 完整文件上传
+
+- API: PUT /drive/node/upload/{projectId}/{repoName}/{fullPath}
+- API 名称: drive_node_upload
+- 功能说明:
+  - 中文: 通过单次 HTTP PUT 上传完整文件到 Drive 仓库，服务端自动创建目录节点、文件节点并写入块数据
+  - English: upload a complete file to a drive repository in one HTTP PUT request
+- 请求体
+  - 文件二进制流（`application/octet-stream`），无需 multipart 包装
+- 请求头
+
+  | 字段 | 类型 | 是否必须 | 说明 |
+  | --- | --- | --- | --- |
+  | X-BKREPO-SHA256 | string | 否 | 携带时服务端校验文件摘要 |
+  | X-BKREPO-OVERWRITE | boolean | 否 | false | 是否覆盖已存在同名文件 |
+  | X-BKREPO-META-&lt;key&gt; | string | 否 | 单条元数据，值需 URL 编码，header 名大小写不敏感，解析后 key 转小写 |
+  | X-BKREPO-META | string | 否 | base64 编码的批量元数据，格式为 `base64(key1=value1&key2=value2)`，大小写敏感 |
+
+- 响应体
+  返回 `DriveNode`，字段说明见下文「DriveNode 返回字段说明」。
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": {
+      "id": "674a1b2c3d4e5f6789012345",
+      "projectId": "demo",
+      "repoName": "drive-local",
+      "ino": 1001,
+      "realIno": 1001,
+      "parent": 2,
+      "name": "a.txt",
+      "size": 1024,
+      "type": 1
+    },
+    "traceId": null
+  }
+  ```
+
+- 行为说明
+  - 若目标路径父目录不存在，服务端会自动递归创建目录节点
+  - 若目标路径已存在同名文件，需设置请求头 `X-BKREPO-OVERWRITE: true` 才会覆盖文件内容与元数据；未设置或为 `false` 时返回节点已存在错误
+  - 若目标路径已存在同名目录，返回节点冲突错误
+  - 上传操作会记录 `DRIVE_NODE_UPLOAD` 操作日志
+
 ## DriveNode 返回字段说明
 
 | 字段        | 类型   | 说明                                                                 | Description                          |

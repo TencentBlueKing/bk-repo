@@ -1,4 +1,4 @@
-package com.tencent.com.bkrepo.generic.service
+package com.tencent.bkrepo.generic.service
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
@@ -12,14 +12,14 @@ import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
-import com.tencent.com.bkrepo.generic.BLOCK_SIZE
-import com.tencent.com.bkrepo.generic.NoopObservationRegistry
-import com.tencent.com.bkrepo.generic.UT_CRC64_ECMA
-import com.tencent.com.bkrepo.generic.UT_PROJECT_ID
-import com.tencent.com.bkrepo.generic.UT_REPO_NAME
-import com.tencent.com.bkrepo.generic.UT_SHA256
-import com.tencent.com.bkrepo.generic.UT_USER
-import com.tencent.com.bkrepo.generic.UT_VERSION
+import com.tencent.bkrepo.generic.BLOCK_SIZE
+import com.tencent.bkrepo.generic.NoopObservationRegistry
+import com.tencent.bkrepo.generic.UT_CRC64_ECMA
+import com.tencent.bkrepo.generic.UT_PROJECT_ID
+import com.tencent.bkrepo.generic.UT_REPO_NAME
+import com.tencent.bkrepo.generic.UT_SHA256
+import com.tencent.bkrepo.generic.UT_USER
+import com.tencent.bkrepo.generic.UT_VERSION
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

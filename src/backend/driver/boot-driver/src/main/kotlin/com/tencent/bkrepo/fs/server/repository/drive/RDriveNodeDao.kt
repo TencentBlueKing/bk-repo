@@ -86,6 +86,13 @@ class RDriveNodeDao : DriveHashShardingMongoReactiveDao<TDriveNode>() {
         return findOne(query)
     }
 
+    suspend fun existsIno(projectId: String, repoName: String, ino: Long): Boolean {
+        val criteria = where(TDriveNode::projectId).isEqualTo(projectId)
+            .and(TDriveNode::repoName).isEqualTo(repoName)
+            .and(TDriveNode::ino).isEqualTo(ino)
+        return exists(Query(criteria))
+    }
+
     suspend fun markNodeDeleted(
         projectId: String,
         repoName: String,
@@ -133,6 +140,7 @@ class RDriveNodeDao : DriveHashShardingMongoReactiveDao<TDriveNode>() {
             .set(TDriveNode::mtime.name, updatedNode.mtime)
             .set(TDriveNode::ctime.name, updatedNode.ctime)
             .set(TDriveNode::atime.name, updatedNode.atime)
+            .set(TDriveNode::metadata.name, updatedNode.metadata)
             .set(TDriveNode::lastModifiedBy.name, updatedNode.lastModifiedBy)
             .set(TDriveNode::lastModifiedDate.name, updatedNode.lastModifiedDate)
         return updateFirst(

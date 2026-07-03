@@ -151,6 +151,9 @@ class RouteConfiguration(
                 POST("/batch/{projectId}/{repoName}", driveNodeOperationsHandler::batch)
                 GET("/page/{projectId}/{repoName}", driveNodeOperationsHandler::listNodesPage)
                 GET("/modified/page/{projectId}/{repoName}", driveNodeOperationsHandler::listModifiedNodesPage)
+                filter(artifactFileCleanupFilterFunction::filter)
+                PUT("/upload/{projectId}/{repoName}/**", driveNodeOperationsHandler::upload)
+                addMetrics(serverMetrics.uploadingCount)
             }
             "/snapshot".nest {
                 POST("/create/{projectId}/{repoName}", driveSnapshotHandler::createSnapshot)
