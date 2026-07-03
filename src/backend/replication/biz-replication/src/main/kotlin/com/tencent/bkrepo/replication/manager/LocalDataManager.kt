@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.resource.RemoteNodeResource
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
@@ -49,8 +50,7 @@ import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
-import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
-import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.storage.config.StorageProperties
@@ -65,11 +65,8 @@ import com.tencent.bkrepo.replication.pojo.request.DirectChildInfo
 import com.tencent.bkrepo.replication.pojo.request.DirectChildrenPage
 import com.tencent.bkrepo.replication.pojo.request.DirectChildrenRequest
 import com.tencent.bkrepo.replication.pojo.request.PathStatsResult
-import org.springframework.data.domain.Sort
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.repository.constant.NAME
-import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -80,7 +77,8 @@ import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
-import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -103,9 +101,9 @@ class LocalDataManager(
     private val storageService: StorageService,
     private val storageCredentialService: StorageCredentialService,
     private val storageProperties: StorageProperties,
-    private val mongoTemplate: MongoTemplate,
     private val blockNodeService: BlockNodeService,
-    private val clusterNodeService: ClusterNodeService
+    private val clusterNodeService: ClusterNodeService,
+    private val nodeDao: NodeDao? = null,
 ) {
 
     /**
@@ -273,7 +271,7 @@ class LocalDataManager(
             .and(NAME).regex("^$regexPattern$")
             .and(DELETED).isEqualTo(null)
             .and(FOLDER).isEqualTo(false)
-        return queryNodes(projectId, criteria, pageNumber, pageSize)
+        return queryNodes(criteria, pageNumber, pageSize)
     }
 
     /**
@@ -309,11 +307,7 @@ class LocalDataManager(
      * 通过id查询node
      */
     fun findNodeById(projectId: String, nodeId: String): NodeInfo? {
-        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
-        val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
-            .and(ID).isEqualTo(nodeId)
-        val query = Query(criteria)
-        return convert(mongoTemplate.findOne(query, Node::class.java, collectionName))
+        return nodeDao?.findById(projectId, nodeId)?.let { NodeBaseServiceHelper.convert(it) }
     }
 
     /**
@@ -380,7 +374,6 @@ class LocalDataManager(
         pageSize: Int,
         includeDeleted: Boolean = false
     ): List<NodeInfo> {
-        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
         val nodePath = PathUtils.toPath(fullPath)
         val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
             .and(REPO_NAME).isEqualTo(repoName)
@@ -390,33 +383,29 @@ class LocalDataManager(
                     and(DELETED).isEqualTo(null)
                 }
             }
-        return queryNodes(projectId, criteria, pageNumber, pageSize)
+        return queryNodes(criteria, pageNumber, pageSize)
     }
 
     private fun queryNodes(
-        projectId: String,
         criteria: Criteria,
         pageNumber: Int,
         pageSize: Int
     ): List<NodeInfo> {
-        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
         val query = Query(criteria).with(Pages.ofRequest(pageNumber, pageSize))
-        return mongoTemplate.find(query, Node::class.java, collectionName).mapNotNull { convert(it) }
+        return nodeDao?.find(query)?.mapNotNull { NodeBaseServiceHelper.convert(it) } ?: emptyList()
     }
 
     /**
      * 统计文件节点数量（不包含文件夹）
      */
     fun countFileNode(projectId: String, repoName: String, rootPath: String = "/"): Long {
-        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
         val nodePath = PathUtils.toPath(rootPath)
         val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
             .and(REPO_NAME).isEqualTo(repoName)
             .and(NODE_PATH).regex("^${EscapeUtils.escapeRegex(nodePath)}")
             .and(FOLDER).isEqualTo(false)
             .and(DELETED).isEqualTo(null)
-        val query = Query(criteria)
-        return mongoTemplate.count(query, collectionName)
+        return nodeDao?.count(Query(criteria)) ?: 0L
     }
 
     /**
@@ -457,7 +446,6 @@ class LocalDataManager(
         pageNumber: Int = 1,
         pageSize: Int = DirectChildrenRequest.DEFAULT_PAGE_SIZE
     ): DirectChildrenPage {
-        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
         val normalizedPath = PathUtils.toPath(parentPath)
 
         val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
@@ -465,8 +453,14 @@ class LocalDataManager(
             .and(NODE_PATH).isEqualTo(normalizedPath)
             .and(DELETED).isEqualTo(null)
 
-        // 计算总数
-        val totalRecords = mongoTemplate.count(Query(criteria), collectionName)
+        val dao = nodeDao ?: return DirectChildrenPage(
+            records = emptyList(),
+            pageNumber = pageNumber.coerceAtLeast(1),
+            pageSize = pageSize.coerceIn(1, DirectChildrenRequest.MAX_PAGE_SIZE),
+            totalRecords = 0,
+            hasMore = false,
+        )
+        val totalRecords = dao.count(Query(criteria))
 
         // 限制每页大小
         val actualPageSize = pageSize.coerceIn(1, DirectChildrenRequest.MAX_PAGE_SIZE)
@@ -478,7 +472,7 @@ class LocalDataManager(
             .skip(((actualPageNumber - 1) * actualPageSize).toLong())
             .limit(actualPageSize)
 
-        val records = mongoTemplate.find(query, Node::class.java, collectionName).map { node ->
+        val records = dao.find(query).map { node ->
             DirectChildInfo(
                 fullPath = node.fullPath,
                 folder = node.folder,
@@ -511,7 +505,6 @@ class LocalDataManager(
         repoName: String,
         path: String
     ): Long {
-        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
         val normalizedPath = PathUtils.toPath(path)
 
         val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
@@ -520,8 +513,7 @@ class LocalDataManager(
             .and(FOLDER).isEqualTo(false)
             .and(DELETED).isEqualTo(null)
 
-        val query = Query(criteria)
-        return mongoTemplate.count(query, collectionName)
+        return nodeDao?.count(Query(criteria)) ?: 0L
     }
 
     /**
@@ -659,29 +651,24 @@ class LocalDataManager(
         repoName: String,
         path: String
     ): PathStatisticsData {
-        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
         val normalizedPath = PathUtils.toPath(path)
 
-        // 使用 MongoDB Aggregation 计算统计
         val matchCriteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
             .and(REPO_NAME).isEqualTo(repoName)
             .and(NODE_PATH).regex("^${EscapeUtils.escapeRegex(normalizedPath)}")
             .and(FOLDER).isEqualTo(false)
             .and(DELETED).isEqualTo(null)
 
-        val aggregation = org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation(
-            org.springframework.data.mongodb.core.aggregation.Aggregation.match(matchCriteria),
-            org.springframework.data.mongodb.core.aggregation.Aggregation.sort(
-                org.springframework.data.domain.Sort.Direction.ASC, "sha256"
-            ),
-            org.springframework.data.mongodb.core.aggregation.Aggregation.group()
+        val aggregation = Aggregation.newAggregation(
+            Aggregation.match(matchCriteria),
+            Aggregation.sort(Sort.by(Sort.Direction.ASC, "sha256")),
+            Aggregation.group()
                 .count().`as`("fileCount")
                 .sum("size").`as`("totalSize")
                 .push("sha256").`as`("sha256List")
         )
 
-        val result = mongoTemplate.aggregate(aggregation, collectionName, AggregateResult::class.java)
-        val aggregateResult = result.uniqueMappedResult
+        val aggregateResult = nodeDao?.aggregate(aggregation, AggregateResult::class.java)?.uniqueMappedResult
 
         if (aggregateResult == null || aggregateResult.fileCount == 0L) {
             return PathStatisticsData(0, 0, "")
@@ -795,70 +782,6 @@ class LocalDataManager(
         return projectMetrics.repoMetrics.firstOrNull { it.repoName == repoName }?.size ?: 0
     }
 
-    data class Node(
-        var createdBy: String,
-        var createdDate: LocalDateTime,
-        var lastModifiedBy: String,
-        var lastModifiedDate: LocalDateTime,
-        var lastAccessDate: LocalDateTime? = null,
-
-        var folder: Boolean,
-        var path: String,
-        var name: String,
-        var fullPath: String,
-        var size: Long,
-        var expireDate: LocalDateTime? = null,
-        var sha256: String? = null,
-        var md5: String? = null,
-        var crc64ecma: String? = null,
-        var deleted: LocalDateTime? = null,
-        var copyFromCredentialsKey: String? = null,
-        var copyIntoCredentialsKey: String? = null,
-        var metadata: MutableList<MetadataModel>? = null,
-        var clusterNames: Set<String>? = null,
-        var nodeNum: Long? = null,
-        var archived: Boolean? = null,
-        var compressed: Boolean? = null,
-        var projectId: String,
-        var repoName: String,
-        var id: String? = null,
-        var federatedSource: String? = null,
-    )
-
-    private fun convert(node: Node?): NodeInfo? {
-        return node?.let {
-            NodeInfo(
-                id = it.id,
-                createdBy = it.createdBy,
-                createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
-                lastModifiedBy = it.lastModifiedBy,
-                lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
-                projectId = it.projectId,
-                repoName = it.repoName,
-                folder = it.folder,
-                path = it.path,
-                name = it.name,
-                fullPath = it.fullPath,
-                size = if (it.size < 0L) 0L else it.size,
-                nodeNum = it.nodeNum?.let { nodeNum ->
-                    if (nodeNum < 0L) 0L else nodeNum
-                },
-                sha256 = it.sha256,
-                md5 = it.md5,
-                crc64ecma = it.crc64ecma,
-                metadata = toMap(it.metadata),
-                nodeMetadata = it.metadata,
-                copyFromCredentialsKey = it.copyFromCredentialsKey,
-                copyIntoCredentialsKey = it.copyIntoCredentialsKey,
-                deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME),
-                lastAccessDate = it.lastAccessDate?.format(DateTimeFormatter.ISO_DATE_TIME),
-                clusterNames = it.clusterNames,
-                archived = it.archived,
-                compressed = it.compressed,
-            )
-        }
-    }
-
     /**
      * 遍历正则路径匹配的所有节点
      * @param projectId 项目ID
@@ -924,14 +847,11 @@ class LocalDataManager(
         return totalSize
     }
 
-    private fun toMap(metadataList: List<MetadataModel>?): Map<String, Any> {
-        return metadataList?.associate { it.key to it.value }.orEmpty()
-    }
-
     companion object {
         private const val DELETED = "deleted"
         private const val NODE_PATH = "path"
         private const val FOLDER = "folder"
+
         /** 统计时获取子节点的最大数量，防止OOM */
         private const val MAX_CHILDREN_FOR_STATS = 10000
 

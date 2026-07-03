@@ -29,6 +29,7 @@ package com.tencent.bkrepo.job.batch.task.other
 
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.metadata.routing.NodeMongoOperations
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
@@ -56,6 +57,7 @@ import org.springframework.stereotype.Component
 class NodeCopyJob(
     private val storageService: StorageService,
     private val blockNodeService: BlockNodeService,
+    private val nodeMongoOperations: NodeMongoOperations,
     properties: NodeCopyJobProperties
 ) : DefaultContextMongoDbJob<NodeCopyJob.NodeCopyData>(properties) {
 
@@ -80,6 +82,8 @@ class NodeCopyJob(
     }
 
     override fun entityClass(): KClass<NodeCopyData> = NodeCopyData::class
+
+    override fun extractRoutingProjectId(entity: NodeCopyData): String = entity.projectId
 
     override fun run(row: NodeCopyData, collectionName: String, context: JobContext) {
         var digest: String? = null
@@ -138,7 +142,12 @@ class NodeCopyJob(
         with(node) {
             val update = Update().set(node::copyFromCredentialsKey.name, null)
                 .set(node::copyIntoCredentialsKey.name, null)
-            mongoTemplate.updateFirst(Query(Criteria(ID).isEqualTo(id)), update, collectionName)
+            nodeMongoOperations.updateFirst(
+                node.projectId,
+                Query(Criteria(ID).isEqualTo(id)),
+                update,
+                collectionName,
+            )
             with(node) {
                 logger.info("copy node[$projectId/$repoName/$fullPath success, digest[$sha256]]")
             }

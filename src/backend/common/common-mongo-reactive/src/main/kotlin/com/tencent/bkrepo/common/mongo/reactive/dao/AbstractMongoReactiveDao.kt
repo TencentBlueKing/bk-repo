@@ -29,21 +29,44 @@ package com.tencent.bkrepo.common.mongo.reactive.dao
 
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
+import com.tencent.bkrepo.common.mongo.api.routing.DualWriteContext
+import com.tencent.bkrepo.common.mongo.api.routing.DualWriteExecutor
+import com.tencent.bkrepo.common.mongo.api.routing.WriteRoute
+import com.tencent.bkrepo.common.mongo.reactive.routing.MongoReactiveRoutingRegistry
+import com.tencent.bkrepo.common.mongo.reactive.routing.ReactiveWriteRoute
+import com.tencent.bkrepo.common.mongo.routing.MongoDualWriteCompensationService
+import com.tencent.bkrepo.common.mongo.routing.MongoDualWriteSupport
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.MongoCollectionUtils
 import org.springframework.data.mongodb.core.FindAndModifyOptions
+import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate
+import org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import reactor.core.publisher.Flux
+import java.util.IdentityHashMap
 import java.lang.reflect.ParameterizedType
 
 abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
+
+    @Suppress("LateinitUsage")
+    @Autowired(required = false)
+    private var reactiveRoutingRegistry: MongoReactiveRoutingRegistry? = null
+
+    @Suppress("LateinitUsage")
+    @Autowired(required = false)
+    private var dualWriteCompensationService: MongoDualWriteCompensationService? = null
+
+    @Autowired(required = false)
+    private var dualWriteExecutor: DualWriteExecutor? = null
 
     @Suppress("UNCHECKED_CAST")
     protected open val classType = (javaClass.genericSuperclass as ParameterizedType).actualTypeArguments[0] as Class<E>
@@ -73,16 +96,17 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao stream: [$query] [$clazz]")
         }
-        return determineReactiveMongoOperations()
-            .find(query, clazz, determineCollectionName(query))
+        val col = determineCollectionName(query)
+        return readTemplate(col, query).find(query, clazz, col)
     }
 
     override suspend fun <T> find(query: Query, clazz: Class<T>): List<T> {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao find: [$query] [$clazz]")
         }
-        return determineReactiveMongoOperations()
-            .find(query, clazz, determineCollectionName(query))
+        val col = determineCollectionName(query)
+        return readTemplate(col, query)
+            .find(query, clazz, col)
             .collectList().awaitSingle()
     }
 
@@ -99,68 +123,166 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao updateFirst: [$query], [$update]")
         }
-        return determineReactiveMongoOperations()
-            .updateFirst(query, update, determineCollectionName(query))
-            .awaitSingle()
+        val col = determineCollectionName(query)
+        val route = writeRoute(col, query)
+        return runDualWrite(
+            route = route,
+            collectionName = col,
+            context = query,
+            enqueue = {
+                dualWriteCompensationService?.enqueueUpdateFirst(
+                    route.toCompensationRoute(),
+                    col,
+                    query,
+                    update,
+                )
+            },
+        ) {
+            it.updateFirst(query, update, col).awaitSingle()
+        }
     }
 
     override suspend fun updateMulti(query: Query, update: Update): UpdateResult {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao updateMulti: [$query], [$update]")
         }
-        return determineReactiveMongoOperations()
-            .updateMulti(query, update, determineCollectionName(query))
-            .awaitSingle()
+        val col = determineCollectionName(query)
+        val route = writeRoute(col, query)
+        return runDualWrite(
+            route = route,
+            collectionName = col,
+            context = query,
+            enqueue = {
+                dualWriteCompensationService?.enqueueUpdateMulti(
+                    route.toCompensationRoute(),
+                    col,
+                    query,
+                    update,
+                )
+            },
+        ) {
+            it.updateMulti(query, update, col).awaitSingle()
+        }
     }
 
     override suspend fun <T> findOne(query: Query, clazz: Class<T>): T? {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao findOne: [$query] [$clazz]")
         }
-        return determineReactiveMongoOperations()
-            .findOne(query, clazz, determineCollectionName(query))
+        val col = determineCollectionName(query)
+        return readTemplate(col, query)
+            .findOne(query, clazz, col)
             .awaitSingleOrNull()
     }
 
     override suspend fun save(entity: E): E {
-        return determineReactiveMongoOperations()
-            .save(entity, determineCollectionName(entity))
-            .awaitSingle()
+        val col = determineCollectionName(entity)
+        val route = writeRoute(col, entity)
+        return runDualWrite(
+            route = route,
+            collectionName = col,
+            context = entity,
+            enqueue = { dualWriteCompensationService?.enqueueSave(route.toCompensationRoute(), col, entity as Any) },
+        ) {
+            @Suppress("UNCHECKED_CAST")
+            (it.save(entity as Any, col).awaitSingle() as E)
+        }
     }
 
     override suspend fun insert(entity: E): E {
-        return determineReactiveMongoOperations()
-            .insert(entity, determineCollectionName(entity))
-            .awaitSingle()
+        val col = determineCollectionName(entity)
+        val route = writeRoute(col, entity)
+        return runDualWrite(
+            route = route,
+            collectionName = col,
+            context = entity,
+            enqueue = { dualWriteCompensationService?.enqueueInsert(route.toCompensationRoute(), col, entity as Any) },
+        ) {
+            @Suppress("UNCHECKED_CAST")
+            (it.insert(entity as Any, col).awaitSingle() as E)
+        }
     }
 
     override suspend fun insert(entityCollection: Collection<E>): Collection<E> {
-        return determineReactiveMongoOperations()
-            .insert(entityCollection, determineCollectionName(entityCollection.first()))
-            .collectList().awaitSingle()
+        if (entityCollection.isEmpty()) return entityCollection
+        val first = entityCollection.first()
+        val grouped = entityCollection.groupBy { entity ->
+            val col = determineCollectionName(entity)
+            val route = writeRoute(col, entity)
+            Triple(col, route.primary, route)
+        }
+        grouped.forEach { (key, batch) ->
+            val (col, _, route) = key
+            executePrimaryWrite(route, col, batch.first()) {
+                it.insert(batch, col).collectList().awaitSingle()
+            }
+            submitSecondaryBatchWrite(route, col, batch)
+        }
+        return entityCollection
     }
 
     override suspend fun remove(query: Query): DeleteResult {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao remove: [$query]")
         }
-        return determineReactiveMongoOperations()
-            .remove(query, classType, determineCollectionName(query))
-            .awaitSingle()
+        val col = determineCollectionName(query)
+        val route = writeRoute(col, query)
+        return runDualWrite(
+            route = route,
+            collectionName = col,
+            context = query,
+            enqueue = {
+                dualWriteCompensationService?.enqueueRemove(
+                    route.toCompensationRoute(),
+                    col,
+                    classType.name,
+                    query,
+                )
+            },
+        ) {
+            it.remove(query, classType, col).awaitSingle()
+        }
     }
 
     override suspend fun upsert(query: Query, update: Update): UpdateResult {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao upsert: [$query], [$update]")
         }
-        val mongoOperations = determineReactiveMongoOperations()
-        val collectionName = determineCollectionName(query)
+        val col = determineCollectionName(query)
+        val route = writeRoute(col, query)
         return try {
-            mongoOperations.upsert(query, update, collectionName).awaitSingle()
+            runDualWrite(
+                route = route,
+                collectionName = col,
+                context = query,
+                enqueue = {
+                    dualWriteCompensationService?.enqueueUpsert(
+                        route.toCompensationRoute(),
+                        col,
+                        query,
+                        update,
+                    )
+                },
+            ) {
+                it.upsert(query, update, col).awaitSingle()
+            }
         } catch (exception: DuplicateKeyException) {
-            // retry because upsert operation is not atomic
             logger.warn("Upsert error[DuplicateKeyException]: " + exception.message.orEmpty())
-            determineReactiveMongoOperations().upsert(query, update, collectionName).awaitSingle()
+            runDualWrite(
+                route = route,
+                collectionName = col,
+                context = query,
+                enqueue = {
+                    dualWriteCompensationService?.enqueueUpsert(
+                        route.toCompensationRoute(),
+                        col,
+                        query,
+                        update,
+                    )
+                },
+            ) {
+                it.upsert(query, update, col).awaitSingle()
+            }
         }
     }
 
@@ -168,16 +290,16 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao count: [$query]")
         }
-        val mongoOperations = determineReactiveMongoOperations()
-        val collectName = determineCollectionName(query)
-        return mongoOperations.count(query, collectName).awaitSingle()
+        val col = determineCollectionName(query)
+        return readTemplate(col, query).count(query, col).awaitSingle()
     }
 
     override suspend fun exists(query: Query): Boolean {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao exists: [$query]")
         }
-        return determineReactiveMongoOperations().exists(query, determineCollectionName(query)).awaitSingle()
+        val col = determineCollectionName(query)
+        return readTemplate(col, query).exists(query, col).awaitSingle()
     }
 
     override suspend fun <T> findAndModify(
@@ -189,8 +311,25 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao findAndModify: [$query], [$update]")
         }
-        return determineReactiveMongoOperations()
-            .findAndModify(query, update, options, clazz, determineCollectionName(query)).awaitSingle()
+        val col = determineCollectionName(query)
+        val route = writeRoute(col, query)
+        return runDualWrite(
+            route = route,
+            collectionName = col,
+            context = query,
+            enqueue = {
+                dualWriteCompensationService?.enqueueFindAndModify(
+                    route.toCompensationRoute(),
+                    col,
+                    query,
+                    update,
+                    options,
+                    clazz.name,
+                )
+            },
+        ) {
+            it.findAndModify(query, update, options, clazz, col).awaitSingle()
+        }
     }
 
     override suspend fun <O> aggregate(aggregation: Aggregation, outputType: Class<O>): MutableList<O> {
@@ -218,14 +357,195 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
 
     abstract fun determineReactiveMongoOperations(): ReactiveMongoTemplate
 
+    /**
+     * 写操作模板选择钩子，优先通过 [MongoReactiveRoutingRegistry] 路由，未命中回退到子类实现。
+     */
+    open fun determineReactiveMongoOperations(collectionName: String, context: Any? = null): ReactiveMongoTemplate {
+        val default = determineReactiveMongoOperations()
+        val registry = reactiveRoutingRegistry ?: return default
+        val route = registry.resolveWriteRoute(collectionName, context, default)
+        registry.assertWriteNotZombie(route, collectionName, default)
+        return route.primary
+    }
+
+    /**
+     * 读操作模板选择钩子，优先使用 Secondary，未命中回退到 [determineReactiveMongoOperations]。
+     */
+    open fun determineReadReactiveMongoOperations(
+        collectionName: String,
+        context: Any? = null,
+    ): ReactiveMongoTemplate = readTemplate(collectionName, context)
+
+    private fun readTemplate(collectionName: String, context: Any?): ReactiveMongoTemplate {
+        val default = determineReactiveMongoOperations()
+        val registry = reactiveRoutingRegistry ?: return default
+        val route = registry.resolveReadRoute(collectionName, context, default)
+        return route.template
+    }
+
     abstract fun determineCollectionName(query: Query): String
 
     abstract fun determineCollectionName(entity: E): String
 
     abstract fun determineCollectionName(aggregation: Aggregation): String
 
+    private fun writeRoute(collectionName: String, context: Any?): ReactiveWriteRoute {
+        val default = determineReactiveMongoOperations()
+        val registry = reactiveRoutingRegistry ?: return ReactiveWriteRoute(default)
+        return registry.resolveWriteRoute(collectionName, context, default)
+    }
+
+    private suspend fun <T> runDualWrite(
+        route: ReactiveWriteRoute,
+        collectionName: String,
+        context: Any?,
+        enqueue: () -> Unit,
+        write: suspend (ReactiveMongoTemplate) -> T,
+    ): T {
+        val executor = dualWriteExecutor
+        if (executor != null && route.secondary != null) {
+            return executor.execute(
+                context = route.toDualWriteContext(
+                    collectionName = collectionName,
+                    defaultTemplate = determineReactiveMongoOperations(),
+                    enqueue = enqueue,
+                ),
+                primary = { runBlocking { executePrimaryWrite(route, collectionName, context, write) } },
+                secondary = {
+                    runBlocking { write(route.secondary!!) }
+                    Unit
+                },
+            )
+        }
+        val result = executePrimaryWrite(route, collectionName, context, write)
+        submitSecondaryWrite(route, collectionName, enqueue) {
+            runBlocking { write(it) }
+            Unit
+        }
+        return result
+    }
+
+    private suspend fun <T> executePrimaryWrite(
+        route: ReactiveWriteRoute,
+        collectionName: String,
+        context: Any?,
+        action: suspend (ReactiveMongoTemplate) -> T,
+    ): T {
+        val primary = determineReactiveMongoOperations(collectionName, context)
+        return try {
+            action(primary)
+        } catch (exception: Exception) {
+            val fallback = route.fallbackTemplate
+            if (route.fallbackToDefault && fallback != null && fallback !== route.primary) {
+                logger.warn(
+                    "WRITE FALLBACK to Default for [{}]: rule={} reason={}",
+                    collectionName,
+                    route.ruleName,
+                    exception.message,
+                    exception,
+                )
+                action(determineReactiveMongoOperations())
+            } else {
+                throw exception
+            }
+        }
+    }
+
+    private fun submitSecondaryWrite(
+        route: ReactiveWriteRoute,
+        collectionName: String,
+        enqueue: () -> Unit,
+        action: (ReactiveMongoTemplate) -> Unit,
+    ) {
+        if (route.secondary == null) return
+        MongoDualWriteSupport.submitSecondaryWrite(
+            route = route.toWriteRoute(determineReactiveMongoOperations()),
+            collectionName = collectionName,
+            enqueue = enqueue,
+        ) {
+            action(route.secondary!!)
+        }
+    }
+
+    private fun submitSecondaryBatchWrite(
+        route: ReactiveWriteRoute,
+        collectionName: String,
+        items: List<E>,
+    ) {
+        if (route.secondary == null) return
+        val enqueueAll = {
+            items.forEach { entity ->
+                dualWriteCompensationService?.enqueueInsert(
+                    route.toCompensationRoute(),
+                    collectionName,
+                    entity as Any,
+                )
+            }
+        }
+        submitSecondaryWrite(route, collectionName, enqueueAll) {
+            runBlocking { it.insert(items, collectionName).collectList().awaitSingle() }
+        }
+    }
+
+    private fun ReactiveWriteRoute.toDualWriteContext(
+        collectionName: String,
+        defaultTemplate: ReactiveMongoTemplate,
+        enqueue: () -> Unit,
+    ): DualWriteContext {
+        val tokens = tokenizedTemplates(defaultTemplate)
+        return DualWriteContext(
+            route = toWriteRoute(tokens),
+            collectionName = collectionName,
+            defaultTemplate = tokens.requireToken(defaultTemplate),
+            enqueueOnFailure = enqueue,
+        )
+    }
+
+    private fun ReactiveWriteRoute.toCompensationRoute(): WriteRoute =
+        toWriteRoute(determineReactiveMongoOperations())
+
+    private fun ReactiveWriteRoute.toWriteRoute(
+        defaultTemplate: ReactiveMongoTemplate,
+    ): WriteRoute = toWriteRoute(tokenizedTemplates(defaultTemplate))
+
+    private fun ReactiveWriteRoute.toWriteRoute(
+        tokens: IdentityHashMap<ReactiveMongoTemplate, MongoTemplate>,
+    ): WriteRoute = WriteRoute(
+        primary = tokens.requireToken(primary),
+        secondary = secondary?.let { tokens.requireToken(it) },
+        secondaryTarget = secondaryTarget,
+        fallbackTemplate = fallbackTemplate?.let { tokens.requireToken(it) },
+        fallbackToDefault = fallbackToDefault,
+        routingKey = routingKey,
+        ruleName = ruleName,
+        isDefaultInstance = isDefaultInstance,
+        syncSecondaryWrite = syncSecondaryWrite,
+    )
+
+    private fun ReactiveWriteRoute.tokenizedTemplates(
+        defaultTemplate: ReactiveMongoTemplate,
+    ): IdentityHashMap<ReactiveMongoTemplate, MongoTemplate> {
+        val tokens = IdentityHashMap<ReactiveMongoTemplate, MongoTemplate>()
+        fun register(template: ReactiveMongoTemplate?) {
+            if (template != null && template !in tokens) {
+                tokens[template] = MongoTemplate(DUAL_WRITE_TOKEN_DB_FACTORY)
+            }
+        }
+        register(defaultTemplate)
+        register(primary)
+        register(secondary)
+        register(fallbackTemplate)
+        return tokens
+    }
+
+    private fun IdentityHashMap<ReactiveMongoTemplate, MongoTemplate>.requireToken(
+        template: ReactiveMongoTemplate,
+    ): MongoTemplate = get(template) ?: error("Missing dual-write bridge token")
+
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractMongoReactiveDao::class.java)
+        private val DUAL_WRITE_TOKEN_DB_FACTORY =
+            SimpleMongoClientDatabaseFactory("mongodb://localhost:27017/test")
 
         /**
          * mongodb 默认id字段

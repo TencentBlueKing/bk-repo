@@ -41,4 +41,6 @@ dependencies {
     implementation("io.fabric8:kubernetes-client:7.4.0")
     compileOnly("org.springframework.cloud:spring-cloud-starter-consul-discovery")
     compileOnly("org.springframework.cloud:spring-cloud-starter-consul-config")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("io.mockk:mockk")
 }

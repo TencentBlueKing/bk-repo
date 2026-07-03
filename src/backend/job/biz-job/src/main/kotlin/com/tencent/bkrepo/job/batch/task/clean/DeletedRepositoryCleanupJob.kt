@@ -30,10 +30,11 @@ package com.tencent.bkrepo.job.batch.task.clean
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.model.TRepository
+import com.tencent.bkrepo.common.metadata.routing.NodeMongoOperations
+import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FULL_PATH
-import com.tencent.bkrepo.job.LAST_MODIFIED_BY
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SHARDING_COUNT
@@ -59,6 +60,7 @@ import kotlin.reflect.KClass
 @Component
 class DeletedRepositoryCleanupJob(
     private val properties: DeletedRepositoryCleanupJobProperties,
+    private val nodeMongoOperations: NodeMongoOperations,
 ) : DefaultContextMongoDbJob<DeletedRepositoryCleanupJob.Repository>(properties) {
 
 
@@ -98,7 +100,9 @@ class DeletedRepositoryCleanupJob(
         val nodeCollectionName = COLLECTION_NODE_PREFIX +
             MongoShardingUtils.shardingSequence(row.projectId, SHARDING_COUNT)
         deleteNode(row.projectId, row.name, nodeCollectionName)
-        if (mongoTemplate.count(buildNodeQuery(row.projectId, row.name), nodeCollectionName) == 0L) {
+        if (routedMongoTemplate(row.projectId).count(
+                buildNodeQuery(row.projectId, row.name), nodeCollectionName
+            ) == 0L) {
             val repoQuery = Query.query(Criteria.where(ID).isEqualTo(row.id))
             mongoTemplate.remove(repoQuery, collectionName)
             logger.info("Clean up deleted repository[${row.projectId}/${row.name}] for no nodes remaining!")
@@ -112,6 +116,8 @@ class DeletedRepositoryCleanupJob(
 
     override fun mapToEntity(row: Map<String, Any?>) = Repository.from(row)
 
+    override fun extractRoutingProjectId(entity: Repository): String = entity.projectId
+
     /**
      * 再次刪除非deleted的节点
      */
@@ -124,10 +130,8 @@ class DeletedRepositoryCleanupJob(
                 Criteria.where(FULL_PATH).isEqualTo(PathUtils.ROOT)
             )
         val query = Query(criteria)
-        val update = Update()
-            .set(LAST_MODIFIED_BY, SYSTEM_USER)
-            .set(DELETED_DATE, LocalDateTime.now())
-        mongoTemplate.updateMulti(query, update, collectionName)
+        val update = NodeQueryHelper.touchLastModified(Update().set(DELETED_DATE, LocalDateTime.now()))
+        nodeMongoOperations.updateMulti(projectId, query, update, collectionName)
     }
 
     private fun buildNodeQuery(projectId: String, repoName: String): Query {

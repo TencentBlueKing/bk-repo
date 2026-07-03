@@ -35,8 +35,10 @@ import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.routing.NodeMongoOperations
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.mongo.routing.MigrationGate
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.NAME
@@ -75,6 +77,8 @@ class DeletedNodeCleanupJob(
     private val clusterProperties: ClusterProperties,
     private val migrateRepoStorageService: MigrateRepoStorageService,
     private val storageCredentialService: StorageCredentialService,
+    private val nodeMongoOperations: NodeMongoOperations,
+    private val migrationGate: MigrationGate? = null,
 ) : DefaultContextMongoDbJob<DeletedNodeCleanupJob.Node>(properties) {
 
     data class Node(
@@ -131,28 +135,45 @@ class DeletedNodeCleanupJob(
         return Node::class
     }
 
+    override fun extractRoutingProjectId(entity: Node): String = entity.projectId
 
     override fun run(row: Node, collectionName: String, context: JobContext) {
         require(context is DeletedNodeCleanupJobContext)
+        // ─── migration.project-locks：freeze-physical-delete 检查（§3.18.2） ───
+        if (isPhysicalDeleteFrozen(row.projectId)) {
+            logger.info(
+                "Physical delete frozen for project[${row.projectId}] (migration in progress), " +
+                    "skipping node cleanup for sha256[${row.sha256}]"
+            )
+            return
+        }
         // 仓库正在迁移时删除node会导致迁移任务分页查询数据重复或缺失，且无法确认修改哪个存储的引用数，需要等迁移完后再执行清理
         if (migrateProperties.enabled && migrateRepoStorageService.migrating(row.projectId, row.repoName)) {
             logger.info("repo[${row.projectId}/${row.repoName}] storage was migrating, skip clean node[${row.sha256}]")
             return
         }
         if (row.folder) {
-            cleanupFolderNode(context, row.id, collectionName)
+            cleanupFolderNode(context, row.projectId, row.id, collectionName)
         } else {
             cleanUpFileNode(context, row, collectionName)
         }
     }
 
+    // ─── migration.project-locks 辅助（§3.18.2） ────────────────────
+
+    private fun isPhysicalDeleteFrozen(projectId: String): Boolean {
+        val gate = migrationGate ?: return false
+        return gate.isPhysicalDeleteFrozen(projectId)
+    }
+
     private fun cleanupFolderNode(
         context: DeletedNodeCleanupJobContext,
+        projectId: String,
         id: String,
         collectionName: String
     ) {
         val query = Query.query(Criteria.where(ID).isEqualTo(id))
-        val result = mongoTemplate.remove(query, collectionName)
+        val result = nodeMongoOperations.remove(projectId, query, collectionName)
         context.folderCount.addAndGet(result.deletedCount)
     }
 
@@ -169,7 +190,7 @@ class DeletedNodeCleanupJob(
                 logger.warn("Clean up node fail collection[$collectionName], node[$node]")
                 return
             }
-            result = mongoTemplate.remove(query, collectionName)
+            result = nodeMongoOperations.remove(node.projectId, query, collectionName)
         } catch (ignored: Exception) {
             logger.error("Clean up deleted node[$node] failed in collection[$collectionName].", ignored)
         }

@@ -32,6 +32,8 @@
 package com.tencent.bkrepo.common.metadata.dao.node
 
 import com.mongodb.client.result.UpdateResult
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.path.PathUtils
@@ -39,10 +41,13 @@ import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.mongo.dao.sharding.HashShardingMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.metadata.routing.NodeScatterQueryService
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -59,7 +64,10 @@ import java.time.LocalDateTime
  */
 @Repository
 @Conditional(SyncCondition::class)
-class NodeDao : HashShardingMongoDao<TNode>() {
+class NodeDao(
+    @Autowired(required = false) private val scatterQueryService: NodeScatterQueryService? = null,
+) : HashShardingMongoDao<TNode>() {
+
     /**
      * 查询节点
      */
@@ -83,6 +91,7 @@ class NodeDao : HashShardingMongoDao<TNode>() {
     fun setNodeArchived(projectId: String, nodeId: String, archived: Boolean): UpdateResult {
         val query = Query(TNode::projectId.isEqualTo(projectId).and(ID).isEqualTo(nodeId))
         val update = Update().set(TNode::archived.name, archived)
+            .set(TNode::lastModifiedDate.name, LocalDateTime.now())
         return updateFirst(query, update)
     }
 
@@ -148,7 +157,26 @@ class NodeDao : HashShardingMongoDao<TNode>() {
         val query = NodeQueryHelper.nodeFolderQuery(projectId, repoName, fullPath)
         val update = Update().set(TNode::size.name, size)
             .set(TNode::nodeNum.name, nodeNum)
+            .set(TNode::lastModifiedDate.name, LocalDateTime.now())
         this.updateFirst(query, update)
+    }
+
+    override fun updateFirst(query: Query, update: Update): UpdateResult =
+        super.updateFirst(query, touchLastModified(update))
+
+    override fun updateMulti(query: Query, update: Update): UpdateResult =
+        super.updateMulti(query, touchLastModified(update))
+
+    override fun <T> findAndModify(
+        query: Query,
+        update: Update,
+        options: FindAndModifyOptions,
+        clazz: Class<T>,
+    ): T? = super.findAndModify(query, touchLastModified(update), options, clazz)
+
+    private fun touchLastModified(update: Update): Update {
+        if (update.updateObject.containsKey(TNode::lastModifiedDate.name)) return update
+        return update.set(TNode::lastModifiedDate.name, LocalDateTime.now())
     }
 
 
@@ -174,6 +202,20 @@ class NodeDao : HashShardingMongoDao<TNode>() {
             query.fields().exclude(TNode::metadata.name)
         }
 
+        val scatterService = scatterQueryService
+        if (scatterService?.isScatterReadEnabled() == true) {
+            if (pageRequest.offset > MAX_SCATTER_OFFSET) {
+                throw BadRequestException(
+                    CommonMessageCode.PARAMETER_INVALID,
+                    "Scatter query does not support deep pagination (offset > $MAX_SCATTER_OFFSET)"
+                )
+            }
+            query.limit((pageRequest.offset + pageRequest.pageSize).toInt().coerceAtMost(MAX_SCATTER_FETCH))
+            val all = scatterService.scatterFind(query, TNode::class.java, allCollectionNames())
+            val offset = pageRequest.offset.toInt().coerceAtMost(all.size)
+            val end = (offset + pageRequest.pageSize).coerceAtMost(all.size)
+            return PageImpl(all.subList(offset, end), pageRequest, all.size.toLong())
+        }
         return pageWithoutShardingKey(pageRequest, query)
     }
 
@@ -191,7 +233,7 @@ class NodeDao : HashShardingMongoDao<TNode>() {
     fun listBySha256(
         sha256: String,
         limit: Int = DEFAULT_PAGE_SIZE,
-        includeMetadata: Boolean =false,
+        includeMetadata: Boolean = false,
         includeDeleted: Boolean = true,
         tillLimit: Boolean = true,
     ): List<TNode> {
@@ -203,6 +245,12 @@ class NodeDao : HashShardingMongoDao<TNode>() {
         val query = Query(criteria)
         if (!includeMetadata) {
             query.fields().exclude(TNode::metadata.name)
+        }
+
+        val scatterService = scatterQueryService
+        if (scatterService?.isScatterReadEnabled() == true) {
+            query.limit(limit)
+            return scatterService.scatterFind(query, TNode::class.java, allCollectionNames()).take(limit)
         }
 
         if (shardingCount <= 0 || shardingCount > MAX_SHARDING_COUNT_OF_PAGE_QUERY) {
@@ -224,7 +272,13 @@ class NodeDao : HashShardingMongoDao<TNode>() {
         return result
     }
 
+    private fun allCollectionNames(): List<String> =
+        (0 until shardingCount).map { parseSequenceToCollectionName(it) }
+
     companion object {
+        private const val MAX_SCATTER_OFFSET = 10_000L
+        private const val MAX_SCATTER_FETCH = 10_000
+
         fun buildRootNode(projectId: String, repoName: String): TNode {
             return TNode(
                 createdBy = StringPool.EMPTY,

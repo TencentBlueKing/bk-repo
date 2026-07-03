@@ -59,6 +59,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
@@ -69,6 +70,7 @@ class MavenRepoSpecialDataSeparatorHandler(
     private val separationNodeDao: SeparationNodeDao,
     private val mongoTemplate: MongoTemplate,
     private val dataSeparationConfig: DataSeparationConfig,
+    private val routingRegistry: MongoRoutingRegistry? = null,
 ) : RepoSpecialDataSeparator {
 
     override fun type(): RepositoryType {
@@ -127,7 +129,8 @@ class MavenRepoSpecialDataSeparatorHandler(
                     .addCriteria(Criteria.where(ID).gt(lastId))
                     .limit(dataSeparationConfig.batchSize)
                     .with(Sort.by(ID).ascending())
-                val nodeBaseInfos = mongoTemplate.find(query, NodeBaseInfo::class.java, nodeCollectionName)
+                val nodeBaseInfos = nodeReadTemplate(projectId, nodeCollectionName)
+                    .find(query, NodeBaseInfo::class.java, nodeCollectionName)
                 if (nodeBaseInfos.isEmpty()) {
                     break
                 }
@@ -291,6 +294,9 @@ class MavenRepoSpecialDataSeparatorHandler(
             }
         }
     }
+
+    private fun nodeReadTemplate(projectId: String, collectionName: String): MongoTemplate =
+        routingRegistry?.routeRead(collectionName, projectId) ?: mongoTemplate
 
     companion object {
         private val logger = LoggerFactory.getLogger(MavenRepoSpecialDataSeparatorHandler::class.java)

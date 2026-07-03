@@ -29,9 +29,13 @@ package com.tencent.bkrepo.job.batch.base
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.api.util.TraceUtils
+import com.tencent.bkrepo.common.metadata.routing.NodeRoutingContext
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
+import com.tencent.bkrepo.common.mongo.api.routing.BatchQueryGroup
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.common.metadata.routing.NodeBatchQueryHelper
 import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
 import com.tencent.bkrepo.job.executor.IdentityTask
@@ -57,8 +61,15 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
     private val properties: MongodbJobProperties,
 ) : CenterNodeJob<Context>(properties) {
     /**
-     * 需要操作的表名列表
-     * */
+     * Override to return the projectId for the current entity so that
+     * [NodeRoutingContext] is populated before calling [run].
+     * Default tries `getProjectId()` when present on the entity type.
+     */
+    protected open fun extractRoutingProjectId(entity: Entity): String? =
+        runCatching {
+            entity.javaClass.getMethod("getProjectId").invoke(entity) as? String
+        }.getOrNull()
+
     abstract fun collectionNames(): List<String>
 
     /**
@@ -108,11 +119,37 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
     @Autowired
     protected lateinit var mongoTemplate: MongoTemplate
 
+    @Suppress("LateinitUsage")
+    @Autowired(required = false)
+    private var nodeRoutingRegistry: MongoRoutingRegistry? = null
+
+    @Suppress("LateinitUsage")
+    @Autowired(required = false)
+    private var nodeBatchQueryHelper: NodeBatchQueryHelper? = null
+
+    /**
+     * Returns the MongoTemplate for the given projectId, routing to the Heavy instance when applicable.
+     * Falls back to the default mongoTemplate when routing is not configured.
+     */
+    protected fun routedMongoTemplate(
+        projectId: String? = NodeRoutingContext.get(),
+        collectionName: String = "",
+    ): MongoTemplate =
+        if (projectId != null) nodeRoutingRegistry?.routeWrite(collectionName, projectId) ?: mongoTemplate
+        else mongoTemplate
+
     /**
      * 当前任务执行批量扫描时使用的MongoTemplate，默认使用主库模板。
      * drive等独立库任务可覆盖该方法返回对应模板。
      */
     protected open fun batchQueryMongoTemplate(): MongoTemplate = mongoTemplate
+
+    /**
+     * 子类可覆写此方法以启用多实例 BatchQueryGroup 扫描模式。
+     * 默认对 [collectionNames] 含 `node_` 前缀的 Job 自动启用。
+     */
+    protected open fun shouldUseNodeBatchQueryGroups(collectionNames: List<String>): Boolean =
+        collectionNames.any { it.startsWith(NODE_COLLECTION_PREFIX) }
 
     /**
      * job批处理执行器
@@ -128,17 +165,26 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
     override fun doStart0(jobContext: Context) {
         try {
             val collectionNames = determineCollectionNames(jobContext.executeContext)
+            if (shouldUseNodeBatchQueryGroups(collectionNames)) {
+                val groups = nodeBatchQueryHelper?.buildGroups(collectionNames)
+                if (groups != null) {
+                    runWithBatchQueryGroups(groups, jobContext)
+                    return
+                }
+                // helper 未注册或路由未配置，降级为单实例模式
+                logger.warn("Job[${getJobName()}] BatchQueryGroup unavailable, fallback to single-instance mode.")
+            }
             if (concurrentLevel == JobConcurrentLevel.COLLECTION) {
                 // 使用闭锁来保证表异步生产任务的结束
                 val countDownLatch = CountDownLatch(collectionNames.size)
                 runAsync(collectionNames, true) {
-                    runCollection(it, jobContext)
+                    runCollection(it, batchQueryMongoTemplate(), jobContext)
                     countDownLatch.countDown()
                 }
                 countDownLatch.await()
             } else {
                 collectionNames.forEach {
-                    runCollection(it, jobContext)
+                    runCollection(it, batchQueryMongoTemplate(), jobContext)
                 }
             }
         } finally {
@@ -149,9 +195,34 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
     }
 
     /**
+     * 以 BatchQueryGroup 模式串行执行各实例扫描。
+     * 每个 group 使用自己的 template 和条件补丁。
+     */
+    private fun runWithBatchQueryGroups(groups: List<BatchQueryGroup>, jobContext: Context) {
+        for (group in groups) {
+            try {
+                group.collectionNames.forEach { collectionName ->
+                    runCollection(collectionName, group.template, jobContext, group.criteriaCustomizer)
+                }
+            } catch (e: Exception) {
+                logger.error(
+                    "Job[${getJobName()}] group[${group.instanceId}] failed, skip: ${e.message}",
+                    e,
+                )
+            }
+        }
+    }
+
+    /**
      * 处理单个表数据
-     * */
-    private fun runCollection(collectionName: String, context: Context) {
+     * @param criteriaCustomizer BatchQueryGroup 模式下追加 projectId 过滤条件的补丁函数
+     */
+    private fun runCollection(
+        collectionName: String,
+        template: MongoTemplate,
+        context: Context,
+        criteriaCustomizer: ((Query) -> Query)? = null,
+    ) {
         if (!shouldRun()) {
             logger.info("Job[${getJobName()}] already stopped.")
             return
@@ -165,15 +236,18 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
             var sum = 0L
             measureNanoTime {
                 do {
-                    val query = buildQuery()
+                    var query = buildQuery()
                         .addCriteria(Criteria.where(ID).gt(lastId))
                         .limit(batchSize)
                         .with(Sort.by(ID).ascending())
+                    if (criteriaCustomizer != null) {
+                        query = criteriaCustomizer(query)
+                    }
                     val fields = query.fields()
                     entityClass().declaredMemberProperties.forEach {
                         fields.include(it.name)
                     }
-                    val data = batchQueryMongoTemplate().find<Map<String, Any?>>(
+                    val data = template.find<Map<String, Any?>>(
                         query,
                         collectionName,
                     )
@@ -193,8 +267,10 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
             }.apply {
                 val elapsedTime = HumanReadable.time(this)
                 onRunCollectionFinished(collectionName, context)
-                logger.info("Job[${getJobName()}]: collection $collectionName run completed," +
-                        "sum [$sum] elapse $elapsedTime")
+                logger.info(
+                    "Job[${getJobName()}]: collection $collectionName run completed," +
+                        "sum [$sum] elapse $elapsedTime"
+                )
             }
         }
     }
@@ -231,7 +307,13 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
         try {
             val resultMap = data.toMutableMap()
             resultMap[JAVA_ID] = resultMap[ID].toString()
-            run(mapToEntity(resultMap), collectionName, context)
+            val entity = mapToEntity(resultMap)
+            val projectId = extractRoutingProjectId(entity)
+            if (projectId != null) {
+                NodeRoutingContext.withProject(projectId) { run(entity, collectionName, context) }
+            } else {
+                run(entity, collectionName, context)
+            }
             context.success.incrementAndGet()
         } catch (e: Exception) {
             context.failed.incrementAndGet()
@@ -262,6 +344,7 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
 
     companion object {
         private val logger = LoggerHolder.jobLogger
+        private const val NODE_COLLECTION_PREFIX = "node_"
 
         // 用于dao层转换
         private const val JAVA_ID = "id"

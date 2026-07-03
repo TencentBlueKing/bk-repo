@@ -35,6 +35,8 @@ import com.tencent.bkrepo.job.FULL_PATH
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.batch.context.NodeFolderJobContext
+import com.tencent.bkrepo.common.metadata.routing.NodeMongoOperations
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.FolderUtils.extractFolderInfoFromCacheKey
 import com.tencent.bkrepo.job.pojo.FolderInfo
@@ -58,7 +60,12 @@ class NodeFolderStat(
     private val mongoTemplate: MongoTemplate,
     private val redisTemplate: RedisTemplate<String, String>,
     private val separationTaskService: SeparationTaskService,
+    private val routingRegistry: MongoRoutingRegistry? = null,
+    private val nodeMongoOperations: NodeMongoOperations? = null,
 ) : SeparationStatBaseJob(mongoTemplate, separationTaskService) {
+
+    private fun routedTemplate(projectId: String, collectionName: String): MongoTemplate =
+        routingRegistry?.routeWrite(collectionName, projectId) ?: mongoTemplate
 
     fun buildNode(
         id: String,
@@ -207,34 +214,40 @@ class NodeFolderStat(
         } else {
             FolderUtils.buildCacheKey(projectId = projectId, repoName = StringPool.EMPTY)
         }
-        val updateList = ArrayList<org.springframework.data.util.Pair<Query, UpdateDefinition>>()
+        // 按 projectId 分组，双写期走 NodeMongoOperations
+        val grouped = mutableMapOf<
+            String,
+            MutableList<org.springframework.data.util.Pair<Query, UpdateDefinition>>
+        >()
         val storedKeys = mutableSetOf<String>()
         for (entry in context.folderCache) {
             if (!entry.key.startsWith(prefix)) continue
-            extractFolderInfoFromCacheKey(entry.key, runCollection)?.let {
+            extractFolderInfoFromCacheKey(entry.key, runCollection)?.let { folderInfo ->
                 storedKeys.add(entry.key)
-                updateList.add(
+                grouped.getOrPut(folderInfo.projectId) { mutableListOf() }.add(
                     buildUpdateClausesForFolder(
-                        projectId = it.projectId,
-                        repoName = it.repoName,
-                        fullPath = it.fullPath,
+                        projectId = folderInfo.projectId,
+                        repoName = folderInfo.repoName,
+                        fullPath = folderInfo.fullPath,
                         size = entry.value.capSize.toLong(),
                         nodeNum = entry.value.nodeNum.toLong()
                     )
                 )
             }
-            if (updateList.size >= BATCH_LIMIT) {
-                mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, collectionName)
-                    .updateOne(updateList)
-                    .execute()
-                updateList.clear()
+        }
+        for ((pid, updates) in grouped) {
+            updates.chunked(BATCH_LIMIT).forEach { batch ->
+                val ops = nodeMongoOperations
+                if (ops != null) {
+                    ops.bulkUpdateOne(pid, collectionName, batch)
+                } else {
+                    routedTemplate(pid, collectionName)
+                        .bulkOps(BulkOperations.BulkMode.UNORDERED, collectionName)
+                        .updateOne(batch)
+                        .execute()
+                }
             }
         }
-        if (updateList.isEmpty()) return
-        mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, collectionName)
-            .updateOne(updateList)
-            .execute()
-        updateList.clear()
         for (key in storedKeys) {
             context.folderCache.remove(key)
         }
@@ -267,40 +280,49 @@ class NodeFolderStat(
         collectionName: String?,
     ) {
         val hashOps = redisTemplate.opsForHash<String, String>()
-        val updateList = ArrayList<org.springframework.data.util.Pair<Query, UpdateDefinition>>()
         val options = ScanOptions.scanOptions().build()
+        // 先收集所有待写入条目（含 projectId），再按目标实例分组执行 bulkOps
+        data class Entry(
+            val projectId: String,
+            val clause: org.springframework.data.util.Pair<Query, UpdateDefinition>
+        )
+        val entries = mutableListOf<Entry>()
         redisTemplate.execute { connection ->
             val hashCommands = connection.hashCommands()
             val cursor = hashCommands.hScan(key.toByteArray(), options)
             while (cursor.hasNext()) {
-                val entry: Map.Entry<ByteArray, ByteArray> = cursor.next()
-                val keyStr = String(entry.key).substringBeforeLast(StringPool.COLON)
-                val folderInfo = extractFolderInfoFromCacheKey(keyStr) ?: continue
-                val statInfo = getFolderStatInfo(
-                    key, entry, folderInfo, hashOps
-                )
-                updateList.add(
-                    buildUpdateClausesForFolder(
+                val e: Map.Entry<ByteArray, ByteArray> = cursor.next()
+                val keyStr = String(e.key).substringBeforeLast(StringPool.COLON)
+                val folderInfo = extractFolderInfoFromCacheKey(keyStr) ?: return@execute
+                val statInfo = getFolderStatInfo(key, e, folderInfo, hashOps)
+                entries.add(
+                    Entry(
                         projectId = folderInfo.projectId,
-                        repoName = folderInfo.repoName,
-                        fullPath = folderInfo.fullPath,
-                        size = statInfo.size,
-                        nodeNum = statInfo.nodeNum
+                        clause = buildUpdateClausesForFolder(
+                            projectId = folderInfo.projectId,
+                            repoName = folderInfo.repoName,
+                            fullPath = folderInfo.fullPath,
+                            size = statInfo.size,
+                            nodeNum = statInfo.nodeNum
+                        )
                     )
                 )
-                if (updateList.size >= BATCH_LIMIT) {
-                    mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, collectionName)
-                        .updateOne(updateList)
-                        .execute()
-                    updateList.clear()
-                }
             }
         }
-        if (updateList.isNotEmpty()) {
-            mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, collectionName)
-                .updateOne(updateList)
-                .execute()
-            updateList.clear()
+        // 按 projectId 分组后批量写入（双写期走 NodeMongoOperations）
+        val col = collectionName ?: return
+        entries.groupBy { it.projectId }.forEach { (projectId, group) ->
+            group.map { it.clause }.chunked(BATCH_LIMIT).forEach { batch ->
+                val ops = nodeMongoOperations
+                if (ops != null) {
+                    ops.bulkUpdateOne(projectId, col, batch)
+                } else {
+                    routedTemplate(projectId, col)
+                        .bulkOps(BulkOperations.BulkMode.UNORDERED, col)
+                        .updateOne(batch)
+                        .execute()
+                }
+            }
         }
         redisTemplate.delete(key)
     }
