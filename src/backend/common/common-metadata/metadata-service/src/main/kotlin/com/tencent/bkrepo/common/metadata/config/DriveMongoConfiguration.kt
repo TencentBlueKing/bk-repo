@@ -10,6 +10,7 @@ import io.micrometer.core.instrument.binder.mongodb.MongoMetricsCommandListener
 import io.micrometer.core.instrument.binder.mongodb.MongoMetricsConnectionPoolListener
 import io.micrometer.observation.ObservationRegistry
 import org.springframework.beans.factory.ObjectProvider
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.mongo.MongoClientFactory
 import org.springframework.boot.autoconfigure.mongo.MongoProperties
 import org.springframework.boot.autoconfigure.mongo.PropertiesMongoConnectionDetails
@@ -29,9 +30,13 @@ import org.springframework.data.mongodb.core.convert.MappingMongoConverter
  * BKDrive 独立数据库同步访问配置。
  *
  * 通过 spring.data.mongodb.drive 指定连接；未配置时回落到默认 mongoTemplate。
+ * @ConditionalOnBean(MongoTemplate::class) 确保默认 mongoTemplate 先于 driveMongoTemplate 创建，
+ * 避免 driveMongoTemplate 注册时干扰 MongoDataAutoConfiguration 中
+ * @ConditionalOnMissingBean(MongoOperations) 的判断。
  */
 @Configuration
 @Conditional(SyncCondition::class)
+@ConditionalOnBean(MongoTemplate::class)
 class DriveMongoConfiguration {
 
     @Bean
