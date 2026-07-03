@@ -12,7 +12,7 @@
             <i class="devops-icon icon-down-shape ml5" />
         </div>
         <template slot="content">
-            <div v-if="showAccountInfo" class="user-account-info">
+            <div class="user-account-info">
                 <div v-if="showEnterpriseSpace" class="user-account-row">
                     <span class="user-account-label">{{ $t('enterpriseSpace') }}</span>
                     <span class="user-account-value">{{ tenantId }}</span>
@@ -62,10 +62,6 @@
                     // 'repoHelp'
                 ]
             },
-            // 独立部署模式才在下拉里展示企业空间/时区信息
-            isStandalone () {
-                return MODE_CONFIG === 'standalone'
-            },
             // 多租户环境开关
             isMultiTenant () {
                 return BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true'
@@ -73,12 +69,9 @@
             tenantId () {
                 return this.userInfo.tenantId || ''
             },
-            // 企业空间仅在多租户环境且存在租户时展示
+            // 企业空间仅在多租户环境且存在租户时展示；时区任何部署都展示
             showEnterpriseSpace () {
                 return this.isMultiTenant && Boolean(this.tenantId)
-            },
-            showAccountInfo () {
-                return this.isStandalone
             },
             defaultTimeZone () {
                 try {
