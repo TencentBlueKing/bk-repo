@@ -150,6 +150,24 @@ internal class MavenStringUtilsTest {
     }
 
     @Test
+    fun resolverNameWithPlaceholderArtifactId() {
+        val artifactId = "my-\${property}"
+        val jarName = "my-\${property}-1.0.pom"
+        val mavenVersion = MavenVersion(
+            artifactId = artifactId,
+            version = "1.0",
+            packaging = "pom"
+        )
+        mavenVersion.setVersion(jarName)
+        assertAll(
+            { Assertions.assertEquals(artifactId, mavenVersion.artifactId) },
+            { Assertions.assertEquals("1.0", mavenVersion.version) },
+            { Assertions.assertEquals(null, mavenVersion.classifier) },
+            { Assertions.assertEquals("pom", mavenVersion.packaging) }
+        )
+    }
+
+    @Test
     fun parseMavenFileNameTest() {
         var jarName = "my-app-4.0-20220110.065755-5-jar-with-dependencies.jar"
         var mavenVersion = parseMavenFileName(jarName)
