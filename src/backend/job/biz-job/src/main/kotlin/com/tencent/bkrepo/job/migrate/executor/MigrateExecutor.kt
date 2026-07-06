@@ -93,6 +93,7 @@ class MigrateExecutor(
         val projectId = task.projectId
         val repoName = task.repoName
         val taskId = task.id!!
+        waitBeforeMigrate(projectId, repoName)
         val iterator = NodeIterator(task, mongoTemplate)
         val totalCount = iterator.totalCount
         val migratedNumberQueue = MigratedTaskNumberPriorityQueue(task.migratedCount, task.lastMigratedNodeId)
@@ -132,6 +133,19 @@ class MigrateExecutor(
         context.waitAllTransferFinished()
         val migrated = migratedNumberQueue.updateLeftMax()
         migrateRepoStorageTaskDao.updateMigratedCount(taskId, migrated.number, migrated.nodeId)
+    }
+
+    private fun waitBeforeMigrate(projectId: String, repoName: String) {
+        if (properties.migrateDelay.isZero || properties.migrateDelay.isNegative) {
+            return
+        }
+        logger.info("wait[${properties.migrateDelay}] before migrate data, task[$projectId/$repoName]")
+        try {
+            TimeUnit.MILLISECONDS.sleep(properties.migrateDelay.toMillis())
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+            throw IllegalStateException("wait before migrate data interrupted, task[$projectId/$repoName]", e)
+        }
     }
 
     /**

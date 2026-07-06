@@ -34,6 +34,7 @@ import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Query
 import java.io.FileNotFoundException
+import java.time.Duration
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
@@ -46,6 +47,7 @@ class MigrateExecutorTest @Autowired constructor(
     @BeforeAll
     fun beforeAll() {
         migrateRepoStorageProperties.updateProgressInterval = 1
+        migrateRepoStorageProperties.migrateDelay = Duration.ZERO
     }
 
     @AfterAll
