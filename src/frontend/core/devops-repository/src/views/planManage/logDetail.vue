@@ -116,7 +116,8 @@
                 ]
             }
         },
-        created () {
+        async created () {
+            await this.getClusterList()
             this.handlerPaginationChange()
             this.getPlanLogDetail({
                 id: this.logId
@@ -135,7 +136,7 @@
         },
         methods: {
             formatDate,
-            ...mapActions(['getPlanLogDetail', 'getPlanLogPackageList']),
+            ...mapActions(['getClusterList', 'getPlanLogDetail', 'getPlanLogPackageList']),
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
                 this.pagination.limit = limit
