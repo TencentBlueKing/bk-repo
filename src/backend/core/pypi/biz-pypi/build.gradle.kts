@@ -30,6 +30,7 @@
  */
 
 dependencies {
+    api(project(":common:common-lock"))
     api(project(":common:common-artifact:artifact-service"))
     api(project(":core:pypi:api-pypi"))
     api(project(":common:common-job"))

@@ -22,6 +22,7 @@ import com.tencent.bkrepo.pypi.constants.SIMPLE_PAGE_CONTENT
 import com.tencent.bkrepo.pypi.constants.VERSION
 import com.tencent.bkrepo.pypi.constants.VERSION_INDEX_TITLE
 import com.tencent.bkrepo.pypi.exception.PypiSimpleNotFoundException
+import com.tencent.bkrepo.pypi.lock.PypiSimpleIndexCacheLocks
 import com.tencent.bkrepo.pypi.util.HtmlUtils
 import com.tencent.bkrepo.pypi.util.PypiSimpleIndexUtils
 import com.tencent.bkrepo.repository.constant.FULL_PATH
@@ -50,17 +51,36 @@ class PypiSimpleIndexService(
     private val storageManager: StorageManager,
     private val repositoryService: RepositoryService,
     private val pypiProperties: PypiProperties,
+    private val cacheLocks: PypiSimpleIndexCacheLocks,
 ) {
 
     fun getSimpleHtml(artifactInfo: PypiSimpleArtifactInfo): String {
         if (!pypiProperties.enableSimpleIndexCache) {
             return generateSimpleHtml(artifactInfo)
         }
+        val projectId = artifactInfo.projectId
+        val repoName = artifactInfo.repoName
         val cachePath = getCachePath(artifactInfo)
-        loadCachedHtml(artifactInfo.projectId, artifactInfo.repoName, cachePath)?.let { return it }
-        val html = generateSimpleHtml(artifactInfo)
-        storeCachedHtml(artifactInfo.projectId, artifactInfo.repoName, cachePath, html)
-        return html
+        loadCachedHtml(projectId, repoName, cachePath)?.let { return it }
+        val lockedResult = cacheLocks.withReadLock(
+            projectId = projectId,
+            repoName = repoName,
+            fullPath = cachePath,
+            whileWaiting = { loadCachedHtml(projectId, repoName, cachePath) },
+        ) {
+            loadCachedHtml(projectId, repoName, cachePath) ?: run {
+                val html = generateSimpleHtml(artifactInfo)
+                storeCachedHtml(projectId, repoName, cachePath, html)
+                html
+            }
+        }
+        return lockedResult ?: run {
+            logger.warn(
+                "Failed to acquire simple index lock within ${PypiSimpleIndexCacheLocks.READ_LOCK_TIMEOUT_SECONDS}s " +
+                    "[$projectId/$repoName$cachePath], generate without cache"
+            )
+            generateSimpleHtml(artifactInfo)
+        }
     }
 
     fun refreshAfterUpload(projectId: String, repoName: String, packageName: String, operator: String) {
@@ -68,12 +88,12 @@ class PypiSimpleIndexService(
             return
         }
         runCatching {
-            refreshPackageListIndex(projectId, repoName, operator)
             refreshPackageIndex(projectId, repoName, packageName, operator)
             val normalized = PypiSimpleIndexUtils.normalizePackageName(packageName)
             if (normalized != packageName) {
                 refreshPackageIndex(projectId, repoName, normalized, operator)
             }
+            refreshPackageListIndex(projectId, repoName, operator)
         }.onFailure { e ->
             logger.warn(
                 "Failed to refresh simple index cache after upload [$projectId/$repoName/$packageName]: ${e.message}",
@@ -93,17 +113,18 @@ class PypiSimpleIndexService(
             return
         }
         runCatching {
-            refreshPackageListIndex(projectId, repoName, operator)
             if (deleteWholePackage) {
                 PypiSimpleIndexUtils.packageCachePaths(packageName).forEach { cachePath ->
                     deleteCachedHtml(projectId, repoName, cachePath, operator)
                 }
+                refreshPackageListIndex(projectId, repoName, operator)
             } else {
                 refreshPackageIndex(projectId, repoName, packageName, operator)
                 val normalized = PypiSimpleIndexUtils.normalizePackageName(packageName)
                 if (normalized != packageName) {
                     refreshPackageIndex(projectId, repoName, normalized, operator)
                 }
+                refreshPackageListIndex(projectId, repoName, operator)
             }
         }.onFailure { e ->
             logger.warn(
@@ -122,36 +143,42 @@ class PypiSimpleIndexService(
     }
 
     private fun refreshPackageListIndex(projectId: String, repoName: String, operator: String) {
-        try {
-            val html = generatePackageListHtml(projectId, repoName)
-            storeCachedHtml(projectId, repoName, PypiSimpleIndexUtils.getPackageListCachePath(), html, operator)
-        } catch (e: PypiSimpleNotFoundException) {
-            deleteCachedHtml(projectId, repoName, PypiSimpleIndexUtils.getPackageListCachePath(), operator)
-        } catch (e: Exception) {
-            logger.warn(
-                "Failed to refresh package list index cache [$projectId/$repoName]: ${e.message}",
-                e
-            )
+        val fullPath = PypiSimpleIndexUtils.getPackageListCachePath()
+        val refreshed = cacheLocks.withWriteLock(projectId, repoName, fullPath) {
+            try {
+                val html = generatePackageListHtml(projectId, repoName)
+                storeCachedHtml(projectId, repoName, fullPath, html, operator)
+            } catch (e: PypiSimpleNotFoundException) {
+                doDeleteCachedHtml(projectId, repoName, fullPath, operator)
+            } catch (e: Exception) {
+                logger.warn(
+                    "Failed to refresh package list index cache [$projectId/$repoName]: ${e.message}",
+                    e
+                )
+            }
+        }
+        if (!refreshed) {
+            logger.warn("Skip simple index refresh due to lock timeout [$projectId/$repoName$fullPath]")
         }
     }
 
     private fun refreshPackageIndex(projectId: String, repoName: String, packageName: String, operator: String) {
-        try {
-            val html = generatePackageHtml(projectId, repoName, packageName)
-            storeCachedHtml(
-                projectId,
-                repoName,
-                PypiSimpleIndexUtils.getPackageCachePath(packageName),
-                html,
-                operator
-            )
-        } catch (e: PypiSimpleNotFoundException) {
-            deleteCachedHtml(projectId, repoName, PypiSimpleIndexUtils.getPackageCachePath(packageName), operator)
-        } catch (e: Exception) {
-            logger.warn(
-                "Failed to refresh package index cache [$projectId/$repoName/$packageName]: ${e.message}",
-                e
-            )
+        val fullPath = PypiSimpleIndexUtils.getPackageCachePath(packageName)
+        val refreshed = cacheLocks.withWriteLock(projectId, repoName, fullPath) {
+            try {
+                val html = generatePackageHtml(projectId, repoName, packageName)
+                storeCachedHtml(projectId, repoName, fullPath, html, operator)
+            } catch (e: PypiSimpleNotFoundException) {
+                doDeleteCachedHtml(projectId, repoName, fullPath, operator)
+            } catch (e: Exception) {
+                logger.warn(
+                    "Failed to refresh package index cache [$projectId/$repoName/$packageName]: ${e.message}",
+                    e
+                )
+            }
+        }
+        if (!refreshed) {
+            logger.warn("Skip simple index refresh due to lock timeout [$projectId/$repoName$fullPath]")
         }
     }
 
@@ -218,6 +245,15 @@ class PypiSimpleIndexService(
     }
 
     private fun deleteCachedHtml(projectId: String, repoName: String, fullPath: String, operator: String) {
+        val deleted = cacheLocks.withWriteLock(projectId, repoName, fullPath) {
+            doDeleteCachedHtml(projectId, repoName, fullPath, operator)
+        }
+        if (!deleted) {
+            logger.warn("Skip simple index delete due to lock timeout [$projectId/$repoName$fullPath]")
+        }
+    }
+
+    private fun doDeleteCachedHtml(projectId: String, repoName: String, fullPath: String, operator: String) {
         try {
             if (nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath)) == null) {
                 return
