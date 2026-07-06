@@ -111,36 +111,61 @@ class FileTransferService(
             fileAttribute.artifactUri!!
         )
         setFileTransferAttribute(artifactInfo, fileAttribute, true)
-        val node = ArtifactContextHolder.getNodeDetail(artifactInfo)
         val context = ArtifactDownloadContext()
-        val isDriveRepo = context.repositoryDetail.type == RepositoryType.DRIVE
-        if (node == null && context.repositoryDetail.category == RepositoryCategory.LOCAL && !isDriveRepo) {
+        return if (context.repositoryDetail.type == RepositoryType.DRIVE) {
+            downloadFromDriveRepo(context)
+        } else {
+            downloadFromNodeRepo(artifactInfo, context)
+        }
+    }
+
+    private fun downloadFromNodeRepo(
+        artifactInfo: ArtifactInfo,
+        context: ArtifactDownloadContext,
+    ): DownloadResult? {
+        val node = ArtifactContextHolder.getNodeDetail(artifactInfo)
+        if (node == null && context.repositoryDetail.category == RepositoryCategory.LOCAL) {
             throw PreviewNotFoundException(
                 PreviewMessageCode.PREVIEW_NODE_NOT_FOUND,
                 "${artifactInfo.projectId}|${artifactInfo.repoName}|${artifactInfo.getArtifactFullPath()}"
             )
         }
+        val result = downloadArtifactToTempFile(context)
+        if (result.code != DownloadResult.CODE_FAIL) {
+            result.md5 = node!!.md5
+            result.size = node.size
+        }
+        return result
+    }
+
+    private fun downloadFromDriveRepo(context: ArtifactDownloadContext): DownloadResult {
+        val result = downloadArtifactToTempFile(context)
+        if (result.code != DownloadResult.CODE_FAIL) {
+            fillDriveDownloadMetadata(result)
+        }
+        return result
+    }
+
+    private fun downloadArtifactToTempFile(context: ArtifactDownloadContext): DownloadResult {
         val result = DownloadResult()
         try {
             repository.download(context)
             val request: HttpServletRequest = HttpContextHolder.getRequest()
             result.filePath = request.getAttribute(PREVIEW_TMP_FILE_SAVE_PATH)?.toString()
-            if (isDriveRepo) {
-                val md5AndSize = FileUtils.getFileMd5AndSize(result.filePath!!)
-                result.md5 = md5AndSize?.first
-                result.size = md5AndSize?.second ?: 0
-            } else {
-                result.md5 = node!!.md5
-                result.size = node.size
-            }
         } catch (e: Exception) {
             result.apply {
                 code = DownloadResult.CODE_FAIL
                 msg = "Download Faile from bkrepo,$e"
             }
         }
-
         return result
+    }
+
+    private fun fillDriveDownloadMetadata(result: DownloadResult) {
+        val filePath = result.filePath ?: return
+        val md5AndSize = FileUtils.getFileMd5AndSize(filePath)
+        result.md5 = md5AndSize?.first
+        result.size = md5AndSize?.second ?: 0
     }
 
     fun upload(fileAttribute: FileAttribute, sourcePath: String): NodeDetail {

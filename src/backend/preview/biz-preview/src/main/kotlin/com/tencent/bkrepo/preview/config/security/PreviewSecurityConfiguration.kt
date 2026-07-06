@@ -67,6 +67,6 @@ class PreviewSecurityConfiguration {
     @Primary
     fun previewPermissionCheckHandler(permissionManager: PermissionManager): PermissionCheckHandler {
         val delegate = ArtifactPermissionCheckHandler(permissionManager)
-        return PreviewArtifactPermissionCheckHandler(delegate, permissionManager)
+        return PreviewArtifactPermissionCheckHandler(delegate)
     }
 }
