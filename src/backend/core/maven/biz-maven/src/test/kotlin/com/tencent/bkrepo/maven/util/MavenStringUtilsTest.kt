@@ -2,6 +2,7 @@ package com.tencent.bkrepo.maven.util
 
 import com.tencent.bkrepo.maven.pojo.MavenVersion
 import com.tencent.bkrepo.maven.util.MavenStringUtils.parseMavenFileName
+import com.tencent.bkrepo.maven.util.MavenStringUtils.resolverName
 import com.tencent.bkrepo.maven.util.MavenStringUtils.setVersion
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -151,18 +152,17 @@ internal class MavenStringUtilsTest {
 
     @Test
     fun resolverNameWithPlaceholderVersion() {
+        // MavenLocalRepository.getUniquePath:634
+        // name.resolverName(mavenArtifactInfo.artifactId, mavenArtifactInfo.versionId)
+        val name = "uedm-parent-\${revision}-SNAPSHOT.pom"
         val artifactId = "uedm-parent"
-        val version = "\${revision}-SNAPSHOT"
-        val pomName = "uedm-parent-\${revision}-SNAPSHOT.pom"
-        val mavenVersion = MavenVersion(
-            artifactId = artifactId,
-            version = version,
-            packaging = "pom"
-        )
-        mavenVersion.setVersion(pomName)
+        val versionId = "\${revision}-SNAPSHOT"
+        val mavenVersion = name.resolverName(artifactId, versionId)
         assertAll(
             { Assertions.assertEquals(artifactId, mavenVersion.artifactId) },
-            { Assertions.assertEquals(version, mavenVersion.version) },
+            { Assertions.assertEquals(versionId, mavenVersion.version) },
+            { Assertions.assertEquals(null, mavenVersion.timestamp) },
+            { Assertions.assertEquals(null, mavenVersion.buildNo) },
             { Assertions.assertEquals(null, mavenVersion.classifier) },
             { Assertions.assertEquals("pom", mavenVersion.packaging) }
         )
