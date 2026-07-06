@@ -150,6 +150,25 @@ internal class MavenStringUtilsTest {
     }
 
     @Test
+    fun resolverNameWithPlaceholderVersion() {
+        val artifactId = "uedm-parent"
+        val version = "\${revision}-SNAPSHOT"
+        val pomName = "uedm-parent-\${revision}-SNAPSHOT.pom"
+        val mavenVersion = MavenVersion(
+            artifactId = artifactId,
+            version = version,
+            packaging = "pom"
+        )
+        mavenVersion.setVersion(pomName)
+        assertAll(
+            { Assertions.assertEquals(artifactId, mavenVersion.artifactId) },
+            { Assertions.assertEquals(version, mavenVersion.version) },
+            { Assertions.assertEquals(null, mavenVersion.classifier) },
+            { Assertions.assertEquals("pom", mavenVersion.packaging) }
+        )
+    }
+
+    @Test
     fun resolverNameWithPlaceholderArtifactId() {
         val artifactId = "my-\${property}"
         val jarName = "my-\${property}-1.0.pom"
