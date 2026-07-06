@@ -52,6 +52,9 @@ pluginManagement {
             gradlePluginPortal()
         }
     }
+    plugins {
+        kotlin("plugin.lombok") version "2.0.21"
+    }
 }
 
 fun File.directories() = listFiles()?.filter { it.isDirectory && it.name != "build" }?.toList() ?: emptyList()
