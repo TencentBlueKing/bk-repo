@@ -63,7 +63,7 @@ class MigrateRepoStorageProperties(
     /**
      * 开始迁移数据前的等待时间，用于等待缓存中的仓库旧存储key刷新
      */
-    var migrateDelay: Duration = Duration.ofMinutes(1L),
+    var migrateDelay: Duration = Duration.ofMinutes(2L),
 
     /**
      * 从开始执行迁移任务到可执行数据矫正的时间间隔，用于等待传输中的制品完成传输，避免执行数据矫正时候还有数据在传输到旧存储中
