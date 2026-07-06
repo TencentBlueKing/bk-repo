@@ -512,18 +512,19 @@ open class PermissionServiceImpl constructor(
         // 一次 Mongo 查询：项目下严格模式仓库集合（命中复合索引）
         val strictRepos = repoAuthConfigDao.listRepoNamesByMode(projectId, STRICT)
         if (strictRepos.isEmpty()) return repos
-        // 一次（或两次）Mongo 查询：用户/角色对这些 strict 仓库的已有授权
-        val grantedByPermission = permHelper.listGrantedRepos(projectId, userId, roles, strictRepos)
-        // 仓库管理员豁免：用户所在角色中若为某严格模式仓库的仓库管理员（RoleType.REPO + admin=true），
-        // 该仓库对其可见，不受严格模式过滤限制
-        val grantedByRepoAdmin: Set<String> = if (roles.isNotEmpty()) {
+        // 严格模式仓库的可见集合，聚合两类授权来源，filter 时只需一次 contains：
+        // 1) 用户/角色对这些 strict 仓库的已有授权（一次或两次 Mongo 查询）
+        val granted = permHelper.listGrantedRepos(projectId, userId, roles, strictRepos).toMutableSet()
+        // 2) 仓库管理员豁免：用户所在角色中若为某严格模式仓库的仓库管理员（RoleType.REPO + admin=true），
+        //    该仓库对其可见，不受严格模式过滤限制
+        if (roles.isNotEmpty()) {
             roleRepository.findByProjectIdAndTypeAndAdminAndIdIn(
                 projectId = projectId, type = RoleType.REPO, admin = true, ids = roles
-            ).mapNotNullTo(mutableSetOf()) { role ->
-                role.repoName?.takeIf { it in strictRepos }
+            ).forEach { role ->
+                role.repoName?.takeIf { it in strictRepos }?.let { granted.add(it) }
             }
-        } else emptySet()
-        return repos.filter { it !in strictRepos || it in grantedByPermission || it in grantedByRepoAdmin }
+        }
+        return repos.filter { it !in strictRepos || it in granted }
     }
 
     override fun listNoPermissionPath(
