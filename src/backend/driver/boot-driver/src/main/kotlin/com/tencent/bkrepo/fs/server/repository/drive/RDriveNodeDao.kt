@@ -87,6 +87,17 @@ class RDriveNodeDao : DriveHashShardingMongoReactiveDao<TDriveNode>() {
         return findOne(query)
     }
 
+    suspend fun findSnapshotNode(
+        projectId: String,
+        repoName: String,
+        parent: Long,
+        name: String,
+        snapSeq: Long?,
+    ): TDriveNode? {
+        val query = Query(snapshotParentNameCriteria(projectId, repoName, parent, name, snapSeq))
+        return findOne(query)
+    }
+
     suspend fun existsIno(projectId: String, repoName: String, ino: Long): Boolean {
         val criteria = where(TDriveNode::projectId).isEqualTo(projectId)
             .and(TDriveNode::repoName).isEqualTo(repoName)

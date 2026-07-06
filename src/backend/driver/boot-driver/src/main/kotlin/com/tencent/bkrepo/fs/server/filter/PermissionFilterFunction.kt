@@ -119,6 +119,7 @@ class PermissionFilterFunction(
         private val WRITE_REQUEST_URL_PATTERN_SET = arrayOf(
             "/drive/block/**",
             "/drive/node/upload/**",
+            "/drive/temporary/upload/**",
             "/drive/repository/**",
             "/drive/snapshot/create/**",
             "/drive/snapshot/update/**",
@@ -136,7 +137,9 @@ class PermissionFilterFunction(
         private val uncheckedUrlPrefixList = listOf(
             "/login", "/devx/login", "/user/login",
             "/service", "/token", "/ioa", "/client/metrics/push", "/drive/repository/init/",
-            "/drive/oplog/"
+            "/drive/oplog/",
+            "/drive/temporary/upload/", "/drive/temporary/download/",
+            "/drive/temporary/token/create", "/drive/temporary/url/create",
         )
     }
 }

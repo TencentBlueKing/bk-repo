@@ -27,10 +27,10 @@ class DrivePathResolveServiceTest {
         val fileNode = fileNode(projectId, repoName, 10L, "readme.txt", 20L)
 
         whenever(
-            driveNodeDao.findCurrentNode(projectId, repoName, DriveNodePathHelper.ROOT_INO, "docs"),
+            driveNodeDao.findSnapshotNode(projectId, repoName, DriveNodePathHelper.ROOT_INO, "docs", null),
         ).thenReturn(dirNode)
         whenever(
-            driveNodeDao.findCurrentNode(projectId, repoName, 10L, "readme.txt"),
+            driveNodeDao.findSnapshotNode(projectId, repoName, 10L, "readme.txt", null),
         ).thenReturn(fileNode)
 
         val resolved = service.resolveFileNode(projectId, repoName, "/docs/readme.txt")
@@ -44,7 +44,7 @@ class DrivePathResolveServiceTest {
         val repoName = "drive-repo"
 
         whenever(
-            driveNodeDao.findCurrentNode(projectId, repoName, DriveNodePathHelper.ROOT_INO, "missing"),
+            driveNodeDao.findSnapshotNode(projectId, repoName, DriveNodePathHelper.ROOT_INO, "missing", null),
         ).thenReturn(null)
 
         val resolved = service.resolveFileNode(projectId, repoName, "/missing/file.txt")
@@ -59,7 +59,7 @@ class DrivePathResolveServiceTest {
         val dirNode = directoryNode(projectId, repoName, DriveNodePathHelper.ROOT_INO, "docs", 10L)
 
         whenever(
-            driveNodeDao.findCurrentNode(projectId, repoName, DriveNodePathHelper.ROOT_INO, "docs"),
+            driveNodeDao.findSnapshotNode(projectId, repoName, DriveNodePathHelper.ROOT_INO, "docs", null),
         ).thenReturn(dirNode)
 
         val resolved = service.resolveFileNode(projectId, repoName, "/docs")

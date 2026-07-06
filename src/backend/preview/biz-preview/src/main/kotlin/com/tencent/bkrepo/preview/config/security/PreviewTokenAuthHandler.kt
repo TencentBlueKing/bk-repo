@@ -27,6 +27,7 @@ import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.http.temporary.TemporaryTokenAuthCredentials
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.preview.constant.PreviewMessageCode
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory

@@ -59,6 +59,9 @@ class AuthHandlerFilterFunction(
         if (uncheckedUrlPrefixList.any { request.path().startsWith(it) }) {
             return next(request)
         }
+        if (temporaryAccessUrlPrefixList.any { request.path().startsWith(it) }) {
+            return next(request)
+        }
         var user = ANONYMOUS_USER
 
         val platformAuthCredentials = request.platformCredentials()
@@ -99,6 +102,10 @@ class AuthHandlerFilterFunction(
 
     companion object {
         private val uncheckedUrlPrefixList = listOf("/login", "/devx/login", "/ioa", "/client/metrics/push")
+        private val temporaryAccessUrlPrefixList = listOf(
+            "/drive/temporary/upload/",
+            "/drive/temporary/download/",
+        )
         private val logger = LoggerFactory.getLogger(AuthHandlerFilterFunction::class.java)
     }
 }

@@ -55,5 +55,7 @@ data class TemporaryTokenInfo(
     @get:Schema(title = "token类型")
     val type: TokenType,
     @get:Schema(title = "创建者")
-    val createdBy: String
+    val createdBy: String,
+    @get:Schema(title = "快照序列号，为空表示只读最新数据")
+    val snapSeq: Long? = null,
 )

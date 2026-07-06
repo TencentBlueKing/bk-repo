@@ -183,6 +183,8 @@ enum class EventType(val msgKey: String) {
     DRIVE_NODE_DELETE("artifact.event.drive.node-delete"),
     DRIVE_NODE_RENAME("artifact.event.drive.node-rename"),
     DRIVE_NODE_UPLOAD("artifact.event.drive.node-upload"),
+    DRIVE_TEMPORARY_UPLOAD("artifact.event.drive.temporary-upload"),
+    DRIVE_TEMPORARY_DOWNLOAD("artifact.event.drive.temporary-download"),
     DRIVE_SNAPSHOT_CREATE("artifact.event.drive.snapshot-create"),
     DRIVE_SNAPSHOT_LIST("artifact.event.drive.snapshot-list"),
     DRIVE_SNAPSHOT_UPDATE("artifact.event.drive.snapshot-update"),

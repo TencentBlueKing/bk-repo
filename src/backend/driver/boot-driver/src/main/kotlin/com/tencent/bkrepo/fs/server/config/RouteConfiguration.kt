@@ -48,6 +48,7 @@ import com.tencent.bkrepo.fs.server.handler.drive.DriveOperateLogHandler
 import com.tencent.bkrepo.fs.server.handler.drive.DriveOperationHandler
 import com.tencent.bkrepo.fs.server.handler.drive.DriveRepositoryHandler
 import com.tencent.bkrepo.fs.server.handler.drive.DriveSnapshotHandler
+import com.tencent.bkrepo.fs.server.handler.drive.DriveTemporaryAccessHandler
 import com.tencent.bkrepo.fs.server.handler.service.FsNodeHandler
 import com.tencent.bkrepo.fs.server.metrics.ServerMetrics
 import org.slf4j.LoggerFactory
@@ -80,6 +81,7 @@ class RouteConfiguration(
     private val driveRepositoryHandler: DriveRepositoryHandler,
     private val driveSnapshotHandler: DriveSnapshotHandler,
     private val driveOperateLogHandler: DriveOperateLogHandler,
+    private val driveTemporaryAccessHandler: DriveTemporaryAccessHandler,
     private val authHandlerFilterFunction: AuthHandlerFilterFunction,
     private val serverMetrics: ServerMetrics,
     private val devXAccessFilter: DevXAccessFilter,
@@ -163,6 +165,17 @@ class RouteConfiguration(
             }
             "/oplog".nest {
                 GET("/page/{projectId}/{repoName}", driveOperateLogHandler::page)
+            }
+            "/temporary".nest {
+                POST("/token/create", driveTemporaryAccessHandler::createToken)
+                POST("/url/create", driveTemporaryAccessHandler::createUrl)
+                filter(artifactFileCleanupFilterFunction::filter)
+                PUT("/upload/{projectId}/{repoName}/**", driveTemporaryAccessHandler::upload)
+                addMetrics(serverMetrics.uploadingCount)
+            }
+            accept(APPLICATION_OCTET_STREAM).nest {
+                GET("/temporary/download/{projectId}/{repoName}/**", driveTemporaryAccessHandler::download)
+                addMetrics(serverMetrics.downloadingCount)
             }
         }
 
