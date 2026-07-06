@@ -35,7 +35,7 @@
   | authorizedIpSet | list | 否 | [] | 授权 IP | authorized ip set |
   | expireSeconds | long | 否 | 86400 | 有效时间（秒） | expire seconds |
   | permits | int | 否 | 无限制 | 允许访问次数 | access permits |
-  | type | string | 是 | 无 | `UPLOAD` 或 `DOWNLOAD` | token type |
+  | type | string | 是 | 无 | `UPLOAD`、`DOWNLOAD` 或 `ALL` | token type |
   | snapSeq | long | 否 | 无 | 快照序列号，整批共用一个；为空表示只读最新 | snapshot sequence |
 
 ## 创建临时访问 URL

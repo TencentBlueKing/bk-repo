@@ -5,6 +5,7 @@ import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.UrlFormatter
@@ -20,10 +21,11 @@ import com.tencent.bkrepo.fs.server.request.drive.DriveTemporaryUrlCreateRequest
 import com.tencent.bkrepo.fs.server.response.drive.DriveTemporaryAccessToken
 import com.tencent.bkrepo.fs.server.response.drive.DriveTemporaryAccessUrl
 import com.tencent.bkrepo.fs.server.service.PermissionService
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_SHARE_ENABLED
 import kotlinx.coroutines.reactor.awaitSingle
-import org.springframework.stereotype.Service
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -36,7 +38,9 @@ class DriveTemporaryAccessService(
 ) {
     suspend fun createToken(request: TemporaryTokenCreateRequest, userId: String): List<DriveTemporaryAccessToken> {
         Preconditions.checkArgument(
-            request.type == TokenType.UPLOAD || request.type == TokenType.DOWNLOAD,
+            request.type == TokenType.UPLOAD ||
+                request.type == TokenType.DOWNLOAD ||
+                request.type == TokenType.ALL,
             "type",
         )
         validateCreateRequest(request, userId)
@@ -96,8 +100,8 @@ class DriveTemporaryAccessService(
         checkExpireTime(temporaryToken.expireDate)
         checkAccessType(temporaryToken.type, type)
         checkAccessResource(temporaryToken, projectId, repoName, fullPath, type)
+        checkAuthorization(temporaryToken)
         checkAccessPermits(temporaryToken.permits)
-        checkAuthorizedIp(temporaryToken)
         checkSnapSeq(temporaryToken.snapSeq, requestSnapSeq)
         return temporaryToken
     }
@@ -183,12 +187,19 @@ class DriveTemporaryAccessService(
         }
     }
 
-    private suspend fun checkAuthorizedIp(tokenInfo: TemporaryTokenInfo) {
-        if (tokenInfo.authorizedIpList.isEmpty()) {
-            return
+    private suspend fun checkAuthorization(tokenInfo: TemporaryTokenInfo) {
+        val authenticatedUid = ReactiveSecurityUtils.getUser()
+        if (tokenInfo.authorizedUserList.isNotEmpty() && authenticatedUid !in tokenInfo.authorizedUserList) {
+            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, authenticatedUid)
         }
+        val auditedUid = if (ReactiveSecurityUtils.isAnonymous()) {
+            tokenInfo.createdBy
+        } else {
+            authenticatedUid
+        }
+        ReactiveRequestContextHolder.getWebExchange().attributes[USER_KEY] = auditedUid
         val clientIp = ReactiveRequestContextHolder.getClientAddress()
-        if (clientIp !in tokenInfo.authorizedIpList) {
+        if (tokenInfo.authorizedIpList.isNotEmpty() && clientIp !in tokenInfo.authorizedIpList) {
             throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, clientIp)
         }
     }

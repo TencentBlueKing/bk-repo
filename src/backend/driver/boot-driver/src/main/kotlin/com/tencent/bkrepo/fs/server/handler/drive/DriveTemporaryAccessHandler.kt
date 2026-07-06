@@ -68,14 +68,15 @@ class DriveTemporaryAccessHandler(
             type = TokenType.UPLOAD,
             requestSnapSeq = null,
         )
-        driveUploadService.checkUploadTargetBeforeBody(uploadRequest, tokenInfo.createdBy)
+        val userId = ReactiveSecurityUtils.getUser()
+        driveUploadService.checkUploadTargetBeforeBody(uploadRequest, userId)
         val metadata = request.resolveBkRepoMetadata()
         val artifactFile = request.bodyToArtifactFile()
-        val result = driveUploadService.uploadCompleteFile(uploadRequest, artifactFile, metadata, tokenInfo.createdBy)
+        val result = driveUploadService.uploadCompleteFile(uploadRequest, artifactFile, metadata, userId)
         driveTemporaryAccessService.decrementPermits(tokenInfo)
         driveOperateLogService.record(
             type = EventType.DRIVE_TEMPORARY_UPLOAD.name,
-            userId = tokenInfo.createdBy,
+            userId = userId,
             clientAddress = clientAddress,
             projectId = uploadRequest.projectId,
             repoName = uploadRequest.repoName,
@@ -85,6 +86,7 @@ class DriveTemporaryAccessHandler(
                 "ino" to result.ino,
                 "size" to result.size,
                 "sha256" to artifactFile.getFileSha256(),
+                "shareUserId" to tokenInfo.createdBy,
                 "token" to maskToken(token),
             ),
         )
@@ -105,6 +107,7 @@ class DriveTemporaryAccessHandler(
             type = TokenType.DOWNLOAD,
             requestSnapSeq = requestSnapSeq,
         )
+        val userId = ReactiveSecurityUtils.getUser()
         val snapSeq = tokenInfo.snapSeq ?: requestSnapSeq
         val resourcePath = "${nodeRequest.projectId}/${nodeRequest.repoName}${nodeRequest.fullPath}"
         val driveNode = drivePathResolveService.resolveFileNode(
@@ -126,7 +129,7 @@ class DriveTemporaryAccessHandler(
         driveTemporaryAccessService.decrementPermits(tokenInfo)
         driveOperateLogService.record(
             type = EventType.DRIVE_TEMPORARY_DOWNLOAD.name,
-            userId = tokenInfo.createdBy,
+            userId = userId,
             clientAddress = clientAddress,
             projectId = nodeRequest.projectId,
             repoName = nodeRequest.repoName,
@@ -137,6 +140,7 @@ class DriveTemporaryAccessHandler(
                 "snapSeq" to snapSeq,
                 "rangeStart" to range.start,
                 "rangeEnd" to range.end,
+                "shareUserId" to tokenInfo.createdBy,
                 "token" to maskToken(token),
             ).filterValues { it != null } as Map<String, Any>,
         )

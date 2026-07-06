@@ -67,6 +67,10 @@ object ReactiveSecurityUtils {
             .attributes[USER_KEY] as? String ?: ANONYMOUS_USER
     }
 
+    suspend fun isAnonymous(): Boolean {
+        return getUser() == ANONYMOUS_USER
+    }
+
     fun getUserMono(): Mono<String> {
         return ReactiveRequestContextHolder
             .getWebExchangeMono().map {
