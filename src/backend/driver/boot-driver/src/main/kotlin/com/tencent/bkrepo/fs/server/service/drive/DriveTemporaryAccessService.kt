@@ -38,9 +38,7 @@ class DriveTemporaryAccessService(
 ) {
     suspend fun createToken(request: TemporaryTokenCreateRequest, userId: String): List<DriveTemporaryAccessToken> {
         Preconditions.checkArgument(
-            request.type == TokenType.UPLOAD ||
-                request.type == TokenType.DOWNLOAD ||
-                request.type == TokenType.ALL,
+            TokenType.entries.contains(request.type),
             "type",
         )
         validateCreateRequest(request, userId)
