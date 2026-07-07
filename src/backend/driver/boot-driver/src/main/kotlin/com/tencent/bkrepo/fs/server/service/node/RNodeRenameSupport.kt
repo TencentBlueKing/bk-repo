@@ -34,6 +34,7 @@ package com.tencent.bkrepo.fs.server.service.node
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildRenamedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
@@ -99,9 +100,16 @@ open class RNodeRenameSupport(
             nodeDao.remove(NodeQueryHelper.nodeQuery(projectId, repoName, node.fullPath))
         } else {
             // 修改自己
-            val selfQuery = NodeQueryHelper.nodeQuery(projectId, repoName, node.fullPath)
+            val oldFullPath = node.fullPath
+            val selfQuery = NodeQueryHelper.nodeQuery(projectId, repoName, oldFullPath)
             val selfUpdate = NodeQueryHelper.nodePathUpdate(newPath, newName, operator)
             nodeDao.updateFirst(selfQuery, selfUpdate)
+            // 分块(separate)上传节点的分块信息存储在block_node表中并以nodeFullPath关联，
+            // 重命名后需同步迁移block_node，否则下载时会因找不到分块而失败。
+            // 此处用sha256判断而非fsNode，避免文件夹重命名时为所有子节点查询元数据
+            if (node.sha256 == FAKE_SHA256) {
+                nodeBaseService.blockNodeService.moveBlocks(projectId, repoName, oldFullPath, newFullPath)
+            }
         }
     }
 
