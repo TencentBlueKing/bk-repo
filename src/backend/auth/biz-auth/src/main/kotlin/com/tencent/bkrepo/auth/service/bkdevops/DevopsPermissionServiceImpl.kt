@@ -92,8 +92,12 @@ class DevopsPermissionServiceImpl constructor(
 ) {
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
-        // 系统管理员 / 项目管理员：全量可见，不过滤
-        if (isUserSystemAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)) {
+        // 系统管理员 / 本地项目管理员 / Devops 项目管理员：全量可见，不参与严格模式过滤
+        // 与 checkDevopsPermission 中的管理员判定口径保持一致
+        if (isUserSystemAdmin(userId)
+            || isUserLocalProjectAdmin(userId, projectId)
+            || isDevopsProjectAdmin(userId, projectId)
+        ) {
             return getAllRepoByProjectId(projectId)
         }
         // Devops 项目成员：全量可见，但严格模式仓库需有显式授权才可见
