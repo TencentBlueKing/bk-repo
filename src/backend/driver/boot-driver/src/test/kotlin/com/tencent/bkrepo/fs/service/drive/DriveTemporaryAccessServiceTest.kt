@@ -117,7 +117,7 @@ class DriveTemporaryAccessServiceTest {
     }
 
     @Test
-    fun `should use header uid as audited user for anonymous request`() {
+    fun `should use token creator as audited user for anonymous request`() {
         runBlocking {
             mockTokenInfo(snapSeq = null)
             whenever(permissionService.checkNodePermission(any(), any(), any(), any(), any())).thenReturn(true)
@@ -133,7 +133,7 @@ class DriveTemporaryAccessServiceTest {
                 requestSnapSeq = null,
             )
             val exchange = ReactiveRequestContextHolder.getWebExchange()
-            assertEquals("consumer", exchange.attributes[USER_KEY])
+            assertEquals(USER_ID, exchange.attributes[USER_KEY])
         }
     }
 

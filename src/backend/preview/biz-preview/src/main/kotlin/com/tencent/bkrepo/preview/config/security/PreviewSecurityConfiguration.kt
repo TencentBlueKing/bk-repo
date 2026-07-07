@@ -41,8 +41,10 @@ class PreviewSecurityConfiguration {
      * preview token 鉴权改由阶段二 [PreviewTokenPostAuthInterceptor] 触发。
      */
     @Bean
-    fun previewHttpAuthSecurityCustomizer(): HttpAuthSecurityCustomizer = HttpAuthSecurityCustomizer { httpAuthSecurity ->
-        httpAuthSecurity.temporaryTokenEnabled = false
+    fun previewHttpAuthSecurityCustomizer(): HttpAuthSecurityCustomizer {
+        return HttpAuthSecurityCustomizer { httpAuthSecurity ->
+            httpAuthSecurity.temporaryTokenEnabled = false
+        }
     }
 
     @Bean
