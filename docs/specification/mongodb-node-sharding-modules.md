@@ -47,7 +47,9 @@ interface MongoRoutingRegistry {
     fun getRoutedProjectIds(ruleName: String): Set<String>
     /** Tier-Biz：展开 business-routing 组内全部 projectId */
     fun expandBusinessGroupProjects(ruleName: String, businessId: String): Set<String>
+    /** `routing-state != OFF` + 项目在 project-routing + `phase >= ROUTED` */
     fun isProjectRoutedOut(ruleName: String, projectId: String): Boolean
+    /** `routing-state=DUAL_WRITE` + 项目在 project-routing + `phase=DUAL_WRITE` */
     fun isProjectInDualWrite(ruleName: String, projectId: String): Boolean
     fun validateOnStartup()
 }
@@ -253,8 +255,6 @@ M1 `resolveOffload(ruleName)` + M2 `DualWriteExecutor`
 1. `routing-state=DUAL_WRITE`
 2. `projectId` 在 `project-routing` 中
 3. `mongo_migration_sync_state.phase == DUAL_WRITE`（`READY` 后由运维调 `POST /migration/dual-write` 推进）
-
-> ponytail: 三态枚举 `OFF/DUAL_WRITE/ROUTED` 替代原 `routing-enabled` + `dual-write` 双布尔字段，从源头消除 `(false, true)` 非法组合。
 
 ### 7.3 改动面
 

@@ -86,6 +86,7 @@ import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.oci.util.OciUtils
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
@@ -503,7 +504,8 @@ class OciRegistryLocalRepository(
      */
     override fun remove(context: ArtifactRemoveContext) {
         with(context.artifactInfo) {
-            val fullPath = ociOperationService.getNodeFullPath(this as OciArtifactInfo)
+            val ociArtifactInfo = this as OciArtifactInfo
+            val fullPath = ociOperationService.getNodeFullPath(ociArtifactInfo)
                 ?: throw OciFileNotFoundException(
                     OciMessageCode.OCI_FILE_NOT_FOUND, getArtifactFullPath(), getRepoIdentify()
                 )
@@ -514,8 +516,115 @@ class OciRegistryLocalRepository(
             logger.info("Ready to delete $fullPath in repo ${getRepoIdentify()}")
             val request = NodeDeleteRequest(projectId, repoName, fullPath, context.userId)
             nodeService.deleteNode(request)
+
+            // 同步清理 package/version 元数据，保证节点与元数据一致
+            cleanUpMetadataAfterRemove(ociArtifactInfo, fullPath)
+
             OciResponseUtils.buildDeleteResponse(context.response)
         }
+    }
+
+    /**
+     * 删除节点后同步清理 package/version 元数据，保证节点与元数据一致
+     */
+    private fun cleanUpMetadataAfterRemove(ociArtifactInfo: OciArtifactInfo, fullPath: String) {
+        with(ociArtifactInfo) {
+            try {
+                when (ociArtifactInfo) {
+                    is OciManifestArtifactInfo -> {
+                        cleanupVersionMetadata(ociArtifactInfo)
+                    }
+                    is OciBlobArtifactInfo -> {
+                        cleanupOrphanedBlobVersion(ociArtifactInfo, fullPath)
+                    }
+                }
+            } catch (e: Exception) {
+                logger.warn(
+                    "Failed to clean up metadata after node deletion [$fullPath] in repo ${getRepoIdentify()}: " +
+                        e.message
+                )
+            }
+        }
+    }
+
+    /**
+     * 删除 manifest 后清理对应的 version 元数据
+     */
+    private fun cleanupVersionMetadata(artifactInfo: OciManifestArtifactInfo) {
+        with(artifactInfo) {
+            if (packageName.isEmpty() || reference.isEmpty()) return
+            val repoType = repositoryService.getRepoDetail(projectId, repoName)?.type?.name ?: return
+            val packageKey = PackageKeys.ofName(repoType.lowercase(Locale.getDefault()), packageName)
+            val versionName = reference
+            logger.info(
+                "Cleaning up version metadata for [$packageKey/$versionName] after manifest deletion " +
+                    "in repo ${getRepoIdentify()}"
+            )
+            packageService.deleteVersion(projectId, repoName, packageKey, versionName)
+
+            // 如果该 package 下没有剩余版本，删除 package 元数据
+            if (packageService.listAllVersion(projectId, repoName, packageKey, VersionListOption()).isEmpty()) {
+                packageService.deletePackage(projectId, repoName, packageKey)
+                logger.info(
+                    "Cleaned up package metadata for [$packageKey] after manifest deletion " +
+                        "in repo ${getRepoIdentify()}"
+                )
+            }
+        }
+    }
+
+    /**
+     * 删除 blob 后检查对应版本是否已成为孤儿版本（manifest 已被删除），若是则清理元数据
+     */
+    private fun cleanupOrphanedBlobVersion(artifactInfo: OciBlobArtifactInfo, fullPath: String) {
+        with(artifactInfo) {
+            if (packageName.isEmpty()) return
+            // 尝试从 blob 路径中提取版本信息
+            // 新版本 blobs 路径格式：/{packageName}/blobs/{version}/sha256:xxx
+            // 旧版本 blobs 路径格式：/{packageName}/blobs/sha256:xxx（无版本信息，无法判断归属）
+            val version = extractVersionFromBlobPath(fullPath) ?: return
+            if (version.isEmpty()) return
+
+            val repoType = repositoryService.getRepoDetail(projectId, repoName)?.type?.name ?: return
+            val packageKey = PackageKeys.ofName(repoType.lowercase(Locale.getDefault()), packageName)
+
+            // 检查该版本是否还有 manifest 节点存在
+            val manifestFolder = OciLocationUtils.buildManifestVersionFolderPath(packageName, version)
+            val manifestNodes = nodeService.listNode(
+                ArtifactInfo(projectId, repoName, manifestFolder),
+                NodeListOption(includeFolder = false, deep = false)
+            )
+            if (manifestNodes.isNotEmpty()) {
+                return  // 仍存在 manifest，不清理版本元数据
+            }
+
+            logger.info(
+                "No manifest found for version [$version], cleaning up orphaned version metadata for " +
+                    "[$packageKey/$version] after blob deletion in repo ${getRepoIdentify()}"
+            )
+            packageService.deleteVersion(projectId, repoName, packageKey, version)
+
+            if (packageService.listAllVersion(projectId, repoName, packageKey, VersionListOption()).isEmpty()) {
+                packageService.deletePackage(projectId, repoName, packageKey)
+                logger.info(
+                    "Cleaned up package metadata for [$packageKey] after blob deletion in repo ${getRepoIdentify()}"
+                )
+            }
+        }
+    }
+
+    /**
+     * 从 blob 节点路径中提取版本名
+     * 新格式: /{packageName}/blobs/{version}/sha256:xxx -> 返回 version
+     * 旧格式: /{packageName}/blobs/sha256:xxx -> 返回 null（无版本信息）
+     */
+    private fun extractVersionFromBlobPath(fullPath: String): String? {
+        val parts = fullPath.split("/")
+        // 新格式路径至少为5段: ["", packageName, "blobs", version, fileName]
+        if (parts.size >= 5 && parts[2] == "blobs") {
+            return parts[3]
+        }
+        return null
     }
 
     override fun query(context: ArtifactQueryContext): Any? {
