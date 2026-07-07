@@ -39,7 +39,6 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.job.batch.file.ExpireFileResolverConfig
-import com.tencent.bkrepo.job.config.DriveMongoConfiguration
 import com.tencent.bkrepo.job.config.JobConfig
 import com.tencent.bkrepo.job.service.impl.MigrateArchivedFileServiceImpl
 import io.micrometer.observation.ObservationRegistry
@@ -87,7 +86,7 @@ import org.springframework.test.context.TestPropertySource
     excludeFilters = [
         ComponentScan.Filter(
             type = FilterType.ASSIGNABLE_TYPE,
-            value = [ExpireFileResolverConfig::class, DriveMongoConfiguration::class],
+            value = [ExpireFileResolverConfig::class],
         )
     ],
 )

@@ -2,7 +2,7 @@ package com.tencent.bkrepo.fs.server.request.drive
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.model.TMetadata
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode
 import com.tencent.bkrepo.fs.server.utils.DriveServiceUtils.toNanoTimestamp
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import java.time.LocalDateTime

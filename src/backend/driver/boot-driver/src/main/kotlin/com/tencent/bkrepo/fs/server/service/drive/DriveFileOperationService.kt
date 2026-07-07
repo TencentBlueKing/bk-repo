@@ -2,9 +2,9 @@ package com.tencent.bkrepo.fs.server.service.drive
 
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.storage.pojo.RegionResource
+import com.tencent.bkrepo.common.metadata.util.drive.DriveBlockResourceHelper
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
-import com.tencent.bkrepo.fs.server.model.drive.TDriveBlockNode
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveBlockNode
 import com.tencent.bkrepo.fs.server.request.drive.DriveBlockWriteRequest
 import com.tencent.bkrepo.fs.server.response.drive.DriveBlockNode
 import com.tencent.bkrepo.fs.server.response.drive.DriveNode
@@ -23,7 +23,7 @@ class DriveFileOperationService(
         with(node) {
             val repo = ReactiveArtifactContextHolder.getRepoDetail()
             val blocks = driveBlockNodeService.listBlocks(range, projectId, repoName, ino, createdDate, snapSeq)
-                .map { it.toRegionResource() }
+                .map { DriveBlockResourceHelper.toRegionResource(it) }
             return driveStorageManager.loadArtifactInputStream(blocks, range, repo.storageCredentials)
         }
     }
@@ -45,15 +45,5 @@ class DriveFileOperationService(
             driveStorageManager.storeBlock(artifactFile, blockNode)
             return blockNode.toDriveBlockNode()
         }
-    }
-
-    private fun TDriveBlockNode.toRegionResource(): RegionResource {
-        return RegionResource(
-            digest = sha256,
-            pos = startPos,
-            size = size,
-            off = 0,
-            len = size,
-        )
     }
 }

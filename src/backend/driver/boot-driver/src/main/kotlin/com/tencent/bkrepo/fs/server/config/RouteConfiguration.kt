@@ -43,9 +43,9 @@ import com.tencent.bkrepo.fs.server.handler.ClientHandler
 import com.tencent.bkrepo.fs.server.handler.FileOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.LoginHandler
 import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
+import com.tencent.bkrepo.fs.server.handler.drive.DriveNodeOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.drive.DriveOperateLogHandler
 import com.tencent.bkrepo.fs.server.handler.drive.DriveOperationHandler
-import com.tencent.bkrepo.fs.server.handler.drive.DriveNodeOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.drive.DriveRepositoryHandler
 import com.tencent.bkrepo.fs.server.handler.drive.DriveSnapshotHandler
 import com.tencent.bkrepo.fs.server.handler.service.FsNodeHandler

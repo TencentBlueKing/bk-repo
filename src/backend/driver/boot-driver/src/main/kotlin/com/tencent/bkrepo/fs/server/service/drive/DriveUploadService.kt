@@ -6,9 +6,9 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.fs.server.constant.DriveUploadConstants.DEFAULT_DIRECTORY_MODE
 import com.tencent.bkrepo.fs.server.constant.DriveUploadConstants.DEFAULT_FILE_MODE
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TYPE_DIRECTORY
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TYPE_FILE
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.TYPE_DIRECTORY
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.TYPE_FILE
 import com.tencent.bkrepo.fs.server.repository.drive.RDriveNodeDao
 import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.fs.server.request.drive.DriveBlockWriteRequest
