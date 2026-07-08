@@ -88,6 +88,14 @@ class PermissionService(
         return appId ?: throw AuthenticationException("AccessKey/SecretKey check failed.")
     }
 
+    suspend fun checkUserAccount(username: String, password: String): String {
+        val valid = rAuthClient.checkToken(username, password).awaitSingle().data
+        if (valid != true) {
+            throw AuthenticationException("User account check failed.")
+        }
+        return username
+    }
+
     suspend fun checkAdmin(uid: String): Boolean {
         return rAuthClient.detail(uid).awaitSingle().data?.admin == true
     }

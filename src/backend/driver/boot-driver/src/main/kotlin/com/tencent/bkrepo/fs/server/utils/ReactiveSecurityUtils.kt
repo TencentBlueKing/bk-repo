@@ -28,11 +28,14 @@
 package com.tencent.bkrepo.fs.server.utils
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.PLATFORM_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.api.util.BasicAuthUtils
+import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.platform.PlatformAuthCredentials
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 import org.springframework.web.reactive.function.server.ServerRequest
@@ -58,6 +61,18 @@ object ReactiveSecurityUtils {
             return PlatformAuthCredentials(accessKey, secretKey)
         } else {
             null
+        }
+    }
+
+    fun ServerRequest.basicCredentials(): Pair<String, String>? {
+        val authHeader = headers().header(HttpHeaders.AUTHORIZATION).firstOrNull() ?: return null
+        if (!authHeader.startsWith(BASIC_AUTH_PREFIX)) {
+            return null
+        }
+        return try {
+            BasicAuthUtils.decode(authHeader)
+        } catch (exception: IllegalArgumentException) {
+            throw AuthenticationException("Invalid authorization value.")
         }
     }
 

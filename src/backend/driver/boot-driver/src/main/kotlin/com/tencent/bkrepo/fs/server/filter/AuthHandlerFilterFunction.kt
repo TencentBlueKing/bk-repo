@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.fs.server.service.PermissionService
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.basicCredentials
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.bearerToken
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.platformCredentials
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
@@ -63,6 +64,14 @@ class AuthHandlerFilterFunction(
             return next(request)
         }
         var user = ANONYMOUS_USER
+
+        val basicCredentials = request.basicCredentials()
+        if (basicCredentials != null) {
+            val (username, password) = basicCredentials
+            val userId = permissionService.checkUserAccount(username, password)
+            request.exchange().attributes[USER_KEY] = userId
+            return next(request)
+        }
 
         val platformAuthCredentials = request.platformCredentials()
         if (platformAuthCredentials != null) {
