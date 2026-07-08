@@ -252,7 +252,11 @@ class DriveTemporaryAccessService(
             TokenType.ALL -> TEMPORARY_DOWNLOAD_ENDPOINT
             TokenType.PREVIEW -> TEMPORARY_DOWNLOAD_ENDPOINT
         }
+        if (tokenType == TokenType.PREVIEW) {
+            return "$urlHost/ui/${token.projectId}/filePreview/local/0/${token.repoName}${token.fullPath}"
+        }
         val builder = StringBuilder(UrlFormatter.formatHost(urlHost))
+            .append("/fs-server")
             .append(endpoint)
             .append(StringPool.SLASH)
             .append(token.projectId)
