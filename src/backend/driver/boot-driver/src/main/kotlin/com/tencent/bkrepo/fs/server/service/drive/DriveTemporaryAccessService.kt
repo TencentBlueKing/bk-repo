@@ -56,7 +56,10 @@ class DriveTemporaryAccessService(
 
     suspend fun createUrl(request: DriveTemporaryUrlCreateRequest, userId: String): List<DriveTemporaryAccessUrl> {
         with(request) {
-            Preconditions.checkArgument(type == TokenType.UPLOAD || type == TokenType.DOWNLOAD, "type")
+            Preconditions.checkArgument(
+                TokenType.entries.contains(request.type),
+                "type",
+            )
             val tokenRequest = TemporaryTokenCreateRequest(
                 projectId = projectId,
                 repoName = repoName,
