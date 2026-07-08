@@ -74,10 +74,15 @@
                 return this.isMultiTenant && Boolean(this.tenantId)
             },
             defaultTimeZone () {
+                // 与请求头 X-BKREPO-TIME-ZONE 口径保持一致：网关/蓝鲸优先，浏览器兜底
+                const gatewayTimeZone = getTimeZone()
+                if (gatewayTimeZone != null && gatewayTimeZone !== '') {
+                    return gatewayTimeZone
+                }
                 try {
-                    return Intl.DateTimeFormat().resolvedOptions().timeZone || getTimeZone() || ''
+                    return Intl.DateTimeFormat().resolvedOptions().timeZone || ''
                 } catch (e) {
-                    return getTimeZone() || ''
+                    return ''
                 }
             }
         },
