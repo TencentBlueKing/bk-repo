@@ -134,8 +134,16 @@ class FileNotFoundAutoFixStrategy(
         }
         val projectId = failedNode.projectId
         val repoName = failedNode.repoName
-        val fullPath = failedNode.fullPath
         val node = nodeDao.findById(projectId, failedNode.nodeId) ?: return false
+        // 节点可能在迁移失败后被并发rename，分块已随rename迁移到新路径，
+        // 因此以库中当前节点的fullPath为准，避免用失败时记录的旧路径查不到分块
+        val fullPath = node.fullPath
+        if (fullPath != failedNode.fullPath) {
+            logger.warn(
+                "node[${failedNode.nodeId}] fullPath changed from [${failedNode.fullPath}] to [$fullPath], " +
+                    "task[$projectId/$repoName]"
+            )
+        }
         val createdDate = node.createdDate.format(DateTimeFormatter.ISO_DATE_TIME)
         val blocks = blockNodeService.listAllBlocks(
             projectId,

@@ -131,11 +131,19 @@ class MigrateFailedNodeExecutor(
     private fun convert(failedNode: TMigrateFailedNode): Node {
         val criteria = Node::projectId.isEqualTo(failedNode.projectId).and(ID).isEqualTo(failedNode.nodeId)
         val node = nodeDao.findOne(Query(criteria))
+        if (node != null && node.fullPath != failedNode.fullPath) {
+            logger.warn(
+                "node[${failedNode.nodeId}] fullPath changed from [${failedNode.fullPath}] to [${node.fullPath}], " +
+                    "task[${failedNode.projectId}/${failedNode.repoName}]"
+            )
+        }
         return Node(
             id = failedNode.nodeId,
             projectId = failedNode.projectId,
             repoName = failedNode.repoName,
-            fullPath = failedNode.fullPath,
+            // 节点可能在迁移失败后被并发rename，分块已随rename迁移到新路径，
+            // 因此优先以库中当前节点的fullPath为准，避免用失败时记录的旧路径查不到分块
+            fullPath = node?.fullPath ?: failedNode.fullPath,
             size = failedNode.size,
             sha256 = failedNode.sha256,
             md5 = failedNode.md5,
