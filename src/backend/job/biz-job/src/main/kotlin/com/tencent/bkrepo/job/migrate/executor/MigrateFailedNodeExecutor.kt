@@ -46,6 +46,7 @@ import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageUtils.buildThreadP
 import com.tencent.bkrepo.job.migrate.utils.TransferDataExecutor
 import com.tencent.bkrepo.job.service.MigrateArchivedFileService
 import org.slf4j.LoggerFactory
+import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
@@ -65,6 +66,7 @@ class MigrateFailedNodeExecutor(
     private val transferDataExecutor: TransferDataExecutor,
     private val migrateFailedNodeFixer: MigrateFailedNodeFixer,
     nodeDao: NodeDao,
+    mongoTemplate: MongoTemplate,
 ) : BaseTaskExecutor(
     properties,
     migrateRepoStorageTaskDao,
@@ -75,6 +77,7 @@ class MigrateFailedNodeExecutor(
     migrateArchivedFileService,
     blockNodeService,
     nodeDao,
+    mongoTemplate,
 ) {
     /**
      * 用于重新迁移失败的node

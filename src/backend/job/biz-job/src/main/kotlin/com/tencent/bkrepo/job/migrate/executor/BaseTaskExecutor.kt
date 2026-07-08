@@ -32,12 +32,17 @@ import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_FULL_PATH
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.model.TMetadata
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration.Companion.SERVICE_INSTANCE_ID
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
+import com.tencent.bkrepo.job.COLLECTION_NAME_NODE
+import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
@@ -53,8 +58,11 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.pojo.Node
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.service.MigrateArchivedFileService
+import org.bson.Document
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import java.io.FileNotFoundException
@@ -73,6 +81,7 @@ abstract class BaseTaskExecutor(
     private val migrateArchivedFileService: MigrateArchivedFileService,
     private val blockNodeService: BlockNodeService,
     protected val nodeDao: NodeDao,
+    protected val mongoTemplate: MongoTemplate,
 ) : TaskExecutor {
 
     @Value(SERVICE_INSTANCE_ID)
@@ -346,13 +355,17 @@ abstract class BaseTaskExecutor(
     }
 
     /**
-     * blocks为空是罕见路径，此处才重新查询节点完整数据（含元数据）判断是否为链接节点，
-     * 避免在遍历时为所有节点加载大量元数据
+     * blocks为空是罕见路径，此处才回查节点元数据判断是否为链接节点。
+     * 仅投影metadata字段并以Document读取，避免整模型反序列化开销与跨模型字段约束。
      */
     private fun isLinkNode(node: Node): Boolean {
-        val criteria = Node::projectId.isEqualTo(node.projectId).and(ID).isEqualTo(node.id)
-        val tNode = nodeDao.findOne(Query(criteria)) ?: return false
-        return tNode.metadata?.any { it.key == METADATA_KEY_LINK_FULL_PATH } == true
+        val sequence = HashShardingUtils.shardingSequenceFor(node.projectId, SHARDING_COUNT)
+        val collectionName = "${COLLECTION_NAME_NODE}_$sequence"
+        val query = Query(Criteria.where(ID).isEqualTo(node.id))
+        query.fields().include(TNode::metadata.name)
+        val doc = mongoTemplate.findOne(query, Document::class.java, collectionName) ?: return false
+        val metadata = doc.getList(TNode::metadata.name, Document::class.java) ?: return false
+        return metadata.any { it.getString(TMetadata::key.name) == METADATA_KEY_LINK_FULL_PATH }
     }
 
     companion object {

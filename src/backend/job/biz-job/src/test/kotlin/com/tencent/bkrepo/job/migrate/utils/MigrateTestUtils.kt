@@ -52,6 +52,7 @@ import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.model.TNode
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import io.mockk.every
 import io.mockk.mockkObject
@@ -132,6 +133,7 @@ object MigrateTestUtils {
         archived: Boolean = false,
         compressed: Boolean = false,
         deleted: LocalDateTime? = null,
+        metadata: List<MetadataModel> = emptyList(),
     ): TNode {
         val node = TNode(
             id = null,
@@ -146,6 +148,7 @@ object MigrateTestUtils {
             archived = archived,
             compressed = compressed,
             deleted = deleted,
+            metadata = metadata,
         )
         val sharding = HashShardingUtils.shardingSequenceFor(UT_PROJECT_ID, SHARDING_COUNT)
         val collectionName = "node_$sharding"
