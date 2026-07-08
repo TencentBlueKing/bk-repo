@@ -82,9 +82,21 @@ class RBlockNodeServiceImpl(
         projectId: String,
         repoName: String,
         fullPath: String,
-        createdDate: String
+        createdDate: String,
+        includeDeleted: Boolean,
+        createdBefore: LocalDateTime?
     ): List<TBlockNode> {
-        return rBlockNodeDao.find(BlockNodeQueryHelper.listQuery(projectId, repoName, fullPath, createdDate, null))
+        return rBlockNodeDao.find(
+            BlockNodeQueryHelper.listQuery(
+                projectId,
+                repoName,
+                fullPath,
+                createdDate,
+                null,
+                includeDeleted,
+                createdBefore
+            )
+        )
     }
 
     override suspend fun deleteBlocks(
@@ -147,7 +159,7 @@ class RBlockNodeServiceImpl(
         val result = rBlockNodeDao.updateMulti(Query(criteria), update)
         logger.info(
             "Restore ${result.modifiedCount} blocks node[$projectId/$repoName$fullPath] " +
-                "between $nodeCreateDate and $nodeDeleteDate success."
+                    "between $nodeCreateDate and $nodeDeleteDate success."
         )
     }
 

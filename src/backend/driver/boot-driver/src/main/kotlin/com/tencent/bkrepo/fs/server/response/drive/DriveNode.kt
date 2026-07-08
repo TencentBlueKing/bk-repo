@@ -2,7 +2,7 @@ package com.tencent.bkrepo.fs.server.response.drive
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.tencent.bkrepo.common.metadata.model.TMetadata
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode
 import java.time.LocalDateTime
 
 /**

@@ -53,6 +53,7 @@ import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryVisibility
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
@@ -163,6 +164,7 @@ open class PermissionManager(
             repoName = repoName,
             anonymous = anonymous,
             userId = userId,
+            repoInfo = repoInfo,
         )
     }
 
@@ -203,6 +205,7 @@ open class PermissionManager(
             paths = path.toList(),
             anonymous = anonymous,
             userId = userId,
+            repoInfo = repoInfo,
         )
     }
 
@@ -335,6 +338,7 @@ open class PermissionManager(
         paths: List<String>? = null,
         anonymous: Boolean = false,
         userId: String = SecurityUtils.getUserId(),
+        repoInfo: RepositoryInfo? = null,
     ) {
 
         // 判断是否开启认证
@@ -355,9 +359,9 @@ open class PermissionManager(
         }
 
         projectId?.let {
-            // 自定义外部权限校验
+            // Drive 节点不在通用 node 表，跳过外部权限以免误查 TNode
             val externalPermission = getExternalPermission(projectId, repoName)
-            if (externalPermission != null) {
+            if (externalPermission != null && repoInfo?.type != RepositoryType.DRIVE) {
                 checkExternalPermission(externalPermission, userId, type, action, projectId, repoName, paths)
                 return
             }

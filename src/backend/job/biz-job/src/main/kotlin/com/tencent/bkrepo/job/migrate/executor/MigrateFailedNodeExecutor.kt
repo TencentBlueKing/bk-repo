@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.migrate.executor
 
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -60,6 +61,7 @@ class MigrateFailedNodeExecutor(
     storageService: StorageService,
     executingTaskRecorder: ExecutingTaskRecorder,
     migrateArchivedFileService: MigrateArchivedFileService,
+    blockNodeService: BlockNodeService,
     private val transferDataExecutor: TransferDataExecutor,
     private val migrateFailedNodeFixer: MigrateFailedNodeFixer,
     private val nodeDao: NodeDao,
@@ -71,6 +73,7 @@ class MigrateFailedNodeExecutor(
     storageService,
     executingTaskRecorder,
     migrateArchivedFileService,
+    blockNodeService,
 ) {
     /**
      * 用于重新迁移失败的node
@@ -133,6 +136,8 @@ class MigrateFailedNodeExecutor(
             size = failedNode.size,
             sha256 = failedNode.sha256,
             md5 = failedNode.md5,
+            createdDate = node?.createdDate,
+            deleted = node?.deleted,
             archived = node?.archived,
             compressed = node?.compressed,
         )

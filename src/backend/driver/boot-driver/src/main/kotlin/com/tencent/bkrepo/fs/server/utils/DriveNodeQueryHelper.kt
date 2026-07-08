@@ -1,10 +1,11 @@
 package com.tencent.bkrepo.fs.server.utils
 
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode
+import com.tencent.bkrepo.common.metadata.util.drive.DriveNodePathHelper
 import java.time.LocalDateTime
 
 object DriveNodeQueryHelper {
-    const val ROOT_INO = 2L
+    const val ROOT_INO = DriveNodePathHelper.ROOT_INO
 
     /**
      * 基于旧版本节点构造 COW 新副本。

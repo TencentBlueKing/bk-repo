@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.storage.config.StorageProperties
@@ -47,6 +48,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
+import java.time.format.DateTimeFormatter
 
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -60,6 +62,7 @@ class FileNotFoundAutoFixStrategy(
     private val storageProperties: StorageProperties,
     private val migrateFailedNodeDao: MigrateFailedNodeDao,
     private val archiveMigrateFailedNodeDao: ArchiveMigrateFailedNodeDao,
+    private val blockNodeService: BlockNodeService,
 ) : BaseAutoFixStrategy() {
     override fun fix(failedNode: TMigrateFailedNode): Boolean {
         val projectId = failedNode.projectId
@@ -69,7 +72,7 @@ class FileNotFoundAutoFixStrategy(
         val repo = RepositoryCommonUtils.getRepositoryDetail(projectId, repoName)
         val oldCredentials = getStorageCredentials(storageProperties, repo.oldCredentialsKey)
         if (sha256 == FAKE_SHA256) {
-            return false
+            return fixBlockNode(failedNode, oldCredentials)
         }
         if (storageService.exist(sha256, oldCredentials)) {
             // 文件存在
@@ -84,8 +87,13 @@ class FileNotFoundAutoFixStrategy(
         }
 
         // 尝试从其他存储复制过来
-        if (copyFromOtherStorage(failedNode, oldCredentials)) {
-            return true
+        try {
+            if (copyFromOtherStorage(projectId, repoName, fullPath, sha256, failedNode.size, oldCredentials)) {
+                return true
+            }
+        } catch (e: Exception) {
+            logger.error("copy [$sha256][$fullPath] failed, task[$projectId/$repoName]", e)
+            return false
         }
 
         // 所有存储都找不到时表示源文件丢失，归档failedNode以使迁移任务继续执行
@@ -119,30 +127,79 @@ class FileNotFoundAutoFixStrategy(
         return false
     }
 
-    private fun copyFromOtherStorage(
-        migrateFailedNode: TMigrateFailedNode,
-        oldCredentials: StorageCredentials
-    ): Boolean {
-        val projectId = migrateFailedNode.projectId
-        val repoName = migrateFailedNode.repoName
-        val fullPath = migrateFailedNode.fullPath
+    private fun fixBlockNode(failedNode: TMigrateFailedNode, oldCredentials: StorageCredentials): Boolean {
+        if (failedNode.sha256 != FAKE_SHA256) {
+            return false
+        }
+        val projectId = failedNode.projectId
+        val repoName = failedNode.repoName
+        val fullPath = failedNode.fullPath
+        val node = nodeDao.findById(projectId, failedNode.nodeId) ?: return false
+        val createdDate = node.createdDate.format(DateTimeFormatter.ISO_DATE_TIME)
+        val blocks = blockNodeService.listAllBlocks(
+            projectId,
+            repoName,
+            fullPath,
+            createdDate,
+            includeDeleted = true,
+            createdBefore = node.deleted,
+        )
+        if (blocks.isEmpty()) {
+            logger.warn("No blocks found for node[$fullPath], task[$projectId/$repoName]")
+            return true
+        }
 
-        val allCredentials = storageCredentialService.list() + storageProperties.defaultStorageCredentials()
-        allCredentials.forEach { credentials ->
-            val key = credentials.key
+        var hasLostBlock = false
+        for (block in blocks) {
+            if (storageService.exist(block.sha256, oldCredentials)) {
+                continue
+            }
             try {
-                // 可能文件还存在于缓存中，因此使用load而不是exists判断文件是否存在
-                val ais = storageService.load(migrateFailedNode.sha256, Range.full(migrateFailedNode.size), credentials)
-                if (ais != null) {
-                    ais.close()
-                    // 尝试从其他存储复制到当前存储
-                    storageService.copy(migrateFailedNode.sha256, credentials, oldCredentials)
-                    fileReferenceService.increment(migrateFailedNode.sha256, oldCredentials.key, 0L)
-                    logger.info("copy [$fullPath] from credentials[$key] success, task[$projectId/$repoName]")
-                    return true
+                if (!copyFromOtherStorage(projectId, repoName, fullPath, block.sha256, block.size, oldCredentials)) {
+                    logger.error("block[${block.sha256}] of node[$fullPath] lost!, task[$projectId/$repoName]")
+                    hasLostBlock = true
                 }
             } catch (e: Exception) {
-                logger.error("copy node[$fullPath] from $key failed, task[$projectId/ $repoName]", e)
+                logger.error("copy block[${block.sha256}] of node[$fullPath] failed, task[$projectId/$repoName]", e)
+                return false
+            }
+        }
+
+        if (hasLostBlock) {
+            logger.error(
+                "node[$fullPath] has lost blocks, archive migrate failed node, task[$projectId/$repoName]"
+            )
+            archiveMigrateFailedNodeDao.insert(TArchiveMigrateFailedNode.convert(failedNode))
+            migrateFailedNodeDao.remove(failedNode.id!!)
+        }
+        return true
+    }
+
+    /**
+     * 尝试从其他存储复制文件到目标存储
+     *
+     * @return true-复制成功, false-文件在所有存储中均不存在
+     * @throws Exception 复制过程中发生异常，调用方应捕获处理而非视为文件丢失
+     */
+    private fun copyFromOtherStorage(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        sha256: String,
+        size: Long,
+        targetCredentials: StorageCredentials,
+    ): Boolean {
+        val allCredentials = storageCredentialService.list() + storageProperties.defaultStorageCredentials()
+        for (credentials in allCredentials) {
+            // 可能文件还存在于缓存中，因此使用load而不是exists判断文件是否存在
+            val ais = storageService.load(sha256, Range.full(size), credentials)
+            if (ais != null) {
+                ais.close()
+                // 尝试从其他存储复制到当前存储
+                storageService.copy(sha256, credentials, targetCredentials)
+                fileReferenceService.increment(sha256, targetCredentials.key, 0L)
+                logger.info("copy [$sha256][$fullPath] from [${credentials.key}] success, task[$projectId/$repoName]")
+                return true
             }
         }
         return false

@@ -1,13 +1,13 @@
-package com.tencent.bkrepo.fs.server.model.drive
+package com.tencent.bkrepo.common.metadata.model.drive
 
 import com.tencent.bkrepo.common.api.mongo.ShardingDocument
 import com.tencent.bkrepo.common.api.mongo.ShardingKeys
 import com.tencent.bkrepo.common.metadata.constant.SHARDING_COUNT
-import com.tencent.bkrepo.fs.server.model.drive.TDriveBlockNode.Companion.BLOCK_IDX
-import com.tencent.bkrepo.fs.server.model.drive.TDriveBlockNode.Companion.BLOCK_IDX_DEF
-import com.tencent.bkrepo.fs.server.model.drive.TDriveBlockNode.Companion.INO
-import com.tencent.bkrepo.fs.server.model.drive.TDriveBlockNode.Companion.SHA256_IDX
-import com.tencent.bkrepo.fs.server.model.drive.TDriveBlockNode.Companion.SHA256_IDX_DEF
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveBlockNode.Companion.BLOCK_IDX
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveBlockNode.Companion.BLOCK_IDX_DEF
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveBlockNode.Companion.INO
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveBlockNode.Companion.SHA256_IDX
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveBlockNode.Companion.SHA256_IDX_DEF
 import com.tencent.bkrepo.repository.constant.PROJECT_ID
 import com.tencent.bkrepo.repository.constant.REPO_NAME
 import org.springframework.data.mongodb.core.index.CompoundIndex
