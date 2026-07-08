@@ -64,7 +64,7 @@ class MigrateFailedNodeExecutor(
     blockNodeService: BlockNodeService,
     private val transferDataExecutor: TransferDataExecutor,
     private val migrateFailedNodeFixer: MigrateFailedNodeFixer,
-    private val nodeDao: NodeDao,
+    nodeDao: NodeDao,
 ) : BaseTaskExecutor(
     properties,
     migrateRepoStorageTaskDao,
@@ -74,6 +74,7 @@ class MigrateFailedNodeExecutor(
     executingTaskRecorder,
     migrateArchivedFileService,
     blockNodeService,
+    nodeDao,
 ) {
     /**
      * 用于重新迁移失败的node

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
@@ -53,6 +54,7 @@ class FinishExecutor(
     migrateArchivedFileService: MigrateArchivedFileService,
     blockNodeService: BlockNodeService,
     private val repositoryService: RepositoryService,
+    nodeDao: NodeDao,
 ) : BaseTaskExecutor(
     properties,
     migrateRepoStorageTaskDao,
@@ -62,6 +64,7 @@ class FinishExecutor(
     executingTaskRecorder,
     migrateArchivedFileService,
     blockNodeService,
+    nodeDao,
 ) {
     /**
      * 迁移任务执行结束后对相关资源进行清理

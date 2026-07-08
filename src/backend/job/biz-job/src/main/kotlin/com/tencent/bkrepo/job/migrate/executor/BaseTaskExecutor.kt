@@ -28,10 +28,13 @@
 package com.tencent.bkrepo.job.migrate.executor
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_FULL_PATH
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration.Companion.SERVICE_INSTANCE_ID
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
@@ -52,6 +55,8 @@ import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.service.MigrateArchivedFileService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import java.io.FileNotFoundException
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.RejectedExecutionException
@@ -67,6 +72,7 @@ abstract class BaseTaskExecutor(
     private val executingTaskRecorder: ExecutingTaskRecorder,
     private val migrateArchivedFileService: MigrateArchivedFileService,
     private val blockNodeService: BlockNodeService,
+    protected val nodeDao: NodeDao,
 ) : TaskExecutor {
 
     @Value(SERVICE_INSTANCE_ID)
@@ -218,7 +224,7 @@ abstract class BaseTaskExecutor(
         require(node.sha256 == FAKE_SHA256)
         val blocks = listBlocks(node)
         if (blocks.isEmpty()) {
-            logger.warn("No blocks found for node[${node.fullPath}], task[${node.projectId}/${node.repoName}]")
+            checkEmptyBlocksAllowed(node)
             return
         }
         blocks.forEach { block ->
@@ -235,7 +241,7 @@ abstract class BaseTaskExecutor(
         require(node.sha256 == FAKE_SHA256)
         val blocks = listBlocks(node)
         if (blocks.isEmpty()) {
-            logger.warn("No blocks found for node[${node.fullPath}], task[${node.projectId}/${node.repoName}]")
+            checkEmptyBlocksAllowed(node)
             return
         }
         blocks.forEach { block -> correctFile(context, block.sha256, block.size) }
@@ -323,6 +329,30 @@ abstract class BaseTaskExecutor(
                 "node[${node.fullPath}] was compressed, task[${node.projectId}/${node.repoName}]"
             )
         }
+    }
+
+    /**
+     * 分块节点查询不到分块时的校验。
+     * 链接节点本身不存储分块数据，可安全跳过；否则可能是并发rename导致block路径变更，
+     * 若直接跳过将导致分块数据未迁移而丢失，因此抛出异常，交由失败节点重试机制在rename完成后重新迁移。
+     */
+    private fun checkEmptyBlocksAllowed(node: Node) {
+        if (!isLinkNode(node)) {
+            throw IllegalStateException(
+                "No blocks found for non-link node[${node.fullPath}], task[${node.projectId}/${node.repoName}]"
+            )
+        }
+        logger.info("skip link node[${node.fullPath}] without blocks, task[${node.projectId}/${node.repoName}]")
+    }
+
+    /**
+     * blocks为空是罕见路径，此处才重新查询节点完整数据（含元数据）判断是否为链接节点，
+     * 避免在遍历时为所有节点加载大量元数据
+     */
+    private fun isLinkNode(node: Node): Boolean {
+        val criteria = Node::projectId.isEqualTo(node.projectId).and(ID).isEqualTo(node.id)
+        val tNode = nodeDao.findOne(Query(criteria)) ?: return false
+        return tNode.metadata?.any { it.key == METADATA_KEY_LINK_FULL_PATH } == true
     }
 
     companion object {
