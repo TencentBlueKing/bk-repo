@@ -23,7 +23,13 @@
         <div v-if="imgShow" style="width: 100%; height: 100%">
             <img id="image" :src="imgUrl" alt="Picture" style="display: none">
         </div>
-        <div v-if="monacoShow" id="editor" ref="contentRef" style="width: 100%; height: 100%" />
+        <div v-if="richTextShow" class="rich-text-preview-container">
+            <source-preview-tabs
+                :file-path="richTextFilePath"
+                :source-text="richTextSource"
+                :resolve-asset-url="resolveAssetUrl"
+            />
+        </div>
         <div v-if="xmindShow" ref="container" style="width:100%; height: 100%"></div>
         <div v-if="hasError" class="empty-data-container flex-center" style="background-color: white; height: 100%">
             <div class="flex-column flex-center">
@@ -58,8 +64,9 @@
         isText,
         isXmind
     } from '@repository/utils/file'
+    import { createAssetResolver, parsePreviewContext } from '@repository/utils/markdownJsxPreview'
+    import SourcePreviewTabs from '@repository/components/FilePreview/SourcePreviewTabs'
     import Viewer from 'viewerjs'
-    import * as monaco from 'monaco-editor'
     import { XMindEmbedViewer } from 'xmind-embed-viewer'
 
     const PDFJS = require('pdfjs-dist')
@@ -89,7 +96,7 @@
 
     export default {
         name: 'OutsideFilePreview',
-        components: { VueOfficeExcel },
+        components: { VueOfficeExcel, SourcePreviewTabs },
         props: {
             extraParam: String
         },
@@ -125,7 +132,14 @@
                 imgShow: false,
                 imgUrl: '',
                 pdfShow: false,
-                monacoShow: false,
+                richTextShow: false,
+                richTextSource: '',
+                richTextFilePath: '',
+                previewContext: {
+                    projectId: '',
+                    repoName: '',
+                    filePath: ''
+                },
                 xmindShow: false,
                 xmindViewer: null,
                 pdfPages: [], // 页数
@@ -141,6 +155,9 @@
             },
             enableMultipleTypeFilePreview () {
                 return RELEASE_MODE === 'community' || RELEASE_MODE === 'tencent'
+            },
+            resolveAssetUrl () {
+                return createAssetResolver(this.previewContext)
             }
         },
         async created () {
@@ -153,6 +170,7 @@
             }
             try {
                 const param = Base64.decode(decodeURIComponent(this.extraParam))
+                this.previewContext = parsePreviewContext({ extraParam: param })
                 await getPreviewRemoteOfficeFileInfo(Base64.encode(param)).then(res => {
                     // 需解析传递参数，如果传递参数里面携带，优先渲染传递的水印
                     const obj = JSON.parse(param)
@@ -207,29 +225,11 @@
                                     })
                                 })
                             } else if (isMarkdown(res.data.data.suffix) || isJsx(res.data.data.suffix)) {
-                                this.monacoShow = true
-                                let text = await fileDate.data.text()
-                                const language = isMarkdown(this.filePath) ? 'markdown' : 'javascriptreact'
-                                if (isMarkdown(this.filePath)) {
-                                    text = Base64.decode(text)
-                                }
-                                this.$nextTick(() => {
-                                    if (!this.editor) {
-                                        this.editor = monaco.editor.create(document.getElementById('editor'), {
-                                            value: text, // 编辑器初始显示文字
-                                            language: language, // 语言
-                                            automaticLayout: true, // 自动布局
-                                            theme: 'vs-dark', // 官方自带三种主题vs, hc-black, or vs-dark
-                                            minimap: { // 关闭小地图
-                                                enabled: true
-                                            },
-                                            readOnly: true,
-                                            lineNumbers: 'on' // 隐藏控制行号
-                                        })
-                                    } else {
-                                        this.editor.setValue(text)
-                                    }
-                                })
+                                const text = await fileDate.data.text()
+                                const suffix = res.data.data.suffix
+                                this.richTextFilePath = this.previewContext.filePath || `preview.${suffix}`
+                                this.richTextSource = text
+                                this.richTextShow = true
                             } else if (isXmind(res.data.data.suffix)) {
                                 this.xmindShow = true
                                 const target = await fileDate.data.arrayBuffer()
@@ -280,8 +280,9 @@
                 this.xmindShow = false
                 this.xmindViewer = null
                 this.pdfShow = false
-                this.monacoShow = false
-                this.editor = null
+                this.richTextShow = false
+                this.richTextSource = ''
+                this.richTextFilePath = ''
                 this.excelOptions.xls = false
                 window.resetWaterMark()
             },
@@ -355,6 +356,10 @@ canvas {
     max-width: 100% !important;
     height: auto !important;
     background: white !important;
+}
+.rich-text-preview-container {
+    width: 100%;
+    height: 100%;
 }
 .preview-file-tips {
     margin-bottom: 10px;

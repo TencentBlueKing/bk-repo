@@ -17,7 +17,13 @@
         <div v-if="imgShow" style="width: 100%; height: 100%">
             <img id="image" :src="imgUrl" alt="Picture" style="display: none">
         </div>
-        <div v-if="monacoShow" id="editor" ref="contentRef" style="width: 100%; height: 100%" />
+        <div v-if="richTextShow" class="rich-text-preview-container">
+            <source-preview-tabs
+                :file-path="richTextFilePath"
+                :source-text="richTextSource"
+                :resolve-asset-url="resolveAssetUrl"
+            />
+        </div>
         <div v-if="xmindShow" ref="container" style="width:100%; height: 100%"></div>
         <div v-if="previewBasic" class="flex-column flex-center">
             <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
@@ -50,8 +56,9 @@
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
     import { isExcel, isFormatType, isHtmlType, isJsx, isMarkdown, isPic, isText, isXmind } from '@repository/utils/file'
+    import { createAssetResolver, parsePreviewContext } from '@repository/utils/markdownJsxPreview'
+    import SourcePreviewTabs from '@repository/components/FilePreview/SourcePreviewTabs'
     import Viewer from 'viewerjs'
-    import * as monaco from 'monaco-editor'
     import { XMindEmbedViewer } from 'xmind-embed-viewer'
 
     const PDFJS = require('pdfjs-dist')
@@ -81,7 +88,7 @@
 
     export default {
         name: 'FilePreview',
-        components: { VueOfficeExcel },
+        components: { VueOfficeExcel, SourcePreviewTabs },
         props: {
             repoType: String,
             extraParam: String,
@@ -120,9 +127,10 @@
                 csvShow: false,
                 imgShow: false,
                 pdfShow: false,
-                monacoShow: false,
+                richTextShow: false,
+                richTextSource: '',
+                richTextFilePath: '',
                 xmindShow: false,
-                editor: null,
                 imgUrl: '',
                 pdfPages: [], // 页数
                 pdfWidth: '', // 宽度
@@ -141,6 +149,15 @@
             },
             enableMultipleTypeFilePreview () {
                 return RELEASE_MODE === 'community' || RELEASE_MODE === 'tencent'
+            },
+            resolveAssetUrl () {
+                const context = parsePreviewContext({
+                    projectId: this.projectId,
+                    repoName: this.repoName,
+                    filePath: this.filePath,
+                    extraParam: this.extraParam !== '0' ? Base64.decode(decodeURIComponent(this.extraParam)) : ''
+                })
+                return createAssetResolver(context)
             }
         },
         async created () {
@@ -242,8 +259,9 @@
                 this.xmindShow = false
                 this.xmindViewer = null
                 this.pdfShow = false
-                this.monacoShow = false
-                this.editor = null
+                this.richTextShow = false
+                this.richTextSource = ''
+                this.richTextFilePath = ''
                 this.excelOptions.xls = false
                 window.resetWaterMark()
             },
@@ -302,29 +320,10 @@
                         })
                     })
                 } else if (isMarkdown(this.filePath) || isJsx(this.filePath)) {
-                    this.monacoShow = true
-                    let text = await res.data.text()
-                    const language = isMarkdown(this.filePath) ? 'markdown' : 'javascriptreact'
-                    if (isMarkdown(this.filePath)) {
-                        text = Base64.decode(text)
-                    }
-                    this.$nextTick(() => {
-                        if (!this.editor) {
-                            this.editor = monaco.editor.create(document.getElementById('editor'), {
-                                value: text, // 编辑器初始显示文字
-                                language: language, // 语言
-                                automaticLayout: true, // 自动布局
-                                theme: 'vs-dark', // 官方自带三种主题vs, hc-black, or vs-dark
-                                minimap: { // 关闭小地图
-                                    enabled: true
-                                },
-                                readOnly: true,
-                                lineNumbers: 'on' // 隐藏控制行号
-                            })
-                        } else {
-                            this.editor.setValue(text)
-                        }
-                    })
+                    const text = await res.data.text()
+                    this.richTextFilePath = this.filePath
+                    this.richTextSource = text
+                    this.richTextShow = true
                 } else if (isXmind(this.filePath)) {
                     this.xmindShow = true
                     const target = await res.data.arrayBuffer()
@@ -411,6 +410,10 @@ canvas {
     max-width: 100% !important;
     height: auto !important;
     background: white !important;
+}
+.rich-text-preview-container {
+    width: 100%;
+    height: 100%;
 }
 .preview-file-tips {
     margin-bottom: 10px;

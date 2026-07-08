@@ -934,6 +934,11 @@
   resolved "https://mirrors.tencent.com/npm/@babel/runtime/-/runtime-7.28.6.tgz"
   integrity sha512-05WQkdpL9COIMz4LjTxGpPNCdlpyimKppYNoJ5Di5EUObifl8t4tuLuUBBZEpoLYOmfvIWrsp9fCl0HoPRVTdA==
 
+"@babel/standalone@^7.27.6":
+  version "7.29.7"
+  resolved "https://registry.yarnpkg.com/@babel/standalone/-/standalone-7.29.7.tgz#3944717636f63cabc134962e1b00b46fe594db0e"
+  integrity sha512-oFh9XoGL20UuHIeIuBQHOvF7r2dOCRnZW0r4SageGb9SWnt6HhbuPLREykNaEnP7/SRpMUwr50SSMJLrmeHvnQ==
+
 "@babel/template@^7.27.2", "@babel/template@^7.28.6":
   version "7.28.6"
   resolved "https://mirrors.tencent.com/npm/@babel/template/-/template-7.28.6.tgz"
@@ -3321,6 +3326,13 @@ address@^1.1.2:
   resolved "https://mirrors.tencent.com/npm/address/-/address-1.2.2.tgz"
   integrity sha512-4B/qKCfeE/ODUaAUpSwfzazo5x29WD4r3vXiWsB7I2mSDAihwEqKO+g8GELZUQSSAo5e1XTYh3ZVfLyxBc12nA==
 
+agent-base@6:
+  version "6.0.2"
+  resolved "https://registry.yarnpkg.com/agent-base/-/agent-base-6.0.2.tgz#49fff58577cfee3f37176feab4c22e00f86d7f77"
+  integrity sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==
+  dependencies:
+    debug "4"
+
 agent-base@^7.1.0, agent-base@^7.1.2:
   version "7.1.4"
   resolved "https://mirrors.tencent.com/npm/agent-base/-/agent-base-7.1.4.tgz"
@@ -3693,6 +3705,16 @@ axios@1.16.0:
     form-data "^4.0.5"
     proxy-from-env "^2.1.0"
 
+axios@^1.12.0:
+  version "1.18.1"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-1.18.1.tgz#d63f9863bcd8938815c86f9e2abd380189d96dfe"
+  integrity sha512-3nTvFlvpn9Zu/RkHUqtc7/+al4UpRW5az71ap5zccp6e8RAYEzhMTecX8Dz1wWDYrPpUoB1HAQEGEAEvUr7S9g==
+  dependencies:
+    follow-redirects "^1.16.0"
+    form-data "^4.0.5"
+    https-proxy-agent "^5.0.1"
+    proxy-from-env "^2.1.0"
+
 b4a@^1.6.4:
   version "1.8.0"
   resolved "https://mirrors.tencent.com/npm/b4a/-/b4a-1.8.0.tgz"
@@ -3831,19 +3853,6 @@ binary-extensions@^2.0.0:
   version "2.3.0"
   resolved "https://mirrors.tencent.com/npm/binary-extensions/-/binary-extensions-2.3.0.tgz"
   integrity sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==
-
-bk-magic-vue@^2.5.10-beta.17:
-  version "2.5.10-beta.17"
-  resolved "https://mirrors.tencent.com/npm/bk-magic-vue/-/bk-magic-vue-2.5.10-beta.17.tgz"
-  integrity sha512-kV5zSzAHPkh2DMGyIfUzFfH1hBVrQOAJfrf51vtuVHfY3ug9MpRkL9MQmXl78/NsbdmMLnL4UXRtpZdKo7uftA==
-  dependencies:
-    clipboard "^2.0.11"
-    dompurify "^3.2.6"
-    highlight.js "^10.7.2"
-    json-formatter-js "^2.3.4"
-    marked "4.2.12"
-    spark-md5 "^3.0.2"
-    tinycolor2 "^1.4.1"
 
 bl@^4.0.3, bl@^4.1.0:
   version "4.1.0"
@@ -4244,15 +4253,6 @@ cli-width@^4.1.0:
   version "4.1.0"
   resolved "https://mirrors.tencent.com/npm/cli-width/-/cli-width-4.1.0.tgz"
   integrity sha512-ouuZd4/dm2Sw5Gmqy6bGyNNNe1qt9RpmxveLSO7KcgsTnU7RXfsw+/bukWGo1abgBiMAic068rclZsO4IWmmxQ==
-
-clipboard@^2.0.11:
-  version "2.0.11"
-  resolved "https://mirrors.tencent.com/npm/clipboard/-/clipboard-2.0.11.tgz"
-  integrity sha512-C+0bbOqkezLIsmWSvlsXS0Q0bmkugu7jcfMIACB+RDEntIzQIkdr148we28AfSloQLRdZlYL/QYyrq05j/3Faw==
-  dependencies:
-    good-listener "^1.2.2"
-    select "^1.1.2"
-    tiny-emitter "^2.0.0"
 
 clipboardy@^2.3.0:
   version "2.3.0"
@@ -5034,11 +5034,6 @@ delayed-stream@~1.0.0:
   resolved "https://mirrors.tencent.com/npm/delayed-stream/-/delayed-stream-1.0.0.tgz"
   integrity sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==
 
-delegate@^3.1.2:
-  version "3.2.0"
-  resolved "https://mirrors.tencent.com/npm/delegate/-/delegate-3.2.0.tgz"
-  integrity sha512-IofjkYBZaZivn0V8nnsMJGBr4jVLxHDheKSW88PyxS5QC4Vo9ZbZVvhzlSxY87fVq3STR6r+4cGepyHkcWOQSw==
-
 depd@2.0.0, depd@~2.0.0:
   version "2.0.0"
   resolved "https://mirrors.tencent.com/npm/depd/-/depd-2.0.0.tgz"
@@ -5185,13 +5180,6 @@ dommatrix@^1.0.3:
   version "1.0.3"
   resolved "https://mirrors.tencent.com/npm/dommatrix/-/dommatrix-1.0.3.tgz"
   integrity sha512-l32Xp/TLgWb8ReqbVJAFIvXmY7go4nTxxlWiAFyhoQw9RKEOHBZNnyGvJWqDVSPmq3Y9HlM4npqF/T6VMOXhww==
-
-dompurify@^3.2.6:
-  version "3.3.2"
-  resolved "https://mirrors.tencent.com/npm/dompurify/-/dompurify-3.3.2.tgz"
-  integrity sha512-6obghkliLdmKa56xdbLOpUZ43pAR6xFy1uOrxBaIDjT+yaRuuybLjGS9eVBoSR/UPU5fq3OXClEHLJNGvbxKpQ==
-  optionalDependencies:
-    "@types/trusted-types" "^2.0.7"
 
 dompurify@^3.4.0:
   version "3.4.0"
@@ -6640,13 +6628,6 @@ glogg@^2.2.0:
   dependencies:
     sparkles "^2.1.0"
 
-good-listener@^1.2.2:
-  version "1.2.2"
-  resolved "https://mirrors.tencent.com/npm/good-listener/-/good-listener-1.2.2.tgz"
-  integrity sha512-goW1b+d9q/HIwbVYZzZ6SsTr4IgE+WA44A0GmPIQstuOrgsFcT7VEJ48nmr9GaRtNu0XTKacFLGnBPAM6Afouw==
-  dependencies:
-    delegate "^3.1.2"
-
 gopd@^1.0.1, gopd@^1.2.0:
   version "1.2.0"
   resolved "https://mirrors.tencent.com/npm/gopd/-/gopd-1.2.0.tgz"
@@ -6806,10 +6787,15 @@ he@^1.1.1, he@^1.2.0:
   resolved "https://mirrors.tencent.com/npm/he/-/he-1.2.0.tgz"
   integrity sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==
 
-highlight.js@^10.7.1, highlight.js@^10.7.2:
+highlight.js@^10.7.1:
   version "10.7.3"
   resolved "https://mirrors.tencent.com/npm/highlight.js/-/highlight.js-10.7.3.tgz"
   integrity sha512-tzcUFauisWKNHaRkN4Wjl/ZA07gENAjFl3J/c480dprkGTg5EQstgaNFqBfUqCq54kZRIEcreTsAgF/m2quD7A==
+
+highlight.js@^11.11.1:
+  version "11.11.1"
+  resolved "https://registry.yarnpkg.com/highlight.js/-/highlight.js-11.11.1.tgz#fca06fa0e5aeecf6c4d437239135fabc15213585"
+  integrity sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w==
 
 homedir-polyfill@^1.0.1:
   version "1.0.3"
@@ -6984,6 +6970,14 @@ http-proxy@^1.18.1:
     eventemitter3 "^4.0.0"
     follow-redirects "^1.0.0"
     requires-port "^1.0.0"
+
+https-proxy-agent@^5.0.1:
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/https-proxy-agent/-/https-proxy-agent-5.0.1.tgz#c59ef224a04fe8b754f3db0063a25ea30d0005d6"
+  integrity sha512-dFcAjpTQFgoLMzC2VwU+C/CbS7uRL0lWmxDITmqm7C+7F0Odmj6s9l6alZc6AELXhrnggM2CeWSXHGOdX2YtwA==
+  dependencies:
+    agent-base "6"
+    debug "4"
 
 https-proxy-agent@^7.0.1:
   version "7.0.6"
@@ -7717,7 +7711,7 @@ js-message@1.0.7:
   resolved "https://mirrors.tencent.com/npm/js-message/-/js-message-1.0.7.tgz"
   integrity sha512-efJLHhLjIyKRewNS9EGZ4UpI8NguuL6fKkhRxVuMmrGV2xN/0APGdQYwLFky5w9naebSZ0OwAGp0G6/2Cg90rA==
 
-js-tokens@^4.0.0:
+"js-tokens@^3.0.0 || ^4.0.0", js-tokens@^4.0.0:
   version "4.0.0"
   resolved "https://mirrors.tencent.com/npm/js-tokens/-/js-tokens-4.0.0.tgz"
   integrity sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==
@@ -7751,11 +7745,6 @@ json-buffer@3.0.1:
   version "3.0.1"
   resolved "https://mirrors.tencent.com/npm/json-buffer/-/json-buffer-3.0.1.tgz"
   integrity sha512-4bV5BfR2mqfQTJm+V5tPPdf+ZpuhiIvTuAB5g8kcrXOZpTT/QwwVRWBywX1ozr6lEuPdbHxwaJlm9G6mI2sfSQ==
-
-json-formatter-js@^2.3.4:
-  version "2.5.23"
-  resolved "https://mirrors.tencent.com/npm/json-formatter-js/-/json-formatter-js-2.5.23.tgz"
-  integrity sha512-Cbm8wHXjo/C56aCePP1VuKvjxoMEmL7g7Ckss1oWFFlCsvOEEbye1kTeaNNaqba1Cl6YpIOYAnK65pUQ8mDIUQ==
 
 json-parse-better-errors@^1.0.1, json-parse-better-errors@^1.0.2:
   version "1.0.2"
@@ -8239,6 +8228,13 @@ log-update@^6.1.0:
     strip-ansi "^7.1.0"
     wrap-ansi "^9.0.0"
 
+loose-envify@^1.1.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/loose-envify/-/loose-envify-1.4.0.tgz#71ee51fa7be4caec1a63839f7e682d8132d30caf"
+  integrity sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==
+  dependencies:
+    js-tokens "^3.0.0 || ^4.0.0"
+
 lower-case@^2.0.2:
   version "2.0.2"
   resolved "https://mirrors.tencent.com/npm/lower-case/-/lower-case-2.0.2.tgz"
@@ -8355,11 +8351,6 @@ map-obj@^4.0.0:
   version "4.3.0"
   resolved "https://mirrors.tencent.com/npm/map-obj/-/map-obj-4.3.0.tgz"
   integrity sha512-hdN1wVrZbb29eBGiGjJbeP8JbKjq1urkHJ/LIP/NY48MZ1QVXUsQBV1G1zvYFHn1XE06cwjBsOI2K3Ulnj1YXQ==
-
-marked@4.2.12:
-  version "4.2.12"
-  resolved "https://mirrors.tencent.com/npm/marked/-/marked-4.2.12.tgz"
-  integrity sha512-yr8hSKa3Fv4D3jdZmtMMPghgVt6TWbk86WQaWhDloQjRSQhMMYCAro7jP7VDJrjjdV8pxVxMssXS8B8Y5DZ5aw==
 
 marked@^4.3.0:
   version "4.3.0"
@@ -10308,10 +10299,25 @@ raw-body@~2.5.3:
     iconv-lite "~0.4.24"
     unpipe "~1.0.0"
 
+react-dom@^18.3.1:
+  version "18.3.1"
+  resolved "https://registry.yarnpkg.com/react-dom/-/react-dom-18.3.1.tgz#c2265d79511b57d479b3dd3fdfa51536494c5cb4"
+  integrity sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==
+  dependencies:
+    loose-envify "^1.1.0"
+    scheduler "^0.23.2"
+
 react-is@^18.3.1:
   version "18.3.1"
   resolved "https://mirrors.tencent.com/npm/react-is/-/react-is-18.3.1.tgz"
   integrity sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==
+
+react@^18.3.1:
+  version "18.3.1"
+  resolved "https://registry.yarnpkg.com/react/-/react-18.3.1.tgz#49ab892009c53933625bd16b2533fc754cab2891"
+  integrity sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==
+  dependencies:
+    loose-envify "^1.1.0"
 
 read-cmd-shim@4.0.0:
   version "4.0.0"
@@ -10744,6 +10750,13 @@ sax@^1.5.0:
   resolved "https://mirrors.tencent.com/npm/sax/-/sax-1.5.0.tgz"
   integrity sha512-21IYA3Q5cQf089Z6tgaUTr7lDAyzoTPx5HRtbhsME8Udispad8dC/+sziTNugOEx54ilvatQ9YCzl4KQLPcRHA==
 
+scheduler@^0.23.2:
+  version "0.23.2"
+  resolved "https://registry.yarnpkg.com/scheduler/-/scheduler-0.23.2.tgz#414ba64a3b282892e944cf2108ecc078d115cdc3"
+  integrity sha512-UOShsPwz7NrMUqhR6t0hWjFduvOzbtv7toDH1/hIrfRNIDBnnBWd0CwJTGvTpngVlmwGCdP9/Zl/tVrDqcuYzQ==
+  dependencies:
+    loose-envify "^1.1.0"
+
 schema-utils@^1.0.0:
   version "1.0.0"
   resolved "https://mirrors.tencent.com/npm/schema-utils/-/schema-utils-1.0.0.tgz"
@@ -10785,11 +10798,6 @@ select-hose@^2.0.0:
   version "2.0.0"
   resolved "https://mirrors.tencent.com/npm/select-hose/-/select-hose-2.0.0.tgz"
   integrity sha512-mEugaLK+YfkijB4fx0e6kImuJdCIt2LxCRcbEYPqRGCs4F2ogyfZU5IAZRdjCP8JPq2AtdNoC/Dux63d9Kiryg==
-
-select@^1.1.2:
-  version "1.1.2"
-  resolved "https://mirrors.tencent.com/npm/select/-/select-1.1.2.tgz"
-  integrity sha512-OwpTSOfy6xSs1+pwcNrv0RBMOzI39Lp3qQKUTPVVPRjCdNa5JH/oPRiqsesIskK8TVgmRiHwO4KXlV2Li9dANA==
 
 selfsigned@^5.5.0:
   version "5.5.0"
@@ -11150,11 +11158,6 @@ source-map@^0.6.0, source-map@^0.6.1, source-map@~0.6.0, source-map@~0.6.1:
   version "0.6.1"
   resolved "https://mirrors.tencent.com/npm/source-map/-/source-map-0.6.1.tgz"
   integrity sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==
-
-spark-md5@^3.0.2:
-  version "3.0.2"
-  resolved "https://mirrors.tencent.com/npm/spark-md5/-/spark-md5-3.0.2.tgz"
-  integrity sha512-wcFzz9cDfbuqe0FZzfi2or1sgyIrsDwmPwfZC4hiNidPdPINjeUwNfv5kldczoEAcjl9Y1L3SM7Uz2PUEQzxQw==
 
 sparkles@^2.1.0:
   version "2.1.0"
@@ -11770,16 +11773,6 @@ thunky@^1.0.2:
   version "1.1.0"
   resolved "https://mirrors.tencent.com/npm/thunky/-/thunky-1.1.0.tgz"
   integrity sha512-eHY7nBftgThBqOyHGVN+l8gF0BucP09fMo0oO/Lb0w1OF80dJv+lDVpXG60WMQvkcxAkNybKsrEIE3ZtKGmPrA==
-
-tiny-emitter@^2.0.0:
-  version "2.1.0"
-  resolved "https://mirrors.tencent.com/npm/tiny-emitter/-/tiny-emitter-2.1.0.tgz"
-  integrity sha512-NB6Dk1A9xgQPMoGqC5CVXn123gWyte215ONT5Pp5a0yt4nlEoO1ZWeCwpncaekPHXO60i47ihFnZPiRPjRMq4Q==
-
-tinycolor2@^1.4.1:
-  version "1.6.0"
-  resolved "https://mirrors.tencent.com/npm/tinycolor2/-/tinycolor2-1.6.0.tgz"
-  integrity sha512-XPaBkWQJdsf3pLKJV9p4qN/S+fm2Oj8AIPo1BTUhg5oxkvm9+SVEGFdhyOz7tTdUTfvxMiAs4sp6/eZO2Ew+pw==
 
 tinyexec@^1.0.0:
   version "1.0.2"
@@ -12788,6 +12781,11 @@ wsl-utils@^0.1.0:
   integrity sha512-h3Fbisa2nKGPxCpm89Hk33lBLsnaGBvctQopaBSOW/uIs6FTe1ATyAnKFJrzVs9vpGdsTe73WF3V4lIsk4Gacw==
   dependencies:
     is-wsl "^3.1.0"
+
+xmind-embed-viewer@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/xmind-embed-viewer/-/xmind-embed-viewer-1.2.0.tgz#d5b6ca784b0ede11fdf638c880a9c35e6c620211"
+  integrity sha512-dtsxbeePxhSy3g/Kyc4Oe1K3hfdCmkiyRtvONN2KZ2MqeL/QBFTvL4imCiXfAiLpincl42r87OOA3V3Shcza4A==
 
 xml-name-validator@^4.0.0:
   version "4.0.0"

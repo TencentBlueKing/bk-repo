@@ -4,6 +4,8 @@ const CopyWebpackPlugin = require('copy-webpack-plugin')
 const webpackBaseConfig = require('../../webpack.base')
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin')
 
+const frontendNodeModules = path.join(__dirname, '../../node_modules')
+
 module.exports = (env, argv) => {
     const isProd = argv.mode === 'production'
     const envDist = env && env.dist ? env.dist : 'frontend'
@@ -31,7 +33,10 @@ module.exports = (env, argv) => {
             patterns: [
                 { from: path.join(__dirname, './static'), to: dist },
                 { from: path.join(__dirname, '../../../../versionLogs'), to: `${dist}/versionLogs` },
-                { from: path.join(__dirname, './public'), to: dist }
+                { from: path.join(__dirname, './public'), to: dist },
+                { from: path.join(frontendNodeModules, '@babel/standalone/babel.min.js'), to: `${dist}/libs/babel.min.js` },
+                { from: path.join(frontendNodeModules, 'react/umd/react.production.min.js'), to: `${dist}/libs/react.production.min.js` },
+                { from: path.join(frontendNodeModules, 'react-dom/umd/react-dom.production.min.js'), to: `${dist}/libs/react-dom.production.min.js` }
             ]
         }),
         new MonacoWebpackPlugin()
