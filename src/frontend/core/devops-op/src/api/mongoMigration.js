@@ -18,30 +18,6 @@ export function startMigration(data) {
   })
 }
 
-export function completeMigrationDump(data) {
-  return request({
-    url: `${PREFIX}/migration/dump-complete`,
-    method: 'post',
-    data
-  })
-}
-
-export function markMigrationReady(data) {
-  return request({
-    url: `${PREFIX}/migration/ready`,
-    method: 'post',
-    data
-  })
-}
-
-export function enableMigrationDualWrite(data) {
-  return request({
-    url: `${PREFIX}/migration/dual-write`,
-    method: 'post',
-    data
-  })
-}
-
 export function routeMigration(data) {
   return request({
     url: `${PREFIX}/migration/route`,
@@ -107,5 +83,34 @@ export function getCompensationHealth(ruleName) {
   return request({
     url: `${PREFIX}/compensation/health/${ruleName}`,
     method: 'get'
+  })
+}
+
+export function getRoutingConfig() {
+  return request({
+    url: `${PREFIX}/config/routing`,
+    method: 'get'
+  })
+}
+
+export function updateRoutingConfig(data) {
+  return request({
+    url: `${PREFIX}/config/routing`,
+    method: 'put',
+    data
+  })
+}
+
+export function syncHistoricalData() {
+  return request({
+    url: `${PREFIX}/migration/historical-sync`,
+    method: 'post'
+  })
+}
+
+export function syncHistoricalDataByRule(ruleName) {
+  return request({
+    url: `${PREFIX}/migration/historical-sync/${ruleName}`,
+    method: 'post'
   })
 }

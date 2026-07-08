@@ -25,14 +25,22 @@ data class MigrationStatusResponse(
     val targetInstance: String?,
     val lastError: String?,
     val updatedAt: String?,
-    /** CATCH_UP 延迟（秒），仅 CATCH_UP/VERIFY 阶段有意义 */
-    val catchUpLagSeconds: Long? = null,
-    /** sync_failed 队列未清零条数 */
     val syncFailedCount: Long = 0L,
-    /** 补偿队列 PENDING 条数 */
     val compensationPendingCount: Long? = null,
 )
 
 data class MigrationStatusListResponse(
     val projects: List<MigrationStatusResponse>,
+)
+
+data class RoutingConfigRequest(
+    val maxConcurrentDualWrite: Int? = null,
+    val freezeDdl: Boolean? = null,
+)
+
+data class RoutingConfigResponse(
+    val maxConcurrentDualWrite: Int,
+    val freezeDdl: Boolean,
+    /** 编排侧版本号，仅供 opdata 审计，不参与路由 */
+    val configVersion: Long,
 )

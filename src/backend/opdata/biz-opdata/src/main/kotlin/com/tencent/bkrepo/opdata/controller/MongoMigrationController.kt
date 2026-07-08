@@ -9,12 +9,15 @@ import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationBindingRequest
 import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationProjectRequest
 import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationStatusListResponse
+import com.tencent.bkrepo.opdata.api.mongo.migration.RoutingConfigRequest
+import com.tencent.bkrepo.opdata.api.mongo.migration.RoutingConfigResponse
 import com.tencent.bkrepo.opdata.service.mongo.migration.MongoMigrationService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -28,42 +31,21 @@ class MongoMigrationController(
     private val migrationService: MongoMigrationService,
 ) {
 
-    @Operation(summary = "声明迁移单元")
+    @Operation(summary = "声明迁移单元（写 DB mongo_migration_sync_state）")
     @PostMapping("/migration/binding")
     fun binding(@RequestBody request: MigrationBindingRequest): Response<Void> {
         migrationService.binding(request)
         return ResponseBuilder.success()
     }
 
-    @Operation(summary = "启动迁移同步")
+    @Operation(summary = "启动迁移同步（写 DB phase=INITIAL_SYNC；Consul 由运维配）")
     @PostMapping("/migration/start")
     fun start(@RequestBody request: MigrationProjectRequest): Response<Void> {
         migrationService.start(request)
         return ResponseBuilder.success()
     }
 
-    @Operation(summary = "DBA dump/restore 完成后确认")
-    @PostMapping("/migration/dump-complete")
-    fun dumpComplete(@RequestBody request: MigrationProjectRequest): Response<Void> {
-        migrationService.dumpComplete(request)
-        return ResponseBuilder.success()
-    }
-
-    @Operation(summary = "VERIFY 通过后标记 READY")
-    @PostMapping("/migration/ready")
-    fun ready(@RequestBody request: MigrationProjectRequest): Response<Void> {
-        migrationService.ready(request)
-        return ResponseBuilder.success()
-    }
-
-    @Operation(summary = "开启双写")
-    @PostMapping("/migration/dual-write")
-    fun dualWrite(@RequestBody request: MigrationProjectRequest): Response<Void> {
-        migrationService.enableDualWrite(request)
-        return ResponseBuilder.success()
-    }
-
-    @Operation(summary = "关闭双写并切流")
+    @Operation(summary = "切流（写 DB phase=ROUTED；Consul routing-state 由运维设 ROUTED）")
     @PostMapping("/migration/route")
     fun route(@RequestBody request: MigrationProjectRequest): Response<Void> {
         migrationService.route(request)
@@ -141,4 +123,14 @@ class MongoMigrationController(
         @PathVariable ruleName: String,
     ): Response<Any> =
         ResponseBuilder.success(migrationService.compensationHealth(ruleName) as Any)
+
+    @Operation(summary = "查询 Gate 参数（mongo_routing_config，不参与路由）")
+    @GetMapping("/config/routing")
+    fun getConfig(): Response<RoutingConfigResponse> =
+        ResponseBuilder.success(migrationService.getConfig())
+
+    @Operation(summary = "更新 Gate 参数（mongo_routing_config）")
+    @PutMapping("/config/routing")
+    fun updateConfig(@RequestBody request: RoutingConfigRequest): Response<RoutingConfigResponse> =
+        ResponseBuilder.success(migrationService.updateConfig(request))
 }

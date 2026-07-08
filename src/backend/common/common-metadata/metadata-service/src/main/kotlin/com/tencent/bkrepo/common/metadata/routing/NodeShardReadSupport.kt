@@ -27,7 +27,7 @@ class NodeShardReadSupport(
         if (groups != null) {
             groups.forEach { group ->
                 group.collectionNames.forEach { col ->
-                    action(group.template, col, group.criteriaCustomizer)
+                    action(group.mongoTemplate, col, group.criteriaCustomizer)
                 }
             }
             return

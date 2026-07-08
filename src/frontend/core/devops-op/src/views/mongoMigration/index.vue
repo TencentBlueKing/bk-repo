@@ -61,7 +61,8 @@
         <span>迁移编排 API</span>
       </div>
       <div class="api-tip">
-        后台同步 Job 仅处理已显式启动的迁移项目；以下操作为页面可直接调用的编排 API。
+        API 只写 DB 编排状态（phase / Job 断点），<strong>不驱动路由</strong>。
+        路由配置（project-routing、routing-state）由运维在本区域 Consul 手动维护。
       </div>
       <el-form :inline="true" :model="bindingForm">
         <el-form-item label="目标实例">
@@ -70,14 +71,6 @@
             placeholder="如 heavy1"
             clearable
           />
-        </el-form-item>
-        <el-form-item label="历史策略">
-          <el-select v-model="bindingForm.historicalSyncStrategy" clearable>
-            <el-option label="JOB_ONLY" value="JOB_ONLY" />
-            <el-option label="DUMP" value="DUMP" />
-            <el-option label="DUMP_THEN_JOB" value="DUMP_THEN_JOB" />
-            <el-option label="NONE" value="NONE" />
-          </el-select>
         </el-form-item>
         <el-form-item label="业务组ID">
           <el-input
@@ -110,25 +103,6 @@
           POST /migration/start
         </el-button>
         <el-button
-          :loading="actionLoading.dumpComplete"
-          @click="triggerAction('dumpComplete')"
-        >
-          POST /migration/dump-complete
-        </el-button>
-        <el-button
-          :loading="actionLoading.ready"
-          @click="triggerAction('ready')"
-        >
-          POST /migration/ready
-        </el-button>
-        <el-button
-          type="warning"
-          :loading="actionLoading.dualWrite"
-          @click="triggerAction('dualWrite')"
-        >
-          POST /migration/dual-write
-        </el-button>
-        <el-button
           type="warning"
           :loading="actionLoading.route"
           @click="triggerAction('route')"
@@ -154,19 +128,10 @@
           POST /migration/binding
         </el-descriptions-item>
         <el-descriptions-item label="启动迁移同步">
-          POST /migration/start
-        </el-descriptions-item>
-        <el-descriptions-item label="确认 dump 完成">
-          POST /migration/dump-complete
-        </el-descriptions-item>
-        <el-descriptions-item label="标记 READY">
-          POST /migration/ready
-        </el-descriptions-item>
-        <el-descriptions-item label="开启双写">
-          POST /migration/dual-write
+          POST /migration/start → 随后 Consul 加 project-routing + routing-state=DUAL_WRITE
         </el-descriptions-item>
         <el-descriptions-item label="关闭双写并切流">
-          POST /migration/route
+          POST /migration/route → 随后 Consul routing-state=ROUTED
         </el-descriptions-item>
         <el-descriptions-item label="清理 Default 副本">
           POST /migration/cleanup
@@ -175,6 +140,93 @@
           POST /migration/rollback
         </el-descriptions-item>
       </el-descriptions>
+    </el-card>
+
+    <el-card shadow="never" class="query-card">
+      <div slot="header">
+        <span>Consul 路由配置（运维手动）</span>
+      </div>
+      <el-alert
+        type="info"
+        :closable="false"
+        show-icon
+        title="本区域 Consul 为路由唯一写入源，代码/API 不会自动修改。"
+      />
+      <ol class="consul-sop">
+        <li>binding / start 后：在 Consul 添加 <code>project-routing</code> 条目，设 <code>routing-state=DUAL_WRITE</code></li>
+        <li>route 后：确认 Prometheus <code>bkrepo_mongo_routing_config_version</code> 全 Pod 对齐，改 <code>routing-state=ROUTED</code></li>
+        <li>cleanup 后：删除 <code>project-routing</code> 中该项目；散发查询参数改 Consul <code>scatter-query.*</code></li>
+        <li>回滚：Consul <code>routing-state=OFF</code> 并清理 <code>project-routing</code></li>
+      </ol>
+    </el-card>
+
+    <el-card shadow="never" class="query-card">
+      <div slot="header">
+        <span>Gate 参数（DB）</span>
+        <span class="card-subtitle">（mongo_routing_config，仅 MigrationGate 低频读取）</span>
+      </div>
+      <el-form :inline="true" :model="configForm">
+        <el-form-item label="最大并发双写">
+          <el-input-number
+            v-model="configForm.maxConcurrentDualWrite"
+            :min="0"
+            :max="50"
+            controls-position="right"
+          />
+        </el-form-item>
+        <el-form-item label="冻结 DDL">
+          <el-switch v-model="configForm.freezeDdl" active-text="是" inactive-text="否" />
+        </el-form-item>
+      </el-form>
+      <div class="action-row">
+        <el-button
+          type="primary"
+          :loading="configLoading"
+          @click="loadRoutingConfig"
+        >
+          刷新配置
+        </el-button>
+        <el-button
+          type="success"
+          :loading="configSaveLoading"
+          @click="saveRoutingConfig"
+        >
+          保存配置
+        </el-button>
+      </div>
+      <el-descriptions :column="2" border size="small" class="config-desc">
+        <el-descriptions-item label="DB config-version">
+          {{ configVersion || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="最大并发双写">
+          {{ configForm.maxConcurrentDualWrite }}
+        </el-descriptions-item>
+        <el-descriptions-item label="冻结 DDL">
+          {{ configForm.freezeDdl ? '是' : '否' }}
+        </el-descriptions-item>
+      </el-descriptions>
+    </el-card>
+
+    <el-card shadow="never" class="query-card">
+      <div slot="header">
+        <span>历史数据同步</span>
+      </div>
+      <div class="action-row">
+        <el-button
+          type="primary"
+          :loading="historicalSyncAllLoading"
+          @click="triggerHistoricalSyncAll"
+        >
+          同步全部规则
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="historicalSyncRuleLoading"
+          @click="triggerHistoricalSyncRule"
+        >
+          同步指定规则
+        </el-button>
+      </div>
     </el-card>
 
     <el-row :gutter="20" class="result-row">
@@ -231,17 +283,18 @@
 <script>
 import {
   cleanupMigration,
-  completeMigrationDump,
   createMigrationBinding,
-  enableMigrationDualWrite,
   getCompensationHealth,
   getCompensationStats,
   getMigrationStatus,
+  getRoutingConfig,
   getRoutingReadiness,
-  markMigrationReady,
   rollbackMigration,
   routeMigration,
   startMigration,
+  syncHistoricalData,
+  syncHistoricalDataByRule,
+  updateRoutingConfig,
   verifyAll,
   verifyProject
 } from '@/api/mongoMigration'
@@ -249,23 +302,11 @@ import {
 const ACTION_MAP = {
   start: {
     api: startMigration,
-    success: '已触发迁移启动'
-  },
-  dumpComplete: {
-    api: completeMigrationDump,
-    success: '已确认 dump 完成'
-  },
-  ready: {
-    api: markMigrationReady,
-    success: '已标记 READY'
-  },
-  dualWrite: {
-    api: enableMigrationDualWrite,
-    success: '已开启双写'
+    success: '已触发迁移启动；请在 Consul 添加 project-routing 并设 routing-state=DUAL_WRITE'
   },
   route: {
     api: routeMigration,
-    success: '已执行切流'
+    success: '已执行切流；请在 Consul 设 routing-state=ROUTED'
   },
   cleanup: {
     api: cleanupMigration,
@@ -287,10 +328,18 @@ export default {
       },
       bindingForm: {
         targetInstance: '',
-        historicalSyncStrategy: 'JOB_ONLY',
         businessId: '',
         groupProjectIds: ''
       },
+      configForm: {
+        maxConcurrentDualWrite: 1,
+        freezeDdl: false
+      },
+      configVersion: null,
+      configLoading: false,
+      configSaveLoading: false,
+      historicalSyncAllLoading: false,
+      historicalSyncRuleLoading: false,
       statusLoading: false,
       readinessLoading: false,
       statsLoading: false,
@@ -300,9 +349,6 @@ export default {
       actionLoading: {
         binding: false,
         start: false,
-        dumpComplete: false,
-        ready: false,
-        dualWrite: false,
         route: false,
         cleanup: false,
         rollback: false
@@ -314,6 +360,7 @@ export default {
     }
   },
   mounted() {
+    this.loadRoutingConfig()
     this.loadRoutingReadiness()
     this.loadCompensationStats()
     this.loadCompensationHealth()
@@ -400,6 +447,46 @@ export default {
         this.verifyProjectLoading = false
       })
     },
+    loadRoutingConfig() {
+      this.configLoading = true
+      getRoutingConfig().then(res => {
+        const d = res.data
+        this.configForm.maxConcurrentDualWrite = d.maxConcurrentDualWrite
+        this.configForm.freezeDdl = d.freezeDdl
+        this.configVersion = d.configVersion
+      }).finally(() => {
+        this.configLoading = false
+      })
+    },
+    saveRoutingConfig() {
+      this.configSaveLoading = true
+      updateRoutingConfig(this.configForm).then(res => {
+        this.configVersion = res.data.configVersion
+        this.$message.success(`Gate 参数已保存（DB config-version=${this.configVersion}）`)
+      }).finally(() => {
+        this.configSaveLoading = false
+      })
+    },
+    triggerHistoricalSyncAll() {
+      this.historicalSyncAllLoading = true
+      syncHistoricalData().then(() => {
+        this.$message.success('已触发全部规则历史数据同步')
+      }).finally(() => {
+        this.historicalSyncAllLoading = false
+      })
+    },
+    triggerHistoricalSyncRule() {
+      if (!this.queryForm.ruleName) {
+        this.$message.warning('请先填写规则名')
+        return
+      }
+      this.historicalSyncRuleLoading = true
+      syncHistoricalDataByRule(this.queryForm.ruleName).then(() => {
+        this.$message.success(`已触发规则[${this.queryForm.ruleName}]历史数据同步`)
+      }).finally(() => {
+        this.historicalSyncRuleLoading = false
+      })
+    },
     triggerBinding() {
       if (!this.ensureProjectParams()) {
         return
@@ -412,7 +499,7 @@ export default {
       const data = {
         ...this.buildProjectRequest(),
         targetInstance: this.bindingForm.targetInstance,
-        historicalSyncStrategy: this.bindingForm.historicalSyncStrategy
+        historicalSyncStrategy: 'JOB_ONLY'
       }
       if (this.bindingForm.businessId) {
         data.businessId = this.bindingForm.businessId
@@ -445,6 +532,7 @@ export default {
       })
     },
     refreshAll() {
+      this.loadRoutingConfig()
       this.loadMigrationStatus()
       this.loadCompensationStats()
       this.loadCompensationHealth()
@@ -485,5 +573,23 @@ export default {
 
 .api-list {
   margin-top: 8px;
+}
+
+.card-subtitle {
+  font-size: 12px;
+  color: #979ba5;
+  margin-left: 12px;
+  font-weight: normal;
+}
+
+.consul-sop {
+  margin: 12px 0 0;
+  padding-left: 20px;
+  color: #63656e;
+  line-height: 1.8;
+}
+
+.config-desc {
+  margin-top: 16px;
 }
 </style>

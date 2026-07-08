@@ -156,7 +156,7 @@ class NodeCommonUtils(
             val groups = nodeBatchQueryHelper?.buildGroups(collectionNames)
             if (groups != null) {
                 return groups.map { group ->
-                    RoutedScanGroup(group.template, group.collectionNames, group.criteriaCustomizer)
+                    RoutedScanGroup(group.mongoTemplate, group.collectionNames, group.criteriaCustomizer)
                 }
             }
             return listOf(RoutedScanGroup(mongoTemplate, collectionNames) { Query.of(it) })

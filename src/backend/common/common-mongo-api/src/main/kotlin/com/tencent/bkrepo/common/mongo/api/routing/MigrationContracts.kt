@@ -12,10 +12,7 @@ data class MigrationSyncState(
     val lastSyncedId: String? = null,
     val lastError: String? = null,
     val updatedAt: LocalDateTime? = null,
-    val resumeToken: String? = null,
-    val scanStartTimestamp: Long? = null,
-    val lastEventClusterTimeSecs: Long? = null,
-    val dbaDumpCompleted: Boolean = false,
+    val strategy: String? = null,
 )
 
 /** 历史同步失败记录契约（对应 mongo_*_sync_failed） */

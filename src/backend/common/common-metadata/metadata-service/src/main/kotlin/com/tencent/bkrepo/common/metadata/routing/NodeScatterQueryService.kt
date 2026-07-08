@@ -182,7 +182,6 @@ class NodeScatterQueryService(
         private const val MAX_SCATTER_OFFSET = 10_000L
         private const val MAX_SCATTER_FETCH = 10_000
         private const val NODE_RULE = "node"
-        private const val NODE_PREFIX = "node_"
         private const val PROJECT_FIELD = "projectId"
         private val logger = LoggerFactory.getLogger(NodeScatterQueryService::class.java)
     }

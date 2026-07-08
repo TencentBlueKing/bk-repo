@@ -27,11 +27,8 @@ class MongoDualWriteCompensationService(
     private val routingRegistry: MongoRoutingRegistry,
     private val properties: MongoMultiInstanceProperties,
     private val postCheck: CompensationPostCheck? = null,
-    @org.springframework.beans.factory.annotation.Qualifier("compensationMongoTemplate")
-    private val compensationMongoTemplate: MongoTemplate? = null,
 ) {
-    /** 补偿队列存储模板：优先独立实例（§25.2.4） */
-    private val queueTemplate: MongoTemplate = compensationMongoTemplate ?: mongoTemplate
+    private val queueTemplate: MongoTemplate = mongoTemplate
 
     /** 当前 Pod 标识，用于分布式锁 */
     private val podId: String = runCatching {
@@ -323,15 +320,8 @@ class MongoDualWriteCompensationService(
         }
     }
 
-    /** 双写期独立存储不可写时降级 Default；ROUTED 后不降级 */
     private fun queueTemplatesFor(route: WriteRoute): List<MongoTemplate> {
-        if (compensationMongoTemplate == null || queueTemplate === mongoTemplate) {
-            return listOf(queueTemplate)
-        }
-        if (!properties.compensation.fallbackToDefault || !isDualWritePeriod(route)) {
-            return listOf(queueTemplate)
-        }
-        return listOf(queueTemplate, mongoTemplate)
+        return listOf(queueTemplate)
     }
 
     private fun isDualWritePeriod(route: WriteRoute): Boolean {

@@ -41,6 +41,6 @@ data class WriteRoute(
     val routingKey: String? = null,
     val ruleName: String? = null,
     val isDefaultInstance: Boolean = false,
-    /** 模式二双写：副路径同步写 Default（§3.6.3） */
+    /** 模式二双写：Default 为主路径，副路径同步写 Heavy（§3.6.3） */
     val syncSecondaryWrite: Boolean = false,
 )

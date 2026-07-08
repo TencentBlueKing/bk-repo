@@ -17,8 +17,8 @@ data class TMigrationSyncState(
     var lastSyncedId: String? = null,
     var lastError: String? = null,
     var updatedAt: LocalDateTime = LocalDateTime.now(),
-    var resumeToken: String? = null,
-    var scanStartTimestamp: Long? = null,
-    var lastEventClusterTimeSecs: Long? = null,
-    var dbaDumpCompleted: Boolean = false,
+    /** 历史同步策略（NONE / JOB_ONLY），由 POST /migration/binding 写入 */
+    var strategy: String? = null,
+    /** sync_failed 循环计数，>= MAX_SYNC_CYCLES 时降级 INIT_FAILED */
+    var syncCycleCount: Int = 0,
 )

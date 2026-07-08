@@ -41,58 +41,6 @@ class MigrationGateTest {
         gate = MigrationGate(registry, properties)
     }
 
-    // ── 1. canEnterDualWrite: 全部条件满足 → passed ──────────────────────
-
-    @Test
-    fun `canEnterDualWrite passes when all checks pass`() {
-        val result = gate.canEnterDualWrite(
-            compensationQueueEmpty = true,
-            sidecarPassed = true,
-            currentDualWriteCount = 0,
-        )
-        assertTrue(result.passed)
-        assertTrue(result.checks.all { it.passed })
-    }
-
-    @Test
-    fun `canEnterDualWrite fails when concurrent dual-write limit reached`() {
-        val result = gate.canEnterDualWrite(
-            compensationQueueEmpty = true,
-            sidecarPassed = true,
-            currentDualWriteCount = 1,
-        )
-        assertFalse(result.passed)
-        assertTrue(result.failedChecks.any { it.name == "maxConcurrentDualWrite" })
-    }
-
-    // ── 2. canEnterDualWrite: 补偿队列未清零 ─────────────────────────────
-
-    @Test
-    fun `canEnterDualWrite fails when compensation queue is not empty`() {
-        val result = gate.canEnterDualWrite(
-            compensationQueueEmpty = false,
-            sidecarPassed = true,
-        )
-        assertFalse(result.passed)
-        assertTrue(result.failedChecks.any {
-            it.name == "compensationQueueEmpty" && it.reason?.contains("补偿队列") == true
-        })
-    }
-
-    // ── 4. canEnterDualWrite: 旁路对账未通过 ────────────────────────────
-
-    @Test
-    fun `canEnterDualWrite fails when sidecar verification not passed`() {
-        val result = gate.canEnterDualWrite(
-            compensationQueueEmpty = true,
-            sidecarPassed = false,
-        )
-        assertFalse(result.passed)
-        assertTrue(result.failedChecks.any {
-            it.name == "sidecarPassed" && it.reason?.contains("旁路对账") == true
-        })
-    }
-
     // ── 5. canSwitchToRouted: 全部满足 → passed ─────────────────────────
 
     @Test

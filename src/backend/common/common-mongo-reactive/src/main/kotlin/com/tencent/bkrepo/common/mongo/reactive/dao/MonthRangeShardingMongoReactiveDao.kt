@@ -46,13 +46,16 @@ abstract class MonthRangeShardingMongoReactiveDao<E> : RangeShardingMongoReactiv
     private fun ensureIndex(entity: E) {
         val collectionName = determineCollectionName(entity)
         val indexDefinitions = MongoIndexResolver.resolveIndexFor(classType)
+        val templates = writeReactiveTemplates(collectionName, entity)
         indexDefinitions.forEach {
             val indexCacheKey = getIndexCacheKey(collectionName, it)
             if (indexCache.getIfPresent(indexCacheKey) != true) {
-                determineReactiveMongoOperations().indexOps(collectionName).ensureIndex(it)
-                    .subscribe { indexName ->
-                        logger.info("$collectionName create Index: $indexName")
-                    }
+                templates.forEach { template ->
+                    template.indexOps(collectionName).ensureIndex(it)
+                        .subscribe { indexName ->
+                            logger.info("$collectionName create Index: $indexName")
+                        }
+                }
                 indexCache.put(indexCacheKey, true)
             }
         }

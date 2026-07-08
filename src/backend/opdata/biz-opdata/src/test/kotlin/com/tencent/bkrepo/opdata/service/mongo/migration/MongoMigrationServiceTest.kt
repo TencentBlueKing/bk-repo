@@ -6,11 +6,11 @@ import com.tencent.bkrepo.common.mongo.api.routing.MigrationPhase
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.common.mongo.api.routing.RoutingReadinessResult
 import com.tencent.bkrepo.common.mongo.dao.MigrationSyncStateDao
+import com.tencent.bkrepo.common.mongo.dao.RoutingConfigDao
 import com.tencent.bkrepo.common.mongo.model.TMigrationSyncState
 import com.tencent.bkrepo.common.mongo.routing.MongoMultiInstanceProperties
 import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationBindingRequest
 import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationProjectRequest
-import com.tencent.bkrepo.opdata.config.client.ConfigClient
 import com.tencent.bkrepo.opdata.routing.RoutingReadinessAggregator
 import io.mockk.every
 import io.mockk.mockk
@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.springframework.beans.factory.ObjectProvider
 import org.springframework.data.mongodb.core.MongoTemplate
 
 class MongoMigrationServiceTest {
@@ -27,13 +26,14 @@ class MongoMigrationServiceTest {
     private val registry: MongoRoutingRegistry = mockk(relaxed = true)
     private val properties = MongoMultiInstanceProperties()
     private val syncStateDao: MigrationSyncStateDao = mockk(relaxed = true)
+    private val routingConfigDao: RoutingConfigDao = mockk(relaxed = true)
     private val mongoTemplate: MongoTemplate = mockk(relaxed = true)
-    private val configClientProvider: ObjectProvider<ConfigClient> = mockk(relaxed = true)
 
     private val service = MongoMigrationService(
         registry = registry,
         properties = properties,
         syncStateDao = syncStateDao,
+        routingConfigDao = routingConfigDao,
         mongoTemplate = mongoTemplate,
         initValidator = null,
         migrationGate = null,
@@ -41,9 +41,6 @@ class MongoMigrationServiceTest {
         compensationService = null,
         compensationHealthChecker = null,
         readinessAggregator = null,
-        configClientProvider = configClientProvider,
-        appName = "bkrepo-opdata",
-        profile = "test",
     )
 
     @Test
@@ -85,6 +82,7 @@ class MongoMigrationServiceTest {
             registry = registry,
             properties = properties,
             syncStateDao = syncStateDao,
+            routingConfigDao = routingConfigDao,
             mongoTemplate = mongoTemplate,
             initValidator = null,
             migrationGate = null,
@@ -92,9 +90,6 @@ class MongoMigrationServiceTest {
             compensationService = null,
             compensationHealthChecker = null,
             readinessAggregator = notReadyAggregator,
-            configClientProvider = configClientProvider,
-            appName = "bkrepo-opdata",
-            profile = "test",
         )
         val request = MigrationBindingRequest(ruleName = "node", projectId = "p1", targetInstance = "heavy")
 

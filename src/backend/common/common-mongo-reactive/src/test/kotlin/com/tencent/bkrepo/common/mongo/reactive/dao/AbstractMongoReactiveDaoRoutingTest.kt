@@ -14,6 +14,7 @@ import com.tencent.bkrepo.common.mongo.routing.MongoMultiInstanceProperties
 import kotlinx.coroutines.runBlocking
 import org.bson.Document
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -32,6 +33,7 @@ import org.springframework.data.mongodb.core.query.UpdateDefinition
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.lang.reflect.Proxy
+import java.util.Date
 
 class AbstractMongoReactiveDaoRoutingTest {
 
@@ -161,9 +163,10 @@ class AbstractMongoReactiveDaoRoutingTest {
     }
 
     @Test
-    fun `secondary save failure enqueues save compensation targeting default`() = runBlocking {
-        val defaultTemplate = RecordingReactiveMongoTemplate(failures = setOf("save"))
-        val heavyTemplate = RecordingReactiveMongoTemplate()
+    fun `secondary save failure enqueues save compensation targeting offload`() = runBlocking {
+        // 模式一双写：主路径 = Default，副路径 = Offload；副路径失败才入补偿
+        val defaultTemplate = RecordingReactiveMongoTemplate()
+        val heavyTemplate = RecordingReactiveMongoTemplate(failures = setOf("save"))
         val (compensationService, compensationTemplate) = compensationService()
         val entity = TestDocument(projectId = "projectA", name = "node")
         val dao = RegistryBackedReactiveDao(
@@ -175,19 +178,20 @@ class AbstractMongoReactiveDaoRoutingTest {
 
         dao.save(entity)
 
-        assertEquals(listOf("save:test_collection"), heavyTemplate.calls)
         assertEquals(listOf("save:test_collection"), defaultTemplate.calls)
+        assertEquals(listOf("save:test_collection"), heavyTemplate.calls)
         val task = compensationTemplate.inserted.single()
         assertEquals("SAVE", task.getString("operationType"))
         assertEquals("artifact-oplog", task.getString("ruleName"))
         assertEquals("test_collection", task.getString("collectionName"))
-        assertEquals(true, task.getBoolean("targetUseDefault"))
+        assertEquals(false, task.getBoolean("targetUseDefault"))
+        assertEquals("offload", task.getString("targetInstance"))
     }
 
     @Test
-    fun `secondary insert failure enqueues insert compensation targeting default`() = runBlocking {
-        val defaultTemplate = RecordingReactiveMongoTemplate(failures = setOf("insert"))
-        val heavyTemplate = RecordingReactiveMongoTemplate()
+    fun `secondary insert failure enqueues insert compensation targeting offload`() = runBlocking {
+        val defaultTemplate = RecordingReactiveMongoTemplate()
+        val heavyTemplate = RecordingReactiveMongoTemplate(failures = setOf("insert"))
         val (compensationService, compensationTemplate) = compensationService()
         val entity = TestDocument(projectId = "projectA", name = "node")
         val dao = RegistryBackedReactiveDao(
@@ -199,22 +203,52 @@ class AbstractMongoReactiveDaoRoutingTest {
 
         dao.insert(entity)
 
-        assertEquals(listOf("insert:test_collection"), heavyTemplate.calls)
         assertEquals(listOf("insert:test_collection"), defaultTemplate.calls)
+        assertEquals(listOf("insert:test_collection"), heavyTemplate.calls)
         val task = compensationTemplate.inserted.single()
         val entityDoc = task.get("entity", Document::class.java)
         assertEquals("INSERT", task.getString("operationType"))
         assertEquals("artifact-oplog", task.getString("ruleName"))
         assertEquals("test_collection", task.getString("collectionName"))
-        assertEquals(true, task.getBoolean("targetUseDefault"))
+        assertEquals(false, task.getBoolean("targetUseDefault"))
+        assertEquals("offload", task.getString("targetInstance"))
         assertEquals("projectA", entityDoc.getString("projectId"))
         assertEquals("node", entityDoc.getString("name"))
     }
 
     @Test
+    fun `compensation insert entity preserves _id assigned by primary insert`() = runBlocking {
+        // ponytail: 模拟 MongoTemplate.insert() 原地赋 _id，验证补偿任务 entity 携带 _id，
+        // 防止泛型链路 _id 丢失导致 Default/Offload 数据永久分叉
+        val simulatedId = "507f1f77bcf86cd799439011"
+        val defaultTemplate = RecordingReactiveMongoTemplate()
+        val heavyTemplate = RecordingReactiveMongoTemplate(
+            failures = setOf("insert"),
+            onInsert = { entity -> (entity as? TestDocument)?._id = simulatedId },
+        )
+        val (compensationService, compensationTemplate) = compensationService()
+        val entity = TestDocument(projectId = "projectA", name = "node")
+        val dao = RegistryBackedReactiveDao(
+            defaultTemplate = defaultTemplate,
+            heavyTemplate = heavyTemplate,
+            registry = projectDualWriteRegistry(heavyTemplate),
+        )
+        dao.installDualWriteSupport(ImmediateDualWriteExecutor(), compensationService)
+
+        dao.insert(entity)
+
+        assertEquals(listOf("insert:test_collection"), heavyTemplate.calls)
+        assertEquals(listOf("insert:test_collection"), defaultTemplate.calls)
+        val task = compensationTemplate.inserted.single()
+        val entityDoc = task.get("entity", Document::class.java)
+        assertEquals(simulatedId, entityDoc.getString("_id"))
+    }
+
+    @Test
     fun `secondary remove failure enqueues remove compensation`() = runBlocking {
-        val defaultTemplate = RecordingReactiveMongoTemplate(failures = setOf("remove"))
-        val heavyTemplate = RecordingReactiveMongoTemplate()
+        // 模式二双写：主路径 = Default，副路径 = Heavy；副路径（Heavy）失败才入补偿
+        val defaultTemplate = RecordingReactiveMongoTemplate()
+        val heavyTemplate = RecordingReactiveMongoTemplate(failures = setOf("remove"))
         val (compensationService, compensationTemplate) = compensationService()
         val query = Query(Criteria.where("projectId").`is`("projectA"))
         val dao = RegistryBackedReactiveDao(
@@ -232,15 +266,16 @@ class AbstractMongoReactiveDaoRoutingTest {
         assertEquals("REMOVE", task.getString("operationType"))
         assertEquals("node", task.getString("ruleName"))
         assertEquals("projectA", task.getString("routingKey"))
-        assertEquals(true, task.getBoolean("targetUseDefault"))
+        assertEquals(false, task.getBoolean("targetUseDefault"))
+        assertEquals("heavy1", task.getString("targetInstance"))
         assertEquals(query.queryObject, task.get("query", Document::class.java))
         assertEquals(TestDocument::class.java.name, task.getString("entityClass"))
     }
 
     @Test
     fun `secondary updateFirst failure enqueues updateFirst compensation`() = runBlocking {
-        val defaultTemplate = RecordingReactiveMongoTemplate(failures = setOf("updateFirst"))
-        val heavyTemplate = RecordingReactiveMongoTemplate()
+        val defaultTemplate = RecordingReactiveMongoTemplate()
+        val heavyTemplate = RecordingReactiveMongoTemplate(failures = setOf("updateFirst"))
         val (compensationService, compensationTemplate) = compensationService()
         val query = Query(Criteria.where("projectId").`is`("projectA"))
         val update = Update().set("name", "updated")
@@ -259,15 +294,16 @@ class AbstractMongoReactiveDaoRoutingTest {
         assertEquals("UPDATE_FIRST", task.getString("operationType"))
         assertEquals("node", task.getString("ruleName"))
         assertEquals("projectA", task.getString("routingKey"))
-        assertEquals(true, task.getBoolean("targetUseDefault"))
+        assertEquals(false, task.getBoolean("targetUseDefault"))
+        assertEquals("heavy1", task.getString("targetInstance"))
         assertEquals(query.queryObject, task.get("query", Document::class.java))
         assertEquals(update.updateObject, task.get("update", Document::class.java))
     }
 
     @Test
     fun `secondary updateMulti failure enqueues updateMulti compensation`() = runBlocking {
-        val defaultTemplate = RecordingReactiveMongoTemplate(failures = setOf("updateMulti"))
-        val heavyTemplate = RecordingReactiveMongoTemplate()
+        val defaultTemplate = RecordingReactiveMongoTemplate()
+        val heavyTemplate = RecordingReactiveMongoTemplate(failures = setOf("updateMulti"))
         val (compensationService, compensationTemplate) = compensationService()
         val query = Query(Criteria.where("projectId").`is`("projectA"))
         val update = Update().set("name", "updated")
@@ -286,15 +322,16 @@ class AbstractMongoReactiveDaoRoutingTest {
         assertEquals("UPDATE_MULTI", task.getString("operationType"))
         assertEquals("node", task.getString("ruleName"))
         assertEquals("projectA", task.getString("routingKey"))
-        assertEquals(true, task.getBoolean("targetUseDefault"))
+        assertEquals(false, task.getBoolean("targetUseDefault"))
+        assertEquals("heavy1", task.getString("targetInstance"))
         assertEquals(query.queryObject, task.get("query", Document::class.java))
         assertEquals(update.updateObject, task.get("update", Document::class.java))
     }
 
     @Test
     fun `secondary upsert failure enqueues upsert compensation`() = runBlocking {
-        val defaultTemplate = RecordingReactiveMongoTemplate(failures = setOf("upsert"))
-        val heavyTemplate = RecordingReactiveMongoTemplate()
+        val defaultTemplate = RecordingReactiveMongoTemplate()
+        val heavyTemplate = RecordingReactiveMongoTemplate(failures = setOf("upsert"))
         val (compensationService, compensationTemplate) = compensationService()
         val query = Query(Criteria.where("projectId").`is`("projectA"))
         val update = Update().set("name", "updated")
@@ -313,15 +350,16 @@ class AbstractMongoReactiveDaoRoutingTest {
         assertEquals("UPSERT", task.getString("operationType"))
         assertEquals("node", task.getString("ruleName"))
         assertEquals("projectA", task.getString("routingKey"))
-        assertEquals(true, task.getBoolean("targetUseDefault"))
+        assertEquals(false, task.getBoolean("targetUseDefault"))
+        assertEquals("heavy1", task.getString("targetInstance"))
         assertEquals(query.queryObject, task.get("query", Document::class.java))
         assertEquals(update.updateObject, task.get("update", Document::class.java))
     }
 
     @Test
     fun `secondary findAndModify failure enqueues compensation with expected arguments`() = runBlocking {
-        val defaultTemplate = RecordingReactiveMongoTemplate(failures = setOf("findAndModify"))
-        val heavyTemplate = RecordingReactiveMongoTemplate()
+        val defaultTemplate = RecordingReactiveMongoTemplate()
+        val heavyTemplate = RecordingReactiveMongoTemplate(failures = setOf("findAndModify"))
         val (compensationService, compensationTemplate) = compensationService()
         val query = Query(Criteria.where("projectId").`is`("projectA"))
         val update = Update().set("name", "updated")
@@ -342,8 +380,8 @@ class AbstractMongoReactiveDaoRoutingTest {
         assertEquals("FIND_AND_MODIFY", task.getString("operationType"))
         assertEquals("node", task.getString("ruleName"))
         assertEquals("projectA", task.getString("routingKey"))
-        assertEquals(true, task.getBoolean("targetUseDefault"))
-        assertEquals(null, task.getString("targetInstance"))
+        assertEquals(false, task.getBoolean("targetUseDefault"))
+        assertEquals("heavy1", task.getString("targetInstance"))
         assertEquals(query.queryObject, task.get("query", Document::class.java))
         assertEquals(update.updateObject, task.get("update", Document::class.java))
         assertEquals(true, optionsDoc.getBoolean("returnNew"))
@@ -375,8 +413,8 @@ class AbstractMongoReactiveDaoRoutingTest {
 
     @Test
     fun `batch insert secondary insertMany failure enqueues compensation per item`() = runBlocking {
-        val defaultTemplate = RecordingReactiveMongoTemplate(failures = setOf("insertMany"))
-        val heavyTemplate = RecordingReactiveMongoTemplate()
+        val defaultTemplate = RecordingReactiveMongoTemplate()
+        val heavyTemplate = RecordingReactiveMongoTemplate(failures = setOf("insertMany"))
         val (compensationService, compensationTemplate) = compensationService()
         val entities = listOf(
             TestDocument(projectId = "projectA", name = "node-a"),
@@ -402,7 +440,8 @@ class AbstractMongoReactiveDaoRoutingTest {
             assertEquals("INSERT", task.getString("operationType"))
             assertEquals("node", task.getString("ruleName"))
             assertEquals("projectA", task.getString("routingKey"))
-            assertEquals(true, task.getBoolean("targetUseDefault"))
+            assertEquals(false, task.getBoolean("targetUseDefault"))
+            assertEquals("heavy1", task.getString("targetInstance"))
         }
     }
 
@@ -424,6 +463,53 @@ class AbstractMongoReactiveDaoRoutingTest {
         assertEquals(listOf("save:test_collection"), heavyTemplate.calls)
         assertTrue(defaultTemplate.calls.isEmpty())
         assertTrue(compensationTemplate.inserted.isEmpty())
+    }
+
+    @Test
+    fun `compensation entity preserves Date Long nested object types in Document`() = runBlocking {
+        // ponytail: 验证补偿链路 entity 经 mongoConverter.write→Document 后
+        // Date/Long/嵌套对象等类型正确存储，防止 Jackson 类型转换导致精度/类型丢失
+        val now = Date()
+        val nested = NestedDoc(key = "k1", score = 99L)
+        val defaultTemplate = RecordingReactiveMongoTemplate()
+        val heavyTemplate = RecordingReactiveMongoTemplate(failures = setOf("insert"))
+        val (compensationService, compensationTemplate) = compensationService()
+        val entity = ComplexDoc(
+            projectId = "projectA",
+            name = "node",
+            createdAt = now,
+            totalCount = Long.MAX_VALUE,
+            nested = nested,
+        )
+        val dao = RegistryBackedReactiveDao(
+            defaultTemplate = defaultTemplate,
+            heavyTemplate = heavyTemplate,
+            registry = noneDualWriteOffloadPrimaryRegistry(heavyTemplate),
+        )
+        dao.installDualWriteSupport(ImmediateDualWriteExecutor(), compensationService)
+
+        dao.insert(entity)
+
+        assertEquals(listOf("insert:test_collection"), heavyTemplate.calls)
+        assertEquals(listOf("insert:test_collection"), defaultTemplate.calls)
+        val task = compensationTemplate.inserted.single()
+        val entityDoc = task.get("entity", Document::class.java)
+        assertEquals("projectA", entityDoc.getString("projectId"))
+        assertEquals("node", entityDoc.getString("name"))
+        // Date: 须存储为 Date 类型，非 Long 时间戳或 String
+        val storedDate = entityDoc.get("createdAt")
+        assertTrue(storedDate is Date, "createdAt should be Date, got ${storedDate?.javaClass?.simpleName}")
+        assertEquals(now, storedDate)
+        // Long: 须存储为 Long 类型，非 Integer 降级
+        val storedCount = entityDoc.get("totalCount")
+        assertTrue(storedCount is Long, "totalCount should be Long, got ${storedCount?.javaClass?.simpleName}")
+        assertEquals(Long.MAX_VALUE, storedCount)
+        // Nested: 嵌套对象字段可访问
+        val storedNested = entityDoc.get("nested")
+        assertNotNull(storedNested)
+        assertTrue(storedNested is NestedDoc, "nested should be NestedDoc, got ${storedNested?.javaClass?.simpleName}")
+        assertEquals("k1", (storedNested as NestedDoc).key)
+        assertEquals(99L, storedNested.score)
     }
 
     private class RegistryBackedReactiveDao(
@@ -529,6 +615,7 @@ class AbstractMongoReactiveDaoRoutingTest {
 
     private open class RecordingReactiveMongoTemplate(
         private val failures: Set<String> = emptySet(),
+        private val onInsert: ((Any) -> Unit)? = null,
     ) : ReactiveMongoTemplate(
         SimpleReactiveMongoDatabaseFactory(ConnectionString("mongodb://localhost:27017/test")),
     ) {
@@ -550,6 +637,7 @@ class AbstractMongoReactiveDaoRoutingTest {
 
         override fun <T : Any> insert(objectToSave: T, collectionName: String): Mono<T> {
             calls += "insert:$collectionName"
+            onInsert?.invoke(objectToSave)
             return mono("insert", objectToSave)
         }
 
@@ -623,6 +711,20 @@ class AbstractMongoReactiveDaoRoutingTest {
     private data class TestDocument(
         val projectId: String = "",
         val name: String = "",
+        var _id: String? = null,
+    )
+
+    private data class NestedDoc(
+        val key: String = "",
+        val score: Long = 0L,
+    )
+
+    private data class ComplexDoc(
+        val projectId: String = "",
+        val name: String = "",
+        val createdAt: Date = Date(),
+        val totalCount: Long = 0L,
+        val nested: NestedDoc = NestedDoc(),
     )
 
     private class RecordingMongoTemplate : MongoTemplate(

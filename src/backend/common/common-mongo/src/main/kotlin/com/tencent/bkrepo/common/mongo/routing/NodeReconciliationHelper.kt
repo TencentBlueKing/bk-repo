@@ -198,21 +198,6 @@ object NodeReconciliationHelper {
         return dSnap.maxLastModifiedEpochMillis == hSnap.maxLastModifiedEpochMillis
     }
 
-    /** SYNC_JOB：CATCH_UP 最后事件 clusterTime 与当前 primary optime 差值（秒）。 */
-    fun catchUpLagSeconds(
-        defaultTemplate: MongoTemplate,
-        lastEventClusterTimeSecs: Long?,
-    ): Long? {
-        if (lastEventClusterTimeSecs == null) return null
-        val status = runCatching {
-            defaultTemplate.db.runCommand(Document("replSetGetStatus", 1))
-        }.getOrNull() ?: return null
-        val primary = status.getList("members", Document::class.java)
-            ?.firstOrNull { it.getString("stateStr") == "PRIMARY" } ?: return null
-        val optimeDate = primary.getDate("optimeDate") ?: return null
-        return (optimeDate.time / 1000) - lastEventClusterTimeSecs
-    }
-
     fun documentsEqual(a: Document, b: Document, excludeMetaFields: Boolean = true): Boolean {
         val excludeFields = if (excludeMetaFields) setOf("_class", "version") else emptySet()
         val aFiltered = a.filterKeys { it !in excludeFields }

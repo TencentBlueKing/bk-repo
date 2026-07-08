@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * 补偿队列健康检查 API（§25.2.4 E-02）。
+ * 补偿队列健康检查 API。
  *
  * 暴露补偿队列的运行状态，供 Prometheus 采集和告警规则使用。
  * 返回 JSON 包含各规则的 PENDING 任务数、最老任务年龄、P99 消费延迟等。

@@ -55,7 +55,7 @@ interface NodeMongoOperations {
 
     fun save(projectId: String, entity: Any, collectionName: String): Any
 
-    fun bulkUpdateOne(
+    fun bulkOps(
         projectId: String,
         collectionName: String,
         clauses: List<Pair<Query, UpdateDefinition>>,
@@ -187,7 +187,7 @@ class DefaultNodeMongoOperations(
         }
     }
 
-    override fun bulkUpdateOne(
+    override fun bulkOps(
         projectId: String,
         collectionName: String,
         clauses: List<Pair<Query, UpdateDefinition>>,
@@ -253,7 +253,7 @@ class SimpleNodeMongoOperations(
     override fun save(projectId: String, entity: Any, collectionName: String): Any =
         template.save(entity, collectionName)
 
-    override fun bulkUpdateOne(
+    override fun bulkOps(
         projectId: String,
         collectionName: String,
         clauses: List<Pair<Query, UpdateDefinition>>,

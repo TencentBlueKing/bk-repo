@@ -408,6 +408,16 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
     }
 
     /**
+     * 集合的全部写目标模板：双写期为 [primary, secondary]，单写/未路由为 [primary]。
+     * 供 ensureIndex 等需覆盖所有写实例的场景使用，避免索引只建在 Default 而写实际落 Heavy/Offload。
+     */
+    protected open fun writeTemplates(collectionName: String, context: Any? = null): List<MongoTemplate> {
+        val default = determineMongoTemplate()
+        val route = routingRegistry?.resolveWriteRoute(collectionName, context, default) ?: return listOf(default)
+        return listOfNotNull(route.primary, route.secondary).distinct()
+    }
+
+    /**
      * 僵尸副本写保护检查（§25.2.2 E-01）。
      * 在写操作入口检查：如果目标模板是 Default 实例，但 projectId 已迁出到 Heavy，
      * 则 fail-fast 抛出异常，禁止静默写入 Default 上的僵尸副本。

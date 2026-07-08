@@ -239,7 +239,7 @@ class NodeFolderStat(
             updates.chunked(BATCH_LIMIT).forEach { batch ->
                 val ops = nodeMongoOperations
                 if (ops != null) {
-                    ops.bulkUpdateOne(pid, collectionName, batch)
+                    ops.bulkOps(pid, collectionName, batch)
                 } else {
                     routedTemplate(pid, collectionName)
                         .bulkOps(BulkOperations.BulkMode.UNORDERED, collectionName)
@@ -315,7 +315,7 @@ class NodeFolderStat(
             group.map { it.clause }.chunked(BATCH_LIMIT).forEach { batch ->
                 val ops = nodeMongoOperations
                 if (ops != null) {
-                    ops.bulkUpdateOne(projectId, col, batch)
+                    ops.bulkOps(projectId, col, batch)
                 } else {
                     routedTemplate(projectId, col)
                         .bulkOps(BulkOperations.BulkMode.UNORDERED, col)

@@ -70,10 +70,11 @@ abstract class MonthRangeShardingMongoDao<E> : RangeShardingMongoDao<E>() {
     private fun ensureIndex(entity: E) {
         val collectionName = determineCollectionName(entity)
         val indexDefinitions = MongoIndexResolver.resolveIndexFor(classType)
+        val templates = writeTemplates(collectionName, entity)
         indexDefinitions.forEach {
             val indexCacheKey = getIndexCacheKey(collectionName, it)
             if (indexCache.getIfPresent(indexCacheKey) != true) {
-                determineMongoTemplate().indexOps(collectionName).ensureIndex(it)
+                templates.forEach { template -> template.indexOps(collectionName).ensureIndex(it) }
                 indexCache.put(indexCacheKey, true)
                 logger.info("$collectionName create Index: $it")
             }

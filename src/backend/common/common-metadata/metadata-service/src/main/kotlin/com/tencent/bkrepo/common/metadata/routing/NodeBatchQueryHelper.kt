@@ -13,10 +13,10 @@ class NodeBatchQueryHelper(
     private val registry: MongoRoutingRegistry? = null,
 ) {
 
-    fun buildGroups(collectionNames: List<String>): List<BatchQueryGroup>? {
+    fun buildGroups(collectionNames: List<String>, ruleName: String = NODE_RULE): List<BatchQueryGroup>? {
         val reg = registry ?: return null
-        val routedProjects = reg.routedProjectIds(NODE_RULE)
-        val shardRoutedCollections = reg.shardRoutedCollections(NODE_RULE)
+        val routedProjects = reg.routedProjectIds(ruleName)
+        val shardRoutedCollections = reg.shardRoutedCollections(ruleName)
         if (routedProjects.isEmpty() && shardRoutedCollections.isEmpty()) return null
 
         val groups = mutableListOf<BatchQueryGroup>()
@@ -25,35 +25,35 @@ class NodeBatchQueryHelper(
         if (defaultCollections.isNotEmpty()) {
             groups += BatchQueryGroup(
                 instanceId = DEFAULT_INSTANCE,
-                template = defaultMongoTemplate,
+                mongoTemplate = defaultMongoTemplate,
                 collectionNames = defaultCollections,
                 criteriaCustomizer = createDefaultGroupCustomizer(routedProjects),
             )
         }
 
         val allInstanceNames = (
-            reg.projectsByInstance(NODE_RULE).keys + reg.shardsByInstance(NODE_RULE).keys
+            reg.projectsByInstance(ruleName).keys + reg.shardsByInstance(ruleName).keys
             ).toSet()
         for (instanceName in allInstanceNames) {
-            val template = reg.primaryTemplateByInstance(NODE_RULE, instanceName) ?: continue
+            val template = reg.primaryTemplateByInstance(ruleName, instanceName) ?: continue
 
-            val shardCols = reg.shardsByInstance(NODE_RULE)[instanceName].orEmpty()
+            val shardCols = reg.shardsByInstance(ruleName)[instanceName].orEmpty()
                 .filter { it in collectionNames }
             if (shardCols.isNotEmpty()) {
                 groups += BatchQueryGroup(
                     instanceId = instanceName,
-                    template = template,
+                    mongoTemplate = template,
                     collectionNames = shardCols,
                     criteriaCustomizer = { it },
                 )
             }
 
-            val projectsForInstance = reg.projectsByInstance(NODE_RULE)[instanceName].orEmpty()
+            val projectsForInstance = reg.projectsByInstance(ruleName)[instanceName].orEmpty()
             val nonShardCols = collectionNames.filter { it !in shardRoutedCollections }
             if (projectsForInstance.isNotEmpty() && nonShardCols.isNotEmpty()) {
                 groups += BatchQueryGroup(
                     instanceId = instanceName,
-                    template = template,
+                    mongoTemplate = template,
                     collectionNames = nonShardCols,
                     criteriaCustomizer = { query ->
                         Query.of(query).addCriteria(

@@ -82,9 +82,7 @@ interface MongoRoutingRegistry {
 
     fun hasRoutedProjects(ruleName: String): Boolean
 
-    fun migrationMode(ruleName: String): String
-
-    /** §1.6.1 历史同步策略：NONE / DUMP / DUMP_THEN_JOB / JOB_ONLY */
+    /** §1.6.1 历史同步策略：NONE / JOB_ONLY */
     fun historicalSyncStrategy(ruleName: String): String
 
     fun getConfigVersion(): Long

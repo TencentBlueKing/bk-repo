@@ -18,9 +18,8 @@ abstract class RangeShardingMongoReactiveDao<E> : ShardingMongoReactiveDao<E>() 
     override suspend fun <T> findOne(query: Query, clazz: Class<T>): T? {
         val list = mutableListOf<T>()
         val collectionNames = determineCollectionNames(query)
-        val template = determineReactiveMongoOperations()
         collectionNames.forEach {
-            val result = template.findOne(query, clazz, it).awaitSingleOrNull()
+            val result = determineReadReactiveMongoOperations(it, query).findOne(query, clazz, it).awaitSingleOrNull()
             result?.let { r -> list.add(r) }
         }
         sortQueryResultList(query, list, clazz)
@@ -48,7 +47,6 @@ abstract class RangeShardingMongoReactiveDao<E> : ShardingMongoReactiveDao<E>() 
         var limit = query.limit
         var skip = query.skip
         val queryWithoutPage = dropQueryPageRequest(query)
-        val template = determineReactiveMongoOperations()
 
         collectionNames.forEach {
             if (list.size == query.limit) {
@@ -60,7 +58,8 @@ abstract class RangeShardingMongoReactiveDao<E> : ShardingMongoReactiveDao<E>() 
                 skip = -diff
             } else {
                 queryWithoutPage.skip(skip).limit(limit)
-                val result = template.find(queryWithoutPage, clazz, it).collectList().awaitSingle()
+                val result = determineReadReactiveMongoOperations(it, queryWithoutPage)
+                    .find(queryWithoutPage, clazz, it).collectList().awaitSingle()
                 list.addAll(result)
                 skip = 0
                 limit -= result.size
@@ -74,10 +73,7 @@ abstract class RangeShardingMongoReactiveDao<E> : ShardingMongoReactiveDao<E>() 
         if (shardingValue is Document && shardingValue.size > 1) {
             throw IllegalArgumentException("Remove only works on particular table!")
         }
-        val collectionName = determineCollectionName(query)
-        return determineReactiveMongoOperations()
-            .remove(query, collectionName)
-            .awaitSingle()
+        return super.remove(query)
     }
 
     override suspend fun count(query: Query): Long {
@@ -88,7 +84,7 @@ abstract class RangeShardingMongoReactiveDao<E> : ShardingMongoReactiveDao<E>() 
 
     override suspend fun exists(query: Query): Boolean {
         val collectionName = determineCollectionName(query)
-        return determineReactiveMongoOperations().exists(query, collectionName).awaitSingle()
+        return determineReadReactiveMongoOperations(collectionName, query).exists(query, collectionName).awaitSingle()
     }
 
     override suspend fun <O> aggregate(aggregation: Aggregation, outputType: Class<O>): MutableList<O> {
@@ -105,9 +101,11 @@ abstract class RangeShardingMongoReactiveDao<E> : ShardingMongoReactiveDao<E>() 
 
     private suspend fun count(collectionNames: List<String>, query: Query): Map<String, Long> = coroutineScope {
         val queryWithoutPage = dropQueryPageRequest(query)
-        val template = determineReactiveMongoOperations()
         collectionNames.map { name ->
-            async { name to template.count(queryWithoutPage, name).awaitSingle() }
+            async {
+                name to determineReadReactiveMongoOperations(name, queryWithoutPage)
+                    .count(queryWithoutPage, name).awaitSingle()
+            }
         }.awaitAll().toMap()
     }
 

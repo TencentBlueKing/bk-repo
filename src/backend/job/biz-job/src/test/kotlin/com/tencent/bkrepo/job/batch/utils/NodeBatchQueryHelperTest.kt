@@ -64,7 +64,7 @@ class NodeBatchQueryHelperTest {
         val groups = helper().buildGroups(collections)!!
 
         // Default 组
-        val defaultGroup = groups.first { it.template === defaultTemplate }
+        val defaultGroup = groups.first { it.mongoTemplate === defaultTemplate }
         assertEquals(collections, defaultGroup.collectionNames)
         // Default 组的 criteriaCustomizer 必须追加 NOT IN 过滤
         val defaultQuery = defaultGroup.criteriaCustomizer(Query())
@@ -74,7 +74,7 @@ class NodeBatchQueryHelperTest {
         assertNotNull(notInValues) // $nin 存在
 
         // Heavy1 project 组
-        val heavyGroup = groups.first { it.template === heavy1Template }
+        val heavyGroup = groups.first { it.mongoTemplate === heavy1Template }
         val heavyQuery = heavyGroup.criteriaCustomizer(Query())
         val heavyFilter = heavyQuery.queryObject["projectId"] as? Map<*, *>
         assertNotNull(heavyFilter) // $in 存在
@@ -90,7 +90,7 @@ class NodeBatchQueryHelperTest {
         every { registry.primaryTemplateByInstance("node", "heavy1") } returns heavy1Template
 
         val groups = helper().buildGroups(collections)!!
-        val defaultGroup = groups.first { it.template === defaultTemplate }
+        val defaultGroup = groups.first { it.mongoTemplate === defaultTemplate }
         assertEquals(collections.sorted(), defaultGroup.collectionNames.sorted())
     }
 
@@ -108,11 +108,11 @@ class NodeBatchQueryHelperTest {
         val groups = helper().buildGroups(collections)!!
 
         // Default 只包含 node_0，不包含 node_188
-        val defaultGroup = groups.first { it.template === defaultTemplate }
+        val defaultGroup = groups.first { it.mongoTemplate === defaultTemplate }
         assertEquals(listOf("node_0"), defaultGroup.collectionNames)
 
         // Heavy 组包含 node_188，criteriaCustomizer 不追加 projectId（整表迁移）
-        val heavyShardGroup = groups.first { it.template === heavy1Template }
+        val heavyShardGroup = groups.first { it.mongoTemplate === heavy1Template }
         assertEquals(listOf("node_188"), heavyShardGroup.collectionNames)
         val shardQuery = heavyShardGroup.criteriaCustomizer(Query())
         // 不应有 projectId 过滤条件
@@ -134,15 +134,15 @@ class NodeBatchQueryHelperTest {
         val groups = helper().buildGroups(collections)!!
 
         // Default：仅包含非 shard 集合，条件追加 NOT IN projectA
-        val defaultGroup = groups.first { it.template === defaultTemplate }
+        val defaultGroup = groups.first { it.mongoTemplate === defaultTemplate }
         assertEquals(setOf("node_0", "node_65"), defaultGroup.collectionNames.toSet())
 
         // heavy1：project-routing，扫描非 shard 集合，追加 IN [projectA]
-        val heavy1Group = groups.first { it.template === heavy1Template }
+        val heavy1Group = groups.first { it.mongoTemplate === heavy1Template }
         assertNull(heavy1Group.collectionNames.find { it == "node_188" })
 
         // heavy2：shard-routing，只扫描 node_188，无 projectId 过滤
-        val heavy2Group = groups.first { it.template === heavy2Template }
+        val heavy2Group = groups.first { it.mongoTemplate === heavy2Template }
         assertEquals(listOf("node_188"), heavy2Group.collectionNames)
         assertNull(heavy2Group.criteriaCustomizer(Query()).queryObject["projectId"])
     }
@@ -180,7 +180,7 @@ class NodeBatchQueryHelperTest {
         every { registry.primaryTemplateByInstance("node", "heavy1") } returns heavy1Template
 
         val defaultGroup = helper().buildGroups(collections)!!
-            .first { it.template === defaultTemplate }
+            .first { it.mongoTemplate === defaultTemplate }
         val filter = defaultGroup.criteriaCustomizer(Query()).queryObject["projectId"] as Map<*, *>
         val inValues = (filter["\$in"] as? Iterable<*>)?.map { it.toString() }?.toSet()
         assertEquals(remaining, inValues)
@@ -197,7 +197,7 @@ class NodeBatchQueryHelperTest {
         every { registry.primaryTemplateByInstance("node", "heavy1") } returns heavy1Template
 
         val defaultGroup = helper().buildGroups(collections)!!
-            .first { it.template === defaultTemplate }
+            .first { it.mongoTemplate === defaultTemplate }
         val filter = defaultGroup.criteriaCustomizer(Query()).queryObject["projectId"] as Map<*, *>
         assertNotNull(filter["\$nin"])
     }

@@ -15,7 +15,6 @@ import java.time.LocalDateTime
  * 在所有迁移状态跃迁前执行前置条件校验，任一不满足则拒绝跃迁。
  *
  * 门控校验链：
- * - DUAL_WRITE 前：补偿队列清零 + 旁路对账连续3轮零差异 + 双写并发上限
  * - ROUTED 前：补偿队列清零 + 旁路对账连续3轮零差异
  * - 100% Pod 滚动完成：运维 SOP（`kubectl rollout status`），不在此自动校验
  * - 迁移期 freeze-gc：按 Consul 配置 + [MongoRoutingRegistry] 判断（§3.18.2）
@@ -28,23 +27,6 @@ class MigrationGate(
     @Autowired(required = false)
     private val syncStateDao: MigrationSyncStateDao? = null,
 ) {
-
-    /**
-     * 是否允许进入 DUAL_WRITE 阶段。
-     */
-    fun canEnterDualWrite(
-        compensationQueueEmpty: Boolean,
-        sidecarPassed: Boolean,
-        currentDualWriteCount: Int = 0,
-    ): GateResult {
-        val checks = mutableListOf<GateCheck>()
-        checks += checkMaxConcurrentDualWrite(currentDualWriteCount)
-        checks += GateCheck("compensationQueueEmpty", compensationQueueEmpty,
-            if (!compensationQueueEmpty) "补偿队列未清零，阻塞进入 DUAL_WRITE" else null)
-        checks += GateCheck("sidecarPassed", sidecarPassed,
-            if (!sidecarPassed) "旁路对账未通过（需连续 3 轮零差异），阻塞进入 DUAL_WRITE" else null)
-        return GateResult(checks)
-    }
 
     /**
      * 是否允许切换到 ROUTED（关闭双写，单写 Heavy）。
@@ -83,9 +65,6 @@ class MigrationGate(
                 isProjectGcFrozen(ruleName, projectId)
         }
 
-    /**
-     * 判断指定项目是否允许物理删除 Default 上的 node 副本（§3.18.2）。
-     */
     fun isPhysicalDeleteFrozen(projectId: String): Boolean =
         properties.rules.any { (ruleName, rule) ->
             projectId in rule.projectRouting &&
@@ -93,9 +72,6 @@ class MigrationGate(
                 isPhysicalDeleteFrozen(ruleName, projectId)
         }
 
-    /**
-     * 判断指定项目是否禁止 Default 侧 node 变更（§3.18.2）。
-     */
     fun isDefaultNodeMutationFrozen(projectId: String): Boolean =
         properties.rules.any { (ruleName, rule) ->
             projectId in rule.projectRouting &&
@@ -124,18 +100,6 @@ class MigrationGate(
 
     private fun isDefaultNodeMutationFrozen(ruleName: String, projectId: String): Boolean =
         registry.isProjectInDualWrite(ruleName, projectId) || registry.isProjectRoutedOut(ruleName, projectId)
-
-    private fun checkMaxConcurrentDualWrite(currentDualWriteCount: Int): GateCheck {
-        val limit = properties.maxConcurrentDualWrite
-        val passed = currentDualWriteCount < limit
-        return GateCheck(
-            name = "maxConcurrentDualWrite",
-            passed = passed,
-            reason = if (!passed) {
-                "当前双写项目数 $currentDualWriteCount 已达上限 $limit，阻塞进入 DUAL_WRITE"
-            } else null,
-        )
-    }
 
     data class GateCheck(
         val name: String,

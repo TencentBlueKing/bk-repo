@@ -5,7 +5,7 @@ import org.springframework.data.mongodb.core.query.Query
 
 data class BatchQueryGroup(
     val instanceId: String,
-    val template: MongoTemplate,
+    val mongoTemplate: MongoTemplate,
     val collectionNames: List<String>,
     val criteriaCustomizer: (Query) -> Query,
 )

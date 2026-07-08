@@ -5,6 +5,7 @@ import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
@@ -17,6 +18,7 @@ class MongoRoutingMetrics(
     private val meterRegistry: MeterRegistry,
     private val compensationService: MongoDualWriteCompensationService,
     private val routingRegistry: MongoRoutingRegistry,
+    @Value("\${spring.application.name:unknown}") private val serviceName: String,
 ) {
     private val routingHits = ConcurrentHashMap<String, AtomicLong>()
     private val routingQueries = ConcurrentHashMap<String, AtomicLong>()
@@ -49,6 +51,12 @@ class MongoRoutingMetrics(
                 compensationService.countPendingTasks(ruleName).toDouble()
             }
                 .tags(tags)
+                .register(meterRegistry)
+            Gauge.builder("bkrepo_mongo_routing_config_version") {
+                routingRegistry.getConfigVersion().toDouble()
+            }
+                .tags(listOf(Tag.of("rule", ruleName), Tag.of("service", serviceName)))
+                .description("Local config-version for cluster consistency monitoring")
                 .register(meterRegistry)
         }
 

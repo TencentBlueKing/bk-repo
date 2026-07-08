@@ -376,6 +376,20 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
         context: Any? = null,
     ): ReactiveMongoTemplate = readTemplate(collectionName, context)
 
+    /**
+     * 集合的全部写目标模板：双写期为 [primary, secondary]，单写/未路由为 [primary]。
+     * 供 ensureIndex 等需覆盖所有写实例的场景使用，避免索引只建在 Default 而写实际落 Offload。
+     */
+    protected open fun writeReactiveTemplates(
+        collectionName: String,
+        context: Any? = null,
+    ): List<ReactiveMongoTemplate> {
+        val default = determineReactiveMongoOperations()
+        val registry = reactiveRoutingRegistry ?: return listOf(default)
+        val route = registry.resolveWriteRoute(collectionName, context, default)
+        return listOfNotNull(route.primary, route.secondary).distinct()
+    }
+
     private fun readTemplate(collectionName: String, context: Any?): ReactiveMongoTemplate {
         val default = determineReactiveMongoOperations()
         val registry = reactiveRoutingRegistry ?: return default

@@ -1,9 +1,7 @@
 package com.tencent.bkrepo.common.mongo.reactive.routing
 
 import com.mongodb.ConnectionString
-import com.tencent.bkrepo.common.mongo.api.routing.MigrationPhase
 import com.tencent.bkrepo.common.mongo.api.routing.RuleRoutingState
-import com.tencent.bkrepo.common.mongo.dao.MigrationSyncStateDao
 import com.tencent.bkrepo.common.mongo.routing.MongoMultiInstanceProperties
 import com.tencent.bkrepo.common.mongo.routing.MongoRoutingContext
 import com.tencent.bkrepo.common.mongo.api.routing.RouteTarget
@@ -34,7 +32,6 @@ data class ReactiveWriteRoute(
  */
 class MongoReactiveRoutingRegistry(
     private val properties: MongoMultiInstanceProperties,
-    private val syncStateDao: MigrationSyncStateDao? = null,
 ) {
 
     private val primaryTemplates: Map<String, Map<String, ReactiveMongoTemplate>>
@@ -133,11 +130,13 @@ class MongoReactiveRoutingRegistry(
                 val instanceTmpl = primaryTemplates[ruleName]?.get(instanceName)
                     ?: return ReactiveWriteRoute(defaultTemplate)
                 if (rule.routingState == RuleRoutingState.DUAL_WRITE) {
+                    // 模式一双写期与模式二统一 Default-first（§1.3.1）
                     ReactiveWriteRoute(
-                        primary = instanceTmpl,
-                        secondary = defaultTemplate,
-                        secondaryTarget = RouteTarget(ruleName, useDefault = true),
+                        primary = defaultTemplate,
+                        secondary = instanceTmpl,
+                        secondaryTarget = RouteTarget(ruleName, instanceName = instanceName),
                         ruleName = ruleName,
+                        isDefaultInstance = true,
                         syncSecondaryWrite = true,
                     )
                 } else {
@@ -176,24 +175,23 @@ class MongoReactiveRoutingRegistry(
                 }
                 val instanceTmpl = primaryTemplates[ruleName]?.get(instanceName)
                     ?: return ReactiveWriteRoute(defaultTemplate)
-                if (hitProjectRouting && isProjectInDualWrite(ruleName, key!!)) {
+                val dualWrite = if (hitProjectRouting) {
+                    isProjectInDualWrite(ruleName, key!!)
+                } else {
+                    rule.routingState == RuleRoutingState.DUAL_WRITE
+                }
+                if (dualWrite) {
+                    // 模式二双写：Default 为主路径（先写），Heavy 为副路径（§3.6.3）。
+                    // Default 持有全量历史，唯一键冲突在主路径同步 fail-fast 暴露；
+                    // 若空 Heavy 先写会成功、Default 后写冲突，导致两侧不可收敛地分叉。
                     ReactiveWriteRoute(
-                        primary = instanceTmpl,
-                        secondary = defaultTemplate,
-                        secondaryTarget = RouteTarget(ruleName, useDefault = true),
+                        primary = defaultTemplate,
+                        secondary = instanceTmpl,
+                        secondaryTarget = RouteTarget(ruleName, instanceName = instanceName),
                         routingKey = key,
                         ruleName = ruleName,
-                        isDefaultInstance = false,
+                        isDefaultInstance = true,
                         syncSecondaryWrite = true,
-                    )
-                } else if (!hitProjectRouting && rule.routingState == RuleRoutingState.DUAL_WRITE) {
-                    ReactiveWriteRoute(
-                        primary = instanceTmpl,
-                        secondary = defaultTemplate,
-                        secondaryTarget = RouteTarget(ruleName, useDefault = true),
-                        routingKey = key,
-                        ruleName = ruleName,
-                        isDefaultInstance = false,
                     )
                 } else {
                     ReactiveWriteRoute(
@@ -217,7 +215,7 @@ class MongoReactiveRoutingRegistry(
         if (rule.routingState == RuleRoutingState.OFF) return false
         if (projectId !in rule.projectRouting) return false
         if (isProjectInDualWrite(ruleName, projectId)) return false
-        return migrationPhase(projectId)?.let { it.ordinal >= MigrationPhase.ROUTED.ordinal } ?: false
+        return rule.routingState == RuleRoutingState.ROUTED
     }
 
     /** G-02：迁出项目禁止写 Default 僵尸副本 */
@@ -238,8 +236,7 @@ class MongoReactiveRoutingRegistry(
     private fun isProjectInDualWrite(ruleName: String, projectId: String): Boolean {
         val rule = properties.rules[ruleName] ?: return false
         if (rule.routingState != RuleRoutingState.DUAL_WRITE) return false
-        if (projectId !in rule.projectRouting) return false
-        return migrationPhase(projectId) == MigrationPhase.DUAL_WRITE
+        return projectId in rule.projectRouting
     }
 
     private fun shouldWriteToHeavy(
@@ -250,9 +247,6 @@ class MongoReactiveRoutingRegistry(
         if (projectId == null || projectId !in rule.projectRouting) return false
         return isProjectInDualWrite(ruleName, projectId) || isProjectRoutedOut(ruleName, projectId)
     }
-
-    private fun migrationPhase(projectId: String): MigrationPhase? =
-        syncStateDao?.findByProjectId(projectId)?.phase
 
     private fun shouldFallbackToDefault(
         ruleName: String,

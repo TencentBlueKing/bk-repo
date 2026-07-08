@@ -18,6 +18,9 @@ class MigrationSyncStateDao : SimpleMongoDao<TMigrationSyncState>() {
     fun findByRuleName(ruleName: String): List<TMigrationSyncState> =
         find(Query(TMigrationSyncState::ruleName.isEqualTo(ruleName)))
 
+    fun findByPhases(phases: Collection<MigrationPhase>): List<TMigrationSyncState> =
+        find(Query(Criteria.where(TMigrationSyncState::phase.name).`in`(phases)))
+
     fun upsert(state: TMigrationSyncState) {
         val id = state.id ?: state.projectId
         val query = Query(Criteria.where(ID).isEqualTo(id))
@@ -30,23 +33,9 @@ class MigrationSyncStateDao : SimpleMongoDao<TMigrationSyncState>() {
             .set(TMigrationSyncState::lastSyncedId.name, state.lastSyncedId)
             .set(TMigrationSyncState::lastError.name, state.lastError)
             .set(TMigrationSyncState::updatedAt.name, state.updatedAt)
-            .set(TMigrationSyncState::resumeToken.name, state.resumeToken)
-            .set(TMigrationSyncState::scanStartTimestamp.name, state.scanStartTimestamp)
-            .set(TMigrationSyncState::lastEventClusterTimeSecs.name, state.lastEventClusterTimeSecs)
-            .set(TMigrationSyncState::dbaDumpCompleted.name, state.dbaDumpCompleted)
+            .set(TMigrationSyncState::strategy.name, state.strategy)
+            .set(TMigrationSyncState::syncCycleCount.name, state.syncCycleCount)
         upsert(query, update)
-    }
-
-    fun markDumpComplete(projectId: String) {
-        if (projectId.isBlank()) {
-            return
-        }
-        updateFirst(
-            Query(Criteria.where(ID).isEqualTo(projectId)),
-            Update()
-                .set(TMigrationSyncState::dbaDumpCompleted.name, true)
-                .set(TMigrationSyncState::updatedAt.name, LocalDateTime.now()),
-        )
     }
 
     fun updatePhase(projectId: String, phase: MigrationPhase, error: String? = null) {

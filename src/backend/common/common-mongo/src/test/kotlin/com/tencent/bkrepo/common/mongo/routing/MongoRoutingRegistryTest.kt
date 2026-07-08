@@ -27,8 +27,8 @@ import org.springframework.data.mongodb.core.query.Query
  *  4. PROJECT + 均未命中 → null（回退 Default）
  *  5. NONE + dualWrite=false → Offload 专属实例 primary
  *  6. NONE + dualWrite=true（双写期） → null（读/写仍走 Default）
- *  7. resolveWriteRoute, PROJECT + dualWrite=true → WriteRoute(Heavy, Default)
- *  8. resolveWriteRoute, NONE + dualWrite=true → WriteRoute(Default, Heavy)
+ *  7. resolveWriteRoute, PROJECT + dualWrite=true → WriteRoute(Default 主, Heavy 副)
+ *  8. resolveWriteRoute, NONE + dualWrite=true → WriteRoute(Default 主, Offload 副)
  *  9. projectId 从 Query.queryObject 顶层提取
  * 10. projectId 从实体反射提取
  * 11. validateOnStartup：引用不存在的 instance 时 fail-fast
@@ -232,13 +232,14 @@ class MongoRoutingRegistryTest {
     // ── 分支 7：resolveWriteRoute, PROJECT + dualWrite=true ──────────────────
 
     @Test
-    fun `resolveWriteRoute returns heavy-primary as primary and default as secondary for PROJECT dual-write`() {
+    fun `resolveWriteRoute returns default as primary and heavy as secondary for PROJECT dual-write`() {
         val dualWriteNodeRegistry = DefaultMongoRoutingRegistry(
             MongoMultiInstanceProperties().apply {
                 rules = mapOf(
                     "node" to MongoMultiInstanceProperties.RoutingRule(
                         routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
                         collectionPrefix = "node_",
+                        routingKeyField = "projectId",
                         routingState = RuleRoutingState.DUAL_WRITE,
                         instances = mapOf(
                             "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(
@@ -250,22 +251,28 @@ class MongoRoutingRegistryTest {
                 )
             }
         )
-        val fakeDefault = dualWriteNodeRegistry.allPrimaryTemplates("node")["heavy1"]!! // reuse as default stand-in
+        val heavyTemplate = dualWriteNodeRegistry.allPrimaryTemplates("node")["heavy1"]!!
+        val fakeDefault = MongoTemplate(SimpleMongoClientDatabaseFactory(defaultUri))
         val route = dualWriteNodeRegistry.resolveWriteRoute("node_0", "projectA", fakeDefault)
-        // primary = Heavy（先写），secondary ≠ null（副路径写 Default）
-        assertNotNull(route.secondary)
+        // 主路径 = Default（先写，唯一键冲突同步暴露），副路径 = Heavy
+        assertSame(fakeDefault, route.primary)
+        assertSame(heavyTemplate, route.secondary)
+        assertTrue(route.isDefaultInstance)
+        assertTrue(route.syncSecondaryWrite)
     }
 
     // ── 分支 8：resolveWriteRoute, NONE + dualWrite=true ─────────────────────
 
     @Test
-    fun `resolveWriteRoute returns offload as primary and default as secondary for NONE dual-write`() {
-        val fakeDefault = offloadRegistryDualWrite.allPrimaryTemplates("artifact-oplog")["oplog"]!!
+    fun `resolveWriteRoute returns default as primary and offload as secondary for NONE dual-write`() {
+        val offloadTemplate = offloadRegistryDualWrite.allPrimaryTemplates("artifact-oplog")["oplog"]!!
+        val fakeDefault = MongoTemplate(SimpleMongoClientDatabaseFactory(defaultUri))
         val route = offloadRegistryDualWrite.resolveWriteRoute("artifact_oplog_202501", null, fakeDefault)
-        // NONE 双写期：主路径=Offload 实例，副路径=Default
-        val offloadPrimary = offloadRegistryDualWrite.allPrimaryTemplates("artifact-oplog")["oplog"]
-        assertSame(offloadPrimary, route.primary)
-        assertSame(fakeDefault, route.secondary)
+        // NONE 双写期：主路径=Default（先写），副路径=Offload 实例
+        assertSame(fakeDefault, route.primary)
+        assertSame(offloadTemplate, route.secondary)
+        assertTrue(route.isDefaultInstance)
+        assertTrue(route.syncSecondaryWrite)
     }
 
     // ── projectId 提取：Query.queryObject 顶层 ───────────────────────────────
@@ -808,5 +815,66 @@ class MongoRoutingRegistryTest {
         val registry = DefaultMongoRoutingRegistry(MongoMultiInstanceProperties())
         assertEquals("NONE", registry.historicalSyncStrategy("artifact-oplog"))
         assertEquals("JOB_ONLY", registry.historicalSyncStrategy("node"))
+        assertEquals("JOB_ONLY", registry.historicalSyncStrategy("block-node"))
+    }
+
+    @Test
+    fun `validateOnStartup throws when node and block-node project-routing mismatch G-39`() {
+        val badRegistry = DefaultMongoRoutingRegistry(
+            MongoMultiInstanceProperties().apply {
+                rules = mapOf(
+                    "node" to MongoMultiInstanceProperties.RoutingRule(
+                        routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
+                        collectionPrefix = "node_",
+                        routingState = RuleRoutingState.ROUTED,
+                        instances = mapOf(
+                            "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri),
+                            "heavy2" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri),
+                        ),
+                        projectRouting = mapOf("projectA" to "heavy1"),
+                    ),
+                    "block-node" to MongoMultiInstanceProperties.RoutingRule(
+                        routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
+                        collectionPrefix = "block_node_",
+                        routingState = RuleRoutingState.ROUTED,
+                        instances = mapOf(
+                            "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri),
+                            "heavy2" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri),
+                        ),
+                        projectRouting = mapOf("projectA" to "heavy2"),
+                    ),
+                )
+            },
+        )
+        org.junit.jupiter.api.assertThrows<IllegalStateException> { badRegistry.validateOnStartup() }
+    }
+
+    @Test
+    fun `validateOnStartup throws when block-node has project missing from node G-39`() {
+        val badRegistry = DefaultMongoRoutingRegistry(
+            MongoMultiInstanceProperties().apply {
+                rules = mapOf(
+                    "node" to MongoMultiInstanceProperties.RoutingRule(
+                        routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
+                        collectionPrefix = "node_",
+                        routingState = RuleRoutingState.ROUTED,
+                        instances = mapOf(
+                            "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri),
+                        ),
+                        projectRouting = emptyMap(),
+                    ),
+                    "block-node" to MongoMultiInstanceProperties.RoutingRule(
+                        routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
+                        collectionPrefix = "block_node_",
+                        routingState = RuleRoutingState.ROUTED,
+                        instances = mapOf(
+                            "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri),
+                        ),
+                        projectRouting = mapOf("projectA" to "heavy1"),
+                    ),
+                )
+            },
+        )
+        org.junit.jupiter.api.assertThrows<IllegalStateException> { badRegistry.validateOnStartup() }
     }
 }

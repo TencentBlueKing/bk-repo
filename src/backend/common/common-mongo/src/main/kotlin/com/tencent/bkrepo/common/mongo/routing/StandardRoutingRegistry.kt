@@ -79,8 +79,6 @@ class StandardRoutingRegistry(
 
     override fun hasRoutedProjects(ruleName: String): Boolean = false
 
-    override fun migrationMode(ruleName: String): String = "NONE"
-
     override fun historicalSyncStrategy(ruleName: String): String = "NONE"
 
     override fun getConfigVersion(): Long = properties.configVersion

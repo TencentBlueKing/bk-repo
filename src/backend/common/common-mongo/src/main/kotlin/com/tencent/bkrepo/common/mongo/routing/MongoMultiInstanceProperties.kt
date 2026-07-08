@@ -50,16 +50,14 @@ class MongoMultiInstanceProperties {
             val minPoolSize: Int = 5,
         )
         data class MigrationConfig(
-            val mode: String = "NONE",
-            /** NONE / DUMP / DUMP_THEN_JOB / JOB_ONLY */
+            /** NONE / JOB_ONLY */
             val historicalSyncStrategy: String = "NONE",
             val syncJob: SyncJobConfig = SyncJobConfig(),
-            val dbaDump: DbaDumpConfig = DbaDumpConfig(),
             val none: NoneConfig = NoneConfig(),
             /** 同时进行双写的项目数上限 */
             val maxConcurrentDualWrite: Int = 1,
-            /** 僵尸副本在 Default 上存活超过该小时数则阻断迁移（G-17） */
-            val maxZombieHours: Int = 72,
+            /** 僵尸副本在 Default 上存活超过该小时数则阻断迁移（G-17，默认 7 天） */
+            val maxZombieHours: Int = 168,
             /** 迁移期项目锁 */
             val projectLocks: ProjectLocksConfig = ProjectLocksConfig(),
             /** oplog 窗口下限（小时），INIT 校验用（G-32） */
@@ -68,22 +66,7 @@ class MongoMultiInstanceProperties {
         data class SyncJobConfig(
             val batchSize: Int = 500,
             val parallelProjects: Int = 3,
-            val changeStreamEnabled: Boolean = true,
             val retryCount: Int = 3,
-        )
-        data class DbaDumpConfig(
-            val collections: List<DumpCollection> = emptyList(),
-            val restoreOptions: RestoreOptions = RestoreOptions(),
-        )
-        data class DumpCollection(
-            val name: String = "",
-            val source: String = "default",
-            val target: String = "",
-            val query: String = "{}",
-        )
-        data class RestoreOptions(
-            val numParallelCollections: Int = 1,
-            val batchSize: Int = 1000,
         )
         data class NoneConfig(
             val maxDurationDays: Int = 30,
@@ -124,9 +107,6 @@ class MongoMultiInstanceProperties {
     var compensation: CompensationConfig = CompensationConfig()
 
     class CompensationConfig {
-        /** 独立补偿队列存储 URI（§25.2.4）；空则 fallback-to-default */
-        var storageUri: String = ""
-        var fallbackToDefault: Boolean = true
         /** 队列深度软限制，超限告警（§3.17.9） */
         var softLimit: Int = 5000
         /** 队列深度硬限制，超限拒绝新主键入队（§3.17.9） */

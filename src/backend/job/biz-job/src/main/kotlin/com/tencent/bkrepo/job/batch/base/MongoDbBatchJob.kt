@@ -29,7 +29,9 @@ package com.tencent.bkrepo.job.batch.base
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.api.util.TraceUtils
+import com.tencent.bkrepo.common.metadata.properties.BlockNodeProperties
 import com.tencent.bkrepo.common.metadata.routing.NodeRoutingContext
+import com.tencent.bkrepo.common.metadata.util.BlockNodeCollectionNaming
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.api.routing.BatchQueryGroup
@@ -127,6 +129,10 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
     @Autowired(required = false)
     private var nodeBatchQueryHelper: NodeBatchQueryHelper? = null
 
+    @Suppress("LateinitUsage")
+    @Autowired(required = false)
+    private var blockNodeProperties: BlockNodeProperties? = null
+
     /**
      * Returns the MongoTemplate for the given projectId, routing to the Heavy instance when applicable.
      * Falls back to the default mongoTemplate when routing is not configured.
@@ -149,7 +155,17 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
      * 默认对 [collectionNames] 含 `node_` 前缀的 Job 自动启用。
      */
     protected open fun shouldUseNodeBatchQueryGroups(collectionNames: List<String>): Boolean =
-        collectionNames.any { it.startsWith(NODE_COLLECTION_PREFIX) }
+        collectionNames.any {
+            it.startsWith(NODE_COLLECTION_PREFIX) ||
+                BlockNodeCollectionNaming.isShardCollection(it, blockNodeProperties)
+        }
+
+    private fun batchQueryRuleName(collectionNames: List<String>): String? = when {
+        collectionNames.any { BlockNodeCollectionNaming.isShardCollection(it, blockNodeProperties) } ->
+            BLOCK_NODE_RULE
+        collectionNames.any { it.startsWith(NODE_COLLECTION_PREFIX) } -> NODE_RULE
+        else -> null
+    }
 
     /**
      * job批处理执行器
@@ -166,7 +182,8 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
         try {
             val collectionNames = determineCollectionNames(jobContext.executeContext)
             if (shouldUseNodeBatchQueryGroups(collectionNames)) {
-                val groups = nodeBatchQueryHelper?.buildGroups(collectionNames)
+                val ruleName = batchQueryRuleName(collectionNames)
+                val groups = ruleName?.let { nodeBatchQueryHelper?.buildGroups(collectionNames, it) }
                 if (groups != null) {
                     runWithBatchQueryGroups(groups, jobContext)
                     return
@@ -202,7 +219,7 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
         for (group in groups) {
             try {
                 group.collectionNames.forEach { collectionName ->
-                    runCollection(collectionName, group.template, jobContext, group.criteriaCustomizer)
+                    runCollection(collectionName, group.mongoTemplate, jobContext, group.criteriaCustomizer)
                 }
             } catch (e: Exception) {
                 logger.error(
@@ -345,6 +362,8 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
     companion object {
         private val logger = LoggerHolder.jobLogger
         private const val NODE_COLLECTION_PREFIX = "node_"
+        private const val BLOCK_NODE_RULE = "block-node"
+        private const val NODE_RULE = "node"
 
         // 用于dao层转换
         private const val JAVA_ID = "id"
