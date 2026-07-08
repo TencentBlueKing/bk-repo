@@ -29,6 +29,7 @@ package com.tencent.bkrepo.job.migrate.strategy
 
 import com.tencent.bkrepo.archive.repository.ArchiveFileDao
 import com.tencent.bkrepo.archive.repository.CompressFileDao
+import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_FULL_PATH
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
@@ -145,8 +146,14 @@ class FileNotFoundAutoFixStrategy(
             createdBefore = node.deleted,
         )
         if (blocks.isEmpty()) {
-            logger.warn("No blocks found for node[$fullPath], task[$projectId/$repoName]")
-            return true
+            // 链接节点本身不存储分块，可安全跳过；非链接节点却查不到分块可能是并发rename导致路径变更，
+            // 不能当作已修复，否则会移除失败节点导致分块数据未迁移而丢失
+            if (node.metadata?.any { it.key == METADATA_KEY_LINK_FULL_PATH } == true) {
+                logger.info("skip link node[$fullPath] without blocks, task[$projectId/$repoName]")
+                return true
+            }
+            logger.warn("No blocks found for non-link node[$fullPath], task[$projectId/$repoName]")
+            return false
         }
 
         var hasLostBlock = false
