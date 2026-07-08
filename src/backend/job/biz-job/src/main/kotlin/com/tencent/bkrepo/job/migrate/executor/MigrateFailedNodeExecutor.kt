@@ -65,7 +65,7 @@ class MigrateFailedNodeExecutor(
     blockNodeService: BlockNodeService,
     private val transferDataExecutor: TransferDataExecutor,
     private val migrateFailedNodeFixer: MigrateFailedNodeFixer,
-    nodeDao: NodeDao,
+    private val nodeDao: NodeDao,
     mongoTemplate: MongoTemplate,
 ) : BaseTaskExecutor(
     properties,
@@ -76,7 +76,6 @@ class MigrateFailedNodeExecutor(
     executingTaskRecorder,
     migrateArchivedFileService,
     blockNodeService,
-    nodeDao,
     mongoTemplate,
 ) {
     /**

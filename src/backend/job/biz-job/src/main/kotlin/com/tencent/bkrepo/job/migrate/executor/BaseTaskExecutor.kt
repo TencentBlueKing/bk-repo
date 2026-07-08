@@ -30,7 +30,6 @@ package com.tencent.bkrepo.job.migrate.executor
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_FULL_PATH
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
-import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TNode
@@ -80,7 +79,6 @@ abstract class BaseTaskExecutor(
     private val executingTaskRecorder: ExecutingTaskRecorder,
     private val migrateArchivedFileService: MigrateArchivedFileService,
     private val blockNodeService: BlockNodeService,
-    protected val nodeDao: NodeDao,
     protected val mongoTemplate: MongoTemplate,
 ) : TaskExecutor {
 

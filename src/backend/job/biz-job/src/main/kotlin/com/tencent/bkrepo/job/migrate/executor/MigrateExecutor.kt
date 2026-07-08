@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
-import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
@@ -65,7 +64,6 @@ class MigrateExecutor(
     private val transferDataExecutor: TransferDataExecutor,
     private val repositoryService: RepositoryService,
     mongoTemplate: MongoTemplate,
-    nodeDao: NodeDao,
 ) : BaseTaskExecutor(
     properties,
     migrateRepoStorageTaskDao,
@@ -75,7 +73,6 @@ class MigrateExecutor(
     executingTaskRecorder,
     migrateArchivedFileService,
     blockNodeService,
-    nodeDao,
     mongoTemplate,
 ) {
     /**
