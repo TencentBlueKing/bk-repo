@@ -65,7 +65,7 @@
         isXmind
     } from '@repository/utils/file'
     import { createAssetResolver, parsePreviewContext } from '@repository/utils/markdownJsxPreview'
-    import { createOrUpdateXmindViewer } from '@repository/utils/xmindPreview'
+    import { createOrUpdateXmindViewer, destroyXmindViewer } from '@repository/utils/xmindPreview'
     import SourcePreviewTabs from '@repository/components/FilePreview/SourcePreviewTabs'
     import Viewer from 'viewerjs'
 
@@ -276,6 +276,7 @@
                 this.hasError = false
                 this.csvShow = false
                 this.xmindShow = false
+                destroyXmindViewer(this.xmindViewer)
                 this.xmindViewer = null
                 this.pdfShow = false
                 this.richTextShow = false
@@ -360,16 +361,14 @@ canvas {
     height: 100%;
 }
 .xmind-preview-container {
-    width: 100%;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
     height: 100vh;
     overflow: hidden;
     background: #fff;
-}
-.xmind-preview-container ::v-deep iframe {
-    width: 100% !important;
-    height: 100% !important;
-    border: 0;
-    display: block;
+    /* above watermark overlay so pan/zoom gestures hit the embed iframe */
+    z-index: 10000000;
 }
 .preview-file-tips {
     margin-bottom: 10px;
