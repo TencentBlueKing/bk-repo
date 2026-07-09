@@ -30,7 +30,7 @@
                 :resolve-asset-url="resolveAssetUrl"
             />
         </div>
-        <div v-if="xmindShow" ref="container" style="width:100%; height: 100%"></div>
+        <div v-if="xmindShow" ref="container" class="xmind-preview-container"></div>
         <div v-if="hasError" class="empty-data-container flex-center" style="background-color: white; height: 100%">
             <div class="flex-column flex-center">
                 <img width="480" height="240" style="float: left;margin-right: 3px" :src="window.BK_SUBPATH + 'ui/440.svg'" />
@@ -237,7 +237,16 @@
                                     if (!this.xmindViewer) {
                                         this.xmindViewer = new XMindEmbedViewer({
                                             el: this.$refs.container,
-                                            theme: 'light'
+                                            theme: 'light',
+                                            styles: {
+                                                width: '100%',
+                                                height: '100%'
+                                            }
+                                        })
+                                    } else {
+                                        this.xmindViewer.setStyles({
+                                            width: '100%',
+                                            height: '100%'
                                         })
                                     }
                                     this.xmindViewer.load(target)
@@ -360,6 +369,10 @@ canvas {
 .rich-text-preview-container {
     width: 100%;
     height: 100%;
+}
+.xmind-preview-container {
+    width: 100%;
+    height: 100vh;
 }
 .preview-file-tips {
     margin-bottom: 10px;

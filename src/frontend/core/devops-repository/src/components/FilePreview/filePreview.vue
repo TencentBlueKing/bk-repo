@@ -24,7 +24,7 @@
                 :resolve-asset-url="resolveAssetUrl"
             />
         </div>
-        <div v-if="xmindShow" ref="container" style="width:100%; height: 100%"></div>
+        <div v-if="xmindShow" ref="container" class="xmind-preview-container"></div>
         <div v-if="previewBasic" class="flex-column flex-center">
             <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
             <div style="height: 700px; width: 100%">
@@ -331,7 +331,16 @@
                         if (!this.xmindViewer) {
                             this.xmindViewer = new XMindEmbedViewer({
                                 el: this.$refs.container,
-                                theme: 'light'
+                                theme: 'light',
+                                styles: {
+                                    width: '100%',
+                                    height: '100%'
+                                }
+                            })
+                        } else {
+                            this.xmindViewer.setStyles({
+                                width: '100%',
+                                height: '100%'
                             })
                         }
                         this.xmindViewer.load(target)
@@ -414,6 +423,10 @@ canvas {
 .rich-text-preview-container {
     width: 100%;
     height: 100%;
+}
+.xmind-preview-container {
+    width: 100%;
+    height: 100vh;
 }
 .preview-file-tips {
     margin-bottom: 10px;

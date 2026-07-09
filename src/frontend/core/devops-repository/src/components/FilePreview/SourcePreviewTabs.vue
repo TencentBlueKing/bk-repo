@@ -231,6 +231,10 @@
 }
 .source-preview-tabs__panel--source {
     height: calc(100vh - 68px);
+    margin: 0 16px 16px;
+    border: 1px solid #dcdee5;
+    border-radius: 2px;
+    overflow: hidden;
 }
 .markdown-preview-body {
     line-height: 1.7;
