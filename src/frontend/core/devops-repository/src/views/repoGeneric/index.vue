@@ -265,6 +265,7 @@
     import previewBasicFileDialog from './previewBasicFileDialog'
     import { Base64 } from 'js-base64'
     import { isOutDisplayType, isText } from '@repository/utils/file'
+    import { tryClientBatchDownload, tryClientDownload } from '@repository/utils/clientDownload'
 
     export default {
         name: 'RepoGeneric',
@@ -320,6 +321,7 @@
                 showData: {},
                 sortParams: [],
                 timer: null,
+                clientDownloading: false,
                 showMultiDelete: false,
                 selectedAll: false,
                 selectCount: 0,
@@ -1128,7 +1130,7 @@
                     fullPath
                 })
             },
-            handlerDownload (row) {
+            downloadFromWeb (row) {
                 const transPath = encodeURIComponent(row.fullPath)
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
                 fetch(window.BK_SUBPATH + 'web' + url, {
@@ -1193,6 +1195,24 @@
                     }
                 })
             },
+            async handlerDownload (row) {
+                if (this.clientDownloading) return
+                if (BK_ARTIFACT_CLIENT_DOWNLOAD_ENABLED !== 'true') {
+                    this.downloadFromWeb(row)
+                    return
+                }
+                this.clientDownloading = true
+                try {
+                    const success = await tryClientDownload(row, this.clientDownloadContext())
+                    if (!success) {
+                        this.downloadFromWeb(row)
+                    }
+                } catch (e) {
+                    this.downloadFromWeb(row)
+                } finally {
+                    this.clientDownloading = false
+                }
+            },
             timerDownload (url, fullPath, name) {
                 if (this.timer) return
                 this.timer = setInterval(async () => {
@@ -1235,7 +1255,7 @@
                     }
                 }, 5000)
             },
-            handlerMultiDownload () {
+            collectSelectedPaths () {
                 const key = this.userInfo.name + 'SelectedPaths'
                 const isCheckedPaths = sessionStorage.getItem(key).split('\'')
                 const paths = []
@@ -1244,7 +1264,35 @@
                         paths.push(isCheckedPaths[i].replace(this.projectId + '/' + this.repoName, ''))
                     }
                 }
-                customizeDownloadFile(this.projectId, this.repoName, paths)
+                return paths
+            },
+            clientDownloadContext () {
+                return {
+                    projectId: this.projectId,
+                    repoName: this.repoName,
+                    origin: window.location.origin,
+                    subPath: window.BK_SUBPATH
+                }
+            },
+            async handlerMultiDownload () {
+                const paths = this.collectSelectedPaths()
+                if (!paths.length) return
+                if (this.clientDownloading) return
+                if (BK_ARTIFACT_CLIENT_DOWNLOAD_ENABLED !== 'true') {
+                    customizeDownloadFile(this.projectId, this.repoName, paths)
+                    return
+                }
+                this.clientDownloading = true
+                try {
+                    const success = await tryClientBatchDownload(paths, this.clientDownloadContext())
+                    if (!success) {
+                        customizeDownloadFile(this.projectId, this.repoName, paths)
+                    }
+                } catch (e) {
+                    customizeDownloadFile(this.projectId, this.repoName, paths)
+                } finally {
+                    this.clientDownloading = false
+                }
             },
             handlerForbid ({ name, fullPath, metadata: { forbidStatus } }) {
                 if (!forbidStatus) {
