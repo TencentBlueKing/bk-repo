@@ -63,7 +63,7 @@ class MigrateExecutor(
     private val migrateFailedHandler: MigrateFailedHandler,
     private val transferDataExecutor: TransferDataExecutor,
     private val repositoryService: RepositoryService,
-    private val mongoTemplate: MongoTemplate
+    mongoTemplate: MongoTemplate,
 ) : BaseTaskExecutor(
     properties,
     migrateRepoStorageTaskDao,
@@ -73,6 +73,7 @@ class MigrateExecutor(
     executingTaskRecorder,
     migrateArchivedFileService,
     blockNodeService,
+    mongoTemplate,
 ) {
     /**
      * 任务执行线程池，用于提交node迁移任务到[transferDataExecutor]

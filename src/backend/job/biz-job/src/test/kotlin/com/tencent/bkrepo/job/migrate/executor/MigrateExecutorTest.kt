@@ -1,7 +1,9 @@
 package com.tencent.bkrepo.job.migrate.executor
 
+import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_FULL_PATH
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
 import com.tencent.bkrepo.job.UT_STORAGE_CREDENTIALS_KEY
@@ -136,7 +138,7 @@ class MigrateExecutorTest @Autowired constructor(
         // 等待任务执行完
         Thread.sleep(1000L)
         context.waitAllTransferFinished()
-        assertEquals(3, migrateFailedNodeDao.count(Query()))
+        assertEquals(4, migrateFailedNodeDao.count(Query()))
     }
 
     @Test
@@ -212,9 +214,31 @@ class MigrateExecutorTest @Autowired constructor(
     }
 
     @Test
+    fun testMigrateLinkNodeWithEmptyBlocks() {
+        whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull())).then { }
+
+        // 链接节点sha256为FAKE_SHA256且不存在分块，迁移时应直接跳过且不记录失败节点
+        mongoTemplate.createNode(
+            sha256 = FAKE_SHA256,
+            fullPath = "/a/b/link.txt",
+            metadata = listOf(MetadataModel(key = METADATA_KEY_LINK_FULL_PATH, value = "/a/b/target.txt"))
+        )
+        val context = executor.execute(buildContext(createTask()))!!
+        val task = migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!
+
+        Thread.sleep(500L)
+        context.waitAllTransferFinished()
+        assertTaskFinished(task.id!!, 1L)
+
+        verify(storageService, times(0)).copy(anyString(), anyOrNull(), anyOrNull())
+        assertEquals(0, migrateFailedNodeDao.count(Query()))
+    }
+
+    @Test
     fun testMigrateFakeSha256NodeWithEmptyBlocks() {
         whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull())).then { }
 
+        // 非链接节点却查询不到分块（可能并发rename导致），必须记录为失败节点等待重试，避免数据丢失
         mongoTemplate.createNode(sha256 = FAKE_SHA256, fullPath = "/a/b/block.txt")
         val context = executor.execute(buildContext(createTask()))!!
         val task = migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!
@@ -224,6 +248,7 @@ class MigrateExecutorTest @Autowired constructor(
         assertTaskFinished(task.id!!, 1L)
 
         verify(storageService, times(0)).copy(anyString(), anyOrNull(), anyOrNull())
+        assertEquals(1, migrateFailedNodeDao.count(Query()))
     }
 
     @Test
