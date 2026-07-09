@@ -4,6 +4,7 @@ import {
     resolveRelativePath,
     parsePreviewContext,
     prepareJsxSource,
+    rewriteBareImports,
     normalizeMarkdownText
 } from './markdownJsxPreviewCore.js'
 
@@ -29,16 +30,37 @@ test('parsePreviewContext reads artifact info from extraParam', () => {
     })
 })
 
-test('prepareJsxSource rejects import statements', () => {
+test('rewriteBareImports maps packages to esm.sh', () => {
+    const source = rewriteBareImports(
+        'import React, { useState } from "react"\nimport { Copy } from "lucide-react"\nimport "side-effect-pkg"'
+    )
+    assert.match(source, /from "https:\/\/esm\.sh\/react"/)
+    assert.match(source, /from "https:\/\/esm\.sh\/lucide-react"/)
+    assert.match(source, /import "https:\/\/esm\.sh\/side-effect-pkg"/)
+})
+
+test('rewriteBareImports rejects relative imports', () => {
     assert.throws(
-        () => prepareJsxSource('import React from "react"\nexport default () => <div />'),
-        /import\/require is not supported/
+        () => rewriteBareImports('import Foo from "./foo"'),
+        /Relative import is not supported/
     )
 })
 
-test('prepareJsxSource converts export default', () => {
-    const source = prepareJsxSource('export default function Hello () { return <div>Hi</div> }')
+test('prepareJsxSource keeps package imports and mounts default export', () => {
+    const source = prepareJsxSource(
+        'import React, { useState } from "react"\nimport { Copy } from "lucide-react"\nexport default function Hello () { return <div>Hi</div> }'
+    )
+    assert.match(source, /from "https:\/\/esm\.sh\/react"/)
+    assert.match(source, /from "https:\/\/esm\.sh\/lucide-react"/)
     assert.match(source, /const __PREVIEW_COMPONENT__ = function Hello/)
+    assert.match(source, /createRoot/)
+})
+
+test('prepareJsxSource rejects require', () => {
+    assert.throws(
+        () => prepareJsxSource('const x = require("react")\nexport default () => <div />'),
+        /require\(\) is not supported/
+    )
 })
 
 test('normalizeMarkdownText decodes legacy base64 payload', () => {

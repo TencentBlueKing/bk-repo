@@ -205,7 +205,7 @@
     display: flex;
     justify-content: flex-end;
     gap: 8px;
-    padding: 12px 16px 0;
+    padding: 12px 16px 12px;
 }
 .source-preview-tabs__tab {
     border: 1px solid #c4c6cc;
@@ -222,13 +222,14 @@
 .source-preview-tabs__panel {
     flex: 1;
     min-height: 0;
+    margin-top: 8px;
 }
 .source-preview-tabs__panel--preview {
     overflow: auto;
-    padding: 16px 24px 24px;
+    padding: 8px 24px 24px;
 }
 .source-preview-tabs__panel--source {
-    height: calc(100vh - 52px);
+    height: calc(100vh - 68px);
 }
 .markdown-preview-body {
     line-height: 1.7;
@@ -246,7 +247,7 @@
 }
 .jsx-preview-iframe {
     width: 100%;
-    height: calc(100vh - 52px);
+    height: calc(100vh - 68px);
     border: 0;
 }
 .source-preview-tabs__error {

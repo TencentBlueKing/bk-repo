@@ -90,25 +90,55 @@ export function normalizeMarkdownText (text, decodeBase64) {
     return text
 }
 
+const ESM_CDN_PREFIX = 'https://esm.sh/'
+
+function toEsmCdnUrl (specifier) {
+    if (/^(https?:|data:)/i.test(specifier)) {
+        return specifier
+    }
+    if (specifier.startsWith('.') || specifier.startsWith('/')) {
+        throw new Error(`Relative import is not supported in JSX preview: ${specifier}`)
+    }
+    return `${ESM_CDN_PREFIX}${specifier}`
+}
+
+export function rewriteBareImports (source) {
+    let result = source.replace(
+        /\bfrom\s+(['"])([^'"]+)\1/g,
+        (match, quote, specifier) => `from ${quote}${toEsmCdnUrl(specifier)}${quote}`
+    )
+    result = result.replace(
+        /^\s*import\s+(['"])([^'"]+)\1\s*;?\s*$/gm,
+        (match, quote, specifier) => `import ${quote}${toEsmCdnUrl(specifier)}${quote};`
+    )
+    result = result.replace(
+        /\bimport\s*\(\s*(['"])([^'"]+)\1\s*\)/g,
+        (match, quote, specifier) => `import(${quote}${toEsmCdnUrl(specifier)}${quote})`
+    )
+    return result
+}
+
 export function prepareJsxSource (jsxSource) {
     if (!jsxSource || !jsxSource.trim()) {
         throw new Error('JSX file is empty')
     }
-    if (/^\s*import\s+/m.test(jsxSource) || /\brequire\s*\(/.test(jsxSource)) {
-        throw new Error('import/require is not supported in JSX preview')
+    if (/\brequire\s*\(/.test(jsxSource)) {
+        throw new Error('require() is not supported in JSX preview; use ESM import instead')
     }
-    let source = jsxSource
+    let source = rewriteBareImports(jsxSource)
     if (/export\s+default\s+/m.test(source)) {
         source = source.replace(/export\s+default\s+/m, 'const __PREVIEW_COMPONENT__ = ')
-    } else {
-        const namedExport = source.match(/export\s+default\s+(\w+)\s*;?\s*$/)
-        if (namedExport) {
-            source = source.replace(/export\s+default\s+(\w+)\s*;?\s*$/, 'const __PREVIEW_COMPONENT__ = $1')
-        }
     }
     if (!source.includes('__PREVIEW_COMPONENT__')) {
         throw new Error('Expected `export default` React component')
     }
+    source = `${source}
+
+import __PreviewReact from '${ESM_CDN_PREFIX}react';
+import { createRoot as __createPreviewRoot } from '${ESM_CDN_PREFIX}react-dom/client';
+const __previewRoot = __createPreviewRoot(document.getElementById('root'));
+__previewRoot.render(__PreviewReact.createElement(__PREVIEW_COMPONENT__));
+`
     return source.replace(/<\/script/gi, '<\\/script')
 }
 
@@ -131,31 +161,30 @@ export function buildJsxSandboxSrcdoc (jsxSource, libBase) {
 <html>
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' ${libBase}; style-src 'unsafe-inline';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' ${libBase} https: blob:; connect-src https:; style-src 'unsafe-inline' https:; img-src data: blob: https:; font-src data: https:;">
   <script src="${libBase}babel.min.js"><\/script>
-  <script src="${libBase}react.production.min.js"><\/script>
-  <script src="${libBase}react-dom.production.min.js"><\/script>
   <style>
-    body { margin: 0; padding: 16px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    pre.error { color: #ea3636; white-space: pre-wrap; }
+    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    pre.error { color: #ea3636; white-space: pre-wrap; padding: 16px; }
   </style>
 </head>
 <body>
   <div id="root"></div>
-  <script type="text/babel" data-presets="react">
-${preparedSource}
-  </script>
-  <script type="text/babel">
-    try {
-      const Component = typeof __PREVIEW_COMPONENT__ !== 'undefined' ? __PREVIEW_COMPONENT__ : null;
-      if (!Component) {
-        throw new Error('Expected export default React component');
-      }
-      ReactDOM.render(React.createElement(Component), document.getElementById('root'));
-    } catch (error) {
-      document.body.innerHTML = '<pre class="error">' + (error && error.message ? error.message : String(error)) + '</pre>';
+  <script>
+    function __showPreviewError(error) {
+      var message = error && error.message ? error.message : String(error);
+      document.body.innerHTML = '<pre class="error">' + message + '</pre>';
     }
-  </script>
+    window.addEventListener('error', function (event) {
+      __showPreviewError(event.error || event.message);
+    });
+    window.addEventListener('unhandledrejection', function (event) {
+      __showPreviewError(event.reason);
+    });
+  <\/script>
+  <script type="text/babel" data-type="module" data-presets="react">
+${preparedSource}
+  <\/script>
 </body>
 </html>`
 }
