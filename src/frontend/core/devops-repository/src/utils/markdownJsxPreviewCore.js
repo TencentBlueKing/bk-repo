@@ -175,6 +175,37 @@ export function buildJsxSandboxSrcdoc (jsxSource, libBase) {
       var message = error && error.message ? error.message : String(error);
       document.body.innerHTML = '<pre class="error">' + message + '</pre>';
     }
+    function __copyTextFallback(text) {
+      var textarea = document.createElement('textarea');
+      textarea.value = text == null ? '' : String(text);
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      var ok = false;
+      try {
+        ok = document.execCommand('copy');
+      } finally {
+        document.body.removeChild(textarea);
+      }
+      if (!ok) {
+        return Promise.reject(new Error('Clipboard copy is not available in this preview sandbox'));
+      }
+      return Promise.resolve();
+    }
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      var __nativeWriteText = navigator.clipboard.writeText.bind(navigator.clipboard);
+      navigator.clipboard.writeText = function (text) {
+        return __nativeWriteText(text).catch(function () {
+          return __copyTextFallback(text);
+        });
+      };
+    } else {
+      navigator.clipboard = {
+        writeText: __copyTextFallback
+      };
+    }
     window.addEventListener('error', function (event) {
       __showPreviewError(event.error || event.message);
     });

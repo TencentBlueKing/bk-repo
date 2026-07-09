@@ -38,6 +38,7 @@
                 class="jsx-preview-iframe"
                 :srcdoc="jsxSrcdoc"
                 sandbox="allow-scripts"
+                allow="clipboard-write"
                 title="jsx-preview"
             />
         </div>
