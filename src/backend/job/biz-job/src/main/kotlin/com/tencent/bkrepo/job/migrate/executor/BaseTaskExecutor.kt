@@ -28,13 +28,20 @@
 package com.tencent.bkrepo.job.migrate.executor
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_FULL_PATH
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.model.TMetadata
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration.Companion.SERVICE_INSTANCE_ID
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
+import com.tencent.bkrepo.job.COLLECTION_NAME_NODE
+import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
@@ -50,8 +57,13 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.pojo.Node
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.service.MigrateArchivedFileService
+import org.bson.Document
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import java.io.FileNotFoundException
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.RejectedExecutionException
@@ -67,6 +79,7 @@ abstract class BaseTaskExecutor(
     private val executingTaskRecorder: ExecutingTaskRecorder,
     private val migrateArchivedFileService: MigrateArchivedFileService,
     private val blockNodeService: BlockNodeService,
+    protected val mongoTemplate: MongoTemplate,
 ) : TaskExecutor {
 
     @Value(SERVICE_INSTANCE_ID)
@@ -218,7 +231,7 @@ abstract class BaseTaskExecutor(
         require(node.sha256 == FAKE_SHA256)
         val blocks = listBlocks(node)
         if (blocks.isEmpty()) {
-            logger.warn("No blocks found for node[${node.fullPath}], task[${node.projectId}/${node.repoName}]")
+            checkEmptyBlocksAllowed(node)
             return
         }
         blocks.forEach { block ->
@@ -235,7 +248,7 @@ abstract class BaseTaskExecutor(
         require(node.sha256 == FAKE_SHA256)
         val blocks = listBlocks(node)
         if (blocks.isEmpty()) {
-            logger.warn("No blocks found for node[${node.fullPath}], task[${node.projectId}/${node.repoName}]")
+            checkEmptyBlocksAllowed(node)
             return
         }
         blocks.forEach { block -> correctFile(context, block.sha256, block.size) }
@@ -323,6 +336,34 @@ abstract class BaseTaskExecutor(
                 "node[${node.fullPath}] was compressed, task[${node.projectId}/${node.repoName}]"
             )
         }
+    }
+
+    /**
+     * 分块节点查询不到分块时的校验。
+     * 链接节点本身不存储分块数据，可安全跳过；否则可能是并发rename导致block路径变更，
+     * 若直接跳过将导致分块数据未迁移而丢失，因此抛出异常，交由失败节点重试机制在rename完成后重新迁移。
+     */
+    private fun checkEmptyBlocksAllowed(node: Node) {
+        if (!isLinkNode(node)) {
+            throw IllegalStateException(
+                "No blocks found for non-link node[${node.fullPath}], task[${node.projectId}/${node.repoName}]"
+            )
+        }
+        logger.info("skip link node[${node.fullPath}] without blocks, task[${node.projectId}/${node.repoName}]")
+    }
+
+    /**
+     * blocks为空是罕见路径，此处才回查节点元数据判断是否为链接节点。
+     * 仅投影metadata字段并以Document读取，避免整模型反序列化开销与跨模型字段约束。
+     */
+    private fun isLinkNode(node: Node): Boolean {
+        val sequence = HashShardingUtils.shardingSequenceFor(node.projectId, SHARDING_COUNT)
+        val collectionName = "${COLLECTION_NAME_NODE}_$sequence"
+        val query = Query(Criteria.where(ID).isEqualTo(node.id))
+        query.fields().include(TNode::metadata.name)
+        val doc = mongoTemplate.findOne(query, Document::class.java, collectionName) ?: return false
+        val metadata = doc.getList(TNode::metadata.name, Document::class.java) ?: return false
+        return metadata.any { it.getString(TMetadata::key.name) == METADATA_KEY_LINK_FULL_PATH }
     }
 
     companion object {

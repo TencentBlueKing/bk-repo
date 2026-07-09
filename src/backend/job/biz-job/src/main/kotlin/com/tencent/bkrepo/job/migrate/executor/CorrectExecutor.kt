@@ -58,7 +58,7 @@ class CorrectExecutor(
     blockNodeService: BlockNodeService,
     private val migrateFailedHandler: MigrateFailedHandler,
     private val transferDataExecutor: TransferDataExecutor,
-    private val mongoTemplate: MongoTemplate,
+    mongoTemplate: MongoTemplate,
 ) : BaseTaskExecutor(
     properties,
     migrateRepoStorageTaskDao,
@@ -68,6 +68,7 @@ class CorrectExecutor(
     executingTaskRecorder,
     migrateArchivedFileService,
     blockNodeService,
+    mongoTemplate,
 ) {
     /**
      * 用于执行数据矫正的线程池
