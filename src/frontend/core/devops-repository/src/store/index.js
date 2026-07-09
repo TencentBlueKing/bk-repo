@@ -41,7 +41,8 @@ const storeObject = {
             admin: false,
             manage: false,
             displayName: '',
-            tenantId: ''
+            tenantId: '',
+            timeZone: ''
         },
         domain: {
             docker: '',

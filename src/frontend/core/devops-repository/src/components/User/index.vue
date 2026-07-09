@@ -45,7 +45,6 @@
 </template>
 <script>
     import { mapState, mapActions } from 'vuex'
-    import { getTimeZone } from '@repository/utils'
     export default {
         name: 'bkrepoUser',
         data () {
@@ -74,10 +73,9 @@
                 return this.isMultiTenant && Boolean(this.tenantId)
             },
             defaultTimeZone () {
-                // 与请求头 X-BKREPO-TIME-ZONE 口径保持一致：网关/蓝鲸优先，浏览器兜底
-                const gatewayTimeZone = getTimeZone()
-                if (gatewayTimeZone != null && gatewayTimeZone !== '') {
-                    return gatewayTimeZone
+                // 与 /user/info 返回的 timeZone 口径保持一致（网关注入）；无值时浏览器兜底
+                if (this.userInfo.timeZone) {
+                    return this.userInfo.timeZone
                 }
                 try {
                     return Intl.DateTimeFormat().resolvedOptions().timeZone || ''
