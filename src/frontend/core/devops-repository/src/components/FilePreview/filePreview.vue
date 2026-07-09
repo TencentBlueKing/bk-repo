@@ -57,9 +57,9 @@
     import { Base64 } from 'js-base64'
     import { isExcel, isFormatType, isHtmlType, isJsx, isMarkdown, isPic, isText, isXmind } from '@repository/utils/file'
     import { createAssetResolver, parsePreviewContext } from '@repository/utils/markdownJsxPreview'
+    import { createOrUpdateXmindViewer } from '@repository/utils/xmindPreview'
     import SourcePreviewTabs from '@repository/components/FilePreview/SourcePreviewTabs'
     import Viewer from 'viewerjs'
-    import { XMindEmbedViewer } from 'xmind-embed-viewer'
 
     const PDFJS = require('pdfjs-dist')
     PDFJS.GlobalWorkerOptions.isEvalSupported = false
@@ -328,22 +328,11 @@
                     this.xmindShow = true
                     const target = await res.data.arrayBuffer()
                     this.$nextTick(() => {
-                        if (!this.xmindViewer) {
-                            this.xmindViewer = new XMindEmbedViewer({
-                                el: this.$refs.container,
-                                theme: 'light',
-                                styles: {
-                                    width: '100%',
-                                    height: '100%'
-                                }
-                            })
-                        } else {
-                            this.xmindViewer.setStyles({
-                                width: '100%',
-                                height: '100%'
-                            })
-                        }
-                        this.xmindViewer.load(target)
+                        this.xmindViewer = createOrUpdateXmindViewer(
+                            this.xmindViewer,
+                            this.$refs.container,
+                            target
+                        )
                     })
                 } else {
                     url = URL.createObjectURL(res.data)
@@ -427,6 +416,14 @@ canvas {
 .xmind-preview-container {
     width: 100%;
     height: 100vh;
+    overflow: hidden;
+    background: #fff;
+}
+.xmind-preview-container ::v-deep iframe {
+    width: 100% !important;
+    height: 100% !important;
+    border: 0;
+    display: block;
 }
 .preview-file-tips {
     margin-bottom: 10px;
