@@ -7,10 +7,10 @@ import com.tencent.bkrepo.preview.service.cache.impl.PreviewFileCacheServiceImpl
 import org.springframework.stereotype.Service
 
 /**
- * Markdown文件
+ * JSX文件
  */
 @Service
-class MarkdownFilePreviewImpl(
+class JsxFilePreviewImpl(
     private val config: PreviewConfig,
     private val fileTransferService: FileTransferService,
     private val previewFileCacheService: PreviewFileCacheServiceImpl,

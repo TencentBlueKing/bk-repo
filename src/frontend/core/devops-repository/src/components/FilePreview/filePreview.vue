@@ -17,6 +17,14 @@
         <div v-if="imgShow" style="width: 100%; height: 100%">
             <img id="image" :src="imgUrl" alt="Picture" style="display: none">
         </div>
+        <div v-if="richTextShow" class="rich-text-preview-container">
+            <source-preview-tabs
+                :file-path="richTextFilePath"
+                :source-text="richTextSource"
+                :resolve-asset-url="resolveAssetUrl"
+            />
+        </div>
+        <div v-if="xmindShow" ref="container" class="xmind-preview-container"></div>
         <div v-if="previewBasic" class="flex-column flex-center">
             <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
             <div style="height: 700px; width: 100%">
@@ -47,7 +55,10 @@
     } from '@repository/utils/previewOfficeFile'
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
-    import { isExcel, isFormatType, isHtmlType, isPic, isText } from '@repository/utils/file'
+    import { isExcel, isFormatType, isHtmlType, isJsx, isMarkdown, isPic, isText, isXmind } from '@repository/utils/file'
+    import { createAssetResolver, parsePreviewContext } from '@repository/utils/markdownJsxPreview'
+    import { createOrUpdateXmindViewer, destroyXmindViewer } from '@repository/utils/xmindPreview'
+    import SourcePreviewTabs from '@repository/components/FilePreview/SourcePreviewTabs'
     import Viewer from 'viewerjs'
 
     const PDFJS = require('pdfjs-dist')
@@ -77,7 +88,7 @@
 
     export default {
         name: 'FilePreview',
-        components: { VueOfficeExcel },
+        components: { VueOfficeExcel, SourcePreviewTabs },
         props: {
             repoType: String,
             extraParam: String,
@@ -116,6 +127,10 @@
                 csvShow: false,
                 imgShow: false,
                 pdfShow: false,
+                richTextShow: false,
+                richTextSource: '',
+                richTextFilePath: '',
+                xmindShow: false,
                 imgUrl: '',
                 pdfPages: [], // 页数
                 pdfWidth: '', // 宽度
@@ -134,6 +149,15 @@
             },
             enableMultipleTypeFilePreview () {
                 return RELEASE_MODE === 'community' || RELEASE_MODE === 'tencent'
+            },
+            resolveAssetUrl () {
+                const context = parsePreviewContext({
+                    projectId: this.projectId,
+                    repoName: this.repoName,
+                    filePath: this.filePath,
+                    extraParam: this.extraParam !== '0' ? Base64.decode(decodeURIComponent(this.extraParam)) : ''
+                })
+                return createAssetResolver(context)
             }
         },
         async created () {
@@ -194,7 +218,7 @@
                         this.dataSource = res.data
                     }).catch(() => this.showError())
                 }
-            } else if (isFormatType(this.filePath) || isPic(this.filePath)) {
+            } else if (isFormatType(this.filePath) || isPic(this.filePath) || isMarkdown(this.filePath) || isJsx(this.filePath) || isXmind(this.filePath)) {
                 if (this.repoType === 'local') {
                     customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
                         this.dealDate(res)
@@ -232,6 +256,13 @@
                 this.hasError = false
                 this.imgShow = false
                 this.imgUrl = ''
+                this.xmindShow = false
+                destroyXmindViewer(this.xmindViewer)
+                this.xmindViewer = null
+                this.pdfShow = false
+                this.richTextShow = false
+                this.richTextSource = ''
+                this.richTextFilePath = ''
                 this.excelOptions.xls = false
                 window.resetWaterMark()
             },
@@ -271,10 +302,10 @@
             initWaterMark (param) {
                 window.initWaterMark(param)
             },
-            dealDate (res) {
+            async dealDate (res) {
                 this.loading = false
                 let url
-                if (!isHtmlType(this.filePath) && !isPic(this.filePath)) {
+                if (!isHtmlType(this.filePath) && !isPic(this.filePath) && !isJsx(this.filePath) && !isMarkdown(this.filePath) && !isXmind(this.filePath)) {
                     this.loadFile(URL.createObjectURL(res.data))
                     this.pdfShow = true
                     this.pageUrl = url
@@ -288,6 +319,21 @@
                                 viewer.zoomTo(1)
                             }
                         })
+                    })
+                } else if (isMarkdown(this.filePath) || isJsx(this.filePath)) {
+                    const text = await res.data.text()
+                    this.richTextFilePath = this.filePath
+                    this.richTextSource = text
+                    this.richTextShow = true
+                } else if (isXmind(this.filePath)) {
+                    this.xmindShow = true
+                    const target = await res.data.arrayBuffer()
+                    this.$nextTick(() => {
+                        this.xmindViewer = createOrUpdateXmindViewer(
+                            this.xmindViewer,
+                            this.$refs.container,
+                            target
+                        )
                     })
                 } else {
                     url = URL.createObjectURL(res.data)
@@ -327,7 +373,7 @@
                         this.renderPage(num + 1)
                     }
                 })
-            },
+            }
 
         }
     }
@@ -363,6 +409,20 @@ canvas {
     max-width: 100% !important;
     height: auto !important;
     background: white !important;
+}
+.rich-text-preview-container {
+    width: 100%;
+    height: 100%;
+}
+.xmind-preview-container {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #fff;
+    /* above watermark overlay so pan/zoom gestures hit the embed iframe */
+    z-index: 10000000;
 }
 .preview-file-tips {
     margin-bottom: 10px;
