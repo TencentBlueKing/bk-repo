@@ -20,8 +20,10 @@ request.interceptors.request.use(config => {
     if (param) {
         config.headers['X-BKREPO-PROJECT-ID'] = param
     }
-    const gatewayTimeZone = getTimeZone()
-    config.headers['X-BKREPO-TIME-ZONE'] = gatewayTimeZone != null && gatewayTimeZone !== ''
+    // 与 UI 同源：优先 /user/info 的 timeZone，其次响应头回填，最后浏览器小时偏移
+    const userTimeZone = window.repositoryVue?.$store?.state?.userInfo?.timeZone
+    const gatewayTimeZone = userTimeZone || getTimeZone()
+    config.headers['X-BKREPO-TIME-ZONE'] = gatewayTimeZone
         ? gatewayTimeZone
         : new Date().getTimezoneOffset() / -60 // 小时偏移，如+8，-5
     return config
@@ -33,12 +35,12 @@ function errorHandler (error) {
 }
 
 request.interceptors.response.use(response => {
-    // 从响应头获取时区信息
+    // 从响应头获取时区信息（供 formatDate 等使用；UI/请求头优先走 userInfo.timeZone）
     const timeZoneHeader = response.headers['x-bkrepo-time-zone'] || response.headers['X-BKREPO-TIME-ZONE']
     if (timeZoneHeader !== undefined && timeZoneHeader !== null) {
         setTimeZone(timeZoneHeader)
     }
-    
+
     const { data: { data, message }, status } = response
     if (status === 200 || status === 206) {
         return data === undefined ? response.data : data
