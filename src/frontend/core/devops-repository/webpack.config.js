@@ -34,9 +34,7 @@ module.exports = (env, argv) => {
                 { from: path.join(__dirname, './static'), to: dist },
                 { from: path.join(__dirname, '../../../../versionLogs'), to: `${dist}/versionLogs` },
                 { from: path.join(__dirname, './public'), to: dist },
-                { from: path.join(frontendNodeModules, '@babel/standalone/babel.min.js'), to: `${dist}/libs/babel.min.js` },
-                { from: path.join(frontendNodeModules, 'react/umd/react.production.min.js'), to: `${dist}/libs/react.production.min.js` },
-                { from: path.join(frontendNodeModules, 'react-dom/umd/react-dom.production.min.js'), to: `${dist}/libs/react-dom.production.min.js` }
+                { from: path.join(frontendNodeModules, '@babel/standalone/babel.min.js'), to: `${dist}/libs/babel.min.js` }
             ]
         }),
         new MonacoWebpackPlugin()

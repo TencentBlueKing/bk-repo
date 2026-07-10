@@ -146,12 +146,12 @@ export function rewriteMarkdownImageUrls (html, resolveAssetUrl) {
     if (!resolveAssetUrl || !html) {
         return html
     }
-    return html.replace(/<img([^>]*?)src="([^"]+)"([^>]*)>/gi, (match, before, src, after) => {
+    return html.replace(/<img([^>]*?)src=(["'])([^"']+)\2([^>]*)>/gi, (match, before, quote, src, after) => {
         const resolved = resolveAssetUrl(src)
         if (!resolved) {
             return match
         }
-        return `<img${before}src="${resolved}"${after}>`
+        return `<img${before}src=${quote}${resolved}${quote}${after}>`
     })
 }
 

@@ -5,6 +5,7 @@ import {
     parsePreviewContext,
     prepareJsxSource,
     rewriteBareImports,
+    rewriteMarkdownImageUrls,
     normalizeMarkdownText
 } from './markdownJsxPreviewCore.js'
 
@@ -66,4 +67,20 @@ test('prepareJsxSource rejects require', () => {
 test('normalizeMarkdownText decodes legacy base64 payload', () => {
     const encoded = Buffer.from('# Title', 'utf8').toString('base64')
     assert.equal(normalizeMarkdownText(encoded, (value) => Buffer.from(value, 'base64').toString('utf8')), '# Title')
+})
+
+test('rewriteMarkdownImageUrls rewrites double and single quoted src', () => {
+    const resolve = (src) => (src.startsWith('./') ? `/resolved/${src.slice(2)}` : src)
+    assert.equal(
+        rewriteMarkdownImageUrls('<img src="./a.png" alt="a">', resolve),
+        '<img src="/resolved/a.png" alt="a">'
+    )
+    assert.equal(
+        rewriteMarkdownImageUrls("<img alt='b' src='./b.png'>", resolve),
+        "<img alt='b' src='/resolved/b.png'>"
+    )
+    assert.equal(
+        rewriteMarkdownImageUrls('<img src="https://example.com/c.png">', resolve),
+        '<img src="https://example.com/c.png">'
+    )
 })
