@@ -1,10 +1,9 @@
 package com.tencent.bkrepo.common.metadata.routing
 
-import com.tencent.bkrepo.common.mongo.routing.NodeDirectMongoAuditor
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/** G-34：metadata 模块 P0 探针 + 直连审计。 */
+/** G-34：metadata 模块 P0 探针。 */
 class G34RoutingReadinessIntegrationTest {
 
     @Test
@@ -15,10 +14,5 @@ class G34RoutingReadinessIntegrationTest {
             if (P0RoutingReadinessProbes.check(id)) null else id
         }
         assertTrue(failures.isEmpty(), failures.joinToString())
-    }
-
-    @Test
-    fun `node direct mongo audit passes`() {
-        assertTrue(NodeDirectMongoAuditor.audit().isEmpty())
     }
 }

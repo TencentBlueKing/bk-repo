@@ -1,10 +1,15 @@
 package com.tencent.bkrepo.common.mongo.reactive.routing
 
 import com.mongodb.ConnectionString
+import com.mongodb.reactivestreams.client.MongoClient
+import com.mongodb.reactivestreams.client.MongoClients
 import com.tencent.bkrepo.common.mongo.api.routing.RuleRoutingState
 import com.tencent.bkrepo.common.mongo.routing.MongoMultiInstanceProperties
 import com.tencent.bkrepo.common.mongo.routing.MongoRoutingContext
+import com.tencent.bkrepo.common.mongo.routing.RoutingEffectiveState
 import com.tencent.bkrepo.common.mongo.api.routing.RouteTarget
+import io.micrometer.core.instrument.binder.mongodb.MongoMetricsConnectionPoolListener
+import org.springframework.beans.factory.DisposableBean
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate
 import org.springframework.data.mongodb.core.SimpleReactiveMongoDatabaseFactory
 import org.springframework.data.mongodb.core.query.Query
@@ -32,8 +37,10 @@ data class ReactiveWriteRoute(
  */
 class MongoReactiveRoutingRegistry(
     private val properties: MongoMultiInstanceProperties,
-) {
+    private val poolMetricsListener: MongoMetricsConnectionPoolListener? = null,
+) : DisposableBean {
 
+    private val mongoClients = mutableListOf<MongoClient>()
     private val primaryTemplates: Map<String, Map<String, ReactiveMongoTemplate>>
     private val prefixIndex: List<Triple<String, String, MongoMultiInstanceProperties.RoutingRule>>
     private val fieldCache = java.util.concurrent.ConcurrentHashMap<String, java.lang.reflect.Field?>()
@@ -52,7 +59,7 @@ class MongoReactiveRoutingRegistry(
         defaultTemplate: ReactiveMongoTemplate,
     ): ReactiveMongoTemplate? {
         val entry = prefixIndex.firstOrNull { collectionName.startsWith(it.first) } ?: return null
-        if (entry.third.routingState == RuleRoutingState.OFF) return null
+        if (effectiveRoutingState(entry.second, entry.third) == RuleRoutingState.OFF) return null
         return resolveWriteRoute(collectionName, context, defaultTemplate).primary
     }
 
@@ -62,7 +69,7 @@ class MongoReactiveRoutingRegistry(
         defaultTemplate: ReactiveMongoTemplate,
     ): ReactiveMongoTemplate? {
         val entry = prefixIndex.firstOrNull { collectionName.startsWith(it.first) } ?: return null
-        if (entry.third.routingState == RuleRoutingState.OFF) return null
+        if (effectiveRoutingState(entry.second, entry.third) == RuleRoutingState.OFF) return null
         return resolveReadRoute(collectionName, context, defaultTemplate).template
     }
 
@@ -74,10 +81,14 @@ class MongoReactiveRoutingRegistry(
         val entry = prefixIndex.firstOrNull { collectionName.startsWith(it.first) }
             ?: return ReactiveReadRoute(defaultTemplate)
         val (_, ruleName, rule) = entry
-        if (rule.routingState == RuleRoutingState.OFF) return ReactiveReadRoute(defaultTemplate)
+        if (effectiveRoutingState(ruleName, rule) == RuleRoutingState.OFF) {
+            return ReactiveReadRoute(defaultTemplate)
+        }
         return when (rule.routingType) {
             MongoMultiInstanceProperties.RoutingType.NONE -> {
-                if (rule.routingState == RuleRoutingState.DUAL_WRITE) return ReactiveReadRoute(defaultTemplate)
+                if (effectiveRoutingState(ruleName, rule) == RuleRoutingState.DUAL_WRITE) {
+                    return ReactiveReadRoute(defaultTemplate)
+                }
                 val instanceName = rule.instances.keys.firstOrNull()
                     ?: return ReactiveReadRoute(defaultTemplate)
                 val template = primaryTemplates[ruleName]?.get(instanceName)
@@ -122,14 +133,16 @@ class MongoReactiveRoutingRegistry(
         val entry = prefixIndex.firstOrNull { collectionName.startsWith(it.first) }
             ?: return ReactiveWriteRoute(defaultTemplate)
         val (_, ruleName, rule) = entry
-        if (rule.routingState == RuleRoutingState.OFF) return ReactiveWriteRoute(defaultTemplate)
+        if (effectiveRoutingState(ruleName, rule) == RuleRoutingState.OFF) {
+            return ReactiveWriteRoute(defaultTemplate)
+        }
         return when (rule.routingType) {
             MongoMultiInstanceProperties.RoutingType.NONE -> {
                 val instanceName = rule.instances.keys.firstOrNull()
                     ?: return ReactiveWriteRoute(defaultTemplate)
                 val instanceTmpl = primaryTemplates[ruleName]?.get(instanceName)
                     ?: return ReactiveWriteRoute(defaultTemplate)
-                if (rule.routingState == RuleRoutingState.DUAL_WRITE) {
+                if (effectiveRoutingState(ruleName, rule) == RuleRoutingState.DUAL_WRITE) {
                     // 模式一双写期与模式二统一 Default-first（§1.3.1）
                     ReactiveWriteRoute(
                         primary = defaultTemplate,
@@ -178,7 +191,7 @@ class MongoReactiveRoutingRegistry(
                 val dualWrite = if (hitProjectRouting) {
                     isProjectInDualWrite(ruleName, key!!)
                 } else {
-                    rule.routingState == RuleRoutingState.DUAL_WRITE
+                    effectiveRoutingState(ruleName, rule) == RuleRoutingState.DUAL_WRITE
                 }
                 if (dualWrite) {
                     // 模式二双写：Default 为主路径（先写），Heavy 为副路径（§3.6.3）。
@@ -212,10 +225,10 @@ class MongoReactiveRoutingRegistry(
 
     fun isProjectRoutedOut(ruleName: String, projectId: String): Boolean {
         val rule = properties.rules[ruleName] ?: return false
-        if (rule.routingState == RuleRoutingState.OFF) return false
+        if (effectiveRoutingState(ruleName, rule) == RuleRoutingState.OFF) return false
         if (projectId !in rule.projectRouting) return false
         if (isProjectInDualWrite(ruleName, projectId)) return false
-        return rule.routingState == RuleRoutingState.ROUTED
+        return effectiveRoutingState(ruleName, rule) == RuleRoutingState.ROUTED
     }
 
     /** G-02：迁出项目禁止写 Default 僵尸副本 */
@@ -224,18 +237,22 @@ class MongoReactiveRoutingRegistry(
         collectionName: String,
         defaultTemplate: ReactiveMongoTemplate,
     ) {
-        if (route.isDefaultInstance && route.routingKey != null && route.ruleName != null &&
-            isProjectRoutedOut(route.ruleName, route.routingKey)
-        ) {
+        if (isZombieWrite(route)) {
             val msg = "WRITE_PROTECTION: Attempted reactive write on Default zombie replica. " +
                 "projectId=${route.routingKey}, collection=$collectionName, rule=${route.ruleName}"
             throw IllegalStateException(msg)
         }
     }
 
+    private fun isZombieWrite(route: ReactiveWriteRoute): Boolean {
+        val key = route.routingKey ?: return false
+        val name = route.ruleName ?: return false
+        return route.isDefaultInstance && isProjectRoutedOut(name, key)
+    }
+
     private fun isProjectInDualWrite(ruleName: String, projectId: String): Boolean {
         val rule = properties.rules[ruleName] ?: return false
-        if (rule.routingState != RuleRoutingState.DUAL_WRITE) return false
+        if (effectiveRoutingState(ruleName, rule) != RuleRoutingState.DUAL_WRITE) return false
         return projectId in rule.projectRouting
     }
 
@@ -258,9 +275,14 @@ class MongoReactiveRoutingRegistry(
         if (routingKey != null && isProjectRoutedOut(ruleName, routingKey)) {
             return false
         }
-        return rule.routingState != RuleRoutingState.DUAL_WRITE &&
+        return effectiveRoutingState(ruleName, rule) != RuleRoutingState.DUAL_WRITE &&
             (rule.instances[instanceName]?.fallbackBeforeCleanup == true)
     }
+
+    private fun effectiveRoutingState(
+        ruleName: String,
+        rule: MongoMultiInstanceProperties.RoutingRule,
+    ): RuleRoutingState = RoutingEffectiveState.effectiveRoutingState(rule, ruleName = ruleName)
 
     private fun extractKey(context: Any?, fieldPath: String): String? = when (context) {
         is Query -> extractFromQueryObject(context.queryObject, fieldPath)
@@ -304,10 +326,37 @@ class MongoReactiveRoutingRegistry(
         properties.rules.entries
             .associate { (ruleName, rule) ->
                 ruleName to rule.instances.mapValues { (_, cfg) ->
-                    reactiveTemplate(cfg.uri)
+                    reactiveTemplate(cfg.uri, cfg)
                 }
             }
 
-    private fun reactiveTemplate(uri: String): ReactiveMongoTemplate =
-        ReactiveMongoTemplate(SimpleReactiveMongoDatabaseFactory(ConnectionString(uri)))
+    private fun reactiveTemplate(
+        uri: String,
+        cfg: MongoMultiInstanceProperties.RoutingRule.InstanceConfig,
+    ): ReactiveMongoTemplate {
+        val connectionString = ConnectionString(uri)
+        val settingsBuilder = com.mongodb.MongoClientSettings.builder()
+            .applyConnectionString(connectionString)
+            .applyToConnectionPoolSettings { builder ->
+                builder.maxSize(cfg.maxPoolSize).minSize(cfg.minPoolSize)
+                poolMetricsListener?.let { builder.addConnectionPoolListener(it) }
+            }
+        val client = MongoClients.create(settingsBuilder.build())
+        mongoClients.add(client)
+        val database = connectionString.database
+            ?: error("MongoDB URI must include database: $uri")
+        return ReactiveMongoTemplate(SimpleReactiveMongoDatabaseFactory(client, database))
+    }
+
+    override fun destroy() {
+        mongoClients.distinct().forEach { client ->
+            runCatching { client.close() }
+                .onFailure { logger.warn("Failed to close reactive MongoClient: {}", it.message) }
+        }
+        mongoClients.clear()
+    }
+
+    companion object {
+        private val logger = org.slf4j.LoggerFactory.getLogger(MongoReactiveRoutingRegistry::class.java)
+    }
 }

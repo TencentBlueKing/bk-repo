@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.Instant
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory
 import org.springframework.data.mongodb.core.query.Criteria
@@ -35,6 +36,11 @@ import org.springframework.data.mongodb.core.query.Query
  */
 class MongoRoutingRegistryTest {
 
+    companion object {
+        /** 已生效的 ROUTED（缺省 effective-at 会强制保持 DUAL_WRITE） */
+        private val ROUTED_ACTIVE: Instant = Instant.EPOCH
+    }
+
     // 使用假 URI：SimpleMongoClientDatabaseFactory 连接懒建立，路由逻辑测试无需真实 MongoDB
     private val heavyUri = "mongodb://heavy-primary:27017/test"
     private val defaultUri = "mongodb://default-primary:27017/test"
@@ -55,6 +61,7 @@ class MongoRoutingRegistryTest {
                         collectionPrefix = "node_",
                         routingKeyField = "projectId",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = ROUTED_ACTIVE,
                         instances = mapOf(
                             "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(
                                 uri = heavyUri,
@@ -73,6 +80,7 @@ class MongoRoutingRegistryTest {
                         routingType = MongoMultiInstanceProperties.RoutingType.NONE,
                         collectionPrefix = "artifact_oplog_",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = ROUTED_ACTIVE,
                         instances = mapOf(
                             "oplog" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(
                                 uri = offloadUri,
@@ -127,6 +135,49 @@ class MongoRoutingRegistryTest {
         assertNull(disabledRegistry.routeRead("node_0", "projectA"))
     }
 
+    // ── 分支：routing-state 原地变更即时生效，不重建连接池（回归 §2.10.1 切流抖动）──
+
+    @Test
+    fun `routing-state change takes effect in-place without rebuilding connection pool`() {
+        // 启动期一次性建池（OFF 态），模拟运维在 Consul 改 routing-state 后
+        // @ConfigurationProperties 原地重绑定：应 live 读取生效，绝不可重建 Bean/连接池。
+        val properties = MongoMultiInstanceProperties().apply {
+            rules = mapOf(
+                "artifact-oplog" to MongoMultiInstanceProperties.RoutingRule(
+                    routingType = MongoMultiInstanceProperties.RoutingType.NONE,
+                    collectionPrefix = "artifact_oplog_",
+                    routingState = RuleRoutingState.OFF,
+                    instances = mapOf(
+                        "oplog" to MongoMultiInstanceProperties.RoutingRule
+                            .InstanceConfig(uri = offloadUri),
+                    ),
+                )
+            )
+        }
+        val registry = DefaultMongoRoutingRegistry(properties)
+
+        // OFF 期：读写回退 Default（null）
+        assertNull(registry.routeWrite("artifact_oplog_202501", null))
+        assertNull(registry.routeRead("artifact_oplog_202501", null))
+        // 记录池中模板引用，用于证明后续切流未重建连接池
+        val offloadTmplBefore = registry.allPrimaryTemplates("artifact-oplog")["oplog"]
+
+        // 模拟 Consul 改 routing-state=ROUTED（@ConfigurationProperties 原地重绑定）
+        properties.rules["artifact-oplog"]!!.apply {
+            routingState = RuleRoutingState.ROUTED
+            routingEffectiveAt = ROUTED_ACTIVE
+        }
+
+        // ROUTED 后读写即时走 Offload，且复用同一连接池（模板引用不变 = 池未重建，无抖动）
+        assertSame(offloadTmplBefore, registry.allPrimaryTemplates("artifact-oplog")["oplog"])
+        assertNotNull(registry.routeWrite("artifact_oplog_202501", null))
+        assertNotNull(registry.routeRead("artifact_oplog_202501", null))
+
+        // 再回滚到 OFF：同样原地生效，仍复用同一池（无重建）
+        properties.rules["artifact-oplog"]!!.routingState = RuleRoutingState.OFF
+        assertNull(registry.routeWrite("artifact_oplog_202501", null))
+    }
+
     @Test
     fun `routeWrite reflects replaced rules map without registry rebuild`() {
         val properties = MongoMultiInstanceProperties().apply {
@@ -136,6 +187,7 @@ class MongoRoutingRegistryTest {
                     collectionPrefix = "node_",
                     routingKeyField = "projectId",
                     routingState = RuleRoutingState.ROUTED,
+                    routingEffectiveAt = ROUTED_ACTIVE,
                     instances = mapOf(
                         "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri),
                     ),
@@ -355,6 +407,7 @@ class MongoRoutingRegistryTest {
                         routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
                         collectionPrefix = "node_",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = ROUTED_ACTIVE,
                         instances = mapOf(
                             "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri)
                         ),
@@ -382,6 +435,7 @@ class MongoRoutingRegistryTest {
                         routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
                         collectionPrefix = "node_",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = ROUTED_ACTIVE,
                         instances = mapOf(
                             "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri)
                         ),
@@ -403,6 +457,7 @@ class MongoRoutingRegistryTest {
                         routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
                         collectionPrefix = "node_",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = ROUTED_ACTIVE,
                         instances = mapOf(
                             "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(
                                 uri = heavyUri,
@@ -496,6 +551,7 @@ class MongoRoutingRegistryTest {
                         routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
                         collectionPrefix = "node_",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = ROUTED_ACTIVE,
                         instances = mapOf(
                             "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(
                                 uri = heavyUri,
@@ -574,6 +630,7 @@ class MongoRoutingRegistryTest {
                         routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
                         collectionPrefix = "node_",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = ROUTED_ACTIVE,
                         instances = mapOf(
                             "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri)
                         ),
@@ -616,6 +673,7 @@ class MongoRoutingRegistryTest {
                         routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
                         collectionPrefix = "node_",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = ROUTED_ACTIVE,
                         instances = mapOf(
                             "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri),
                             "heavy2" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri),
@@ -646,6 +704,7 @@ class MongoRoutingRegistryTest {
                         routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
                         collectionPrefix = "node_",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = ROUTED_ACTIVE,
                         instances = mapOf(
                             "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri)
                         ),
@@ -669,6 +728,7 @@ class MongoRoutingRegistryTest {
                         routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
                         collectionPrefix = "node_",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = ROUTED_ACTIVE,
                         instances = mapOf(
                             "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri),
                             "heavy2" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri),
@@ -751,6 +811,7 @@ class MongoRoutingRegistryTest {
                         routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
                         collectionPrefix = "node_",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = ROUTED_ACTIVE,
                         instances = mapOf(
                             "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri)
                         ),
@@ -774,6 +835,7 @@ class MongoRoutingRegistryTest {
                         routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
                         collectionPrefix = "node_",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = ROUTED_ACTIVE,
                         instances = mapOf(
                             "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(
                                 uri = heavyUri,
@@ -802,6 +864,7 @@ class MongoRoutingRegistryTest {
                         routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
                         collectionPrefix = "node_",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = ROUTED_ACTIVE,
                         instances = instances,
                     )
                 )
@@ -827,6 +890,7 @@ class MongoRoutingRegistryTest {
                         routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
                         collectionPrefix = "node_",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = ROUTED_ACTIVE,
                         instances = mapOf(
                             "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri),
                             "heavy2" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri),
@@ -837,6 +901,7 @@ class MongoRoutingRegistryTest {
                         routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
                         collectionPrefix = "block_node_",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = ROUTED_ACTIVE,
                         instances = mapOf(
                             "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri),
                             "heavy2" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri),
@@ -858,6 +923,7 @@ class MongoRoutingRegistryTest {
                         routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
                         collectionPrefix = "node_",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = ROUTED_ACTIVE,
                         instances = mapOf(
                             "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri),
                         ),
@@ -867,6 +933,7 @@ class MongoRoutingRegistryTest {
                         routingType = MongoMultiInstanceProperties.RoutingType.PROJECT,
                         collectionPrefix = "block_node_",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = ROUTED_ACTIVE,
                         instances = mapOf(
                             "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = heavyUri),
                         ),
@@ -876,5 +943,28 @@ class MongoRoutingRegistryTest {
             },
         )
         org.junit.jupiter.api.assertThrows<IllegalStateException> { badRegistry.validateOnStartup() }
+    }
+
+    @Test
+    fun `ROUTED with future routing-effective-at reads from Default until effective`() {
+        val futureAt = Instant.parse("2099-01-01T00:00:00Z")
+        val registry = DefaultMongoRoutingRegistry(
+            MongoMultiInstanceProperties().apply {
+                rules = mapOf(
+                    "artifact-oplog" to MongoMultiInstanceProperties.RoutingRule(
+                        routingType = MongoMultiInstanceProperties.RoutingType.NONE,
+                        collectionPrefix = "artifact_oplog_",
+                        routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = futureAt,
+                        instances = mapOf(
+                            "oplog" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(uri = offloadUri),
+                        ),
+                    ),
+                )
+            },
+        )
+        assertTrue(registry.isDualWrite("artifact-oplog"))
+        assertNull(registry.routeWrite("artifact_oplog_202501", null))
+        assertNull(registry.routeRead("artifact_oplog_202501", null))
     }
 }

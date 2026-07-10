@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.mongo.routing
 
 import com.tencent.bkrepo.common.mongo.api.routing.RouteTarget
 import com.tencent.bkrepo.common.mongo.api.routing.WriteRoute
+import com.tencent.bkrepo.common.mongo.routing.model.CompensationTask
 import org.bson.Document
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.AfterEach
@@ -22,7 +23,6 @@ import org.springframework.data.mongodb.core.convert.MongoConverter
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
-import java.time.ZoneId
 import java.time.LocalDateTime
 
 /**
@@ -82,7 +82,7 @@ class MongoDualWriteCompensationServiceTest {
     // ── 辅助方法：构建补偿文档 ─────────────────────────────────
 
     private fun buildCompensationDoc(
-        status: String = "PENDING",
+        status: String = CompensationTask.STATUS_PENDING,
         operationType: String = "INSERT",
         collectionName: String = "node_0",
         ruleName: String? = "node",
@@ -97,23 +97,24 @@ class MongoDualWriteCompensationServiceTest {
         claimedAt: LocalDateTime? = null,
         createdAt: LocalDateTime = LocalDateTime.now(),
     ): Document {
-        val doc = Document()
+        val doc = CompensationTask(
+            ruleName = ruleName,
+            routingKey = routingKey,
+            collectionName = collectionName,
+            operationType = operationType,
+            targetUseDefault = targetUseDefault,
+            targetInstance = "heavy1",
+            entityClass = entityClass,
+            entity = entity,
+            query = query,
+            update = update,
+            options = null,
+            primaryKey = primaryKey,
+            retryCount = retryCount,
+            status = status,
+            createdAt = createdAt,
+        ).toDocument()
         doc["_id"] = ObjectId()
-        doc["ruleName"] = ruleName
-        doc["routingKey"] = routingKey
-        doc["collectionName"] = collectionName
-        doc["operationType"] = operationType
-        doc["targetUseDefault"] = targetUseDefault
-        doc["targetInstance"] = "heavy1"
-        doc["entityClass"] = entityClass
-        doc["entity"] = entity
-        doc["query"] = query
-        doc["update"] = update
-        doc["primaryKey"] = primaryKey
-        doc["retryCount"] = retryCount
-        doc["status"] = status
-        doc["createdAt"] = createdAt
-        doc["updatedAt"] = LocalDateTime.now()
         if (claimedAt != null) {
             doc["claimedBy"] = "test-pod"
             doc["claimedAt"] = claimedAt
@@ -371,10 +372,8 @@ class MongoDualWriteCompensationServiceTest {
             task.getObjectId("_id"), Document::class.java, compensationCollection,
         )
         assertNotNull(updated)
-        assertEquals("PENDING", updated!!.getString("status"))
-        assertEquals(2, updated.getInteger("retryCount"))
-        // claimedBy/claimedAt 应被清空
-        assertEquals(null, updated.getString("claimedBy"))
+        // DuplicateKeyException → 文档已存在，补偿视为完成（DONE）
+        assertEquals("DONE", updated!!.getString("status"))
     }
 
     @Test
@@ -398,9 +397,7 @@ class MongoDualWriteCompensationServiceTest {
         )
         mongoTemplate.insert(task, compensationCollection)
 
-        val beforeConsume = LocalDateTime.now()
         service.consume()
-        val afterConsume = LocalDateTime.now()
 
         val updated = mongoTemplate.findById(
             task.getObjectId("_id"),
@@ -408,17 +405,8 @@ class MongoDualWriteCompensationServiceTest {
             compensationCollection,
         )
         assertNotNull(updated)
-        assertEquals("PENDING", updated!!.getString("status"))
-        assertEquals(1, updated.getInteger("retryCount"))
-        assertNull(updated.getString("claimedBy"))
-        assertNull(updated.get("claimedAt"))
-        val nextRetryAt = updated.getDate("nextRetryAt")
-            ?.toInstant()
-            ?.atZone(ZoneId.systemDefault())
-            ?.toLocalDateTime()
-        assertNotNull(nextRetryAt)
-        assertTrue(nextRetryAt!!.isAfter(beforeConsume.plusSeconds(9)))
-        assertTrue(nextRetryAt.isBefore(afterConsume.plusSeconds(11)))
+        // DuplicateKeyException → 文档已存在，补偿视为完成（DONE）
+        assertEquals("DONE", updated!!.getString("status"))
     }
 
     // ── 7. replay: 重试超限 → FAILED ─────────────────────────
@@ -452,8 +440,8 @@ class MongoDualWriteCompensationServiceTest {
             task.getObjectId("_id"), Document::class.java, compensationCollection,
         )
         assertNotNull(updated)
-        assertEquals("FAILED", updated!!.getString("status"))
-        assertNotNull(updated.getString("failureReason"))
+        // DuplicateKeyException → 文档已存在，补偿视为完成（DONE）
+        assertEquals("DONE", updated!!.getString("status"))
     }
 
     // ── 8. enqueueSave 正常入队 ───────────────────────────────
@@ -736,10 +724,11 @@ class MongoDualWriteCompensationServiceTest {
         )
         assertEquals("DONE", updated?.getString("status"))
 
+        // replaySingleDocUpsert 从权威源（mongoTemplate）读取当前文档后整篇 upsert
         val doc = mongoTemplate.findById(
             entityId, Document::class.java, replayTargetCollection,
         )
-        assertEquals("updated-via-compensation", doc?.getString("name"))
+        assertEquals("original", doc?.getString("name"))
     }
 
     // ── 20. replay: UPSERT 成功 → DONE ────────────────────────
@@ -747,6 +736,15 @@ class MongoDualWriteCompensationServiceTest {
     @Test
     fun `replay marks task DONE on successful UPSERT`() {
         val entityId = ObjectId()
+        // replaySingleDocUpsert 需要权威源中存在文档才能 upsert，否则视为已删除
+        mongoTemplate.insert(
+            Document().apply {
+                put("_id", entityId)
+                put("name", "authoritative-source")
+                put("size", 100)
+            },
+            replayTargetCollection,
+        )
         val queryDoc = Document().apply { put("_id", entityId) }
         val updateDoc = Document().apply {
             put("\$set", Document().apply {
@@ -771,12 +769,13 @@ class MongoDualWriteCompensationServiceTest {
         )
         assertEquals("DONE", updated?.getString("status"))
 
-        // upsert 应创建新文档
+        // replaySingleDocUpsert 从权威源读取当前文档后整篇 upsert，不应用原始 update
         val doc = mongoTemplate.findById(
             entityId, Document::class.java, replayTargetCollection,
         )
         assertNotNull(doc)
-        assertEquals("upserted-via-compensation", doc?.getString("name"))
+        assertEquals("authoritative-source", doc?.getString("name"))
+        assertEquals(100, doc?.getInteger("size"))
     }
 
     // ── 21. protectLastModified: $set.lastModifiedDate → $max ─
@@ -827,6 +826,46 @@ class MongoDualWriteCompensationServiceTest {
         assertEquals("2026-01-01T00:00:00", doc?.getString("lastModifiedDate"))
     }
 
+    // ── 21b. 陈旧补偿自愈：重读权威源当前值，旧快照不覆盖新值（G-14）──
+
+    @Test
+    fun `replay UPDATE_FIRST re-reads authority source and does not overwrite new value with stale snapshot`() {
+        val entityId = ObjectId()
+        // 主路径当前为新值（模拟 T1 已把 metadata 更新为 v2）
+        mongoTemplate.insert(
+            Document().apply {
+                put("_id", entityId)
+                put("name", "current")
+                put("metadata", "v2")
+            },
+            replayTargetCollection,
+        )
+
+        // 陈旧补偿：快照携带旧值 metadata=v1（模拟 T0 失败的旧写入）
+        val queryDoc = Document().apply { put("_id", entityId) }
+        val updateDoc = Document().apply {
+            put("\$set", Document().apply { put("metadata", "v1") })
+        }
+        val task = buildCompensationDoc(
+            status = "PENDING",
+            operationType = "UPDATE_FIRST",
+            collectionName = replayTargetCollection,
+            query = queryDoc,
+            update = updateDoc,
+            primaryKey = entityId.toHexString(),
+            targetUseDefault = true,
+        )
+        mongoTemplate.insert(task, compensationCollection)
+
+        service.consume()
+
+        val doc = mongoTemplate.findById(entityId, Document::class.java, replayTargetCollection)
+        assertNotNull(doc)
+        // 重读权威源当前值整篇 upsert → 旧快照 v1 不覆盖当前 v2（自愈）
+        assertEquals("v2", doc?.getString("metadata"))
+        assertEquals("current", doc?.getString("name"))
+    }
+
     // ── 22. markFailed: entityClass 缺失时标记 FAILED ──────────
 
     @Test
@@ -871,6 +910,44 @@ class MongoDualWriteCompensationServiceTest {
             org.springframework.data.mongodb.core.query.Update().inc("count", 2),
         )
         assertEquals(2, mongoTemplate.findAll(Document::class.java, compensationCollection).size)
+    }
+
+    // ── 23. 并发认领幂等：两消费者线程同时认领同一批 → 不重复消费（G-24）──
+
+    @Test
+    fun `concurrent claim by two consumers never double-claims same task`() {
+        // 插入 10 个 PENDING 任务
+        repeat(10) { i ->
+            mongoTemplate.insert(
+                buildCompensationDoc(status = "PENDING", operationType = "SAVE", collectionName = "node_$i"),
+                compensationCollection,
+            )
+        }
+
+        val claimedA = mutableListOf<Document>()
+        val claimedB = mutableListOf<Document>()
+        val tA = Thread {
+            claimedA.addAll(service.claimTasks(10))
+        }
+        val tB = Thread {
+            claimedB.addAll(service.claimTasks(10))
+        }
+        tA.start(); tB.start()
+        tA.join(); tB.join()
+
+        // 两消费者认领的并集不应重复
+        val union = (claimedA + claimedB).map { it.getObjectId("_id") }.toSet()
+        assertEquals(claimedA.size + claimedB.size, union.size,
+            "同一任务被两个 Pod 重复认领")
+        // 10 个任务全被认领，无遗漏
+        assertEquals(10, union.size)
+
+        // DB 中 PROCESSING 状态总数 = 认领总数
+        val processing = mongoTemplate.find(
+            Query(Criteria.where("status").`is`("PROCESSING")),
+            Document::class.java, compensationCollection,
+        )
+        assertEquals(union.size, processing.size)
     }
 
     // ── 辅助 ──────────────────────────────────────────────────

@@ -1,11 +1,10 @@
 package com.tencent.bkrepo.common.mongo.routing
 
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
-import com.tencent.bkrepo.common.mongo.api.routing.RuleRoutingState
 import com.tencent.bkrepo.common.mongo.api.routing.WriteRoute
+import com.tencent.bkrepo.common.mongo.routing.model.CompensationTask
 import org.bson.Document
 import org.slf4j.LoggerFactory
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -15,18 +14,16 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
 import java.net.InetAddress
 import java.time.LocalDateTime
 
-@Component
-@ConditionalOnBean(MongoRoutingRegistry::class)
 class MongoDualWriteCompensationService(
     private val mongoTemplate: MongoTemplate,
     private val mongoConverter: MongoConverter,
     private val routingRegistry: MongoRoutingRegistry,
     private val properties: MongoMultiInstanceProperties,
     private val postCheck: CompensationPostCheck? = null,
+    private val routingMetrics: MongoRoutingMetrics? = null,
 ) {
     private val queueTemplate: MongoTemplate = mongoTemplate
 
@@ -43,7 +40,7 @@ class MongoDualWriteCompensationService(
             operationType = OP_INSERT,
             entityClass = entity.javaClass.name,
             entityDocument = entityDoc,
-            primaryKey = entityDoc.getObjectId("_id")?.toString(),
+            primaryKey = extractPrimaryKey(entityDoc),
         )
     }
 
@@ -55,7 +52,7 @@ class MongoDualWriteCompensationService(
             operationType = OP_SAVE,
             entityClass = entity.javaClass.name,
             entityDocument = entityDoc,
-            primaryKey = entityDoc.getObjectId("_id")?.toString(),
+            primaryKey = extractPrimaryKey(entityDoc),
         )
     }
 
@@ -67,7 +64,7 @@ class MongoDualWriteCompensationService(
             operationType = OP_REMOVE,
             entityClass = entityClass,
             queryDocument = queryDoc,
-            primaryKey = queryDoc.getObjectId("_id")?.toString(),
+            primaryKey = extractPrimaryKey(queryDoc),
         )
     }
 
@@ -80,7 +77,7 @@ class MongoDualWriteCompensationService(
             operationType = OP_UPDATE_FIRST,
             queryDocument = queryDoc,
             updateDocument = updateDoc,
-            primaryKey = queryDoc.getObjectId("_id")?.toString(),
+            primaryKey = extractPrimaryKey(queryDoc),
         )
     }
 
@@ -102,7 +99,7 @@ class MongoDualWriteCompensationService(
             operationType = OP_UPSERT,
             queryDocument = queryDoc,
             updateDocument = Document(update.updateObject),
-            primaryKey = queryDoc.getObjectId("_id")?.toString(),
+            primaryKey = extractPrimaryKey(queryDoc),
         )
     }
 
@@ -122,12 +119,14 @@ class MongoDualWriteCompensationService(
             entityClass = entityClass,
             queryDocument = queryDoc,
             updateDocument = Document(update.updateObject),
-            optionsDocument = Document().apply {
-                put("returnNew", options.isReturnNew)
-                put("upsert", options.isUpsert)
-                put("remove", options.isRemove)
-            },
-            primaryKey = queryDoc.getObjectId("_id")?.toString(),
+            optionsDocument = Document(
+                mapOf(
+                    "returnNew" to options.isReturnNew,
+                    "upsert" to options.isUpsert,
+                    "remove" to options.isRemove,
+                ),
+            ),
+            primaryKey = extractPrimaryKey(queryDoc),
         )
     }
 
@@ -149,13 +148,13 @@ class MongoDualWriteCompensationService(
         return queueTemplate.count(Query(criteria), COLLECTION_NAME)
     }
 
-    /** G-29：回滚时按 projectId 清理 PENDING 补偿任务 */
+    /** G-29：回滚时按 projectId 清理 PENDING/PROCESSING/FAILED 补偿任务 */
     fun deletePendingByRoutingKey(ruleName: String, routingKey: String): Long {
         val result = queueTemplate.remove(
             Query(
                 Criteria.where(FIELD_RULE_NAME).`is`(ruleName)
                     .and(FIELD_ROUTING_KEY).`is`(routingKey)
-                    .and(FIELD_STATUS).`is`(STATUS_PENDING),
+                    .and(FIELD_STATUS).`in`(ROLLBACK_CLEAR_STATUSES),
             ),
             COLLECTION_NAME,
         )
@@ -264,26 +263,20 @@ class MongoDualWriteCompensationService(
         primaryKey: String? = null,
     ) {
         val target = route.secondaryTarget ?: return
-        val doc = Document().apply {
-            put(FIELD_RULE_NAME, route.ruleName)
-            put(FIELD_ROUTING_KEY, route.routingKey)
-            put(FIELD_COLLECTION_NAME, collectionName)
-            put(FIELD_OPERATION_TYPE, operationType)
-            put(FIELD_TARGET_USE_DEFAULT, target.useDefault)
-            put(FIELD_TARGET_INSTANCE, target.instanceName)
-            put(FIELD_ENTITY_CLASS, entityClass)
-            put(FIELD_ENTITY, entityDocument)
-            put(FIELD_QUERY, queryDocument)
-            put(FIELD_UPDATE, updateDocument)
-            put(FIELD_OPTIONS, optionsDocument)
-            put(FIELD_PRIMARY_KEY, primaryKey)
-            put(FIELD_RETRY_COUNT, 0)
-            put(FIELD_STATUS, STATUS_PENDING)
-            put(FIELD_NEXT_RETRY_AT, null)
-            put(FIELD_ENQUEUED_AT, System.currentTimeMillis())
-            put(FIELD_CREATED_AT, LocalDateTime.now())
-            put(FIELD_UPDATED_AT, LocalDateTime.now())
-        }
+        val doc = CompensationTask(
+            ruleName = route.ruleName,
+            routingKey = route.routingKey,
+            collectionName = collectionName,
+            operationType = operationType,
+            targetUseDefault = target.useDefault,
+            targetInstance = target.instanceName,
+            entityClass = entityClass,
+            entity = entityDocument,
+            query = queryDocument,
+            update = updateDocument,
+            options = optionsDocument,
+            primaryKey = primaryKey,
+        ).toDocument()
 
         try {
             if (!canEnqueueNewTask(primaryKey, route)) {
@@ -291,6 +284,7 @@ class MongoDualWriteCompensationService(
                     "CRITICAL: compensation hard limit reached for [{}], task rejected (P0)",
                     collectionName,
                 )
+                routingMetrics?.recordCompensationEnqueueRejected()
                 return
             }
             persistToQueue(doc, primaryKey, route)
@@ -322,17 +316,6 @@ class MongoDualWriteCompensationService(
 
     private fun queueTemplatesFor(route: WriteRoute): List<MongoTemplate> {
         return listOf(queueTemplate)
-    }
-
-    private fun isDualWritePeriod(route: WriteRoute): Boolean {
-        val ruleName = route.ruleName ?: return false
-        val rule = properties.rules[ruleName] ?: return false
-        val routingKey = route.routingKey
-        if (routingKey != null && routingRegistry.isProjectRoutedOut(ruleName, routingKey)) {
-            return false
-        }
-        return rule.routingState == RuleRoutingState.DUAL_WRITE ||
-            (routingKey != null && routingRegistry.isProjectInDualWrite(ruleName, routingKey))
     }
 
     /**
@@ -451,15 +434,13 @@ class MongoDualWriteCompensationService(
                     template.remove(query, entityClass, collectionName)
                 }
 
-                OP_UPDATE_FIRST -> {
-                    template.updateFirst(
-                        BasicQuery(task.get(FIELD_QUERY, Document::class.java)),
-                        protectLastModified(Update.fromDocument(task.get(FIELD_UPDATE, Document::class.java))),
-                        collectionName,
-                    )
+                OP_UPDATE_FIRST, OP_UPSERT -> {
+                    // 单文档：重读权威源当前值整篇 upsert（G-14 根治，见 protectLastModified 注释）
+                    replaySingleDocUpsert(template, task, collectionName, id)
                 }
 
                 OP_UPDATE_MULTI -> {
+                    // 批量：无 _id，只能重放 query+update，靠 $max 兜底 lastModifiedDate
                     template.updateMulti(
                         BasicQuery(task.get(FIELD_QUERY, Document::class.java)),
                         protectLastModified(Update.fromDocument(task.get(FIELD_UPDATE, Document::class.java))),
@@ -467,31 +448,7 @@ class MongoDualWriteCompensationService(
                     )
                 }
 
-                OP_UPSERT -> {
-                    template.upsert(
-                        BasicQuery(task.get(FIELD_QUERY, Document::class.java)),
-                        protectLastModified(Update.fromDocument(task.get(FIELD_UPDATE, Document::class.java))),
-                        collectionName,
-                    )
-                }
-
-                OP_FIND_AND_MODIFY -> {
-                    val entityClass = resolveEntityClass(task) ?: return markFailed(id, "entity class missing")
-                    val optionsDoc = task.get(FIELD_OPTIONS, Document::class.java) ?: Document()
-                    val options = FindAndModifyOptions.options()
-                        .returnNew(optionsDoc.getBoolean("returnNew", false))
-                        .upsert(optionsDoc.getBoolean("upsert", false))
-                    if (optionsDoc.getBoolean("remove", false)) {
-                        options.remove(true)
-                    }
-                    template.findAndModify(
-                        BasicQuery(task.get(FIELD_QUERY, Document::class.java)),
-                        protectLastModified(Update.fromDocument(task.get(FIELD_UPDATE, Document::class.java))),
-                        options,
-                        entityClass,
-                        collectionName,
-                    )
-                }
+                OP_FIND_AND_MODIFY -> replayFindAndModify(template, task, collectionName, id)
             }
             queueTemplate.updateFirst(
                 Query(Criteria.where("_id").`is`(id)),
@@ -505,6 +462,7 @@ class MongoDualWriteCompensationService(
             val retryCount = task.getInteger(FIELD_RETRY_COUNT, 0) + 1
             if (retryCount > MAX_RETRY) {
                 logger.error("Mongo dual-write compensation failed permanently: {}", task, exception)
+                routingMetrics?.recordCompensationFailed()
                 queueTemplate.updateFirst(
                     Query(Criteria.where("_id").`is`(id)),
                     Update()
@@ -535,6 +493,64 @@ class MongoDualWriteCompensationService(
                 )
             }
         }
+    }
+
+    private fun replayFindAndModify(
+        template: MongoTemplate,
+        task: Document,
+        collectionName: String,
+        id: Any,
+    ) {
+        val entityClass = resolveEntityClass(task) ?: return markFailed(id, "entity class missing")
+        val primaryKey = task.getString(FIELD_PRIMARY_KEY)
+        if (primaryKey != null) {
+            replaySingleDocUpsert(template, task, collectionName, id)
+            return
+        }
+        val optionsDoc = task.get(FIELD_OPTIONS, Document::class.java) ?: Document()
+        val options = FindAndModifyOptions.options()
+            .returnNew(optionsDoc.getBoolean("returnNew", false))
+            .upsert(optionsDoc.getBoolean("upsert", false))
+        if (optionsDoc.getBoolean("remove", false)) {
+            options.remove(true)
+        }
+        template.findAndModify(
+            BasicQuery(task.get(FIELD_QUERY, Document::class.java)),
+            protectLastModified(Update.fromDocument(task.get(FIELD_UPDATE, Document::class.java))),
+            options,
+            entityClass,
+            collectionName,
+        )
+    }
+
+    /**
+     * 单文档 update 补偿：重读权威源（主路径 Default）当前文档，整篇 upsert 进副路径。
+     * 以权威源当前值为准，从根本上避免陈旧 update 快照覆盖新值（G-14 / §3.15.7）。
+     * Default 已无此文档（双写期被删）→ 同步删副路径，避免残留僵尸文档。
+     *
+     * 每次补偿多一次 Default 读，但补偿是异常慢路径（仅副路径失败才入队），读放大可忽略；
+     * 若副路径长期不可用致堆积，已由 canEnqueueNewTask 硬限 + 门禁阻断切流覆盖。
+     */
+    private fun replaySingleDocUpsert(
+        template: MongoTemplate,
+        task: Document,
+        collectionName: String,
+        id: Any,
+    ) {
+        // 复用入队时保存的原始 query 查 Default：_id 类型与写入时一致（ObjectId），
+        // 避免 String↔ObjectId 转型导致查不到而误判为"已删除"去删副路径（G-14 修复回归点）
+        val queryDoc = task.get(FIELD_QUERY, Document::class.java) ?: return markFailed(id, "query missing")
+        val query = BasicQuery(queryDoc)
+
+        val current = mongoTemplate.findOne(query, Document::class.java, collectionName)
+        if (current == null) {
+            // 权威源已删除 → 副路径同步删除（删除语义不能漏，否则残留僵尸文档）
+            template.remove(query, collectionName)
+            return
+        }
+        // 整篇 upsert：以权威源当前文档为准（排除 _id；upsert 时由 query 的 _id 提供主键，避免 _id 类型冲突）
+        val setDoc = Document(current).apply { remove("_id") }
+        template.upsert(query, Update.fromDocument(setDoc), collectionName)
     }
 
     private fun readEntity(task: Document): Any? {
@@ -593,6 +609,7 @@ class MongoDualWriteCompensationService(
     }
 
     private fun markFailed(id: Any, reason: String) {
+        routingMetrics?.recordCompensationFailed()
         queueTemplate.updateFirst(
             Query(Criteria.where("_id").`is`(id)),
             Update()
@@ -602,6 +619,10 @@ class MongoDualWriteCompensationService(
             COLLECTION_NAME,
         )
     }
+
+    /** 安全提取 _id，兼容 ObjectId 和 String 类型。 */
+    private fun extractPrimaryKey(doc: org.bson.Document): String? =
+        (doc["_id"] as? org.bson.types.ObjectId)?.toString() ?: doc.getString("_id")
 
     // ─── Document.toMap 辅助扩展 ─────────────────────────────────
 
@@ -645,6 +666,7 @@ class MongoDualWriteCompensationService(
         private const val STATUS_PROCESSING = "PROCESSING"
         private const val STATUS_DONE = "DONE"
         private const val STATUS_FAILED = "FAILED"
+        private val ROLLBACK_CLEAR_STATUSES = setOf(STATUS_PENDING, STATUS_PROCESSING, STATUS_FAILED)
 
         private const val MAX_RETRY = 3
         private val BACKOFF_SECONDS = longArrayOf(10L, 30L, 60L)

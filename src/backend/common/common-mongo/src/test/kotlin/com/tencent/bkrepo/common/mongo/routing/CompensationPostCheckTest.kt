@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.common.mongo.routing
 
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
-import com.tencent.bkrepo.common.mongo.api.routing.RouteTarget
 import com.tencent.bkrepo.common.mongo.api.routing.WriteRoute
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.bson.Document
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -45,7 +45,7 @@ class CompensationPostCheckTest {
     @BeforeEach
     fun setUp() {
         registry = mock()
-        postCheck = CompensationPostCheck(registry, defaultMongoTemplate)
+        postCheck = CompensationPostCheck(registry, defaultMongoTemplate, SimpleMeterRegistry())
         defaultMongoTemplate.dropCollection(testCollection)
     }
 

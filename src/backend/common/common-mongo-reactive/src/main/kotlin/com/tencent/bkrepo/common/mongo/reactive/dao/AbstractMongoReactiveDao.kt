@@ -558,6 +558,13 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
 
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractMongoReactiveDao::class.java)
+        /**
+         * 类型桥接占位 Token：M0 [DualWriteExecutor] 契约签名使用 [MongoTemplate]，
+         * 但 Reactive 路径持有的是 [ReactiveMongoTemplate]。
+         * 此 Factory 创建的 [MongoTemplate] 仅作为 [IdentityHashMap] 的键，
+         * 映射 [ReactiveMongoTemplate] → 占位 [MongoTemplate]，永不会发起真实连接。
+         * 实际写操作由闭包捕获的原始 [ReactiveMongoTemplate] 实例执行。
+         */
         private val DUAL_WRITE_TOKEN_DB_FACTORY =
             SimpleMongoClientDatabaseFactory("mongodb://localhost:27017/test")
 

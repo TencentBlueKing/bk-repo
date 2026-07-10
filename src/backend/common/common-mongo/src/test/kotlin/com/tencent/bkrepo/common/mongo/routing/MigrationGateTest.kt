@@ -1,7 +1,10 @@
 package com.tencent.bkrepo.common.mongo.routing
 
+import com.tencent.bkrepo.common.mongo.api.routing.MigrationPhase
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.common.mongo.api.routing.RuleRoutingState
+import com.tencent.bkrepo.common.mongo.dao.MigrationSyncStateDao
+import com.tencent.bkrepo.common.mongo.model.TMigrationSyncState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -32,7 +35,6 @@ class MigrationGateTest {
                         projectLocks = MongoMultiInstanceProperties.RoutingRule.ProjectLocksConfig(
                             freezeGc = true,
                             freezePhysicalDelete = true,
-                            freezeDefaultNodeMutation = true,
                         ),
                     ),
                 ),
@@ -118,10 +120,26 @@ class MigrationGateTest {
     }
 
     @Test
-    fun `isGcFrozen is false when project is not in dual-write`() {
+    fun `isGcFrozen is true when project is routed out`() {
         whenever(registry.isProjectInDualWrite("node", "projectA")).thenReturn(false)
+        whenever(registry.isProjectRoutedOut("node", "projectA")).thenReturn(true)
+        assertTrue(gate.isGcFrozen())
+        assertTrue(gate.isProjectGcFrozen("projectA"))
+    }
+
+    @Test
+    fun `isGcFrozen is false when project is neither dual-write nor routed`() {
+        whenever(registry.isProjectInDualWrite("node", "projectA")).thenReturn(false)
+        whenever(registry.isProjectRoutedOut("node", "projectA")).thenReturn(false)
         assertFalse(gate.isGcFrozen())
         assertFalse(gate.isProjectGcFrozen("projectA"))
+    }
+
+    @Test
+    fun `isPhysicalDeleteFrozen is true when project is in dual-write`() {
+        whenever(registry.isProjectInDualWrite("node", "projectA")).thenReturn(true)
+        whenever(registry.isProjectRoutedOut("node", "projectA")).thenReturn(false)
+        assertTrue(gate.isPhysicalDeleteFrozen("projectA"))
     }
 
     @Test
@@ -132,9 +150,28 @@ class MigrationGateTest {
     }
 
     @Test
-    fun `isPhysicalDeleteFrozen is false when project is not routed out`() {
+    fun `isPhysicalDeleteFrozen is false when project is neither dual-write nor routed`() {
         whenever(registry.isProjectRoutedOut("node", "projectA")).thenReturn(false)
-        whenever(registry.isProjectInDualWrite("node", "projectA")).thenReturn(true)
+        whenever(registry.isProjectInDualWrite("node", "projectA")).thenReturn(false)
         assertFalse(gate.isPhysicalDeleteFrozen("projectA"))
+    }
+
+    @Test
+    fun `isGcFrozen is true when DB phase is INITIAL_SYNC without Consul dual-write`() {
+        val syncStateDao = mock<MigrationSyncStateDao>()
+        whenever(syncStateDao.findByProjectId("projectA")).thenReturn(
+            TMigrationSyncState(
+                id = "projectA",
+                projectId = "projectA",
+                ruleName = "node",
+                targetInstance = "heavy1",
+                phase = MigrationPhase.INITIAL_SYNC,
+            ),
+        )
+        whenever(registry.isProjectInDualWrite("node", "projectA")).thenReturn(false)
+        whenever(registry.isProjectRoutedOut("node", "projectA")).thenReturn(false)
+        gate = MigrationGate(registry, properties, syncStateDao)
+        assertTrue(gate.isProjectGcFrozen("projectA"))
+        assertTrue(gate.isPhysicalDeleteFrozen("projectA"))
     }
 }

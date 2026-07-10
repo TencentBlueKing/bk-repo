@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import java.time.Instant
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.data.annotation.Id
@@ -43,6 +44,9 @@ class AbstractMongoDaoRoutingIntegrationTest {
     @Autowired
     lateinit var defaultTemplate: MongoTemplate
 
+    @Autowired
+    lateinit var mongoClient: com.mongodb.client.MongoClient
+
     private lateinit var heavyTemplate: MongoTemplate
     private lateinit var registry: DefaultMongoRoutingRegistry
     private lateinit var dao: RoutingTestDao
@@ -71,11 +75,11 @@ class AbstractMongoDaoRoutingIntegrationTest {
     @Test
     fun `save writes to Heavy when projectId matches project-routing in ROUTED state`() {
         val entity = TestEntity(projectId = routedProject, name = "routed-save")
-        dao.save(entity)
+        val saved = dao.save(entity)
 
-        assertNotNull(heavyTemplate.findById(entity.id, TestEntity::class.java, collectionName),
+        assertNotNull(heavyTemplate.findById(saved.id, TestEntity::class.java, collectionName),
             "Entity must exist in Heavy instance")
-        assertNull(defaultTemplate.findById(entity.id, TestEntity::class.java, collectionName),
+        assertNull(defaultTemplate.findById(saved.id, TestEntity::class.java, collectionName),
             "Entity must NOT exist in Default instance")
     }
 
@@ -84,13 +88,13 @@ class AbstractMongoDaoRoutingIntegrationTest {
     @Test
     fun `updateMulti routes to Heavy when projectId matches`() {
         val entity = TestEntity(projectId = routedProject, name = "multi-before")
-        heavyTemplate.save(entity, collectionName)
+        val saved = heavyTemplate.save(entity, collectionName)
 
         val query = Query(Criteria.where("projectId").isEqualTo(routedProject))
         val update = Update().set("name", "multi-after")
         dao.updateMulti(query, update)
 
-        val updated = heavyTemplate.findById(entity.id, TestEntity::class.java, collectionName)
+        val updated = heavyTemplate.findById(saved.id, TestEntity::class.java, collectionName)
         assertEquals("multi-after", updated?.name)
     }
 
@@ -99,13 +103,16 @@ class AbstractMongoDaoRoutingIntegrationTest {
     @Test
     fun `updateFirst routes to Heavy when projectId matches`() {
         val entity = TestEntity(projectId = routedProject, name = "first-before")
-        heavyTemplate.save(entity, collectionName)
+        val saved = heavyTemplate.save(entity, collectionName)
 
-        val query = Query(Criteria.where("_id").isEqualTo(entity.id))
+        val query = Query(
+            Criteria.where("_id").isEqualTo(saved.id)
+                .and("projectId").isEqualTo(routedProject)
+        )
         val update = Update().set("name", "first-after")
         dao.updateFirst(query, update)
 
-        val updated = heavyTemplate.findById(entity.id, TestEntity::class.java, collectionName)
+        val updated = heavyTemplate.findById(saved.id, TestEntity::class.java, collectionName)
         assertEquals("first-after", updated?.name)
     }
 
@@ -114,10 +121,10 @@ class AbstractMongoDaoRoutingIntegrationTest {
     @Test
     fun `insert writes to Heavy when projectId matches`() {
         val entity = TestEntity(projectId = routedProject, name = "inserted")
-        dao.insert(entity)
+        val inserted = dao.insert(entity)
 
-        assertNotNull(heavyTemplate.findById(entity.id, TestEntity::class.java, collectionName))
-        assertNull(defaultTemplate.findById(entity.id, TestEntity::class.java, collectionName))
+        assertNotNull(heavyTemplate.findById(inserted.id, TestEntity::class.java, collectionName))
+        assertNull(defaultTemplate.findById(inserted.id, TestEntity::class.java, collectionName))
     }
 
     // ── 5. save: unrouted projectId → Default fallback ─────────
@@ -125,10 +132,10 @@ class AbstractMongoDaoRoutingIntegrationTest {
     @Test
     fun `save writes to Default when projectId not in project-routing`() {
         val entity = TestEntity(projectId = unroutedProject, name = "unrouted-save")
-        dao.save(entity)
+        val saved = dao.save(entity)
 
-        assertNotNull(defaultTemplate.findById(entity.id, TestEntity::class.java, collectionName))
-        assertNull(heavyTemplate.findById(entity.id, TestEntity::class.java, collectionName))
+        assertNotNull(defaultTemplate.findById(saved.id, TestEntity::class.java, collectionName))
+        assertNull(heavyTemplate.findById(saved.id, TestEntity::class.java, collectionName))
     }
 
     // ── 6. OFF state: routing disabled → Default ───────────────
@@ -139,21 +146,43 @@ class AbstractMongoDaoRoutingIntegrationTest {
             injectRegistry(buildOffRegistry())
         }
         val entity = TestEntity(projectId = routedProject, name = "off-save")
-        offDao.save(entity)
+        val saved = offDao.save(entity)
 
-        assertNotNull(defaultTemplate.findById(entity.id, TestEntity::class.java, collectionName))
-        assertNull(heavyTemplate.findById(entity.id, TestEntity::class.java, collectionName))
+        assertNotNull(defaultTemplate.findById(saved.id, TestEntity::class.java, collectionName))
+        assertNull(heavyTemplate.findById(saved.id, TestEntity::class.java, collectionName))
         defaultTemplate.dropCollection(collectionName)
+    }
+
+    // ── 7. read route: ROUTED + routed projectId → 读 Heavy（§2.11 禁止回退 Default）──
+
+    @Test
+    fun `read routes to Heavy when projectId matches in ROUTED state`() {
+        heavyTemplate.save(TestEntity(projectId = routedProject, name = "routed-read"), collectionName)
+        defaultTemplate.dropCollection(collectionName)
+
+        val read = dao.find(Query(Criteria.where("projectId").isEqualTo(routedProject)))
+        assertEquals(1, read.size)
+        assertEquals("routed-read", read.first().name)
+    }
+
+    // ── 8. read route: unrouted projectId → 读 Default ──────────
+
+    @Test
+    fun `read routes to Default when projectId not in project-routing`() {
+        defaultTemplate.save(TestEntity(projectId = unroutedProject, name = "unrouted-read"), collectionName)
+
+        val read = dao.find(Query(Criteria.where("projectId").isEqualTo(unroutedProject)))
+        assertEquals(1, read.size)
+        assertEquals("unrouted-read", read.first().name)
     }
 
     // ── helper methods ─────────────────────────────────────────
 
     private fun buildHeavyTemplate(): MongoTemplate {
-        val defaultDbf = defaultTemplate.mongoDbFactory as SimpleMongoClientDatabaseFactory
-        val clientField = SimpleMongoClientDatabaseFactory::class.java.getDeclaredField("mongoClient")
-        clientField.isAccessible = true
-        val mongoClient = clientField.get(defaultDbf) as com.mongodb.client.MongoClient
-        return MongoTemplate(SimpleMongoClientDatabaseFactory(mongoClient, "routing_heavy_test_db"))
+        return MongoTemplate(
+            SimpleMongoClientDatabaseFactory(mongoClient, "routing_heavy_test_db"),
+            defaultTemplate.converter,
+        )
     }
 
     private fun buildRoutingRegistry(): DefaultMongoRoutingRegistry {
@@ -164,6 +193,7 @@ class AbstractMongoDaoRoutingIntegrationTest {
                     collectionPrefix = collectionName,
                     routingKeyField = "projectId",
                     routingState = RuleRoutingState.ROUTED,
+                    routingEffectiveAt = Instant.EPOCH,
                     instances = mapOf(
                         "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(
                             uri = "mongodb://localhost:27017/routing_heavy_test_db"

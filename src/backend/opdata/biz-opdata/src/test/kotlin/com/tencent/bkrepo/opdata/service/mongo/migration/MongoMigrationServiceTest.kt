@@ -52,11 +52,28 @@ class MongoMigrationServiceTest {
             targetInstance = "heavy",
             phase = MigrationPhase.ROUTED,
         )
+        every { registry.isProjectRoutedOut("node", "p1") } returns true
 
         service.cleanup(request)
 
         verify(exactly = 1) { syncStateDao.updatePhase("p1", MigrationPhase.CLEANUP_READY) }
         verify(exactly = 0) { syncStateDao.updatePhase("p1", MigrationPhase.CLEANED) }
+    }
+
+    @Test
+    fun `cleanup rejects when effective routing not ROUTED yet`() {
+        val request = MigrationProjectRequest(ruleName = "node", projectId = "p1")
+        every { syncStateDao.findByProjectId("p1") } returns TMigrationSyncState(
+            projectId = "p1",
+            ruleName = "node",
+            targetInstance = "heavy",
+            phase = MigrationPhase.ROUTED,
+        )
+        every { registry.isProjectRoutedOut("node", "p1") } returns false
+
+        val ex = assertThrows<ErrorCodeException> { service.cleanup(request) }
+        assertTrue(ex.params.any { it.toString().contains("effective routing not ROUTED") })
+        verify(exactly = 0) { syncStateDao.updatePhase("p1", any()) }
     }
 
     @Test

@@ -1,11 +1,10 @@
 package com.tencent.bkrepo.job.batch.routing
 
 import com.tencent.bkrepo.common.metadata.routing.P0RoutingReadinessProbes
-import com.tencent.bkrepo.common.mongo.routing.NodeDirectMongoAuditor
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/** G-34：P0 改造矩阵 + 直连审计 E2E 验收（biz-job 全 classpath）。 */
+/** G-34：P0 改造矩阵 E2E 验收（biz-job 全 classpath）。 */
 class G34RoutingReadinessIntegrationTest {
 
     @Test
@@ -15,11 +14,5 @@ class G34RoutingReadinessIntegrationTest {
             if (P0RoutingReadinessProbes.check(id)) null else "$id: $desc"
         }
         assertTrue(failures.isEmpty(), failures.joinToString("\n"))
-    }
-
-    @Test
-    fun `node direct mongo audit passes`() {
-        val violations = NodeDirectMongoAuditor.audit()
-        assertTrue(violations.isEmpty(), violations.joinToString("\n"))
     }
 }

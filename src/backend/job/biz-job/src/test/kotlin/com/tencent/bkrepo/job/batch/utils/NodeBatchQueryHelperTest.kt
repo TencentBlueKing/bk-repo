@@ -1,13 +1,15 @@
 package com.tencent.bkrepo.job.batch.utils
 
 import com.tencent.bkrepo.common.metadata.routing.NodeBatchQueryHelper
-import com.tencent.bkrepo.common.mongo.routing.MongoMultiInstanceProperties
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -37,6 +39,12 @@ class NodeBatchQueryHelperTest {
 
     private fun helper() = NodeBatchQueryHelper(defaultTemplate, registry)
 
+    private fun allNodeCollections(): List<String> =
+        (0 until SHARDING_COUNT).map { "node_$it" }
+
+    private fun shardFor(projectId: String): String =
+        "node_${HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)}"
+
     // ── 1. 路由未开启 ────────────────────────────────────────────────────────
 
     @Test
@@ -51,7 +59,7 @@ class NodeBatchQueryHelperTest {
 
     @Test
     fun `buildGroups generates NOT-IN filter for Default and IN filter for Heavy on project-routing`() {
-        val collections = listOf("node_0", "node_1", "node_2")
+        val collections = allNodeCollections()
         every { registry.routedProjectIds("node") } returns setOf("projectA", "projectB")
         every { registry.shardRoutedCollections("node") } returns emptySet()
         every { registry.allKnownProjectIds("node") } returns setOf("projectA", "projectB", "projectC")
@@ -73,11 +81,13 @@ class NodeBatchQueryHelperTest {
         val notInValues = projectIdFilter!!.values.first()
         assertNotNull(notInValues) // $nin 存在
 
-        // Heavy1 project 组
+        // Heavy1 project 组：只扫迁入项目对应分表
         val heavyGroup = groups.first { it.mongoTemplate === heavy1Template }
         val heavyQuery = heavyGroup.criteriaCustomizer(Query())
         val heavyFilter = heavyQuery.queryObject["projectId"] as? Map<*, *>
         assertNotNull(heavyFilter) // $in 存在
+        val expectedHeavyCollections = setOf("projectA", "projectB").map { shardFor(it) }.toSet()
+        assertEquals(expectedHeavyCollections, heavyGroup.collectionNames.toSet())
     }
 
     @Test
@@ -123,7 +133,8 @@ class NodeBatchQueryHelperTest {
 
     @Test
     fun `buildGroups handles mixed project and shard routing across two Heavy instances`() {
-        val collections = listOf("node_0", "node_65", "node_188")
+        val projectShard = shardFor("projectA")
+        val collections = listOf("node_0", projectShard, "node_188")
         every { registry.routedProjectIds("node") } returns setOf("projectA")
         every { registry.shardRoutedCollections("node") } returns setOf("node_188")
         every { registry.projectsByInstance("node") } returns mapOf("heavy1" to setOf("projectA"))
@@ -135,10 +146,11 @@ class NodeBatchQueryHelperTest {
 
         // Default：仅包含非 shard 集合，条件追加 NOT IN projectA
         val defaultGroup = groups.first { it.mongoTemplate === defaultTemplate }
-        assertEquals(setOf("node_0", "node_65"), defaultGroup.collectionNames.toSet())
+        assertEquals(setOf("node_0", projectShard), defaultGroup.collectionNames.toSet())
 
-        // heavy1：project-routing，扫描非 shard 集合，追加 IN [projectA]
+        // heavy1：project-routing，只扫 projectA 对应分表
         val heavy1Group = groups.first { it.mongoTemplate === heavy1Template }
+        assertEquals(listOf(projectShard), heavy1Group.collectionNames)
         assertNull(heavy1Group.collectionNames.find { it == "node_188" })
 
         // heavy2：shard-routing，只扫描 node_188，无 projectId 过滤
@@ -149,7 +161,7 @@ class NodeBatchQueryHelperTest {
 
     @Test
     fun `buildGroups result count includes Default plus each Heavy instance group`() {
-        val collections = listOf("node_0", "node_1")
+        val collections = allNodeCollections()
         every { registry.routedProjectIds("node") } returns setOf("p1", "p2")
         every { registry.shardRoutedCollections("node") } returns emptySet()
         every { registry.projectsByInstance("node") } returns mapOf(
@@ -200,5 +212,72 @@ class NodeBatchQueryHelperTest {
             .first { it.mongoTemplate === defaultTemplate }
         val filter = defaultGroup.criteriaCustomizer(Query()).queryObject["projectId"] as Map<*, *>
         assertNotNull(filter["\$nin"])
+    }
+
+    // ── 6. 同一分片混合项目扫描：Default nin + Heavy in 互不遗漏 ──────────────
+
+    @Test
+    fun `same shard scanned by Default with nin and Heavy with in for mixed routed projects`() {
+        // 自动找到两个 hash 到同一分片的 projectId，模拟 node_41 同时有 A、B 的场景
+        var projectA = "project-a"
+        var projectB = "project-b"
+        var attempt = 0
+        while (shardFor(projectA) != shardFor(projectB) && attempt < 1000) {
+            attempt++
+            projectA = "project-collision-$attempt-a"
+            projectB = "project-collision-$attempt-b"
+        }
+        assertTrue(
+            shardFor(projectA) == shardFor(projectB),
+            "unable to find two projects with same shard after $attempt attempts"
+        )
+        val sameShard = shardFor(projectA)
+        val collections = allNodeCollections()
+
+        every { registry.routedProjectIds("node") } returns setOf(projectB)
+        every { registry.shardRoutedCollections("node") } returns emptySet()
+        every { registry.allKnownProjectIds("node") } returns setOf(projectA, projectB)
+        every { registry.projectsByInstance("node") } returns mapOf("heavy1" to setOf(projectB))
+        every { registry.shardsByInstance("node") } returns emptyMap()
+        every { registry.primaryTemplateByInstance("node", "heavy1") } returns heavy1Template
+
+        val groups = helper().buildGroups(collections)!!
+
+        // 1) Default 组：包含 sameShard，并追加 nin[projectB]，确保扫到 A
+        val defaultGroup = groups.first { it.mongoTemplate === defaultTemplate }
+        assertTrue(
+            sameShard in defaultGroup.collectionNames,
+            "default group must include $sameShard to scan projectA"
+        )
+        val defaultFilter = defaultGroup.criteriaCustomizer(Query())
+            .queryObject["projectId"] as Map<*, *>
+        assertEquals(
+            listOf(projectB),
+            (defaultFilter["\$nin"] as Iterable<*>).toList(),
+            "default must exclude projectB to avoid duplicate with heavy"
+        )
+
+        // 2) Heavy 组：只含 sameShard，并追加 in[projectB]，确保扫到 B
+        val heavyGroup = groups.first { it.mongoTemplate === heavy1Template }
+        assertEquals(
+            listOf(sameShard),
+            heavyGroup.collectionNames,
+            "heavy group must scan only $sameShard for projectB"
+        )
+        val heavyFilter = heavyGroup.criteriaCustomizer(Query())
+            .queryObject["projectId"] as Map<*, *>
+        assertEquals(
+            listOf(projectB),
+            (heavyFilter["\$in"] as Iterable<*>).toList(),
+            "heavy must include projectB to scan its data"
+        )
+
+        // 3) 两组互不重叠：同一个 collection 不会在两个组都出现
+        val allCollectionNames = groups.flatMap { it.collectionNames }
+        val duplicates = allCollectionNames.groupingBy { it }.eachCount().filter { it.value > 1 }
+        assertTrue(
+            duplicates.isEmpty(),
+            "no collection should appear in multiple groups, but found: $duplicates"
+        )
     }
 }

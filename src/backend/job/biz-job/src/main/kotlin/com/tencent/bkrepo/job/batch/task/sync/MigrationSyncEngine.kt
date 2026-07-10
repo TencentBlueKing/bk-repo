@@ -305,7 +305,7 @@ class MigrationSyncEngine(
         private const val CLEANUP_SLEEP_MS = 100L
         private const val UPSERT_MAX_RETRY = 3
         private const val UPSERT_RETRY_DELAY_MS = 200L
-        // ponytail: sync_failed 最大重试轮数，超出后降级 INIT_FAILED 而非死循环
+        // sync_failed 最大重试轮数，超出后降级 INIT_FAILED 而非死循环
         private const val MAX_SYNC_CYCLES = 3
     }
 }

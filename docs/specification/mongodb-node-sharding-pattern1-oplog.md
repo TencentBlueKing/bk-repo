@@ -95,7 +95,7 @@ flowchart TD
 | --- | --- | --- | --- |
 | 0→1 | 新版本代码合入 | 部署完成，功能回归通过 | 是 |
 | 1→2 | 专属实例部署完成、索引创建完成、连接验证通过 | `routing-state=DUAL_WRITE` 生效 | 是 |
-| 2→3 | 双写期 count 对账通过、补偿队列清零 | `routing-state=ROUTED` 生效 | 是 |
+| 2→3 | 补偿队列清零、抽样对账通过 | `routing-state=ROUTED` 生效 | 是 |
 | 3→4 | 稳定运行 1~2 天、业务无告警 | 主实例 oplog 数据清理完成 | 清理前是 |
 | 4→完成 | 清理完成、磁盘回收确认 | - | 需反向同步 |
 
@@ -119,17 +119,17 @@ flowchart TD
     D1 -- "是" --> D2["返回成功\n✅ 强一致"]
     D1 -- "否" --> D3["返回失败\n上层重试\n禁止降级 Default"]
 
-    C -- "是\n双写期" --> F["写 Offload Primary\n(主路径：权威数据源)"]
+    C -- "是\n双写期" --> F["写 Default Primary\n(主路径：权威数据源)"]
     F --> G{"写成功?"}
-    G -- "否" --> H["返回失败\n不写 Default\n不记录补偿\n上层重试"]
-    G -- "是" --> I["同步写 Default Primary\n(副路径)"]
+    G -- "否" --> H["返回失败\n不写 Offload\n不记录补偿\n上层重试"]
+    G -- "是" --> I["同步写 Offload Primary\n(副路径)"]
     I --> J{"写成功?"}
     J -- "是" --> L["返回成功\n✅ 两侧一致"]
     J -- "否" --> K["记录补偿任务\n返回成功\n⚠️ 最终一致\n(副路径稍后追平)"]
 
     subgraph COMPENSATION["补偿链路 (异步，延迟上限 5min)"]
         K --> K1["补偿调度器拉取任务"]
-        K1 --> K2{"重试写 Default Primary"}
+        K1 --> K2{"重试写 Offload Primary"}
         K2 -- "成功" --> K3["标记补偿完成\n补偿队列 -1"]
         K2 -- "失败 & retry < max" --> K1
         K2 -- "失败 & retry >= max" --> K4["🚨 告警升级\n人工介入\n阻断 阶段2→3 切换"]
@@ -148,7 +148,7 @@ flowchart TD
 | 阶段 | 路由状态 | 写入目标 | 一致性语义 | 失败处理 |
 | --- | --- | --- | --- | --- |
 | 0~1 兼容 | routing-state=OFF | Default Primary | 强一致 | 上层重试 |
-| 2 双写 | routing-state=DUAL_WRITE | Offload Primary → 同步写 Default Primary | 最终一致（补偿≤5min） | 主路径失败→直接返回失败；副路径失败→补偿兜底 |
+| 2 双写 | routing-state=DUAL_WRITE | Default Primary → 同步写 Offload Primary | 最终一致（补偿≤5min） | 主路径失败→直接返回失败；副路径失败→补偿兜底 |
 | 3+ 切流 | routing-state=ROUTED | Offload Primary | 强一致 | 上层重试，禁止降级 Default |
 
 #### 2.5.2 读流程
@@ -192,8 +192,8 @@ flowchart TD
 
 | 场景 | 处理 | 原因 |
 | --- | --- | --- |
-| 主实例（Offload）写失败 | 直接返回失败，不写 Default，不记录补偿 | 主实例是双写期的权威数据源 |
-| 主实例写成功、Default 写失败 | 记录补偿任务，业务返回成功 | 不影响业务；补偿任务消费后数据最终一致 |
+| 主实例（Default）写失败 | 直接返回失败，不写 Offload，不记录补偿 | 主实例是双写期的权威数据源 |
+| 主实例写成功、Offload 写失败 | 记录补偿任务，业务返回成功 | 不影响业务；补偿任务消费后数据最终一致 |
 | 补偿任务重试成功 | 标记补偿完成，清除任务 | 正常恢复路径 |
 | 补偿任务重试达到上限 | 告警人工介入，禁止切流 | 防止数据不一致状态下切换路由 |
 | 补偿队列未清零 | 阻断阶段 2→3 流转 | 确保 Default 数据完整后才安全切流 |
@@ -209,10 +209,8 @@ flowchart TD
 
 | 对账项 | 方法 |
 |---|---|
-| 文档数量 | `count()` 对比主实例和专属实例 |
-| 最新写入 | 按 `createdDate` 范围抽样 |
-| 双写补偿 | 补偿任务队列清零 |
-| 历史月份 | 各月 `count()` 一致后标记完成 |
+| 双写一致性 | 补偿任务队列清零 + 按 `createdDate` 范围抽样 |
+| 历史月份 | 补偿队列清零 + 抽样一致后标记完成 |
 
 ### 2.8 回滚策略
 
@@ -237,7 +235,7 @@ flowchart TD
     B -- "阶段 4a 清理进行中" --> C5["立即停止清理任务"]
     C5 --> C5A["记录已清理的月份和 ID 范围"]
     C5A --> C5B["Offload→Default\n按已清理进度反向同步\n(MongoMigrationService API)"]
-    C5B --> C5C["对账：已清理月份 count 一致"]
+    C5B --> C5C["对账：已清理月份抽样一致"]
     C5C --> C5D["routing-state=OFF"]
     C5D --> DONE
 
@@ -391,11 +389,19 @@ flowchart TD
 │  │   rules.artifact-oplog.collection-prefix                 │ │
 │  │   rules.artifact-oplog.routing-type                     │ │
 │  ├─────────────────────────────────────────────────────────┤ │
-│  │ 热加载级（@RefreshScope，秒级生效）:                        │ │
+│  │ 热加载级（纯内存开关，秒级生效，不重建连接池）:              │ │
 │  │   rules.artifact-oplog.routing-state                     │ │
 │  └─────────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────┘
 ```
+
+> **机制说明（修正）**：`routing-state` 的切换**不依赖 `@RefreshScope` 重建 `MongoRoutingRegistry` Bean**。
+> 连接池（`MongoTemplate`/`MongoClient`）在**启动期一次性建好**（普通单例），`routing-state` 经
+> `@ConfigurationProperties` 原地重绑定后由 `DefaultMongoRoutingRegistry` **live 读取**——下一次
+> `resolve()` 调用即生效。因此切流/回滚**不会重建连接池、不会引发连接抖动**。
+> 若误将 `@RefreshScope` 加在该 Bean 上，任何 Consul 刷新都会销毁并重建整个 Registry（连带所有
+> 连接池重建），导致切流期间全量连接抖动，须避免。
+> `uri`/`collection-prefix`/`routing-type` 属启动级，变更必须滚动重启才会重建连接池，无法热加载。
 
 > **说明**：模式一为 `routing-type: NONE`（整体迁移），不涉及 `project-routing`/`shard-routing`。`routing-state` 由**运维手动在 Consul 中修改**（变更频率极低，每条规则仅需切换 1~2 次），op admin 页面展示当前状态并提示运维下一步操作。应用**不写 Consul**。
 
@@ -428,7 +434,7 @@ spring:
 |------|----------|------|
 | `instances.*.uri` | **滚动重启** | 新增 `MongoTemplate` Bean，必须重启才能创建连接池 |
 | `collection-prefix` / `routing-type` | **滚动重启** | 规则元数据变更，影响 `prefixIndex` 初始化排序 |
-| `routing-state` | **热加载** | `@RefreshScope` 秒级生效，由运维手动在 Consul 中修改 |
+| `routing-state` | **热加载** | `@ConfigurationProperties` 原地重绑定，live 读取秒级生效，连接池不重建；由运维手动在 Consul 中修改 |
 
 **验证**：
 
@@ -461,7 +467,7 @@ spring.data.mongodb.multi-instance:
   rules.artifact-oplog.routing-state: DUAL_WRITE
 ```
 
-**生效方式**：**热加载**，无需重启。Consul 修改后各实例在 `@RefreshScope` 刷新周期内（默认 3s）自动感知。等待 ≥ 30s 确保全部 Pod 感知新配置后，再调用 `POST /migration/start`。
+**生效方式**：**热加载**，无需重启。`routing-state` 经 `@ConfigurationProperties` 原地重绑定后 live 读取，各实例秒级（≤ 3s）感知，**不重建连接池**。等待 ≥ 30s 确保全部 Pod 感知新配置后，再调用 `POST /migration/start`。
 
 **验证**：
 
@@ -484,20 +490,23 @@ mongo oplog-primary:27017/bkrepo --eval 'db.artifact_oplog_202601.count({"_id": 
 
 **前置条件**：
 
-- [ ] 双写期 count 对账通过
-- [ ] 补偿队列清零
+- [ ] 补偿队列清零、抽样对账通过
 - [ ] 稳定双写 ≥ 1 天，无异常告警
 
-**操作**：运维在 Consul 中修改 `routing-state=ROUTED`。
+**操作**：
+
+1. `POST /migration/route`（模式二）或补偿清零后对账通过（模式一）
+2. 运维在 Consul **一次写入**（模式二见 API 返回的 `consulHint`）：
 
 ```yaml
-# 修改 Consul：
 spring.data.mongodb.multi-instance:
+  config-version: 12                         # 递增
   rules.artifact-oplog:
-    routing-state: ROUTED      # 切流：读写全走 Offload 实例
+    routing-state: ROUTED
+    routing-effective-at: "2026-07-21T10:00:45Z"   # 建议 now+45s UTC；到点前仍 DUAL_WRITE
 ```
 
-**生效方式**：**热加载**。
+**生效方式**：热加载；`routing-effective-at` 到达前有效状态仍为 DUAL_WRITE；到达后读写全走 Offload。缺省 `routing-effective-at` 时保持 DUAL_WRITE 并打 error 日志。
 
 **验证**：
 
@@ -574,7 +583,7 @@ spring.data.mongodb.multi-instance:
 
 Default 上 oplog 存量为待清理数据（§1.6.1 NONE），读 Default 可能返回过期/重复审计记录。应急仅运维显式 `routing-state=OFF` 或回滚 API（§2.8）。
 
-**模式一默认策略 `NONE`**：滚动上线 → 双写（**Offload 主路径**）→ 补偿清零 → ROUTED → 运维触发清理 Default 存量月集合；**不迁移** Default 历史到 Offload 实例。
+**模式一默认策略 `NONE`**：滚动上线 → 双写（**Default 主路径**）→ 补偿清零 → ROUTED → 运维触发清理 Default 存量月集合；**不迁移** Default 历史到 Offload 实例。
 
 ---
 

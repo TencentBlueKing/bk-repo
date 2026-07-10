@@ -97,7 +97,7 @@ flowchart TD
         JobWrite["Job 写回"] --> NodeMongoOperations
     end
     subgraph routing [路由层]
-        RoutingRegistry["NodeMongoRoutingRegistry"]
+        RoutingRegistry["MongoRoutingRegistry"]
         NodeMongoOperations["NodeMongoOperations"]
         NodeRoutingContext["MongoRoutingContext(TransmittableThreadLocal)"]
     end
@@ -141,6 +141,7 @@ spring:
             routing-type: project            # 按 projectId 路由
             routing-key-field: projectId
             routing-state: OFF                    # OFF / DUAL_WRITE / ROUTED
+            routing-effective-at: null            # ROUTED 时必填；ISO-8601 UTC，到点前仍按 DUAL_WRITE
             instances:
               heavy1:
                 uri: mongodb://heavy1-primary:27017/bkrepo
@@ -166,22 +167,16 @@ spring:
 
 > **门禁边界**：本节描述**代码层**路由决策。§3.10「100% 实例已部署」等为**运维 SOP**，由发布系统确认，API 不自动校验。
 
-`project-routing` 仅表示项目与 Heavy 实例的绑定关系；运行时是否双写 / 切流由
-`mongo_migration_sync_state.phase` 与 rule 级 `routing-state` 共同决定。
-
-```kotlin
-fun isProjectInDualWrite(projectId: String): Boolean {
-    return routingState == DUAL_WRITE &&
-        projectId in projectRouting &&
-        migrationPhase(projectId) == DUAL_WRITE
-}
-```
+`project-routing` 仅表示项目与 Heavy 实例的绑定关系；**运行时路由决策只读 Consul**（`project-routing` + `routing-state`）。
+`mongo_migration_sync_state.phase` 仅供 Job / Gate / 面板，**不参与**热路径双写/切流判断。
 
 | 项目阶段 | `project-routing` | `routing-state` | 实际写行为 | 实际读行为 |
 | --- | --- | --- | --- | --- |
 | 未绑定 / 绑定但未到 `DUAL_WRITE` | 否 / 是 | OFF | 单写 Default | Default Primary |
 | `DUAL_WRITE` | 是 | DUAL_WRITE | Default Primary（主路径）+ Heavy Primary（副路径） | Default Primary |
-| `ROUTED` 及之后 | 是 | ROUTED | **单写 Heavy**（已切流） | Heavy Primary |
+| `ROUTED` 及之后 | 是 | ROUTED + `routing-effective-at` 已到点 | **单写 Heavy**（已切流） | Heavy Primary |
+
+> **延迟生效（`routing-effective-at`）**：Consul 写入 `routing-state=ROUTED` 后，在 `routing-effective-at`（UTC）到达之前，**运行时有效状态仍为 DUAL_WRITE**（读 Default、双写），避免各 Pod `@ConfigurationProperties` 刷新不同步导致分裂。`routing-effective-at` 缺省时打 error 日志并**一直保持 DUAL_WRITE**，不会悄悄切 Heavy。
 
 > **读路径说明**：业务 DAO 不配置 `readPreference`，读写均走各实例 **Primary**（与现网一致，§1.3.2）。
 > SyncJob `INITIAL_SYNC` 全量扫描可读 Default **Secondary** 卸压（§3.9）；散发查询见 §3.7.1。
@@ -190,7 +185,8 @@ fun isProjectInDualWrite(projectId: String): Boolean {
 - `project-routing` 由运维在 **本区域 Consul** 维护；API **不写** Consul。
 - 组内尚未开始迁移的项目 **不应** 出现在 `project-routing` 中（否则 `routing-state=ROUTED` 时会立即写 Heavy）。
 - `POST /migration/start` 将 DB `phase` 置为 `INITIAL_SYNC` 并启动 Job；**须先**在 Consul 加 `project-routing` 并设 `routing-state=DUAL_WRITE`，运行时双写才生效。
-- 切流：API `POST /migration/route` 写 DB `phase=ROUTED`；运维确认后设 Consul `routing-state=ROUTED`。
+- 切流：**先** `POST /migration/route`（门禁通过 → DB `phase=ROUTED`，响应体返回建议的 `config-version`、`routing-effective-at`），**再**运维在 Consul **一次写入** `routing-state=ROUTED`、`config-version++`、`routing-effective-at`（建议 `now+45s` UTC）。**禁止**在 `route()` 门禁未通过前单独改 Consul 为 ROUTED；**禁止**只写 `ROUTED` 而不写 `routing-effective-at`。
+- `POST /migration/cleanup` 除 DB `phase=ROUTED` 外，还要求**运行时有效路由已为 ROUTED**（`routing-effective-at` 到点），否则拒绝清理 Default。
 - 回滚：`phase ≤ DUAL_WRITE` 时从 Consul 移除 `project-routing` 并 `routing-state=OFF`；**ROUTED 后**须按 §25.4.3 反向迁移（§3.11.1）。
 - **路由决策只读 Consul**，`mongo_migration_sync_state.phase` 仅供 Job / Gate / 面板。
 
@@ -199,7 +195,7 @@ fun isProjectInDualWrite(projectId: String): Boolean {
 | 规则 | 说明 |
 | --- | --- |
 | 同一时刻仅一个项目处于双写 | DB `max-concurrent-dual-write` + `phase ∈ {INITIAL_SYNC, DUAL_WRITE}` 计数（Gate） |
-| `routing-state=DUAL_WRITE` 时 project-routing 内全部双写 | 已 ROUTED 项目若仍在表中会短暂恢复 Default 副路径（ponytail 可接受） |
+| `routing-state=DUAL_WRITE` 时 project-routing 内全部双写 | 已 ROUTED 项目若仍在表中会短暂恢复 Default 主路径（ponytail 可接受） |
 | 切流前无其他项目处于 `INITIAL_SYNC` 或 `DUAL_WRITE` | `POST /migration/route` 门禁校验 |
 
 ```yaml
@@ -331,7 +327,7 @@ flowchart TD
 | --- | --- | --- |
 | `POST /migration/binding` | `ruleName`, `businessId` 或 `projectId`, `strategy` | 写 DB sync_state |
 | `POST /migration/start` | `ruleName`, `projectId` | 写 DB `INITIAL_SYNC` 并启动 Job；**前置**：Consul 已配 `project-routing` + `routing-state=DUAL_WRITE` |
-| `POST /migration/route` | `ruleName`, `projectId` | 写 DB `ROUTED`；配合 Consul `routing-state=ROUTED` |
+| `POST /migration/route` | `ruleName`, `projectId` | 写 DB `ROUTED`；返回 Consul 建议（`configVersion`、`routingEffectiveAt`、`consulHint`） |
 | `POST /migration/cleanup` | `ruleName`, `projectId` | 写 DB `CLEANUP_READY` |
 | `POST /migration/rollback` | `ruleName`, `projectId` | 写 DB `ROLLBACK`；配合 Consul 清 routing |
 
@@ -399,8 +395,8 @@ flowchart TD
 
 #### 3.6.2 路由决策矩阵
 
-> `isProjectInDualWrite`：`routing-state=DUAL_WRITE` + `projectId ∈ project-routing`（纯 Consul）
-> `isProjectRoutedOut`：`routing-state=ROUTED` + `projectId ∈ project-routing`
+> `isProjectInDualWrite`：运行时有效状态为 `DUAL_WRITE` + `projectId ∈ project-routing`（含 `ROUTED` 配置但 `routing-effective-at` 未到点）
+> `isProjectRoutedOut`：运行时有效状态为 `ROUTED` + `projectId ∈ project-routing`（`routing-effective-at` 已到点）
 > **关键**：未入 `project-routing` 的项目始终 Default，与 DB `phase` 无关。
 
 | routing-state | 命中 project-routing | 能提取 projectId | 读目标 | 写目标 |
@@ -917,12 +913,12 @@ companion object {
 此模式无法支持多实例路由。改造方案：
 
 **将 `NodeCommonUtils` 从 companion object 静态方法改为实例方法，
-注入 `NodeMongoRoutingRegistry`**，按需获取对应实例的 template。
+注入 `MongoRoutingRegistry`**，按需获取对应实例的 template。
 
 ```kotlin
 @Component
 class NodeCommonUtils(
-    private val routingRegistry: NodeMongoRoutingRegistry,
+    private val routingRegistry: MongoRoutingRegistry,
     private val defaultTemplate: MongoTemplate,
 ) {
     // 不再使用 companion object 静态引用
@@ -1088,7 +1084,7 @@ flowchart TD
 
 | 状态 | 可能异常 | 自动恢复 | 处理 |
 | --- | --- | --- | --- |
-| INIT | 索引缺失 | 否 | 输出差异，等待手动创建索引 |
+| INIT | 索引缺失 | 是 | 输出差异日志；首次写入自动创建（ShardingMongoDao lazy ensureIndex），不阻塞迁移 |
 | INIT | `_id` 类型非 ObjectId | 否 | 输出告警；JOB_ONLY 按 `_id` 升序分页依赖 ObjectId 前 4 字节为时间戳，非 ObjectId 时需确认 `_id` 值是否单调递增 |
 | INIT | 实例不可达 | 否 | 等待运维恢复网络/实例 |
 | INITIAL_SYNC | Job 重启 | 是 | lastSyncedId 断点续传 |
@@ -1178,7 +1174,7 @@ spring.data.mongodb.multi-instance.rules.node:
 
 ```kotlin
 /**
- * ponytail: 分布式互斥由 ShedLock（JobAutoConfiguration 已配置 @EnableSchedulerLock）保证，
+ * 分布式互斥由 ShedLock（JobAutoConfiguration 已配置 @EnableSchedulerLock）保证，
  * @SchedulerLock 一行解决多 Pod 并发问题，无需手写 findAndModify。
  */
 @Component
@@ -1231,7 +1227,7 @@ class ZombieDiskMonitor(
     @Scheduled(fixedDelay = 21_600_000)  // 每 6 小时
     @SchedulerLock(name = "zombie_disk_check", lockAtMostFor = "PT30M")
     fun checkZombieDiskUsage() {
-        // ponytail: 僵尸副本正常情况下为 0，常态不触发磁盘扫描
+        // 僵尸副本正常情况下为 0，常态不触发磁盘扫描
         val zombieCount = defaultMongoTemplate.count(
             Query(Criteria.where("phase").`is`("ROUTED")),
             "mongo_migration_sync_state",
@@ -1325,12 +1321,10 @@ flowchart TD
 
 > **硬门禁**：为某项目开启 `DUAL_WRITE` 前，必须 **100% 实例已部署路由代码且配置已刷新到最新版本**。禁止在新旧实例并存时进入双写——旧实例只写 Default 且双写期 CATCH_UP 已暂停（§3.15.7），Heavy 将缺失旧实例写入；双写期读走 Default Primary（§1.3），但**仍须消灭旧实例写入窗口**。
 
-**监测方案：Prometheus 指标上报，不逐实例调 HTTP 接口**
-
-多服务 × 多实例场景下对每个实例调 `GET /routing/readiness` 完全不可行。改用指标上报：
+**监测方案：Prometheus 指标上报**
 
 ```text
-每个实例启动 / @RefreshScope 刷新配置后上报 Gauge 指标：
+每个实例启动 / `@ConfigurationProperties` 原地重绑定后上报 Gauge 指标：
   bkrepo_mongo_routing_config_version{rule="node", service="generic"} 42
 
 运维进入 DUAL_WRITE 前查询 Prometheus：
@@ -1347,7 +1341,7 @@ flowchart TD
 | --- | --- | --- |
 | 所有实例已更新 | 发布系统确认（如蓝盾/蓝鲸 PaaS 发布状态） | 确认所有实例已完成部署并启动 |
 | 配置热加载就绪 | Prometheus 指标 `bkrepo_mongo_routing_config_version` | 每实例自主上报，运维查 Prometheus 一次获取集群全貌 |
-| 路由代码就绪（G-34） | 同上指标 + `GET /routing/readiness`（仅需**抽一个实例**验证） | G-34 P0 清单完整性与版本无关，上任一实例验证即可 |
+| 路由代码就绪（G-34） | Prometheus 指标 `bkrepo_mongo_routing_config_version` + `GET /routing/readiness`（INFRA + M5 运行时检查） | P0 代码级清单由 CI 集成测试覆盖 |
 
 `MigrationGate` 不做集群实例自动校验，由**运维 SOP + Prometheus 看板**确认。
 
@@ -1583,7 +1577,7 @@ fun cleanupCompensationOnRollback(projectId: String) {
 | --- | --- | --- | --- |
 | writeConcern 不满足 majority | 否 | INIT 阶段校验：副本集节点数 ≥ 3 且全部健康（§24.18 E-17） | 迁移前阻断 |
 | Default oplog 保留窗口不足以覆盖 INITIAL_SYNC | 否 | INIT 阶段校验：oplog 保留时间 ≥ 2× INITIAL_SYNC 预估耗时（§24.25 E-24） | 迁移前阻断 |
-| 迁移期间对涉及实例执行 DDL（createIndex/dropIndex） | 否 | `migration.project-locks.freeze-ddl=true` 拒绝 DDL；索引必须在迁移前完成（§24.19 E-18） | DDL 阻塞所有读写 |
+| 迁移期间对涉及实例执行 DDL（createIndex/dropIndex） | 否 | `migration.project-locks.freeze-ddl=true` 拒绝外部 DDL；lazy ensureIndex（内部机制）豁免，INITIAL_SYNC 阶段自动建索引（§8.1 / §24.19 E-18） | DDL 阻塞所有读写 |
 | TTL 索引缺失或不一致 | 否 | INIT 阶段校验包含 TTL 索引（§3.9.2 索引校验扩展） | 过期文档清理遗漏 |
 | MongoDB 版本不一致（Default vs Heavy） | 否 | INIT 阶段校验目标实例版本 ≥ 4.4（推荐 6.0+）；pre-image 功能需显式启用 | 行为差异 |
 | Change Stream pre-image 未启用 | 是 | delete 事件降级查 Heavy 确认归属（已有）；建议全部 256 张 node_* 表启用（§3.9.3） | delete 补偿精准度降低 |
@@ -1926,7 +1920,7 @@ flowchart TD
 **补偿 update 的双重防护实现**：
 
 > **设计说明**：原方案使用 `$lte` 条件式乐观锁（`lastModifiedDate ≤ original`），存在以下风险：
-> 1. **遗漏更新**：10/13 写路径未更新 `lastModifiedDate`（代码审计确认，见 §3.19.1），导致 `$lte` 条件仍匹配 → 旧补偿覆盖新数据
+> 1. **遗漏更新**：写路径若未更新 `lastModifiedDate`，`$lte` 条件仍可能匹配 → 旧补偿覆盖新数据（§3.19.1 已审计）
 > 2. **时间精度**：毫秒级精度无法区分同毫秒内的多操作
 > 3. **时钟回拨**：回拨后 `$lte` 误匹配
 >
@@ -2257,7 +2251,7 @@ object MongoRoutingContext {
 
 ```kotlin
 class NodeMongoOperationsImpl(
-    private val routingRegistry: NodeMongoRoutingRegistry,
+    private val routingRegistry: MongoRoutingRegistry,
 ) : NodeMongoOperations {
 
     override fun remove(projectId: String, query: Query, collectionName: String): DeleteResult {
@@ -2331,7 +2325,7 @@ flowchart TD
 | --- | --- | --- | --- | --- |
 | 第一层：写入保障 | 双写 + 补偿队列 | 双写期 | 秒~分钟 | 保证主路径成功，副路径最终一致 |
 | 第二层：实时校验 | 补偿消费后 `_id` + 关键字段校验 | 双写期 | 秒级 | 检测 `_id` 不一致、文档缺失 |
-| 第三层：指标监控 + 按需对账 | Prometheus Gauge + op admin `POST /migration/verify` | 全阶段 | 实时 / 手动 | 告警通知运维；按需触发 count+抽样深度对比 |
+| 第三层：指标监控 + 按需对账 | Prometheus Gauge + op admin `POST /migration/verify` | 全阶段 | 实时 / 手动 | 告警通知运维；按需触发抽样深度对比 |
 
 **设计原则（为什么不搞自动对账/自愈）**：
 
@@ -2409,7 +2403,6 @@ class CompensationPostCheck {
 | "单项目对账" | `POST /migration/verify/{ruleName}/{projectId}` | 对单个项目执行对账 |
 
 对账逻辑由 `NodeReconciliationHelper` 提供：
-- count 对比（两侧同一 projectId 的文档数）
 - 分段抽样深度对比（按 `_id` 时间戳分 10 段，每段随机抽 100 条逐字段对比）
 - 结果写入 `node_reconciliation_log`
 
@@ -2427,7 +2420,7 @@ class CompensationPostCheck {
 | 切流后 | 单写 Heavy | 无需 | 无需 | 运维按需触发 |
 | 清理后 | 单写 Heavy | 无需 | 无需 | 按需 |
 
-> **Job 完成后的确认链路**：历史迁移（JOB_ONLY）结束后，运维应在"分库迁移"页面手动触发 `POST /migration/verify/{ruleName}/{projectId}` 进行 count + 分段抽样深度对比，`passed == true` 是进入下一阶段（双写期 / 切流）的**前提条件**。补偿队列深度 ≈ 0 是对账可行的前置信号——若队列还有积压则对账结果不可信，应先等消费追平再对账。
+> **Job 完成后的确认链路**：历史迁移（JOB_ONLY）结束后，运维应在"分库迁移"页面手动触发 `POST /migration/verify/{ruleName}/{projectId}` 进行分段抽样深度对比，补偿队列清零 + `passed == true` 是进入下一阶段（切流）的**前提条件**。
 
 #### 3.17.9 补偿队列容量限制与 Default 实例故障降级
 
@@ -2519,7 +2512,6 @@ spring.data.mongodb.multi-instance.rules.node:
     project-locks:
       freeze-gc: true                          # 冻结 GC 相关 Job（§3.18.2）
       freeze-physical-delete: true             # 冻结物理删除相关 Job（§3.18.3）
-      freeze-default-node-mutation: true       # 禁止 Default 侧 node 变更（§3.18.4）
       freeze-ddl: true                         # 禁止对涉及实例执行 DDL（§3.18.5）
       freeze-ddl-instances:                    # 受保护的 DDL 实例列表
         - default
@@ -2566,30 +2558,23 @@ spring.data.mongodb.multi-instance.rules.node:
 **解除时机**：项目进入 `CLEANUP_READY` 后，编排 API 临时解除该项目锁，
 Job 执行物理删除后立即恢复锁。详见 §3.20.2 阶段 5 操作。
 
-#### 3.18.4 freeze-default-node-mutation：禁止 Default 侧 node 变更
-
-迁移期间（DUAL_WRITE → CLEANUP）禁止对 Default 上迁出项目的 `node_*` 集合执行任何写操作
-（insert/update/delete）。
-
-**实现位置**：`AbstractMongoDao` 写入口 — 僵尸副本写保护（G-02，§25.2.2）。
-
-**行为**：请求写 Default 且 `projectId` 在已迁出集合中 → fail-fast 抛异常，不执行。
-
-**解除时机**：CLEANED 后 Default 数据已删除，保护自动失效。
-
 #### 3.18.5 freeze-ddl：禁止迁移期 DDL
 
-迁移期间禁止对涉及实例执行 DDL 操作，因为前台建索引会阻塞所有读写（§24.19 E-18）：
+迁移期间禁止对涉及实例执行外部 DDL 操作，因为前台建索引会阻塞所有读写（§24.19 E-18）：
 
 | DDL 操作 | 阻塞影响 |
 | --- | --- |
-| `createIndex`（前台） | 阻塞所有读写 |
+| `createIndex`（前台，手动） | 阻塞所有读写 |
 | `dropIndex` | 同上 |
 | `compact` | 阻塞写入 |
 | `convertToCapped` | 集合级排他锁 |
 
-**实现**：`MigrationDdlGuard.ensureDdlAllowed(instanceName)` 在执行 DDL 前校验。
+**实现**：`MigrationDdlGuard.assertDdlAllowed(collectionName)` 在执行 DDL 前校验，**只读 Consul** `migration.project-locks.freeze-ddl`。
+`PUT /config/routing` 的 `freezeDdl` 字段写入 DB 但**不生效**（已废弃，仅审计保留）。
 `freeze-ddl=true` 且目标实例在 `freeze-ddl-instances` 列表中 → 拒绝执行。
+
+**豁免**：`ShardingMongoDao.ensureIndex(entity)` 的 lazy 索引创建不走 DDL Guard（与 `MonthRangeShardingMongoDao` 一致）。
+首次写入时自动建索引是迁移流程的内部机制，不受 `freeze-ddl` 约束。外部手动 `createIndex`/`dropIndex` 仍被拦截。
 
 **解除时机**：全部项目 CLEANED 后，运维手动关闭 `freeze-ddl`。
 
@@ -2597,10 +2582,10 @@ Job 执行物理删除后立即恢复锁。详见 §3.20.2 阶段 5 操作。
 
 ```mermaid
 flowchart TD
-    A["INITIAL_SYNC 开始\n四个 freeze 全部开启"] --> B["DUAL_WRITE\n同上"]
+    A["INITIAL_SYNC 开始\n三个 freeze 全部开启"] --> B["DUAL_WRITE\n同上"]
     B --> C["ROUTED\n同上（Default 仍是僵尸保险）"]
     C --> D["CLEANUP_READY\n逐项目：临时解除 freeze-physical-delete\nJob 删 Default 数据 → 恢复锁"]
-    D --> E["全部 CLEANED\n解除 freeze-gc\n解除 freeze-ddl（手动）\nfreeze-default-node-mutation 自动失效"]
+    D --> E["全部 CLEANED\n解除 freeze-gc\n解除 freeze-ddl（手动）"]
 
     style A fill:#fffbe6,stroke:#d4a017
     style D fill:#fffbe6,stroke:#d4a017
@@ -2611,32 +2596,29 @@ flowchart TD
 | --- | --- | --- |
 | `freeze-gc` | INITIAL_SYNC 开始 | 全部项目 CLEANED |
 | `freeze-physical-delete` | INITIAL_SYNC 开始 | 逐项目 CLEANUP_READY → CLEANED（项目级临时解除） |
-| `freeze-default-node-mutation` | DUAL_WRITE 开始 | CLEANED 后自动失效 |
 | `freeze-ddl` | INITIAL_SYNC 开始 | 全部项目 CLEANED，运维手动关闭 |
 
 ### 3.19 写入字段与实施审计清单
 
 #### 3.19.1 `lastModifiedDate` 写路径审计
 
-双写补偿的 `$max` 保护（§3.15.7）依赖 `lastModifiedDate`。**代码审计发现：10/13 写路径遗漏更新 `lastModifiedDate`**，具体如下：
+双写补偿的 `$max` 保护（§3.15.7）依赖 `lastModifiedDate`。**当前实现状态（2026-07）**：
 
-| 写路径 | 是否更新 `lastModifiedDate` | 风险 |
+| 写路径 | 是否更新 `lastModifiedDate` | 备注 |
 | --- | --- | --- |
-| `NodeDao` insert / save | ✅ 已有 | — |
-| `NodeQueryHelper.update()` | ✅ 已有 | — |
-| `NodeDao.incSizeAndNodeNumOfFolder()` | ✅ 已有 | — |
-| `NodeDao.setNodeArchived()` | ❌ 遗漏 | 归档后补偿可能覆盖 |
-| `NodeArchiveSupport.archiveNode()` | ❌ 遗漏 | 同上 |
-| `NodeCompressSupport.compressedNode()` | ❌ 遗漏 | 压缩后补偿可能覆盖 |
-| `NodeQueryHelper.nodeDeleteUpdate()` | ❌ 遗漏 | 删除标记后补偿可能覆盖 |
-| `MetadataServiceImpl.deleteMetadata()` | ❌ 遗漏 | 元数据变更后补偿可能覆盖 |
-| `MetadataServiceImpl.createMetadata()` | ❌ 遗漏 | 同上 |
-| `MetadataServiceImpl.updateMetadata()` | ❌ 遗漏 | 同上 |
-| `NodeMoveSupport` move 相关 | ❌ 遗漏 | 移动后补偿可能覆盖 |
-| `NodeCopySupport` copy 相关 | ❌ 遗漏 | 复制后补偿可能覆盖 |
-| `DeletedNodeCleanupJob` 清理 | ❌ 遗漏 | 清理后补偿可能覆盖 |
+| `NodeDao` insert / save | ✅ | — |
+| `NodeQueryHelper.update()` | ✅ | — |
+| `NodeDao.incSizeAndNodeNumOfFolder()` | ✅ | — |
+| `NodeArchiveSupport.archiveNode()` | ✅ | — |
+| `NodeArchiveSupport.restoreNode()` | ✅ | P1-11 已补 |
+| `NodeCompressSupport.compressedNode()` | ✅ | — |
+| `NodeQueryHelper.nodeDeleteUpdate()` | ✅ | — |
+| `MetadataServiceImpl` create/update/delete | ✅ | — |
+| `NodeMoveSupport` / `NodeCopySupport` | ✅ | — |
+| `DeletedNodeCleanupJob` 清理 | ✅ | 经 `NodeDao.remove` |
+| `NodeDao.setNodeArchived()` | ⚠️ 待确认 | 调用方应经 `NodeQueryHelper` |
 
-> **注意**：`$max` 与队列去重可降低乱序覆盖风险，但**不能替代 `lastModifiedDate` 更新**——对账检测（`lastModifiedDate` 对比）依赖该字段。**M7 灰度前须补全 §3.19.1 所列全部写路径**（13/13），不得推迟到后续迭代。
+> **注意**：`$max` 与队列去重可降低乱序覆盖风险，但**不能替代 `lastModifiedDate` 更新**——对账检测（`lastModifiedDate` 对比）依赖该字段。
 
 **审计方式**：Code Review 检查所有 `Update` 构造是否含 `lastModifiedDate`；集成测试模拟补偿乱序，验证旧 update 不覆盖新数据。
 
@@ -2704,7 +2686,7 @@ flowchart TD
 | --- | --- |
 | CI | `mongoTemplate` + `node_` 出现在非白名单 → 构建失败 |
 | 集成 | B/C 类 Job 在 mock Heavy 环境跑一轮，断言不读写 Default 僵尸数据 |
-| API | `GET /routing/readiness` 返回清单完成度（§10.5） |
+| API | `GET /routing/readiness` 返回 INFRA + M5 运行时检查状态（§10.5） |
 | CR | §20 `@Transactional` + 显式 `projectId` 全量签核 |
 
 #### 3.19.3 灰度验收门禁
@@ -2720,7 +2702,7 @@ M7 首个大项目迁移前，以下项必须全部通过：
 - [ ] 迁出项目 Job 扫描 Default 时 `projectId` 过滤生效（§3.7.2 白名单）
 - [ ] `migration.project-locks` 迁移全程（INITIAL_SYNC ~ CLEANUP）`freeze-gc=true`
 - [ ] 散发查询 `STRICT` 模式部分实例失败时返回错误
-- [ ] **13/13 写路径更新 `lastModifiedDate`**（§3.19.1，M7 阻塞项）
+- [x] **13/13 写路径更新 `lastModifiedDate`**（§3.19.1；`setNodeArchived` 待确认）
 - [ ] 补偿队列同 `_id` 去重（`replaceOrAdd`）生效，同 `_id` 只保留最新补偿任务（§3.15.7）
 - [ ] 补偿 update `lastModifiedDate` 使用 `$max` 保护，验证旧补偿不会降级时间戳（§3.15.7）
 - [ ] 连接池总量未超 MongoDB `maxConnections` 阈值（§4.1）
@@ -2743,7 +2725,7 @@ M7 首个大项目迁移前，以下项必须全部通过：
 │  │   rules.node.sharding-count（默认 256）                        │ │
 │  │   rules.node.migration.historical-sync-strategy / sync-job / project-locks │
 │  ├──────────────────────────────────────────────────────────────┤ │
-│  │ 热加载级（直接修改 Consul，@RefreshScope 秒级生效）:             │ │
+│  │ 热加载级（直接修改 Consul，@ConfigurationProperties 原地重绑定秒级生效）:             │ │
 │  │   rules.node.routing-state                                     │ │
 │  │   rules.node.project-routing.*  （逐项目增量添加/删除）        │ │
 │  │   config-version / min-config-version                         │ │
@@ -2751,13 +2733,13 @@ M7 首个大项目迁移前，以下项必须全部通过：
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-**操作方式**：所有配置变更直接在 Consul KV 中修改 `spring.data.mongodb.multi-instance` 键。变更后 Pod 通过 `@RefreshScope` 热加载生效（启动级配置需滚动重启）。
+**操作方式**：所有配置变更直接在 Consul KV 中修改 `spring.data.mongodb.multi-instance` 键。A 类配置（`routing-state`/`project-routing` 等）经 `@ConfigurationProperties` 原地重绑定后由 `DefaultMongoRoutingRegistry` **live 读**秒级生效，连接池不重建；B 类（启动级）配置需滚动重启。
 
 **A/B 类配置表**（`MongoMultiInstanceProperties` + `DefaultMongoRoutingRegistry`）：
 
 | 类别 | 字段 | 生效方式 |
 | --- | --- | --- |
-| **A 类（热加载）** | `routingState`、`projectRouting`、`shardRouting`、`businessRouting`、`configVersion`、`minConfigVersion`、`maxConcurrentDualWrite`、`migration.*`（非 URI）、`rules.node.scatter-query.default-mode/timeout-seconds`、`compensation.softLimit/hardLimit` | `@RefreshScope` 刷新后 registry **live 读** `properties.rules[ruleName]`；散发 mode/timeout 经 `@Value` 注入 `NodeRoutingConfiguration` |
+| **A 类（热加载）** | `routingState`、`projectRouting`、`shardRouting`、`businessRouting`、`configVersion`、`minConfigVersion`、`maxConcurrentDualWrite`、`migration.*`（非 URI）、`rules.node.scatter-query.default-mode/timeout-seconds`、`compensation.softLimit/hardLimit` | `@ConfigurationProperties` 原地重绑定后 registry **live 读** `properties.rules[ruleName]`（秒级生效，连接池不重建）；散发 mode/timeout 经 `@Value` 注入 `NodeRoutingConfiguration` |
 | **B 类（滚动重启）** | `instances.*.uri/maxPoolSize/minPoolSize`、`collectionPrefix`、`routingType`、`routingKeyField`、`shardingCount`、`scatterQuery.dedicated*PoolSize`、新增/删除整个 rule | 需重建 `MongoClient` / `prefixIndex` |
 
 > `prefixIndex`（`collectionPrefix → ruleName`）在 registry 构造时缓存；B 类 `collectionPrefix` 变更需滚动重启。A 类变更不重建 `primaryTemplates`（MongoClient 仍缓存）。
@@ -2768,7 +2750,7 @@ M7 首个大项目迁移前，以下项必须全部通过：
 
 ```yaml
 # Consul Key: spring.data.mongodb.multi-instance
-# 注意：路由态（routing-state、project-routing）由运维在 Consul 手改，@RefreshScope 热加载。
+# 注意：路由态（routing-state、project-routing）由运维在 Consul 手改，@ConfigurationProperties 原地重绑定 live read 秒级生效。
 spring:
   data:
     mongodb:
@@ -2796,7 +2778,6 @@ spring:
                 freeze-gc: true                          # 迁移期间冻结 GC（§3.18.2）
                 freeze-ddl: true                         # 迁移期间禁止 DDL
                 freeze-physical-delete: true             # 禁止物理删除 Default 副本
-                freeze-default-node-mutation: true       # 禁止 Default 侧 node 变更
             instances:
               heavy1:
                 uri: mongodb://heavy1-primary:27017/bkrepo         # ← 启动级
@@ -2816,8 +2797,9 @@ spring:
 | `collection-prefix` / `routing-type` / `routing-key-field` | **滚动重启** | 规则元数据变更 |
 | `migration.sync-job.*` / `project-locks.*` | **滚动重启** | 迁移策略配置 |
 | `routing-state` | **热加载**（运维手动改 Consul） | 运营态变更，全生命周期 1~2 次 |
+| `routing-effective-at` | **热加载**（与 `ROUTED` 同写） | ROUTED 切流必填；ISO-8601 UTC；到点前有效状态仍为 DUAL_WRITE |
 | `project-routing` | **Consul（运维手动）** | 迁移 SOP 中按步骤添加/删除 |
-| `config-version` | **Consul** | Prometheus `bkrepo_mongo_routing_config_version` 对账 |
+| `config-version` | **Consul** | 切流时递增；Prometheus `bkrepo_mongo_routing_config_version` 对账 |
 
 **验证**：
 
@@ -2867,7 +2849,7 @@ curl -s /api/migration/status?projectId=projectA | jq .
 **前置条件**（全部满足；Consul 变更无 API 自动门禁，见 §1.4.4、§25.5）：
 
 - [ ] `POST /migration/binding` 完成（DB `phase=PENDING`）
-- [ ] G-34 路由就绪（`GET /routing/readiness` 全绿）
+- [ ] G-34 路由就绪（`GET /routing/readiness` 全绿：INFRA + M5）
 - [ ] Heavy 部署完成、索引与 Default 一致
 - [ ] 全部实例已部署路由代码（§3.10）
 - [ ] Prometheus：`bkrepo_mongo_routing_config_version` 全集群 ≥ `min-config-version`（E-06）
@@ -2876,7 +2858,7 @@ curl -s /api/migration/status?projectId=projectA | jq .
 **操作**（**② 必须在 ④ 之前**）：
 
 1. 运维在 Consul 将项目加入 `project-routing`，设 `routing-state=DUAL_WRITE`
-2. 等待 ≥ 30s（覆盖 `@RefreshScope` 默认 3s 刷新周期），或查 Prometheus config-version 确认全集群一致
+2. 等待 ≥ 30s（覆盖 `@ConfigurationProperties` 原地重绑定的秒级 `routing-state` 生效窗口），或查 Prometheus config-version 确认全集群一致
 3. `POST /migration/start`（INIT 校验通过 → DB `phase=INITIAL_SYNC`，Job 开扫）
 4. Job 全量扫描与运行时双写并发；扫描完成 + `sync_failed` 清零后 Job 自动推进 DB `phase=DUAL_WRITE`
 
@@ -2950,23 +2932,40 @@ done
 
 **前置条件**：
 
-- [ ] 双侧 data count 一致（对账通过）
+- [ ] 旁路对账通过（抽样内容一致）
 - [ ] 补偿队列清零
 - [ ] 稳定双写 ≥ 1 天，无异常告警
 - [ ] 100% Pod 已完成部署
 
-**操作**：通过 opdata API 将 projectA 的 `phase` 推进到 `ROUTED`（写入 DB `mongo_migration_sync_state`）。
+**操作**：
 
 ```bash
-curl -X POST /api/migration/route?projectId=projectA
+# 1. API 切流（写 DB phase=ROUTED，返回 Consul 建议值）
+curl -X POST /api/migration/route \
+  -H 'Content-Type: application/json' \
+  -d '{"ruleName":"node","projectId":"projectA"}'
+# 响应含 configVersion、routingEffectiveAt、consulHint
+
+# 2. 运维按 consulHint 一次写入 Consul（须含 routing-effective-at）
 ```
 
-**生效方式**：运维将 Consul `routing-state=ROUTED`。`project-routing` 中该项目读写切 Heavy。
+```yaml
+spring.data.mongodb.multi-instance.rules.node:
+  routing-state: ROUTED
+  config-version: 46                    # API 返回值
+  routing-effective-at: "2026-07-21T10:00:45Z"   # API 返回值，建议 now+45s UTC
+```
+
+**生效方式**：
+
+1. 写入后全 Pod 热加载配置；`routing-effective-at` **到达前**运行时仍按 DUAL_WRITE（读 Default、双写）。
+2. 到达 `routing-effective-at` 后，无需再改 Consul，自动按 ROUTED 行为（读 Heavy、单写 Heavy）。
 
 **验证**：
 
 ```bash
-# 1. 确认 projectA 读写已切到 Heavy1
+# 0. effective-at 到达前：仍应观察到 Default 双写流量
+# 1. effective-at 到达后：确认 projectA 读写已切到 Heavy1
 # Default 实例的 mongostat 中 projectA 所在分表的流量应消失
 # Heavy1 实例可观察到对应分表的读写流量
 
@@ -2986,6 +2985,7 @@ mongo heavy1-primary:27017/bkrepo --eval '
 
 **前置条件**：
 
+- [ ] `routing-effective-at` 已到点，运行时有效路由为 ROUTED（`isProjectRoutedOut` 为 true）
 - [ ] projectA 切流后稳定运行 1~2 天
 - [ ] 业务无异常告警
 - [ ] 无计划回滚

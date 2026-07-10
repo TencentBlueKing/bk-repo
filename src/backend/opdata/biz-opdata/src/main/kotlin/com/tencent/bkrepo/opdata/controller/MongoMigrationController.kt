@@ -8,12 +8,14 @@ import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationBindingRequest
 import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationProjectRequest
+import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationRouteResponse
 import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationStatusListResponse
+import com.tencent.bkrepo.opdata.api.mongo.migration.RollbackVerifyResult
 import com.tencent.bkrepo.opdata.api.mongo.migration.RoutingConfigRequest
 import com.tencent.bkrepo.opdata.api.mongo.migration.RoutingConfigResponse
 import com.tencent.bkrepo.opdata.service.mongo.migration.MongoMigrationService
 import io.swagger.v3.oas.annotations.Operation
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -26,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController
 @Principal(type = PrincipalType.ADMIN)
 @RestController
 @RequestMapping("/api")
-@ConditionalOnBean(MongoRoutingRegistry::class)
+@ConditionalOnClass(MongoRoutingRegistry::class)
 class MongoMigrationController(
     private val migrationService: MongoMigrationService,
 ) {
@@ -45,12 +47,10 @@ class MongoMigrationController(
         return ResponseBuilder.success()
     }
 
-    @Operation(summary = "切流（写 DB phase=ROUTED；Consul routing-state 由运维设 ROUTED）")
+    @Operation(summary = "切流（写 DB phase=ROUTED；返回 Consul routing-effective-at 建议）")
     @PostMapping("/migration/route")
-    fun route(@RequestBody request: MigrationProjectRequest): Response<Void> {
-        migrationService.route(request)
-        return ResponseBuilder.success()
-    }
+    fun route(@RequestBody request: MigrationProjectRequest): Response<MigrationRouteResponse> =
+        ResponseBuilder.success(migrationService.route(request))
 
     @Operation(summary = "清理 Default 副本")
     @PostMapping("/migration/cleanup")
@@ -65,6 +65,11 @@ class MongoMigrationController(
         migrationService.rollback(request)
         return ResponseBuilder.success()
     }
+
+    @Operation(summary = "回滚后烟雾测试（E-13 / §24.14）")
+    @PostMapping("/migration/rollback-verify/{projectId}")
+    fun rollbackVerify(@PathVariable projectId: String): Response<RollbackVerifyResult> =
+        ResponseBuilder.success(migrationService.rollbackVerify(projectId))
 
     @Operation(summary = "触发全量 DUAL_WRITE 项目旁路对账")
     @PostMapping("/migration/verify")

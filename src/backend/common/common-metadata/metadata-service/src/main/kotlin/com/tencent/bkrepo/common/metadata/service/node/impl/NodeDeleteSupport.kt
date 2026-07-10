@@ -257,7 +257,6 @@ open class NodeDeleteSupport(
             "/$projectId/$repoName$fullPaths"
         }
         try {
-            val collectionName = nodeDao.determineCollectionName(query)
             deletedNum = NodeDeleteHelper.deleteNodes(
                 query = query,
                 deleteMode = nodeBaseService.repositoryProperties.getDeleteMode(projectId),
@@ -268,7 +267,7 @@ open class NodeDeleteSupport(
                 deleteTime = deleteTime,
                 findByQuery = { q -> nodeDao.find(q, Map::class.java) },
                 updateMulti = { q, u ->
-                    nodeDao.determineMongoTemplate().updateMulti(q, u, collectionName).modifiedCount
+                    nodeDao.updateMulti(q, u).modifiedCount
                 },
                 countByQuery = { q -> nodeDao.count(q) },
                 useFullPathIndex = useFullPathIndex

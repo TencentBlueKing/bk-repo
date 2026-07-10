@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component
 
 /**
  * 多实例 Mongo 连接池观测（infra-ops §7.3）。
- * ponytail: 读 Micrometer mongodb.driver.pool.* 指标告警，不动态重建连接池。
+ * 读 Micrometer mongodb.driver.pool.* 指标告警，不动态重建连接池。
  */
 @Component
 @ConditionalOnBean(MongoRoutingRegistry::class)

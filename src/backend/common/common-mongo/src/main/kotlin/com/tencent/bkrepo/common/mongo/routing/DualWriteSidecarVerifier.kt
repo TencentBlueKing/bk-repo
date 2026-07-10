@@ -1,13 +1,13 @@
 package com.tencent.bkrepo.common.mongo.routing
 
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
+import com.tencent.bkrepo.common.mongo.routing.model.ReconciliationLog
 import com.mongodb.client.model.Aggregates
 import com.mongodb.client.model.Filters
 import org.bson.Document
 import org.slf4j.LoggerFactory
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
 /**
  * 双写旁路对账器（§25.3.2 E-05）。
@@ -18,18 +18,17 @@ import org.springframework.stereotype.Component
  *
  * 切流要求：最近 3 轮对账零差异 + 补偿队列清零。
  */
-@Component
-@ConditionalOnBean(MongoRoutingRegistry::class)
 class DualWriteSidecarVerifier(
     private val defaultMongoTemplate: MongoTemplate,
     private val registry: MongoRoutingRegistry,
+    private val routingMetrics: MongoRoutingMetrics? = null,
 ) {
 
     private val lastResults = java.util.concurrent.ConcurrentHashMap<String, MutableList<VerificationResult>>()
 
     /**
      * 按需对账：由 M6 的 migration API 调用。
-     * ponytail: 全量 DUAL_WRITE 项目遍历，项目数少时无瓶颈；
+     * 全量 DUAL_WRITE 项目遍历，项目数少时无瓶颈；
      * 若未来项目数 > 100 可改为分页 + 单项目异步执行。
      */
     fun verify() {
@@ -56,8 +55,7 @@ class DualWriteSidecarVerifier(
         try {
             val result = verifyProject(projectId, heavyTemplate)
             recordResult(projectId, result)
-            NodeReconciliationHelper.persistLog(
-                defaultMongoTemplate,
+            persistLog(
                 projectId,
                 "SIDECAR",
                 result.passed,
@@ -128,6 +126,7 @@ class DualWriteSidecarVerifier(
     }
 
     private fun recordResult(projectId: String, result: VerificationResult) {
+        routingMetrics?.recordReconciliationLastPassed(result.passed)
         lastResults.compute(projectId) { _, list ->
             val history = list ?: mutableListOf()
             history.add(result)
@@ -154,5 +153,25 @@ class DualWriteSidecarVerifier(
         private const val MAX_HISTORY = 20
 
         private val logger = LoggerFactory.getLogger(DualWriteSidecarVerifier::class.java)
+    }
+
+    private fun persistLog(
+        projectId: String,
+        checkType: String,
+        passed: Boolean,
+        detail: String,
+    ) {
+        runCatching {
+            defaultMongoTemplate.insert(
+                ReconciliationLog(
+                    projectId = projectId,
+                    checkType = checkType,
+                    passed = passed,
+                    detail = detail,
+                ),
+            )
+        }.onFailure {
+            logger.warn("Failed to persist reconciliation log: {}", it.message)
+        }
     }
 }

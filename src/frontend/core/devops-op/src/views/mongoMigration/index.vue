@@ -38,6 +38,19 @@
             补偿健康
           </el-button>
           <el-button
+            :loading="allHealthLoading"
+            @click="loadAllCompensationHealth"
+          >
+            全部补偿健康
+          </el-button>
+          <el-button
+            type="info"
+            :loading="triggerCompensationLoading"
+            @click="triggerCompensationAction"
+          >
+            补偿触发
+          </el-button>
+          <el-button
             type="warning"
             :loading="verifyAllLoading"
             @click="triggerVerifyAll"
@@ -122,6 +135,13 @@
         >
           POST /migration/rollback
         </el-button>
+        <el-button
+          type="info"
+          :loading="rollbackVerifyLoading"
+          @click="triggerRollbackVerify"
+        >
+          POST /migration/rollback-verify
+        </el-button>
       </div>
       <el-descriptions :column="2" border class="api-list">
         <el-descriptions-item label="声明迁移单元">
@@ -131,13 +151,16 @@
           POST /migration/start → 随后 Consul 加 project-routing + routing-state=DUAL_WRITE
         </el-descriptions-item>
         <el-descriptions-item label="关闭双写并切流">
-          POST /migration/route → 随后 Consul routing-state=ROUTED
+          POST /migration/route → Consul routing-state=ROUTED + routing-effective-at（延迟生效）
         </el-descriptions-item>
         <el-descriptions-item label="清理 Default 副本">
           POST /migration/cleanup
         </el-descriptions-item>
         <el-descriptions-item label="回滚迁移">
           POST /migration/rollback
+        </el-descriptions-item>
+        <el-descriptions-item label="回滚后验证">
+          POST /migration/rollback-verify/{projectId}
         </el-descriptions-item>
       </el-descriptions>
     </el-card>
@@ -154,7 +177,7 @@
       />
       <ol class="consul-sop">
         <li>binding / start 后：在 Consul 添加 <code>project-routing</code> 条目，设 <code>routing-state=DUAL_WRITE</code></li>
-        <li>route 后：确认 Prometheus <code>bkrepo_mongo_routing_config_version</code> 全 Pod 对齐，改 <code>routing-state=ROUTED</code></li>
+        <li>route 后：按 API 返回写入 Consul（routing-state=ROUTED、config-version++、routing-effective-at）；到点后自动切 Heavy 读</li>
         <li>cleanup 后：删除 <code>project-routing</code> 中该项目；散发查询参数改 Consul <code>scatter-query.*</code></li>
         <li>回滚：Consul <code>routing-state=OFF</code> 并清理 <code>project-routing</code></li>
       </ol>
@@ -277,6 +300,17 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <el-row :gutter="20" class="result-row">
+      <el-col :span="24">
+        <el-card shadow="never">
+          <div slot="header">
+            <span>全部补偿健康</span>
+          </div>
+          <pre class="result-block">{{ formatResult(allHealthResult) }}</pre>
+        </el-card>
+      </el-col>
+    </el-row>
   </div>
 </template>
 
@@ -285,15 +319,18 @@ import {
   cleanupMigration,
   createMigrationBinding,
   getCompensationHealth,
+  getAllCompensationHealth,
   getCompensationStats,
   getMigrationStatus,
   getRoutingConfig,
   getRoutingReadiness,
   rollbackMigration,
+  rollbackVerify,
   routeMigration,
   startMigration,
   syncHistoricalData,
   syncHistoricalDataByRule,
+  triggerCompensation,
   updateRoutingConfig,
   verifyAll,
   verifyProject
@@ -306,7 +343,7 @@ const ACTION_MAP = {
   },
   route: {
     api: routeMigration,
-    success: '已执行切流；请在 Consul 设 routing-state=ROUTED'
+    success: '已执行切流；请按返回的 consulHint 写入 Consul（含 routing-effective-at）'
   },
   cleanup: {
     api: cleanupMigration,
@@ -344,8 +381,11 @@ export default {
       readinessLoading: false,
       statsLoading: false,
       healthLoading: false,
+      allHealthLoading: false,
+      triggerCompensationLoading: false,
       verifyAllLoading: false,
       verifyProjectLoading: false,
+      rollbackVerifyLoading: false,
       actionLoading: {
         binding: false,
         start: false,
@@ -356,6 +396,7 @@ export default {
       readinessResult: null,
       statsResult: null,
       healthResult: null,
+      allHealthResult: null,
       statusList: []
     }
   },
@@ -447,6 +488,18 @@ export default {
         this.verifyProjectLoading = false
       })
     },
+    triggerRollbackVerify() {
+      if (!this.queryForm.projectId) {
+        this.$message.warning('请先填写项目ID')
+        return
+      }
+      this.rollbackVerifyLoading = true
+      rollbackVerify(this.queryForm.projectId).then(res => {
+        this.$message.success(`回滚验证完成：${JSON.stringify(res.data)}`)
+      }).finally(() => {
+        this.rollbackVerifyLoading = false
+      })
+    },
     loadRoutingConfig() {
       this.configLoading = true
       getRoutingConfig().then(res => {
@@ -524,8 +577,9 @@ export default {
         return
       }
       this.actionLoading[action] = true
-      config.api(this.buildProjectRequest()).then(() => {
-        this.$message.success(config.success)
+      config.api(this.buildProjectRequest()).then((res) => {
+        const hint = action === 'route' && res?.data?.consulHint
+        this.$message.success(hint ? `${config.success}\n${hint}` : config.success)
         this.refreshAll()
       }).finally(() => {
         this.actionLoading[action] = false

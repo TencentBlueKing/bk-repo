@@ -1,17 +1,22 @@
 package com.tencent.bkrepo.job.batch.task.sync
 
+import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.metadata.properties.BlockNodeProperties
 import com.tencent.bkrepo.common.metadata.util.BlockNodeCollectionNaming
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.common.mongo.dao.MigrationSyncStateDao
+import com.tencent.bkrepo.common.mongo.routing.MongoMultiInstanceConfiguration
 import com.tencent.bkrepo.common.mongo.routing.MongoMultiInstanceProperties
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.boot.autoconfigure.AutoConfiguration
+import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.redis.core.RedisTemplate
 
-@Configuration
+@AutoConfiguration
+@AutoConfigureAfter(MongoMultiInstanceConfiguration::class)
 @ConditionalOnBean(MongoRoutingRegistry::class)
 class MigrationSyncConfiguration {
 
@@ -56,6 +61,23 @@ class MigrationSyncConfiguration {
         registry = registry,
         syncStateDao = syncStateDao,
         strategies = strategies.associateBy { it.ruleName },
+    )
+
+    @Bean
+    fun migrationSyncJob(
+        @Qualifier("mongoTemplate") defaultMongoTemplate: MongoTemplate,
+        registry: MongoRoutingRegistry,
+        syncStateDao: MigrationSyncStateDao?,
+        redisTemplate: RedisTemplate<String, String>,
+        lockOperation: LockOperation,
+        engine: MigrationSyncEngine,
+    ): MigrationSyncJob = MigrationSyncJob(
+        defaultMongoTemplate = defaultMongoTemplate,
+        registry = registry,
+        syncStateDao = syncStateDao,
+        redisTemplate = redisTemplate,
+        lockOperation = lockOperation,
+        engine = engine,
     )
 
     companion object {

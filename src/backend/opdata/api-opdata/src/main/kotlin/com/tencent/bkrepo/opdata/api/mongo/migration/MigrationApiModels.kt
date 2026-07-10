@@ -44,3 +44,28 @@ data class RoutingConfigResponse(
     /** 编排侧版本号，仅供 opdata 审计，不参与路由 */
     val configVersion: Long,
 )
+
+data class MigrationRouteResponse(
+    val projectId: String,
+    val ruleName: String,
+    val phase: MigrationPhase,
+    /** 运维须在 Consul 设置的 routing-state */
+    val consulRoutingState: String,
+    /** 建议递增后的 config-version */
+    val configVersion: Long,
+    /** 建议写入 Consul 的 routing-effective-at（ISO-8601 UTC） */
+    val routingEffectiveAt: String,
+    val consulHint: String,
+)
+
+data class RollbackVerifyCheck(
+    val name: String,
+    val passed: Boolean,
+    val detail: String? = null,
+)
+
+data class RollbackVerifyResult(
+    val projectId: String,
+    val status: String,
+    val checks: List<RollbackVerifyCheck>,
+)

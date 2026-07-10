@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.mongo.routing
 
 import com.tencent.bkrepo.common.mongo.api.routing.RuleRoutingState
 import org.springframework.boot.context.properties.ConfigurationProperties
+import java.time.Instant
 
 
 @ConfigurationProperties(prefix = "spring.data.mongodb.multi-instance")
@@ -30,6 +31,12 @@ class MongoMultiInstanceProperties {
          * - ROUTED：路由启用且已完成切流
          */
         var routingState: RuleRoutingState = RuleRoutingState.OFF,
+        /**
+         * 路由状态延迟生效时刻（ISO-8601）。
+         * ROUTED 必须配置；缺失时保持 DUAL_WRITE 并打 error 日志。
+         * 到点后才按 ROUTED 行为（读 Heavy、单写）。
+         */
+        var routingEffectiveAt: Instant? = null,
         /** per-rule 迁移配置 */
         var migration: MigrationConfig = MigrationConfig(),
         var instances: Map<String, InstanceConfig> = emptyMap(),
@@ -59,7 +66,7 @@ class MongoMultiInstanceProperties {
             /** 僵尸副本在 Default 上存活超过该小时数则阻断迁移（G-17，默认 7 天） */
             val maxZombieHours: Int = 168,
             /** 迁移期项目锁 */
-            val projectLocks: ProjectLocksConfig = ProjectLocksConfig(),
+            var projectLocks: ProjectLocksConfig = ProjectLocksConfig(),
             /** oplog 窗口下限（小时），INIT 校验用（G-32） */
             val minOplogHours: Int = 48,
         )
@@ -86,11 +93,6 @@ class MongoMultiInstanceProperties {
              * 保留 Default 副本以支持回滚。
              */
             val freezePhysicalDelete: Boolean = true,
-            /**
-             * DUAL_WRITE ~ CLEANUP 期间禁止 Default 侧 node 变更（§3.18.2）。
-             * 防止旁路写入造成双写不一致。
-             */
-            val freezeDefaultNodeMutation: Boolean = true,
         )
     }
 

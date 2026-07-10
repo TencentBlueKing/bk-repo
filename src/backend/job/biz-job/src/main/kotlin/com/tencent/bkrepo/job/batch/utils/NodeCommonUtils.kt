@@ -150,8 +150,11 @@ class NodeCommonUtils(
             val registry = routingRegistry
             val explicitProjectId = baseQuery.queryObject[PROJECT_FIELD] as? String
             if (explicitProjectId != null && registry != null) {
-                val template = registry.routeRead(collectionNames.first(), explicitProjectId) ?: mongoTemplate
-                return listOf(RoutedScanGroup(template, collectionNames) { Query.of(it) })
+                val shardCollection = "$COLLECTION_NAME_PREFIX${
+                    HashShardingUtils.shardingSequenceFor(explicitProjectId, SHARDING_COUNT)
+                }"
+                val template = registry.routeRead(shardCollection, explicitProjectId) ?: mongoTemplate
+                return listOf(RoutedScanGroup(template, listOf(shardCollection)) { Query.of(it) })
             }
             val groups = nodeBatchQueryHelper?.buildGroups(collectionNames)
             if (groups != null) {
@@ -350,6 +353,26 @@ class NodeCommonUtils(
         }
 
         @Suppress("UnstableApiUsage")
+        /**
+         * 跨实例检查 node 集合中是否存在满足 query 的记录。
+         * 通过 [buildNodeScanGroups] 自动路由到 Default 和 Heavy 实例，避免 fallback 为仅查 Default。
+         */
+        fun crossInstanceNodeExist(query: Query, shardingCount: Int = SHARDING_COUNT): Boolean {
+            val collectionNames = (0 until shardingCount).map { "${COLLECTION_NAME_PREFIX}$it" }
+            buildNodeScanGroups(query, collectionNames).forEach { group ->
+                group.collectionNames.forEach { collectionName ->
+                    if (group.mongoTemplate.exists(
+                            group.queryCustomizer(query).limit(1),
+                            collectionName,
+                        )
+                    ) {
+                        return true
+                    }
+                }
+            }
+            return false
+        }
+
         fun buildNodeBloomFilter(expectedInsertions: Long, fpp: Double): BloomFilter<CharSequence> {
             return buildBloomFilter(expectedInsertions, fpp) { bf ->
                 val query = Query(Criteria.where(FOLDER).isEqualTo(false))

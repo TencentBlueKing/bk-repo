@@ -1,25 +1,29 @@
 package com.tencent.bkrepo.common.mongo.routing
 
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
+import com.tencent.bkrepo.common.mongo.routing.model.InconsistencyRecord
+import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.MeterRegistry
 import org.bson.Document
+import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.BasicQuery
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.stereotype.Component
-import java.time.LocalDateTime
 
 /**
  * 补偿消费后即时校验（§3.17.3 第二层）。
  */
-@Component
-@ConditionalOnBean(MongoRoutingRegistry::class)
 class CompensationPostCheck(
     private val routingRegistry: MongoRoutingRegistry,
     private val defaultMongoTemplate: MongoTemplate,
+    private val meterRegistry: MeterRegistry,
 ) {
+
+    private val mismatchCounter: Counter = Counter.builder(METRIC_MISMATCH)
+        .description("compensation post-check field mismatch count (G-14 stale overwrite)")
+        .register(meterRegistry)
 
     fun postReplayCheck(task: Document) {
         val operationType = task.getString(FIELD_OPERATION_TYPE) ?: return
@@ -47,11 +51,14 @@ class CompensationPostCheck(
     ) {
         val primaryKey = task.getString(FIELD_PRIMARY_KEY)
         if (primaryKey != null) {
-            val idQuery = Query(Criteria.where("_id").`is`(primaryKey))
+            val idQuery = idQueryForPrimaryKey(primaryKey)
             val primaryDoc = primaryTemplate.findOne(idQuery, Document::class.java, collectionName)
             val secondaryDoc = secondaryTemplate.findOne(idQuery, Document::class.java, collectionName)
             if (primaryDoc != null || secondaryDoc != null) {
-                report(task, "REMOVE doc still exists: primary=${primaryDoc != null}, secondary=${secondaryDoc != null}")
+                report(
+                    task,
+                    "REMOVE doc still exists: primary=${primaryDoc != null}, secondary=${secondaryDoc != null}",
+                )
             }
             return
         }
@@ -86,7 +93,7 @@ class CompensationPostCheck(
         task: Document,
     ) {
         val primaryKey = task.getString(FIELD_PRIMARY_KEY) ?: return
-        val idQuery = Query(Criteria.where("_id").`is`(primaryKey))
+        val idQuery = idQueryForPrimaryKey(primaryKey)
         val primaryDoc = primaryTemplate.findOne(idQuery, Document::class.java, collectionName)
         val secondaryDoc = secondaryTemplate.findOne(idQuery, Document::class.java, collectionName)
         if (primaryDoc == null || secondaryDoc == null) {
@@ -99,9 +106,26 @@ class CompensationPostCheck(
         }
         for (field in FIELDS_TO_CHECK) {
             if (primaryDoc[field] != secondaryDoc[field]) {
+                // 字段级不一致：陈旧补偿写脏的可感知点（G-14）。记指标 + 升级任务为 FAILED
+                mismatchCounter.increment()
+                failCompensationTask(task)
                 report(task, "field mismatch on $field: primary=${primaryDoc[field]}, secondary=${secondaryDoc[field]}")
             }
         }
+    }
+
+    /** 校验不一致时把补偿任务升级为 FAILED，使其留在异常表、阻断切流门禁（§9.3 第3项） */
+    private fun failCompensationTask(task: Document) {
+        val taskId = task.getObjectId("_id") ?: return
+        runCatching {
+            defaultMongoTemplate.updateFirst(
+                Query(Criteria.where("_id").`is`(taskId)),
+                org.springframework.data.mongodb.core.query.Update()
+                    .set("status", "FAILED")
+                    .set("failureReason", "post-check field mismatch"),
+                COMPENSATION_COLLECTION,
+            )
+        }.onFailure { logger.error("Failed to mark compensation task FAILED: {}", it.message) }
     }
 
     private fun report(task: Document, reason: String) {
@@ -110,17 +134,16 @@ class CompensationPostCheck(
     }
 
     private fun recordInconsistency(task: Document, reason: String) {
-        val doc = Document().apply {
-            put("ruleName", task.getString(FIELD_RULE_NAME))
-            put("routingKey", task.getString(FIELD_ROUTING_KEY))
-            put("collectionName", task.getString(FIELD_COLLECTION_NAME))
-            put("primaryKey", task.getString(FIELD_PRIMARY_KEY))
-            put("operationType", task.getString(FIELD_OPERATION_TYPE))
-            put("reason", reason)
-            put("createdAt", LocalDateTime.now())
-        }
+        val record = InconsistencyRecord(
+            ruleName = task.getString(FIELD_RULE_NAME),
+            routingKey = task.getString(FIELD_ROUTING_KEY),
+            collectionName = task.getString(FIELD_COLLECTION_NAME),
+            primaryKey = task.getString(FIELD_PRIMARY_KEY),
+            operationType = task.getString(FIELD_OPERATION_TYPE),
+            reason = reason,
+        )
         runCatching {
-            defaultMongoTemplate.insert(doc, INCONSISTENCY_COLLECTION)
+            defaultMongoTemplate.insert(record)
         }.onFailure {
             logger.error("Failed to persist inconsistency record: {}", it.message)
         }
@@ -135,14 +158,27 @@ class CompensationPostCheck(
             routingRegistry.primaryTemplateByInstance(ruleName, instanceName)
         }
 
+    private fun idQueryForPrimaryKey(primaryKey: String): Query {
+        val objectId = runCatching { ObjectId(primaryKey) }.getOrNull()
+        return if (objectId != null) {
+            Query(Criteria.where("_id").`is`(objectId))
+        } else {
+            Query(Criteria.where("_id").`is`(primaryKey))
+        }
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(CompensationPostCheck::class.java)
-        private const val INCONSISTENCY_COLLECTION = "mongo_inconsistency_log"
         private val CHECK_OPS = setOf(
             OP_INSERT, OP_SAVE, OP_UPSERT, OP_FIND_AND_MODIFY,
             OP_REMOVE, OP_UPDATE_FIRST, OP_UPDATE_MULTI,
         )
-        private val FIELDS_TO_CHECK = listOf("projectId", "fullPath", "deleted", "sha256", "createdDate")
+        private val FIELDS_TO_CHECK = listOf(
+            "projectId", "fullPath", "deleted", "sha256", "createdDate",
+            "metadata", "lastModifiedDate",
+        )
+        private const val COMPENSATION_COLLECTION = "mongo_dual_write_compensation"
+        private const val METRIC_MISMATCH = "bkrepo.mongo.routing.compensation.postcheck.mismatch"
         private const val OP_INSERT = "INSERT"
         private const val OP_SAVE = "SAVE"
         private const val OP_UPSERT = "UPSERT"

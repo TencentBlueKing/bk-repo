@@ -3,9 +3,6 @@ package com.tencent.bkrepo.common.mongo.routing
 import com.tencent.bkrepo.common.mongo.api.routing.MigrationPhase
 import com.tencent.bkrepo.common.mongo.dao.MigrationSyncStateDao
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
-import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -18,13 +15,13 @@ import java.time.LocalDateTime
  * - ROUTED 前：补偿队列清零 + 旁路对账连续3轮零差异
  * - 100% Pod 滚动完成：运维 SOP（`kubectl rollout status`），不在此自动校验
  * - 迁移期 freeze-gc：按 Consul 配置 + [MongoRoutingRegistry] 判断（§3.18.2）
+ *
+ * 从 @Component 改为 MongoMultiInstanceConfiguration 中的显式 @Bean，
+ * 因为 common-mongo 包的 @ComponentScan 不会覆盖到 Job 等非 web 模块。
  */
-@Component
-@ConditionalOnBean(MongoRoutingRegistry::class)
 class MigrationGate(
     private val registry: MongoRoutingRegistry,
     private val properties: MongoMultiInstanceProperties,
-    @Autowired(required = false)
     private val syncStateDao: MigrationSyncStateDao? = null,
 ) {
 
@@ -72,13 +69,6 @@ class MigrationGate(
                 isPhysicalDeleteFrozen(ruleName, projectId)
         }
 
-    fun isDefaultNodeMutationFrozen(projectId: String): Boolean =
-        properties.rules.any { (ruleName, rule) ->
-            projectId in rule.projectRouting &&
-                rule.migration.projectLocks.freezeDefaultNodeMutation &&
-                isDefaultNodeMutationFrozen(ruleName, projectId)
-        }
-
     /** G-17：ROUTED 后僵尸副本超时，阻断后续迁移编排 */
     fun isZombieReplicaOverdue(ruleName: String, projectId: String): Boolean {
         val rule = properties.rules[ruleName] ?: return false
@@ -92,14 +82,25 @@ class MigrationGate(
 
     // ─── private ────────────────────────────────────────────────
 
+    // spec §3.18.2 生命周期为 INITIAL_SYNC → 全部 CLEANED，含 ROUTED；
+    // 不只在 DUAL_WRITE。ROUTED 后 Default 已是僵尸副本，GC 属于误操作。
     private fun isProjectGcFrozen(ruleName: String, projectId: String): Boolean =
-        registry.isProjectInDualWrite(ruleName, projectId)
+        registry.isProjectInDualWrite(ruleName, projectId) ||
+            registry.isProjectRoutedOut(ruleName, projectId) ||
+            isProjectInMigrationFreezePhase(ruleName, projectId)
 
+    // spec §3.18.3 要求 INITIAL_SYNC 阶段起就冻结物理删除（含 DUAL_WRITE），
+    // 不只是在 ROUTED 后。双写期物理删除会导致补偿队列写回 Default 造成二次污染。
     private fun isPhysicalDeleteFrozen(ruleName: String, projectId: String): Boolean =
-        registry.isProjectRoutedOut(ruleName, projectId)
+        registry.isProjectInDualWrite(ruleName, projectId) ||
+            registry.isProjectRoutedOut(ruleName, projectId) ||
+            isProjectInMigrationFreezePhase(ruleName, projectId)
 
-    private fun isDefaultNodeMutationFrozen(ruleName: String, projectId: String): Boolean =
-        registry.isProjectInDualWrite(ruleName, projectId) || registry.isProjectRoutedOut(ruleName, projectId)
+    private fun isProjectInMigrationFreezePhase(ruleName: String, projectId: String): Boolean {
+        val state = syncStateDao?.findByProjectId(projectId) ?: return false
+        if (state.ruleName != ruleName) return false
+        return state.phase in MIGRATION_FREEZE_PHASES
+    }
 
     data class GateCheck(
         val name: String,
@@ -118,5 +119,14 @@ class MigrationGate(
                 append(failedChecks.joinToString("; ") { "${it.name}=${it.reason}" })
             }
         }
+    }
+
+    companion object {
+        private val MIGRATION_FREEZE_PHASES = setOf(
+            MigrationPhase.INITIAL_SYNC,
+            MigrationPhase.DUAL_WRITE,
+            MigrationPhase.ROUTED,
+            MigrationPhase.CLEANUP_READY,
+        )
     }
 }

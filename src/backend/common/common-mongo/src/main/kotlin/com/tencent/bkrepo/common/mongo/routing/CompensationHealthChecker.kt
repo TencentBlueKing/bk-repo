@@ -1,12 +1,6 @@
 package com.tencent.bkrepo.common.mongo.routing
 
-import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
-import org.springframework.stereotype.Component
-
 /** M2 补偿健康探针；M6 HTTP 层委托本类。 */
-@Component
-@ConditionalOnBean(MongoRoutingRegistry::class)
 class CompensationHealthChecker(
     private val compensationService: MongoDualWriteCompensationService,
 ) {
@@ -35,6 +29,17 @@ class CompensationHealthChecker(
             health = check(ruleName),
         )
 
+    fun trigger(ruleName: String): CompensationTriggerResult {
+        val before = compensationService.countPendingTasks(ruleName)
+        compensationService.consume()
+        val after = compensationService.countPendingTasks(ruleName)
+        return CompensationTriggerResult(
+            ruleName = ruleName,
+            pendingBefore = before,
+            pendingAfter = after,
+        )
+    }
+
     data class CompensationHealthStatus(
         val ruleName: String,
         val pendingCount: Long,
@@ -47,6 +52,14 @@ class CompensationHealthChecker(
         val pendingCount: Long,
         val health: CompensationHealthStatus,
     )
+
+    data class CompensationTriggerResult(
+        val ruleName: String,
+        val pendingBefore: Long,
+        val pendingAfter: Long,
+    ) {
+        val consumed: Long get() = pendingBefore - pendingAfter
+    }
 
     companion object {
         private const val MAX_HEALTHY_PENDING = 500L

@@ -6,14 +6,10 @@ import com.tencent.bkrepo.common.mongo.dao.MigrationSyncStateDao
 import com.tencent.bkrepo.job.batch.base.BaseService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
 
-@Component
-@ConditionalOnBean(MongoRoutingRegistry::class)
 class MigrationSyncJob(
     @Qualifier("mongoTemplate")
     defaultMongoTemplate: MongoTemplate,

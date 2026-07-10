@@ -65,7 +65,7 @@ interface NodeMongoOperations {
 class DefaultNodeMongoOperations(
     private val registry: MongoRoutingRegistry,
     private val defaultTemplate: MongoTemplate,
-    private val compensationService: MongoDualWriteCompensationService? = null,
+    private val compensationService: MongoDualWriteCompensationService,
     @Autowired(required = false)
     private val dualWriteExecutor: DualWriteExecutor? = null,
 ) : NodeMongoOperations {
@@ -108,7 +108,7 @@ class DefaultNodeMongoOperations(
     override fun remove(projectId: String, query: Query, collectionName: String): DeleteResult {
         val route = writeRoute(projectId, collectionName)
         return runDualWrite(route, collectionName, {
-            compensationService?.enqueueRemove(route, collectionName, TNode::class.java.name, query)
+            compensationService.enqueueRemove(route, collectionName, TNode::class.java.name, query)
         }) {
             it.remove(query, TNode::class.java, collectionName)
         }
@@ -122,7 +122,7 @@ class DefaultNodeMongoOperations(
     ): UpdateResult {
         val route = writeRoute(projectId, collectionName)
         return runDualWrite(route, collectionName, {
-            compensationService?.enqueueUpdateFirst(route, collectionName, query, update)
+            compensationService.enqueueUpdateFirst(route, collectionName, query, update)
         }) {
             it.updateFirst(query, update, collectionName)
         }
@@ -136,7 +136,7 @@ class DefaultNodeMongoOperations(
     ): UpdateResult {
         val route = writeRoute(projectId, collectionName)
         return runDualWrite(route, collectionName, {
-            compensationService?.enqueueUpdateMulti(route, collectionName, query, update)
+            compensationService.enqueueUpdateMulti(route, collectionName, query, update)
         }) {
             it.updateMulti(query, update, collectionName)
         }
@@ -150,7 +150,7 @@ class DefaultNodeMongoOperations(
     ): UpdateResult {
         val route = writeRoute(projectId, collectionName)
         return runDualWrite(route, collectionName, {
-            compensationService?.enqueueUpsert(route, collectionName, query, update)
+            compensationService.enqueueUpsert(route, collectionName, query, update)
         }) {
             it.upsert(query, update, collectionName)
         }
@@ -165,7 +165,7 @@ class DefaultNodeMongoOperations(
     ): TNode? {
         val route = writeRoute(projectId, collectionName)
         return runDualWrite(route, collectionName, {
-            compensationService?.enqueueFindAndModify(
+            compensationService.enqueueFindAndModify(
                 route,
                 collectionName,
                 query,
@@ -181,7 +181,7 @@ class DefaultNodeMongoOperations(
     override fun save(projectId: String, entity: Any, collectionName: String): Any {
         val route = writeRoute(projectId, collectionName)
         return runDualWrite(route, collectionName, {
-            compensationService?.enqueueSave(route, collectionName, entity)
+            compensationService.enqueueSave(route, collectionName, entity)
         }) {
             it.save(entity, collectionName)
         }
@@ -198,7 +198,7 @@ class DefaultNodeMongoOperations(
             clauses.forEach { clause ->
                 val update = clause.second
                 if (update is Update) {
-                    compensationService?.enqueueUpdateFirst(
+                    compensationService.enqueueUpdateFirst(
                         route,
                         collectionName,
                         clause.first,

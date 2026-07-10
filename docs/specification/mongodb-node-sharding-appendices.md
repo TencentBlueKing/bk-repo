@@ -18,7 +18,7 @@
 | G-05 | 散发查询静默丢数据 | §3.7、§11.2 | 默认 `STRICT`，失败返回错误 |
 | G-06 | `deleteRepository` / Pipeline 跨实例 | §20.3 | 分步执行，不要求事务 |
 | G-07 | Job/异步路径遗漏 | §3.19.2 | 改造清单 + 灰度门禁 |
-| G-08 | `lastModifiedDate` 遗漏更新风险 | §3.15.7、§3.19.1 | 10/13 写路径遗漏更新；队列去重 + `$max` 双重防护 + 写路径审计 |
+| G-08 | `lastModifiedDate` 遗漏更新风险 | §3.15.7、§3.19.1 | §3.19.1 写路径已补全（`setNodeArchived` 待确认）；队列去重 + `$max` + CI 审计 |
 | G-10 | 连接池放大 | §4.1 | 实例数上限 + 连接数估算 |
 | G-11 | NONE 模式禁止为终态 | §1.4.4 | 禁止作为项目最终状态；`max-duration-days` 自动过期 + `expiration-action: BLOCK` |
 | G-12 | 双写期 CATCH_UP 竞态 | §3.15.7（已有） | 进入 `DUAL_WRITE` 时 `MigrationSyncJob` 中断 CATCH_UP 线程 |
@@ -35,13 +35,13 @@
 | G-23 | 补偿任务入队失败无兜底 | §3.12.5、§3.17.9 | 入队失败 P0 告警；补偿消费者自带重试（MAX_RETRY=3），FAILED 后人工介入；三级熔断 hardLimit 直接拒绝，不绕过 |
 | G-24 | 多 Pod 并发消费补偿队列幂等性 | §3.15.5 | `findAndModify` 分布式锁（status PENDING → PROCESSING）+ 幂等消费 |
 | G-25 | MongoDB writeConcern/readConcern 未声明 | §20a | 要求 writeConcern=majority；INIT 校验 |
-| G-26 | index build 与迁移并发阻塞 | §3.14a | 迁移期间 `freeze-ddl=true` 锁；索引创建必须在迁移前完成 |
+| G-26 | index build 与迁移并发阻塞 | §3.14a | 迁移期间 `freeze-ddl=true` 锁拦截外部 DDL；lazy ensureIndex（内部机制）豁免 |
 | G-27 | MongoDB 驱动 retryableWrites 与双写交互 | §3.12.2 | 驱动自动重试可能导致重复写入；$inc 场景改用 findAndModify；异常表增加此场景 |
 | G-28 | resumeToken 持久化失败恢复路径 | §3.9.2 | 双重持久化：MongoDB 主路径 + 本地文件降级 |
 | G-29 | 回滚后补偿队列残留任务 | §3.11 | 回滚流程增加补偿队列清理步骤（按 projectId 删除 PENDING 任务） |
 | G-30 | Default 主从切换期间补偿 spike | §3.12.2、§22 | 监控 `compensation.spike.count`；自动提升消费速率；异常表增加此场景 |
 | G-32 | Default oplog 容量预检查 | §3.9.2、§20a | INIT 阶段校验 `local.oplog.rs` 窗口 ≥ `migration.min-oplog-hours`（默认 48h） |
-| G-34 | 模式二分库前路由就绪 | §3.19.2、§10.5、§14 | P0 清单 + CI + 集成测试全通过；阻塞模式二迁移编排；模式一不受限 |
+| G-34 | 模式二分库前路由就绪 | §3.19.2、§10.5、§14 | INFRA + M5 运行时检查 + CI 集成测试全通过；阻塞模式二迁移编排；模式一不受限 |
 | G-40 | Job 多实例 Group 失败隔离 | §3.8.2 | `BatchQueryGroup`；单实例不可用跳过 Group |
 | G-41 | 异步写路径 ThreadLocal 丢失 | §3.16、§3.19.2 D | 写操作显式 `projectId`；TTL 防御 |
 | G-42 | 补偿消费后即时校验 | §25.2、M2 | 消费成功后 `_id`/关键字段 post-check |
@@ -49,7 +49,7 @@
 | G-35 | `projectId` 唯一绑定 | §10.2 | 一 projectId 不得绑多个 Heavy |
 | G-38 | `block_node` / `drive_node` 范围 | §1.2 | v1 不分库，留 Default |
 
-**M7 上线前必查**（与 §3.19.3、§25.5 灰度门禁一致）：G-01、G-02、G-03、G-05、G-07、G-08、G-10、G-14、G-16、G-17、G-18、G-19、**G-24、G-25、G-26、G-34**（共 16 项，模式二）。
+**M7 上线前必查**（与 §3.19.3、§25.5 灰度门禁一致）：G-01、G-02、G-03、G-05、G-07、G-08、G-10、G-14、G-16、G-17、G-18、G-19、**G-24、G-25、G-26、G-34**（共 **17** 项，模式二）。
 
 > **修复方案汇总**：§23 列问题、§24 列增强思路，**§25 给出分阶段落地修复方案**（实施顺序、验收标准、文件改动清单），实施时以 §25 为主索引。
 
@@ -65,7 +65,7 @@
 | 编号 | 问题 | 严重度 | 发生概率 | 优先级 | 建议阶段 |
 | --- | --- | --- | --- | --- | --- |
 | E-01 | Zombie 副本缺少写入保护 | 🔴 致命 | 中 | P0 | M7 前 |
-| E-03 | `lastModifiedDate` 遗漏更新应升级为 M7 强制项 | 🟡 严重 | 高 | P1 | M7 前 |
+| E-03 | `lastModifiedDate` 写路径补全（M7 强制项，已闭合） | 🟡 严重 | 高 | P1 | M7 ✅ |
 | E-04 | 全局版本号保护非 `lastModifiedDate` 字段 | 🟡 严重 | 低 | P1 | M8+ |
 | E-05 | 双写期缺少旁路对账 | 🟡 严重 | 中 | P1 | M6 |
 | E-06 | 配置热加载的跨 Pod 一致性窗口 | 🟡 严重 | 中 | P1 | M6 |
@@ -120,11 +120,11 @@ override fun determineMongoTemplate(collectionName: String, context: Any?): Mong
 
 ---
 
-### 24.4 E-03：`lastModifiedDate` 遗漏更新应升级为 M7 强制项（P1）
+### 24.4 E-03：`lastModifiedDate` 写路径补全（P1，已闭合）
 
-**问题描述**（关联 G-08）：代码审计发现 **10/13 写路径遗漏更新 `lastModifiedDate`**。当前方案依赖队列去重 + `$max` 双重防护，但 `$max` 仅保护 `lastModifiedDate`，若该字段本身不更新，防护完全失效。必须将补全 `lastModifiedDate` 从"建议"升级为"强制项"。
+**问题描述**（关联 G-08）：初版审计曾发现部分写路径遗漏 `lastModifiedDate`，导致 `$lte` 乐观锁与 `$max` 防护在极端场景下失效。**M7 已按 §3.19.1 逐点修复**（含 `restoreNode`，2026-07）；`setNodeArchived` 调用链待最终确认。
 
-**解决方案**：逐文件修复，按优先级分三批。
+**解决方案**：逐文件修复，按优先级分三批（均已完成）。
 
 | 优先级 | 写路径 | 影响面 | 修复方式 |
 | --- | --- | --- | --- |
@@ -160,6 +160,8 @@ fun setNodeArchived(projectId: String, repoName: String, fullPath: String, archi
 ### 24.5 E-04：全局版本号保护非 `lastModifiedDate` 字段（P1）
 
 **问题描述**（关联 G-14）：`$max` 只保护 `lastModifiedDate` 不降级，其他 `$set` 字段（`size`、`metadata`、`archived` 等）仍可能被旧补偿覆盖。队列去重是主缓解，但不是 100% 防御。
+
+**v1 已落地根治**：单文档补偿（`updateFirst`/`upsert`/`findAndModify` 带 `_id`）改为**重读 Default 当前文档整篇 upsert 副路径**，以权威源当前值为准，陈旧快照天然无法覆盖新值（见 §3.15.7、M2 §5.1）。仅 `updateMulti`（无 `_id`）保留 `$max` 兜底 `lastModifiedDate`。配合 G-42 字段级 post-check（含 `metadata`/`lastModifiedDate`）+ `FAILED` 升级，残留不一致可感知、可阻断切流。
 
 **解决方案**：引入**补偿任务全局版本号**（M8+ 迭代）。
 
@@ -209,7 +211,7 @@ fun retryUpdateWithVersion(task: CompensationTask) {
 }
 ```
 
-**权衡**：增加 `__version` 字段需要在所有写路径中更新版本号（改造范围类似 `lastModifiedDate` 补全）。若团队决定不引入版本号字段，则 E-03（`lastModifiedDate` 补全）完成后，`$max` 保护的可靠性会大幅提升。建议作为 M8+ 可选增强。
+**权衡**：增加 `__version` 字段需要在所有写路径中更新版本号（改造范围类似 `lastModifiedDate` 补全）。**v1 已通过「重读权威源整篇 upsert」根治 G-14，无需引入 `__version`**；本方案降级为 M8+ 可选增强，仅在出现极端残留且对账无法接受时再上。
 
 ---
 
@@ -241,7 +243,7 @@ class DualWriteSidecarVerifier(
 ```
 
 **关键点**：
-- 这是 count 级别的轻量对账，不影响性能
+- 这是**抽样**级别的轻量对账，不依赖全量 count（大项目 2 亿+ 条 count 不可行）
 - 关注**差异扩大趋势**而非绝对值，避免双写期间的正常延迟触发误报
 - 若连续 3 次对账差异持续扩大，告警升级为 P1，阻断切流
 
@@ -250,7 +252,7 @@ class DualWriteSidecarVerifier(
 ### 24.7 E-06：配置热加载的跨 Pod 一致性窗口（P1，v2 可选）
 
 > **v1 决策**：不实现下文 `routing-staging` 两阶段提交。跨 Pod 一致性靠 §3.10「100% 实例部署」运维 SOP +
-> Prometheus 指标 `bkrepo_mongo_routing_config_version` 监测（§25.3.3）。路由配置纯 Consul + RefreshScope；DB 仅 Job 编排，不参与热路径。
+> Prometheus 指标 `bkrepo_mongo_routing_config_version` 监测（§25.3.3）。路由配置纯 Consul + `@ConfigurationProperties` 原地重绑定 live read；DB 仅 Job 编排，不参与热路径。
 
 **问题描述**（关联 §10.1）：配置变更不是原子跨 Pod 的：
 
@@ -774,14 +776,14 @@ class DualWriteDurationGuard(
 
 ### 24.16 E-15：补偿任务入队失败无兜底（已评估，P0 降级）
 
-**问题描述**（关联 G-23）：双写期 Heavy 主路径写入成功后，副路径 Default 同步写入失败 → 记录补偿任务 → 但**补偿任务本身的 MongoDB 写入也可能失败**（网络瞬断、集合不存在、磁盘满等）。此时 Heavy 已有数据、Default 无数据、补偿任务丢失 → **永久数据不一致**。
+**问题描述**（关联 G-23）：双写期 Default 主路径写入成功后，副路径 Heavy 同步写入失败 → 记录补偿任务 → 但**补偿任务本身的 MongoDB 写入也可能失败**（网络瞬断、集合不存在、磁盘满等）。此时 Default 已有数据、Heavy 无数据、补偿任务丢失 → **永久数据不一致**。
 
 ```text
-T1: Heavy.insert 成功 → 返回 OK
-T2: Default.insert 失败（网络瞬断）
+T1: Default.insert 成功 → 返回 OK
+T2: Heavy.insert 失败（网络瞬断）
 T3: compensationQueue.enqueue(task)  ← 这一步也失败！
-T4: 返回成功（Heavy 已成功），但 Default 无数据、无补偿记录
-结果：Heavy/Default 永久不一致 ❌
+T4: 返回成功（Default 已成功），但 Heavy 无数据、无补偿记录
+结果：Default/Heavy 永久不一致 ❌
 ```
 
 **评估结论**：本地文件兜底方案（`CompensationFallbackWriter` + `CompensationFallbackRecovery`）经评审后删除，理由：
@@ -934,7 +936,7 @@ fun validateWriteConcern(template: MongoTemplate, instanceName: String): Validat
 | 操作类型 | writeConcern | readConcern | 原因 |
 | --- | --- | --- | --- |
 | 业务写入（insert/update/delete） | **majority** | — | 防止 Primary failover 数据丢失 |
-| 双写副路径写入 | **majority** | — | 同上，确保 Default 副路径数据可靠 |
+| 双写副路径写入 | **majority** | — | 同上，确保 Heavy 副路径数据可靠 |
 | 补偿任务写入 | majority（推荐） | — | 补偿任务本身不能丢失 |
 | 业务读取（Primary） | — | **majority**（推荐）或 local | majority 保证不读到回滚数据 |
 | 对账/VERIFY 读取 | — | **majority** | 对账必须基于已提交数据 |
@@ -959,7 +961,6 @@ fun validateWriteConcern(template: MongoTemplate, instanceName: String): Validat
 spring.data.mongodb.multi-instance.rules.node:
   migration:
     project-locks:
-      freeze-default-node-mutation: true
       freeze-gc: true
       freeze-physical-delete: true
       freeze-ddl: true            # 新增：禁止对涉及实例执行 DDL
@@ -1004,9 +1005,9 @@ class MigrationDdlGuard(
 ```
 
 **SOP 约束**：
-- 所有索引创建必须在迁移开始前完成
-- 迁移期间（INITIAL_SYNC → CLEANUP）禁止对涉及实例执行任何 DDL
-- 索引缺失 → INIT 阶段 fail-fast（已有），修复后重新触发迁移
+- Default 实例索引由 `@PostConstruct` 启动时自动创建；Heavy 实例索引由 `ShardingMongoDao.ensureIndex(entity)` 在首次写入（INITIAL_SYNC）时 lazy 创建。
+- 迁移期间（INITIAL_SYNC → CLEANUP）禁止对涉及实例执行外部 DDL（手动 `createIndex`/`dropIndex`）；lazy ensureIndex（内部机制）豁免。
+- 索引缺失 → INIT 阶段输出差异日志，不阻断迁移。
 
 ---
 
@@ -1016,16 +1017,16 @@ class MigrationDdlGuard(
 
 ```text
 场景 A（正常）：
-  T1: 驱动发起 write(Heavy) → 网络超时
-  T2: 驱动自动重试 write(Heavy) → 成功
-  T3: 应用层收到成功 → 同步写 Default
+  T1: 驱动发起 write(Default) → 网络超时
+  T2: 驱动自动重试 write(Default) → 成功
+  T3: 应用层收到成功 → 同步写 Heavy
   → 结果正常 ✅
 
 场景 B（ack丢失）：
-  T1: 驱动发起 write(Heavy) → MongoDB 已写入但 ack 丢失 → 驱动判为超时
-  T2: 驱动自动重试 write(Heavy) → 对于 insert: DuplicateKeyException（被驱动吞掉）
+  T1: 驱动发起 write(Default) → MongoDB 已写入但 ack 丢失 → 驱动判为超时
+  T2: 驱动自动重试 write(Default) → 对于 insert: DuplicateKeyException（被驱动吞掉）
       对于 $inc: 会再次 +inc → 计数重复 ❌
-  T3: 应用层不知情（驱动返回成功），同步写 Default
+  T3: 应用层不知情（驱动返回成功），同步写 Heavy
   → $inc 操作可能被重复计数 ❌
 ```
 
@@ -1146,7 +1147,7 @@ fun rollbackFromDualWrite(projectId: String) {
 ### 24.23 E-22：Default 主从切换期间补偿 spike（P2）
 
 **问题描述**（关联 G-30）：Default Primary 发生 failover（短暂不可用 → 自动选举，通常 10~30 秒），在此期间：
-- 所有双写的 Default 副路径同步写入会失败
+- 所有双写的 Default 主路径同步写入会失败
 - 补偿队列会在短时间内**积压大量任务**（几乎所有双写都失败）
 
 **解决方案**：监控 + 自适应消费速率。
@@ -1319,7 +1320,7 @@ flowchart LR
 
 #### 25.2.1 G-08 / E-03：`lastModifiedDate` 写路径补全
 
-**问题**：§3.19.1 审计发现 10/13 写路径遗漏 `lastModifiedDate`，导致补偿 `$max` 防护失效、对账 `lastModifiedDate` 对比失真。
+**问题**：初版 §3.19.1 审计曾发现写路径遗漏 `lastModifiedDate`。**当前状态（2026-07）**：已按下文策略补全，审计表见 §3.19.1；`setNodeArchived` 待确认。
 
 **修复策略**：**集中兜底 + 逐点修复**，避免遗漏新增写路径。
 
@@ -1382,9 +1383,9 @@ THEN fail-fast 抛 IllegalStateException + P1 告警
 
 | 方法 | 语义 |
 | --- | --- |
-| `isRouted(ruleName, projectId)` | `routing-state=ROUTED` + 项目在 `project-routing` 中（纯 Consul） |
+| `isRouted(ruleName, projectId)` | 运行时有效状态 `ROUTED` + 项目在 `project-routing` 中（`routing-effective-at` 已到点） |
 | `isProjectRoutedOut(ruleName, projectId)` | 别名，等同 `isRouted` |
-| `isProjectInDualWrite(ruleName, projectId)` | `routing-state=DUAL_WRITE` + 项目在 `project-routing` 中（纯 Consul） |
+| `isProjectInDualWrite(ruleName, projectId)` | 运行时有效状态 `DUAL_WRITE` + 项目在 `project-routing` 中（含 `ROUTED` 配置但未到 `routing-effective-at`） |
 
 > **注意**：`isRouted` / `isProjectRoutedOut` 仅看 Consul，**不读** `mongo_migration_sync_state.phase`。Tier-Biz 组内尚未开始迁移的项目应 **不在** `project-routing` 中，读写仍走 Default。
 
@@ -1399,7 +1400,7 @@ THEN fail-fast 抛 IllegalStateException + P1 告警
 
 #### 25.2.3 E-15 / G-23：补偿入队失败兜底
 
-**问题**：Heavy 主路径成功 → Default 副路径失败 → 补偿入队也失败 → Heavy/Default 永久不一致（§24.16）。
+**问题**：Default 主路径成功 → Heavy 副路径失败 → 补偿入队也失败 → Default/Heavy 永久不一致（§24.16）。
 
 **评估结论**：本地文件兜底方案经评审后删除（详见 §24.16）。实际应对策略如下：
 
@@ -1410,7 +1411,7 @@ try {
     mongoTemplate.insert(compensationTask)
 } catch (enqueueEx) {
     log.error("CRITICAL: compensation enqueue failed")
-    // ponytail: 补偿消费者自带重试（MAX_RETRY=3），FAILED 后 P0 告警 + 人工介入
+    // 补偿消费者自带重试（MAX_RETRY=3），FAILED 后 P0 告警 + 人工介入
 }
 ```
 
@@ -1533,11 +1534,10 @@ spring.data.mongodb.multi-instance:
 ```
 
 ```text
-每个实例启动 / @RefreshScope 刷新后上报 Prometheus Gauge：
+每个实例启动 / `@ConfigurationProperties` 原地重绑定后上报 Prometheus Gauge：
   bkrepo_mongo_routing_config_version{rule="node", service="generic"} 42
 
-GET /routing/readiness → M5-03: localVersion >= minConfigVersion（本实例）
-  → 仅需任抽一个实例验证 G-34 P0 清单完整性，无需逐实例调用
+GET /routing/readiness → M5-03: localVersion >= minConfigVersion（本实例 INFRA + M5 检查）
 
 进入 DUAL_WRITE 前（运维 SOP，非代码自动门禁）:
   发布系统确认所有实例已完成部署并启动
@@ -1655,7 +1655,7 @@ M8+ 前仅在 `MongoMultiInstanceProperties` 预留 `package` 规则条目（§3
 | 5 | 迁出项目 Job 扫描 Default 时 `projectId` 过滤生效（§3.7.2） | 灰度 Job 日志检查执行计划 | 开发 |
 | 6 | `migration.project-locks` 迁移全程 `freeze-gc=true` | 迁移期 GC Job 跳过日志 | 开发 |
 | 7 | 散发查询 `STRICT` 部分实例失败时返回错误（§3.7） | Mock 单实例超时，断言抛错 | 开发 |
-| 8 | **13/13 写路径更新 `lastModifiedDate`**（§3.19.1、§25.2.1） | CI 静态检查 + 乱序补偿测试 | 开发 |
+| 8 | **13/13 写路径更新 `lastModifiedDate`**（§3.19.1、§25.2.1） | CI 静态检查 + 乱序补偿测试；§3.19.1 已闭合 | 开发 |
 | 9 | **补偿多 Pod claimTask 幂等**（G-24 / §25.2.5） | 2 Pod 并发认领同任务，仅 1 成功 | 开发 |
 | 10 | 补偿队列同 `_id` 去重 `replaceOrAdd` 生效（§3.15.7、§25.2.6） | 同 `_id` 连续入队，队列深度 = 1 | 开发 |
 | 11 | 补偿 update `lastModifiedDate` 使用 `$max` 保护（§3.15.7） | 旧补偿不降级时间戳测试 | 开发 |
@@ -1664,7 +1664,7 @@ M8+ 前仅在 `MongoMultiInstanceProperties` 预留 `package` 规则条目（§3
 | 14 | **Zombie 写保护**（§25.2.2、E-01） | ROUTED 后写 Default 抛 `IllegalStateException` | 开发 |
 | 15 | **writeConcern majority INIT 校验**（§25.3.4、E-17） | INIT 阶段校验通过 | 运维 |
 | 16 | **旁路对账零差异**（§25.3.2、E-05） | 连续 3 轮抽样对账零差异 | 开发 |
-| 17 | **G-34 路由就绪**（§3.19.2、§10.5） | `GET /routing/readiness` 全绿；P0 清单 100% | 开发 |
+| 17 | **G-34 路由就绪**（§3.19.2、§10.5） | `GET /routing/readiness` 全绿（INFRA + M5） | 开发 |
 
 **M7 上线判定**：上表 17 项全部通过 + 模式一（oplog）已稳定运行 ≥ 2 周 + 小项目试点完整走通状态机（§3.9.1）。
 

@@ -38,6 +38,7 @@ dependencies {
     api("cn.hutool:hutool-crypto:${Versions.HutoolCrypto}")
     api("commons-codec:commons-codec")
     compileOnly(project(":common:common-mongo"))
+    testImplementation(project(":common:common-mongo"))
 
     val assemblyMode = project.findPropertyOrNull("devops.assemblyMode")
     if (assemblyMode == null || assemblyMode.uppercase(getDefault()) == "CONSUL") {

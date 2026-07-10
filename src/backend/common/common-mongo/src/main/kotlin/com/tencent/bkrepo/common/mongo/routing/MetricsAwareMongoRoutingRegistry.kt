@@ -26,9 +26,16 @@ class MetricsAwareMongoRoutingRegistry(
         context: Any?,
         defaultTemplate: MongoTemplate,
     ): WriteRoute {
-        val route = delegate.resolveWriteRoute(collectionName, context, defaultTemplate)
-        recordRoute(collectionName, defaultTemplate, route.primary, route.fallbackToDefault)
-        return route
+        return try {
+            val route = delegate.resolveWriteRoute(collectionName, context, defaultTemplate)
+            recordRoute(collectionName, defaultTemplate, route.primary, route.fallbackToDefault)
+            route
+        } catch (e: IllegalStateException) {
+            if (e.message?.contains("Routing key") == true) {
+                metrics.recordContextLost()
+            }
+            throw e
+        }
     }
 
     private fun recordRoute(

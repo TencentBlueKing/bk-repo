@@ -49,6 +49,7 @@ class NodeScatterQueryServiceTest {
         executor = Executors.newFixedThreadPool(4),
         timeoutSeconds = timeoutSeconds,
         mode = mode,
+        batchQueryHelper = NodeBatchQueryHelper(defaultTemplate, registry),
     )
 
     private fun makeNode(id: String, projectId: String = "proj", sha256: String = "abc") = TNode(

@@ -33,7 +33,7 @@ class StandardRoutingRegistry(
 
     override fun isProjectInDualWrite(ruleName: String, projectId: String): Boolean = false
 
-    override fun validateOnStartup() { }
+    override fun validateOnStartup() {}
 
     override fun routeWrite(collectionName: String, context: Any?): MongoTemplate? = null
 

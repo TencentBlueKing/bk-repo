@@ -13,10 +13,14 @@ import com.tencent.bkrepo.common.mongo.routing.MigrationGate
 import com.tencent.bkrepo.common.mongo.routing.MigrationInitValidator
 import com.tencent.bkrepo.common.mongo.routing.MongoDualWriteCompensationService
 import com.tencent.bkrepo.common.mongo.routing.MongoMultiInstanceProperties
+import com.tencent.bkrepo.common.mongo.routing.RoutingEffectiveState
 import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationBindingRequest
 import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationProjectRequest
+import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationRouteResponse
 import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationStatusListResponse
 import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationStatusResponse
+import com.tencent.bkrepo.opdata.api.mongo.migration.RollbackVerifyCheck
+import com.tencent.bkrepo.opdata.api.mongo.migration.RollbackVerifyResult
 import com.tencent.bkrepo.opdata.api.mongo.migration.RoutingConfigRequest
 import com.tencent.bkrepo.opdata.api.mongo.migration.RoutingConfigResponse
 import com.tencent.bkrepo.opdata.routing.RoutingReadinessAggregator
@@ -26,6 +30,8 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
 @Service
 class MongoMigrationService(
@@ -132,7 +138,7 @@ class MongoMigrationService(
         syncStateDao.updatePhase(ruleName, MigrationPhase.INITIAL_SYNC)
     }
 
-    fun route(request: MigrationProjectRequest) {
+    fun route(request: MigrationProjectRequest): MigrationRouteResponse {
         val state = requireState(request)
         if (state.phase != MigrationPhase.DUAL_WRITE) {
             throw badRequest("Project must be DUAL_WRITE, current=${state.phase}")
@@ -149,9 +155,12 @@ class MongoMigrationService(
         // 主动触发一次对账，确保门禁检查数据新鲜（而非依赖历史缓存）
         verifyProject(request.ruleName, request.projectId)
         val gate = migrationGate ?: throw badRequest("MigrationGate not available")
-        val pending = compensationService?.countPendingTasks(request.ruleName, request.projectId) ?: 0L
+        val compensation = compensationService
+            ?: throw badRequest("CompensationService not available")
+        val sidecar = sidecarVerifier ?: throw badRequest("SidecarVerifier not available")
+        val pending = compensation.countPendingTasks(request.ruleName, request.projectId)
         // 门禁 #3：旁路对账连续 3 轮 pass（spec §25.3.2 E-05）
-        val sidecarOk = sidecarVerifier?.isRecentVerificationPassed(request.projectId) ?: true
+        val sidecarOk = sidecar.isRecentVerificationPassed(request.projectId)
         val result = gate.canSwitchToRouted(
             compensationQueueEmpty = pending == 0L,
             sidecarPassed = sidecarOk,
@@ -169,6 +178,17 @@ class MongoMigrationService(
             )
         }
         syncStateDao.updatePhase(request.projectId, MigrationPhase.ROUTED)
+        val effectiveAt = RoutingEffectiveState.suggestRoutingEffectiveAt()
+        val nextConfigVersion = registry.getConfigVersion() + 1
+        return MigrationRouteResponse(
+            projectId = request.projectId,
+            ruleName = request.ruleName,
+            phase = MigrationPhase.ROUTED,
+            consulRoutingState = "ROUTED",
+            configVersion = nextConfigVersion,
+            routingEffectiveAt = CONSUL_INSTANT_FORMATTER.format(effectiveAt),
+            consulHint = buildRouteConsulHint(request.ruleName, nextConfigVersion, effectiveAt),
+        )
     }
 
     fun cleanup(request: MigrationProjectRequest) {
@@ -176,6 +196,7 @@ class MongoMigrationService(
         if (state.phase != MigrationPhase.ROUTED) {
             throw badRequest("Project must be ROUTED, current=${state.phase}")
         }
+        assertEffectiveRoutingRouted(request.ruleName, request.projectId)
         syncStateDao.updatePhase(request.projectId, MigrationPhase.CLEANUP_READY)
         // 模式一（集合族迁移）：直接清理 Default 月集合，避免异步 Job 等待，完成后置 CLEANED
         // 模式二（node / block-node 路由）：由 *ProjectSyncJob 异步清理 Default 上 projectId 数据并置 CLEANED
@@ -210,8 +231,37 @@ class MongoMigrationService(
         if (state.phase == MigrationPhase.CLEANED) {
             throw conflict("Default data already cleaned, manual full reverse dump required")
         }
+        if (state.phase.ordinal >= MigrationPhase.ROUTED.ordinal) {
+            throw conflict(
+                "Rollback API not available when phase=${state.phase}; follow §25.4.3 reverse migration SOP",
+            )
+        }
         compensationService?.deletePendingByRoutingKey(request.ruleName, request.projectId)
         syncStateDao.updatePhase(request.projectId, MigrationPhase.ROLLBACK)
+    }
+
+    fun rollbackVerify(projectId: String): RollbackVerifyResult {
+        val checks = mutableListOf<RollbackVerifyCheck>()
+        checks += RollbackVerifyCheck(
+            name = "routing-disabled",
+            passed = !registry.isRoutingEnabled(NODE_RULE) ||
+                projectId !in registry.allKnownProjectIds(NODE_RULE),
+        )
+        val collection = com.tencent.bkrepo.common.mongo.routing.NodeReconciliationHelper
+            .shardCollection(projectId)
+        val defaultReadable = runCatching {
+            mongoTemplate.count(
+                Query(Criteria.where("projectId").`is`(projectId)),
+                collection,
+            ) > 0L
+        }.getOrDefault(false)
+        checks += RollbackVerifyCheck(name = "default-readable", passed = defaultReadable)
+        val passed = checks.all { it.passed }
+        return RollbackVerifyResult(
+            projectId = projectId,
+            status = if (passed) "OK" else "FAILED",
+            checks = checks,
+        )
     }
 
     fun status(ruleName: String, projectId: String?): MigrationStatusListResponse {
@@ -311,6 +361,21 @@ class MongoMigrationService(
         }
     }
 
+    /** cleanup 前：运行时路由须已真正 ROUTED（含 routing-effective-at 到点） */
+    private fun assertEffectiveRoutingRouted(ruleName: String, projectId: String) {
+        val routed = if (ruleName in PROJECT_ROUTING_RULES) {
+            registry.isProjectRoutedOut(ruleName, projectId)
+        } else {
+            registry.isRoutingEnabled(ruleName) && !registry.isDualWrite(ruleName)
+        }
+        if (!routed) {
+            throw badRequest(
+                "Cleanup gate blocked: effective routing not ROUTED yet " +
+                    "(check Consul routing-state and routing-effective-at)",
+            )
+        }
+    }
+
     /**
      * §3.5.1 / §3.20 DB Gate：同时处于 INITIAL_SYNC / DUAL_WRITE 的项目数不得超过 max-concurrent-dual-write。
      */
@@ -390,7 +455,7 @@ class MongoMigrationService(
     }
 
     /**
-     * ponytail: 手动触发全部 Offload 规则的历史数据同步（替代原 @Scheduled 定时轮询）。
+     * 手动触发全部 Offload 规则的历史数据同步（替代原 @Scheduled 定时轮询）。
      */
     fun syncHistoricalData() {
         registry.listOffloadRuleNames().forEach { ruleName -> syncHistoricalDataByRule(ruleName) }
@@ -440,6 +505,16 @@ class MongoMigrationService(
         private const val NODE_SYNC_FAILED_COLLECTION = "node_project_sync_failed"
         private const val BLOCK_NODE_SYNC_FAILED_COLLECTION = "block_node_project_sync_failed"
         private const val OPLOG_SYNC_FAILED_COLLECTION = "oplog_sync_failed"
+        private val CONSUL_INSTANT_FORMATTER: DateTimeFormatter =
+            DateTimeFormatter.ISO_INSTANT.withZone(ZoneOffset.UTC)
         private val logger = LoggerFactory.getLogger(MongoMigrationService::class.java)
+
+        private fun buildRouteConsulHint(
+            ruleName: String,
+            configVersion: Long,
+            effectiveAt: java.time.Instant,
+        ): String =
+            "Consul: rules.$ruleName.routing-state=ROUTED, config-version=$configVersion, " +
+                "routing-effective-at=${CONSUL_INSTANT_FORMATTER.format(effectiveAt)}"
     }
 }

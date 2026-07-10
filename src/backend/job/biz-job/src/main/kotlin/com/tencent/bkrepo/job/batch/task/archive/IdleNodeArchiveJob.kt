@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.context.NodeContext
+import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.IdleNodeArchiveJobProperties
@@ -49,7 +50,6 @@ import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.inValues
@@ -76,7 +76,6 @@ class IdleNodeArchiveJob(
     private val migrateRepoStorageService: MigrateRepoStorageService,
     private val storageService: StorageService,
     @Autowired(required = false)
-    @Qualifier("degradeNodeScatterQueryService")
     private val nodeScatterQueryService: NodeScatterQueryService? = null,
 ) : MongoDbBatchJob<IdleNodeArchiveJob.Node, NodeContext>(properties) {
     private var lastCutoffTime: LocalDateTime? = null
@@ -281,22 +280,13 @@ class IdleNodeArchiveJob(
         val scatter = nodeScatterQueryService
         if (scatter != null) {
             val collections = (0 until SHARDING_COUNT).map { "$COLLECTION_NAME_PREFIX$it" }
-            val nodes = scatter.scatterFind(query, TNode::class.java, collections)
-            if (nodes.isNotEmpty()) {
-                logger.info("Find in use ${nodes.first()}.")
+            if (scatter.scatterExists(query, TNode::class.java, collections)) {
+                logger.info("Find in use sha256=$sha256 outside project $projectId.")
                 return true
             }
             return false
         }
-        for (i in 0 until SHARDING_COUNT) {
-            val collectionName = COLLECTION_NAME_PREFIX.plus(i)
-            val existNode = mongoTemplate.findOne(query, Node::class.java, collectionName)
-            if (existNode != null) {
-                logger.info("Find in use $existNode.")
-                return true
-            }
-        }
-        return false
+        return NodeCommonUtils.crossInstanceNodeExist(query, SHARDING_COUNT)
     }
 
     companion object {

@@ -6,7 +6,9 @@ import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.api.routing.DualWriteContext
 import com.tencent.bkrepo.common.mongo.api.routing.DualWriteExecutor
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
+import com.tencent.bkrepo.common.mongo.api.routing.RouteTarget
 import com.tencent.bkrepo.common.mongo.api.routing.RuleRoutingState
+import com.tencent.bkrepo.common.mongo.api.routing.WriteRoute
 import com.tencent.bkrepo.common.mongo.reactive.routing.MongoReactiveRoutingRegistry
 import com.tencent.bkrepo.common.mongo.routing.DefaultDualWriteExecutor
 import com.tencent.bkrepo.common.mongo.routing.MongoDualWriteCompensationService
@@ -33,6 +35,7 @@ import org.springframework.data.mongodb.core.query.UpdateDefinition
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.lang.reflect.Proxy
+import java.time.Instant
 import java.util.Date
 
 class AbstractMongoReactiveDaoRoutingTest {
@@ -218,7 +221,7 @@ class AbstractMongoReactiveDaoRoutingTest {
 
     @Test
     fun `compensation insert entity preserves _id assigned by primary insert`() = runBlocking {
-        // ponytail: 模拟 MongoTemplate.insert() 原地赋 _id，验证补偿任务 entity 携带 _id，
+        // 模拟 MongoTemplate.insert() 原地赋 _id，验证补偿任务 entity 携带 _id，
         // 防止泛型链路 _id 丢失导致 Default/Offload 数据永久分叉
         val simulatedId = "507f1f77bcf86cd799439011"
         val defaultTemplate = RecordingReactiveMongoTemplate()
@@ -467,12 +470,10 @@ class AbstractMongoReactiveDaoRoutingTest {
 
     @Test
     fun `compensation entity preserves Date Long nested object types in Document`() = runBlocking {
-        // ponytail: 验证补偿链路 entity 经 mongoConverter.write→Document 后
+        // 验证补偿链路 entity 经 mongoConverter.write→Document 后
         // Date/Long/嵌套对象等类型正确存储，防止 Jackson 类型转换导致精度/类型丢失
         val now = Date()
         val nested = NestedDoc(key = "k1", score = 99L)
-        val defaultTemplate = RecordingReactiveMongoTemplate()
-        val heavyTemplate = RecordingReactiveMongoTemplate(failures = setOf("insert"))
         val (compensationService, compensationTemplate) = compensationService()
         val entity = ComplexDoc(
             projectId = "projectA",
@@ -481,17 +482,16 @@ class AbstractMongoReactiveDaoRoutingTest {
             totalCount = Long.MAX_VALUE,
             nested = nested,
         )
-        val dao = RegistryBackedReactiveDao(
-            defaultTemplate = defaultTemplate,
-            heavyTemplate = heavyTemplate,
-            registry = noneDualWriteOffloadPrimaryRegistry(heavyTemplate),
+        // 直接调用 compensation enqueue 验证序列化，避免 AbstractMongoReactiveDao<TestDocument>
+        // 泛型限制导致的 ClassCastException（ComplexDoc 不是 TestDocument 子类型）
+        val route = WriteRoute(
+            primary = compensationTemplate,
+            routingKey = "projectA",
+            ruleName = "artifact-oplog",
+            secondaryTarget = RouteTarget("artifact-oplog", instanceName = "offload"),
         )
-        dao.installDualWriteSupport(ImmediateDualWriteExecutor(), compensationService)
+        compensationService.enqueueInsert(route, "test_collection", entity as Any)
 
-        dao.insert(entity)
-
-        assertEquals(listOf("insert:test_collection"), heavyTemplate.calls)
-        assertEquals(listOf("insert:test_collection"), defaultTemplate.calls)
         val task = compensationTemplate.inserted.single()
         val entityDoc = task.get("entity", Document::class.java)
         assertEquals("projectA", entityDoc.getString("projectId"))
@@ -740,6 +740,8 @@ class AbstractMongoReactiveDaoRoutingTest {
         }
 
         override fun count(query: Query, collectionName: String): Long = inserted.size.toLong()
+
+        override fun <T> findOne(query: Query, entityClass: Class<T>, collectionName: String): T? = null
     }
 
     private companion object {
@@ -849,6 +851,7 @@ class AbstractMongoReactiveDaoRoutingTest {
                         collectionPrefix = "test_",
                         routingKeyField = "projectId",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = Instant.EPOCH,
                         instances = mapOf(
                             "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(
                                 uri = "mongodb://heavy-primary:27017/test",
@@ -901,6 +904,7 @@ class AbstractMongoReactiveDaoRoutingTest {
                         collectionPrefix = "node_",
                         routingKeyField = "projectId",
                         routingState = RuleRoutingState.ROUTED,
+                        routingEffectiveAt = Instant.EPOCH,
                         instances = mapOf(
                             "heavy1" to MongoMultiInstanceProperties.RoutingRule.InstanceConfig(
                                 uri = "mongodb://heavy-primary:27017/test",
