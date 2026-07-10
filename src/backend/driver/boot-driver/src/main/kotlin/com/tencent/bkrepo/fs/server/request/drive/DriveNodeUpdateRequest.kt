@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.fs.server.request.drive
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.model.TMetadata
 import java.time.LocalDateTime
 
 data class DriveNodeUpdateRequest(
@@ -21,6 +22,7 @@ data class DriveNodeUpdateRequest(
     val ctime: Long? = null,
     val atime: Long? = null,
     val ifMatch: LocalDateTime? = null,
+    val metadata: MutableList<TMetadata>? = null,
 ) : DriveNodeBaseRequest(
     projectId = projectId,
     repoName = repoName,

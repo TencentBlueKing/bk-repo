@@ -493,10 +493,14 @@ open class PermissionServiceImpl constructor(
      * 对仓库列表做严格模式可见性过滤：
      * - 项目下没有任何严格模式仓库：直接返回原列表（快速退出，零额外开销）
      * - 否则：保留 [非严格模式仓库] + [严格模式且当前用户/角色已显式授权的仓库]
+     *   + [严格模式且当前用户为该仓库的仓库管理员的仓库]
      *
      * 用于 listPermissionRepo 中对"全量可见"路径（项目用户、Devops 项目成员、
      * 全局预览角色）做严格模式可见性收紧；普通授权聚合路径无需调用，因其本身
      * 仅返回已授权仓库。
+     *
+     * 系统管理员 / 本地项目管理员 / Devops 项目管理员在上层入口已直接返回全量，
+     * 不会走到本方法。
      */
     protected fun filterByStrictMode(
         projectId: String,
@@ -508,9 +512,19 @@ open class PermissionServiceImpl constructor(
         // 一次 Mongo 查询：项目下严格模式仓库集合（命中复合索引）
         val strictRepos = repoAuthConfigDao.listRepoNamesByMode(projectId, STRICT)
         if (strictRepos.isEmpty()) return repos
-        // 一次（或两次）Mongo 查询：用户/角色对这些 strict 仓库的已有授权
-        val grantedStrict = permHelper.listGrantedRepos(projectId, userId, roles, strictRepos)
-        return repos.filter { it !in strictRepos || it in grantedStrict }
+        // 严格模式仓库的可见集合，聚合两类授权来源，filter 时只需一次 contains：
+        // 1) 用户/角色对这些 strict 仓库的已有授权（一次或两次 Mongo 查询）
+        val granted = permHelper.listGrantedRepos(projectId, userId, roles, strictRepos).toMutableSet()
+        // 2) 仓库管理员豁免：用户所在角色中若为某严格模式仓库的仓库管理员（RoleType.REPO + admin=true），
+        //    该仓库对其可见，不受严格模式过滤限制
+        if (roles.isNotEmpty()) {
+            roleRepository.findByProjectIdAndTypeAndAdminAndIdIn(
+                projectId = projectId, type = RoleType.REPO, admin = true, ids = roles
+            ).forEach { role ->
+                role.repoName?.takeIf { it in strictRepos }?.let { granted.add(it) }
+            }
+        }
+        return repos.filter { it !in strictRepos || it in granted }
     }
 
     override fun listNoPermissionPath(

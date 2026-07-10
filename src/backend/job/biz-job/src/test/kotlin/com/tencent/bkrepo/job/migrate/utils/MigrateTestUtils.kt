@@ -52,6 +52,7 @@ import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.model.TNode
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import io.mockk.every
 import io.mockk.mockkObject
@@ -102,7 +103,8 @@ object MigrateTestUtils {
 
     fun MigrateFailedNodeDao.insertFailedNode(
         fullPath: String = "/a/b/c.txt",
-        nodeId: String = ""
+        nodeId: String = "",
+        sha256: String = UT_SHA256,
     ): TMigrateFailedNode {
         val now = LocalDateTime.now()
         return insert(
@@ -115,7 +117,7 @@ object MigrateTestUtils {
                 projectId = UT_PROJECT_ID,
                 repoName = UT_REPO_NAME,
                 fullPath = fullPath,
-                sha256 = UT_SHA256,
+                sha256 = sha256,
                 size = 1000L,
                 md5 = UT_MD5,
                 retryTimes = 0,
@@ -130,6 +132,8 @@ object MigrateTestUtils {
         fullPath: String = "/a/b/c.txt",
         archived: Boolean = false,
         compressed: Boolean = false,
+        deleted: LocalDateTime? = null,
+        metadata: List<MetadataModel> = emptyList(),
     ): TNode {
         val node = TNode(
             id = null,
@@ -143,6 +147,8 @@ object MigrateTestUtils {
             folder = false,
             archived = archived,
             compressed = compressed,
+            deleted = deleted,
+            metadata = metadata,
         )
         val sharding = HashShardingUtils.shardingSequenceFor(UT_PROJECT_ID, SHARDING_COUNT)
         val collectionName = "node_$sharding"

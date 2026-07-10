@@ -36,6 +36,8 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.DeletedBlockNodeCleanupJobProperties
+import com.tencent.bkrepo.job.config.properties.MigrateRepoStorageJobProperties
+import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -53,7 +55,9 @@ import kotlin.reflect.KClass
 class DeletedBlockNodeCleanupJob(
     private val blockNodeProperties: BlockNodeProperties,
     private val properties: DeletedBlockNodeCleanupJobProperties,
-    private val fileReferenceService: FileReferenceService
+    private val migrateProperties: MigrateRepoStorageJobProperties,
+    private val fileReferenceService: FileReferenceService,
+    private val migrateRepoStorageService: MigrateRepoStorageService,
 ) : DefaultContextMongoDbJob<DeletedBlockNodeCleanupJob.BlockNode>(properties) {
 
     data class BlockNode(
@@ -89,6 +93,14 @@ class DeletedBlockNodeCleanupJob(
 
     override fun run(row: BlockNode, collectionName: String, context: JobContext) {
         try {
+            // 仓库正在迁移时无法确认应该修改哪个存储的引用数，需要等迁移完后再执行清理
+            if (migrateProperties.enabled && migrateRepoStorageService.migrating(row.projectId, row.repoName)) {
+                logger.info(
+                    "repo[${row.projectId}/${row.repoName}] storage was migrating, " +
+                        "skip clean block node[${row.sha256}]"
+                )
+                return
+            }
             val nodeQuery = Query.query(Criteria.where(ID).isEqualTo(row.id))
             routedMongoTemplate(row.projectId, collectionName).remove(nodeQuery, collectionName)
             decrementFileReference(row)

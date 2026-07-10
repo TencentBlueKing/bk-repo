@@ -7,8 +7,8 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.fs.server.config.properties.drive.DriveProperties
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TYPE_DIRECTORY
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.TYPE_DIRECTORY
 import com.tencent.bkrepo.fs.server.repository.drive.RDriveNodeDao
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBaseRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeCreateRequest

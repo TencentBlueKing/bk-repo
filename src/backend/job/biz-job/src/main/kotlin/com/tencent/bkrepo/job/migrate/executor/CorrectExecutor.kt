@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
@@ -39,7 +40,6 @@ import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageUtils.buildThreadP
 import com.tencent.bkrepo.job.migrate.utils.NodeIterator
 import com.tencent.bkrepo.job.migrate.utils.TransferDataExecutor
 import com.tencent.bkrepo.job.service.MigrateArchivedFileService
-import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
@@ -55,10 +55,10 @@ class CorrectExecutor(
     storageService: StorageService,
     executingTaskRecorder: ExecutingTaskRecorder,
     migrateArchivedFileService: MigrateArchivedFileService,
+    blockNodeService: BlockNodeService,
     private val migrateFailedHandler: MigrateFailedHandler,
     private val transferDataExecutor: TransferDataExecutor,
-    private val mongoTemplate: MongoTemplate,
-    private val routingRegistry: MongoRoutingRegistry? = null,
+    mongoTemplate: MongoTemplate,
 ) : BaseTaskExecutor(
     properties,
     migrateRepoStorageTaskDao,
@@ -67,6 +67,8 @@ class CorrectExecutor(
     storageService,
     executingTaskRecorder,
     migrateArchivedFileService,
+    blockNodeService,
+    mongoTemplate,
 ) {
     /**
      * 用于执行数据矫正的线程池
@@ -84,7 +86,7 @@ class CorrectExecutor(
 
     override fun doExecute(context: MigrationContext) {
         with(context) {
-            val iterator = NodeIterator(task, mongoTemplate, routingRegistry = routingRegistry)
+            val iterator = NodeIterator(task, mongoTemplate)
             iterator.forEach { node ->
                 context.incTransferringCount()
                 transferDataExecutor.execute(node) {

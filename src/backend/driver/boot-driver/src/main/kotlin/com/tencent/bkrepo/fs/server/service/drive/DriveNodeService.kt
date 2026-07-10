@@ -8,8 +8,8 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.fs.server.config.properties.drive.DriveProperties
 import com.tencent.bkrepo.fs.server.message.DriveMessageCode
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TYPE_DIRECTORY
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.TYPE_DIRECTORY
 import com.tencent.bkrepo.fs.server.repository.drive.RDriveNodeDao
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchOp
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchRequest
@@ -564,6 +564,7 @@ class DriveNodeService(
             mtime = updateRequest.mtime ?: srcNode.mtime,
             ctime = updateRequest.ctime ?: srcNode.ctime,
             atime = updateRequest.atime ?: srcNode.atime,
+            metadata = updateRequest.metadata ?: srcNode.metadata,
             lastModifiedBy = operator,
             lastModifiedClientId = clientId,
             lastModifiedDate = now,

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -42,7 +43,6 @@ import com.tencent.bkrepo.job.migrate.utils.MigratedTaskNumberPriorityQueue
 import com.tencent.bkrepo.job.migrate.utils.NodeIterator
 import com.tencent.bkrepo.job.migrate.utils.TransferDataExecutor
 import com.tencent.bkrepo.job.service.MigrateArchivedFileService
-import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
@@ -59,11 +59,11 @@ class MigrateExecutor(
     storageService: StorageService,
     executingTaskRecorder: ExecutingTaskRecorder,
     migrateArchivedFileService: MigrateArchivedFileService,
+    blockNodeService: BlockNodeService,
     private val migrateFailedHandler: MigrateFailedHandler,
     private val transferDataExecutor: TransferDataExecutor,
     private val repositoryService: RepositoryService,
-    private val mongoTemplate: MongoTemplate,
-    private val routingRegistry: MongoRoutingRegistry? = null,
+    mongoTemplate: MongoTemplate,
 ) : BaseTaskExecutor(
     properties,
     migrateRepoStorageTaskDao,
@@ -72,6 +72,8 @@ class MigrateExecutor(
     storageService,
     executingTaskRecorder,
     migrateArchivedFileService,
+    blockNodeService,
+    mongoTemplate,
 ) {
     /**
      * 任务执行线程池，用于提交node迁移任务到[transferDataExecutor]
@@ -92,7 +94,8 @@ class MigrateExecutor(
         val projectId = task.projectId
         val repoName = task.repoName
         val taskId = task.id!!
-        val iterator = NodeIterator(task, mongoTemplate, routingRegistry = routingRegistry)
+        waitBeforeMigrate(projectId, repoName)
+        val iterator = NodeIterator(task, mongoTemplate)
         val totalCount = iterator.totalCount
         val migratedNumberQueue = MigratedTaskNumberPriorityQueue(task.migratedCount, task.lastMigratedNodeId)
         var migratedCount = task.migratedCount
@@ -131,6 +134,19 @@ class MigrateExecutor(
         context.waitAllTransferFinished()
         val migrated = migratedNumberQueue.updateLeftMax()
         migrateRepoStorageTaskDao.updateMigratedCount(taskId, migrated.number, migrated.nodeId)
+    }
+
+    private fun waitBeforeMigrate(projectId: String, repoName: String) {
+        if (properties.migrateDelay.isZero || properties.migrateDelay.isNegative) {
+            return
+        }
+        logger.info("wait[${properties.migrateDelay}] before migrate data, task[$projectId/$repoName]")
+        try {
+            TimeUnit.MILLISECONDS.sleep(properties.migrateDelay.toMillis())
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+            throw IllegalStateException("wait before migrate data interrupted, task[$projectId/$repoName]", e)
+        }
     }
 
     /**

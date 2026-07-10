@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.migrate.executor
 
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -45,6 +46,7 @@ import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageUtils.buildThreadP
 import com.tencent.bkrepo.job.migrate.utils.TransferDataExecutor
 import com.tencent.bkrepo.job.service.MigrateArchivedFileService
 import org.slf4j.LoggerFactory
+import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
@@ -60,9 +62,11 @@ class MigrateFailedNodeExecutor(
     storageService: StorageService,
     executingTaskRecorder: ExecutingTaskRecorder,
     migrateArchivedFileService: MigrateArchivedFileService,
+    blockNodeService: BlockNodeService,
     private val transferDataExecutor: TransferDataExecutor,
     private val migrateFailedNodeFixer: MigrateFailedNodeFixer,
     private val nodeDao: NodeDao,
+    mongoTemplate: MongoTemplate,
 ) : BaseTaskExecutor(
     properties,
     migrateRepoStorageTaskDao,
@@ -71,6 +75,8 @@ class MigrateFailedNodeExecutor(
     storageService,
     executingTaskRecorder,
     migrateArchivedFileService,
+    blockNodeService,
+    mongoTemplate,
 ) {
     /**
      * 用于重新迁移失败的node
@@ -125,14 +131,24 @@ class MigrateFailedNodeExecutor(
     private fun convert(failedNode: TMigrateFailedNode): Node {
         val criteria = Node::projectId.isEqualTo(failedNode.projectId).and(ID).isEqualTo(failedNode.nodeId)
         val node = nodeDao.findOne(Query(criteria))
+        if (node != null && node.fullPath != failedNode.fullPath) {
+            logger.warn(
+                "node[${failedNode.nodeId}] fullPath changed from [${failedNode.fullPath}] to [${node.fullPath}], " +
+                    "task[${failedNode.projectId}/${failedNode.repoName}]"
+            )
+        }
         return Node(
             id = failedNode.nodeId,
             projectId = failedNode.projectId,
             repoName = failedNode.repoName,
-            fullPath = failedNode.fullPath,
+            // 节点可能在迁移失败后被并发rename，分块已随rename迁移到新路径，
+            // 因此优先以库中当前节点的fullPath为准，避免用失败时记录的旧路径查不到分块
+            fullPath = node?.fullPath ?: failedNode.fullPath,
             size = failedNode.size,
             sha256 = failedNode.sha256,
             md5 = failedNode.md5,
+            createdDate = node?.createdDate,
+            deleted = node?.deleted,
             archived = node?.archived,
             compressed = node?.compressed,
         )

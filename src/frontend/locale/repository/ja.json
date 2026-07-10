@@ -221,6 +221,8 @@
   "supportPreview": "このファイルはプレビューをサポートしていません",
   "previewCompressedLimitTips": "1GB以内の圧縮ファイルのプレビューのみサポート",
   "previewFileTips": "注意：50MBを超えるテキストファイルは、最初の50MBの内容のみ表示されます",
+  "previewTab": "プレビュー",
+  "sourceTab": "ソース",
   "telephone": "電話番号",
   "wrongTelephone": "誤った電話番号",
   "accountPermission": "アカウント権限",

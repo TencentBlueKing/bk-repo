@@ -36,6 +36,10 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
+import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -89,6 +93,7 @@ class NodeServiceTest @Autowired constructor(
     private val nodeService: NodeService,
     private val repositoryProperties: RepositoryProperties,
     private val nodeDao: NodeDao,
+    private val blockNodeService: BlockNodeService,
 ) : ServiceBaseTest() {
 
     private val option = NodeListOption(includeFolder = false, deep = false)
@@ -491,6 +496,47 @@ class NodeServiceTest @Autowired constructor(
 
         assertTrue(nodeService.checkExist(node("/a/d")))
         assertTrue(nodeService.checkExist(node("/a/d/c")))
+    }
+
+    @Test
+    @DisplayName("重命名分块上传节点，分块信息同步迁移")
+    fun testRenameSeparateNodeMovesBlocks() {
+        // 创建分块上传节点(sha256为FAKE_SHA256)及其分块
+        nodeService.createNode(
+            createRequest("/file", folder = false).copy(sha256 = FAKE_SHA256)
+        )
+        blockNodeService.createBlock(
+            TBlockNode(
+                createdBy = UT_USER,
+                createdDate = LocalDateTime.now(),
+                nodeFullPath = "/file",
+                startPos = 0,
+                sha256 = "blockSha256",
+                projectId = UT_PROJECT_ID,
+                repoName = UT_REPO_NAME,
+                size = 1
+            ),
+            null
+        )
+
+        nodeService.renameNode(
+            NodeRenameRequest(
+                projectId = UT_PROJECT_ID,
+                repoName = UT_REPO_NAME,
+                fullPath = "/file",
+                newFullPath = "/file2",
+                operator = UT_USER
+            )
+        )
+
+        val queryDate = LocalDateTime.now().minusMinutes(1).toString()
+        val fullRange = Range.full(Long.MAX_VALUE)
+        assertTrue(
+            blockNodeService.listBlocks(fullRange, UT_PROJECT_ID, UT_REPO_NAME, "/file2", queryDate).isNotEmpty()
+        )
+        assertTrue(
+            blockNodeService.listBlocks(fullRange, UT_PROJECT_ID, UT_REPO_NAME, "/file", queryDate).isEmpty()
+        )
     }
 
     @Test

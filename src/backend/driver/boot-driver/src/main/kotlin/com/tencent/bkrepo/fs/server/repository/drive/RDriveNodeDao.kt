@@ -2,7 +2,8 @@ package com.tencent.bkrepo.fs.server.repository.drive
 
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
-import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
+import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode
+import com.tencent.bkrepo.common.metadata.util.drive.DriveNodeDaoHelper
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
@@ -86,6 +87,13 @@ class RDriveNodeDao : DriveHashShardingMongoReactiveDao<TDriveNode>() {
         return findOne(query)
     }
 
+    suspend fun existsIno(projectId: String, repoName: String, ino: Long): Boolean {
+        val criteria = where(TDriveNode::projectId).isEqualTo(projectId)
+            .and(TDriveNode::repoName).isEqualTo(repoName)
+            .and(TDriveNode::ino).isEqualTo(ino)
+        return exists(Query(criteria))
+    }
+
     suspend fun markNodeDeleted(
         projectId: String,
         repoName: String,
@@ -133,6 +141,7 @@ class RDriveNodeDao : DriveHashShardingMongoReactiveDao<TDriveNode>() {
             .set(TDriveNode::mtime.name, updatedNode.mtime)
             .set(TDriveNode::ctime.name, updatedNode.ctime)
             .set(TDriveNode::atime.name, updatedNode.atime)
+            .set(TDriveNode::metadata.name, updatedNode.metadata)
             .set(TDriveNode::lastModifiedBy.name, updatedNode.lastModifiedBy)
             .set(TDriveNode::lastModifiedDate.name, updatedNode.lastModifiedDate)
         return updateFirst(
@@ -149,45 +158,24 @@ class RDriveNodeDao : DriveHashShardingMongoReactiveDao<TDriveNode>() {
             .and(TDriveNode::deleted).isNull()
     }
 
-    /**
-     * 查当前活跃节点
-     */
     private fun currentParentNameCriteria(projectId: String, repoName: String, parent: Long, name: String): Criteria {
-        return snapshotParentNameCriteria(projectId, repoName, parent, name)
+        return DriveNodeDaoHelper.currentParentNameCriteria(projectId, repoName, parent, name)
     }
 
-    /**
-     * 查快照视图节点
-     *
-     * 条件：snapSeq <= targetSnapSeq AND deleteSnapSeq > targetSnapSeq
-     */
     private fun snapshotParentNameCriteria(
         projectId: String, repoName: String, parent: Long, name: String, snapSeq: Long? = null
     ): Criteria {
-        return listChildrenCriteria(projectId, repoName, parent, snapSeq).and(TDriveNode::name).isEqualTo(name)
+        return DriveNodeDaoHelper.listChildrenCriteria(projectId, repoName, parent, snapSeq)
+            .and(TDriveNode::name.name).isEqualTo(name)
     }
 
-    /**
-     * 列出子节点
-     *
-     * @param snapSeq 快照序列号，null 时查当前视图
-     */
     private fun listChildrenCriteria(
         projectId: String,
         repoName: String,
         parent: Long? = null,
         snapSeq: Long? = null,
     ): Criteria {
-        val criteria = where(TDriveNode::projectId).isEqualTo(projectId)
-            .and(TDriveNode::repoName.name).isEqualTo(repoName)
-        parent?.let { criteria.and(TDriveNode::parent).isEqualTo(it) }
-        return if (snapSeq == null) {
-            criteria.and(TDriveNode::deleteSnapSeq).isEqualTo(Long.MAX_VALUE)
-                .and(TDriveNode::deleted).isEqualTo(null)
-        } else {
-            criteria.and(TDriveNode::snapSeq).lte(snapSeq)
-                .and(TDriveNode::deleteSnapSeq).gt(snapSeq)
-        }
+        return DriveNodeDaoHelper.listChildrenCriteria(projectId, repoName, parent, snapSeq)
     }
 
     private fun appendCursorCondition(criteria: Criteria, sortField: String, lastValue: Any?, lastId: String?) {

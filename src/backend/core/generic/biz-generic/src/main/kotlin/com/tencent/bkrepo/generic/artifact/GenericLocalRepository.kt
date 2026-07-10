@@ -32,7 +32,6 @@ import com.google.common.cache.CacheLoader
 import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.PIPELINE
-import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_RANGE
 import com.tencent.bkrepo.common.api.constant.HttpStatus
@@ -93,8 +92,7 @@ import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
-import com.tencent.bkrepo.generic.constant.BKREPO_META
-import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
+import com.tencent.bkrepo.common.artifact.util.ArtifactMetadataHeaderResolver
 import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_BLOCK_APPEND
@@ -135,10 +133,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
-import org.springframework.web.util.UriUtils
 import java.time.Duration
 import java.time.LocalDateTime
-import java.util.Base64
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -824,40 +820,11 @@ class GenericLocalRepository(
         request: HttpServletRequest,
         pipelineMetadata: Map<String, String>? = null
     ): List<MetadataModel> {
-        val metadata = mutableMapOf<String, String>()
-        // case insensitive
-        val headerNames = request.headerNames
-        for (headerName in headerNames) {
-            if (headerName.startsWith(BKREPO_META_PREFIX, true)) {
-                val key = headerName.substring(BKREPO_META_PREFIX.length).trim().lowercase(Locale.getDefault())
-                if (key.isNotBlank()) {
-                    metadata[key] = HeaderUtils.getUrlDecodedHeader(headerName)!!
-                }
-            }
-        }
-        // case sensitive, base64 metadata
-        // format X-BKREPO-META: base64(a=1&b=2)
-        request.getHeader(BKREPO_META)?.let { metadata.putAll(decodeMetadata(it)) }
-        pipelineMetadata?.let { metadata.putAll(pipelineMetadata) }
-        return metadata.map { MetadataModel(key = it.key, value = it.value) }
-    }
-
-    private fun decodeMetadata(header: String): Map<String, String> {
-        val metadata = mutableMapOf<String, String>()
-        try {
-            val metadataUrl = String(Base64.getDecoder().decode(header))
-            metadataUrl.split(CharPool.AND).forEach { part ->
-                val pair = part.trim().split(CharPool.EQUAL, limit = 2)
-                if (pair.size > 1 && pair[0].isNotBlank() && pair[1].isNotBlank()) {
-                    val key = UriUtils.decode(pair[0], Charsets.UTF_8)
-                    val value = UriUtils.decode(pair[1], Charsets.UTF_8)
-                    metadata[key] = value
-                }
-            }
-        } catch (exception: IllegalArgumentException) {
-            logger.warn("$header is not in valid Base64 scheme.")
-        }
-        return metadata
+        return ArtifactMetadataHeaderResolver.resolveMetadata(
+            headerNames = request.headerNames.asSequence().toList(),
+            headerValue = request::getHeader,
+            extraMetadata = pipelineMetadata,
+        ).map { MetadataModel(key = it.key, value = it.value) }
     }
 
 
