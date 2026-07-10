@@ -5,7 +5,6 @@ import com.tencent.bkrepo.common.mongo.constant.ID
 import org.bson.BsonTimestamp
 import org.bson.Document
 import org.bson.types.ObjectId
-import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.aggregation.Aggregation
@@ -20,12 +19,9 @@ import java.time.temporal.ChronoUnit
  */
 object NodeReconciliationHelper {
 
-    data class CountMismatch(
-        val shardIdx: Int,
-        val collectionName: String,
-        val defaultCount: Long,
-        val heavyCount: Long,
-    )
+    const val NODE_RULE = "node"
+    const val BLOCK_NODE_RULE = "block-node"
+    const val DEFAULT_BLOCK_NODE_BASE = "block_node"
 
     data class ChecksumSnapshot(
         val count: Long,
@@ -39,32 +35,24 @@ object NodeReconciliationHelper {
         val mismatchedShards: List<Int> = emptyList(),
     )
 
-    fun shardCollection(projectId: String, shardingCount: Int = SHARDING_COUNT): String {
+    fun shardCollection(projectId: String, shardingCount: Int = SHARDING_COUNT): String =
+        shardCollectionForRule(projectId, NODE_RULE, shardingCount = shardingCount)
+
+    fun shardCollectionForRule(
+        projectId: String,
+        ruleName: String,
+        blockNodeCollectionBase: String = DEFAULT_BLOCK_NODE_BASE,
+        shardingCount: Int = SHARDING_COUNT,
+    ): String {
         val idx = HashShardingUtils.shardingSequenceFor(projectId, shardingCount)
-        return "$NODE_COLLECTION_PREFIX$idx"
+        return when (ruleName) {
+            BLOCK_NODE_RULE -> "${blockNodeCollectionBase}_$idx"
+            else -> "$NODE_COLLECTION_PREFIX$idx"
+        }
     }
 
     private fun projectCriteria(projectId: String): Criteria =
         Criteria.where(PROJECT_FIELD).`is`(projectId)
-
-    fun countMismatches(
-        projectId: String,
-        defaultTemplate: MongoTemplate,
-        heavyTemplate: MongoTemplate,
-        shardingCount: Int = SHARDING_COUNT,
-    ): List<CountMismatch> {
-        val mismatches = mutableListOf<CountMismatch>()
-        for (shardIdx in 0 until shardingCount) {
-            val col = "$NODE_COLLECTION_PREFIX$shardIdx"
-            val criteria = projectCriteria(projectId)
-            val defaultCount = defaultTemplate.count(Query(criteria), col)
-            val heavyCount = heavyTemplate.count(Query(criteria), col)
-            if (defaultCount != heavyCount) {
-                mismatches += CountMismatch(shardIdx, col, defaultCount, heavyCount)
-            }
-        }
-        return mismatches
-    }
 
     /** 每分片最新 N 条 _id 集合比对（保留原有 VERIFY 策略）。 */
     fun latestIdSetMismatches(
@@ -208,29 +196,6 @@ object NodeReconciliationHelper {
         }
     }
 
-    fun persistLog(
-        defaultTemplate: MongoTemplate,
-        projectId: String,
-        checkType: String,
-        passed: Boolean,
-        detail: String,
-    ) {
-        runCatching {
-            defaultTemplate.insert(
-                Document().apply {
-                    put("projectId", projectId)
-                    put("checkType", checkType)
-                    put("passed", passed)
-                    put("detail", detail)
-                    put("createdAt", LocalDateTime.now().toString())
-                },
-                RECONCILIATION_LOG_COLLECTION,
-            )
-        }.onFailure {
-            logger.warn("Failed to persist reconciliation log: {}", it.message)
-        }
-    }
-
     fun clusterTimeSeconds(clusterTime: BsonTimestamp?): Long? =
         clusterTime?.let { it.time.toLong() and 0xFFFFFFFFL }
 
@@ -268,11 +233,8 @@ object NodeReconciliationHelper {
     private const val NODE_COLLECTION_PREFIX = "node_"
     private const val PROJECT_FIELD = "projectId"
     private const val SHARDING_COUNT = 256
-    const val RECONCILIATION_LOG_COLLECTION = "node_reconciliation_log"
     const val SEGMENT_COUNT = 10
     const val SAMPLES_PER_SEGMENT = 100
     const val LATEST_SAMPLE_SIZE = 200
     const val CATCH_UP_LAG_THRESHOLD_SEC = 5L
-
-    private val logger = LoggerFactory.getLogger(NodeReconciliationHelper::class.java)
 }

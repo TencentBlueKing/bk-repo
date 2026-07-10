@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.job.batch.task.sync
 
 import com.tencent.bkrepo.common.mongo.api.routing.MigrationPhase
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingCollections
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
@@ -21,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap
 class MigrationSyncEngine(
     private val defaultMongoTemplate: MongoTemplate,
     private val registry: MongoRoutingRegistry,
-    private val syncStateDao: MigrationSyncStateDao?,
+    private val syncStateDao: MigrationSyncStateDao,
     private val strategies: Map<String, MigrationScanStrategy>,
 ) {
 
@@ -29,7 +30,7 @@ class MigrationSyncEngine(
 
     fun loadActiveTasks(): List<MigrationSyncTask> {
         val loadedKeys = mutableSetOf<String>()
-        syncStateDao?.findByPhases(ACTIVE_PHASES)?.forEach { doc ->
+        syncStateDao.findByPhases(ACTIVE_PHASES)?.forEach { doc ->
             val strategy = strategies[doc.ruleName] ?: return@forEach
             val jobStateName = MigrationPhaseMapping.phaseToJobStateName(doc.phase) ?: return@forEach
             val jobState = runCatching { MigrationSyncJobState.valueOf(jobStateName) }.getOrNull()
@@ -49,9 +50,7 @@ class MigrationSyncEngine(
             )
             loadedKeys.add(key)
         }
-        if (syncStateDao != null) {
-            tasks.keys.removeAll { it !in loadedKeys }
-        }
+        tasks.keys.removeAll { it !in loadedKeys }
         return tasks.values.toList()
     }
 
@@ -205,17 +204,15 @@ class MigrationSyncEngine(
                 "rule=${task.ruleName} owner=$ownerId col=$collectionName docId=$docId error=$error",
         )
         runCatching {
-            val query = Query(Criteria.where("docId").`is`(docId))
+            val query = Query(MongoRoutingCollections.syncFailedDocCriteria(task.ruleName, docId))
             val update = Update()
-                .setOnInsert("projectId", ownerId)
-                .setOnInsert("collectionName", collectionName)
-                .setOnInsert("docId", docId)
-                .setOnInsert("createdAt", LocalDateTime.now().toString())
-                .set("error", error)
-            if (!strategy.supportsCleanup) {
-                update.setOnInsert("ruleName", task.ruleName)
-            }
-            defaultMongoTemplate.upsert(query, update, strategy.syncFailedCollection)
+                .setOnInsert(MongoRoutingCollections.SYNC_FAILED_RULE_NAME, task.ruleName)
+                .setOnInsert(MongoRoutingCollections.SYNC_FAILED_OWNER_ID, ownerId)
+                .setOnInsert(MongoRoutingCollections.SYNC_FAILED_COLLECTION_NAME, collectionName)
+                .setOnInsert(MongoRoutingCollections.SYNC_FAILED_DOC_ID, docId)
+                .setOnInsert(MongoRoutingCollections.SYNC_FAILED_CREATED_AT, LocalDateTime.now().toString())
+                .set(MongoRoutingCollections.SYNC_FAILED_ERROR, error)
+            defaultMongoTemplate.upsert(query, update, MongoRoutingCollections.SYNC_FAILED)
         }.onFailure {
             logger.error("Failed to record sync failure for doc[$docId]: ${it.message}")
         }
@@ -267,10 +264,9 @@ class MigrationSyncEngine(
     }
 
     private fun persist(ownerKey: String) {
-        val repo = syncStateDao ?: return
         val doc = tasks[ownerKey] ?: return
-        val id = if (doc.projectId == doc.ruleName) doc.ruleName else doc.projectId
-        repo.upsert(
+        val id = MigrationSyncStateDao.resolveId(doc.ruleName, doc.projectId)
+        syncStateDao.upsert(
             TMigrationSyncState(
                 id = id,
                 projectId = doc.projectId,
@@ -288,8 +284,13 @@ class MigrationSyncEngine(
 
     private fun hasSyncFailures(task: MigrationSyncTask, strategy: MigrationScanStrategy): Boolean =
         defaultMongoTemplate.count(
-            Query(Criteria.where("projectId").`is`(strategy.syncFailedOwnerId(task))),
-            strategy.syncFailedCollection,
+            Query(
+                MongoRoutingCollections.syncFailedOwnerCriteria(
+                    task.ruleName,
+                    strategy.syncFailedOwnerId(task),
+                ),
+            ),
+            MongoRoutingCollections.SYNC_FAILED,
         ) > 0
 
     private fun stateKey(strategy: MigrationScanStrategy, projectId: String): String =
@@ -305,7 +306,7 @@ class MigrationSyncEngine(
         private const val CLEANUP_SLEEP_MS = 100L
         private const val UPSERT_MAX_RETRY = 3
         private const val UPSERT_RETRY_DELAY_MS = 200L
-        // ponytail: sync_failed 最大重试轮数，超出后降级 INIT_FAILED 而非死循环
+        // sync_failed 最大重试轮数，超出后降级 INIT_FAILED 而非死循环
         private const val MAX_SYNC_CYCLES = 3
     }
 }

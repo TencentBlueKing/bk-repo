@@ -2,6 +2,9 @@ package com.tencent.bkrepo.job.batch.utils
 
 import com.tencent.bkrepo.common.metadata.routing.NodeBatchQueryHelper
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.job.JobTestConfiguration
+import com.tencent.bkrepo.job.SHARDING_COUNT
 import io.mockk.every
 import io.mockk.mockk
 import org.bson.Document
@@ -17,7 +20,6 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
-import com.tencent.bkrepo.job.JobTestConfiguration
 
 /**
  * Job 散发扫描集成测试（Spec §16.1）。
@@ -37,15 +39,19 @@ class NodeBatchQueryJobIntegrationTest {
     private lateinit var registry: MongoRoutingRegistry
     private lateinit var helper: NodeBatchQueryHelper
 
-    private val collection = "node_0"
+    private val routedProjectId = "projectA"
+    private val routedCollection =
+        "node_${HashShardingUtils.shardingSequenceFor(routedProjectId, SHARDING_COUNT)}"
+    private val defaultCollection = "node_0"
 
     @BeforeEach
     fun setUp() {
-        mongoTemplate.dropCollection(collection)
+        mongoTemplate.dropCollection(routedCollection)
+        mongoTemplate.dropCollection(defaultCollection)
         registry = mockk()
-        every { registry.routedProjectIds("node") } returns setOf("projectA")
+        every { registry.routedProjectIds("node") } returns setOf(routedProjectId)
         every { registry.shardRoutedCollections("node") } returns emptySet()
-        every { registry.projectsByInstance("node") } returns mapOf("heavy1" to setOf("projectA"))
+        every { registry.projectsByInstance("node") } returns mapOf("heavy1" to setOf(routedProjectId))
         every { registry.shardsByInstance("node") } returns emptyMap()
         every { registry.primaryTemplateByInstance("node", "heavy1") } returns mongoTemplate
         helper = NodeBatchQueryHelper(mongoTemplate, registry)
@@ -53,15 +59,17 @@ class NodeBatchQueryJobIntegrationTest {
 
     @AfterEach
     fun tearDown() {
-        mongoTemplate.dropCollection(collection)
+        mongoTemplate.dropCollection(routedCollection)
+        mongoTemplate.dropCollection(defaultCollection)
     }
 
     @Test
     fun `Default scan excludes routed project documents from embedded database`() {
-        insertNode("projectA", "routed.txt")
-        insertNode("projectB", "default.txt")
+        insertNode(routedProjectId, "routed.txt", routedCollection)
+        insertNode("projectB", "default.txt", defaultCollection)
 
-        val groups = helper.buildGroups(listOf(collection))!!
+        val scanCollections = listOf(routedCollection, defaultCollection).distinct()
+        val groups = helper.buildGroups(scanCollections)!!
         val defaultGroup = groups.first { group ->
             val filter = group.criteriaCustomizer(Query()).queryObject["projectId"] as? Map<*, *>
             filter?.containsKey("\$nin") == true
@@ -74,18 +82,18 @@ class NodeBatchQueryJobIntegrationTest {
         val defaultHits = mongoTemplate.find(
             defaultGroup.criteriaCustomizer(Query()),
             Document::class.java,
-            collection,
+            defaultCollection,
         )
         val heavyHits = mongoTemplate.find(
             heavyGroup.criteriaCustomizer(Query()),
             Document::class.java,
-            collection,
+            routedCollection,
         )
 
         assertEquals(1, defaultHits.size)
         assertEquals("projectB", defaultHits.first().getString("projectId"))
         assertEquals(1, heavyHits.size)
-        assertEquals("projectA", heavyHits.first().getString("projectId"))
+        assertEquals(routedProjectId, heavyHits.first().getString("projectId"))
         assertTrue(groups.size >= 2)
     }
 
@@ -99,13 +107,13 @@ class NodeBatchQueryJobIntegrationTest {
         every { registry.shardsByInstance("node") } returns mapOf("heavy1" to setOf(shardCollection))
 
         insertNode("projectX", "shard-only.txt", shardCollection)
-        insertNode("projectY", "default-only.txt", collection)
+        insertNode("projectY", "default-only.txt", defaultCollection)
 
-        val groups = helper.buildGroups(listOf(collection, shardCollection))!!
-        val defaultGroup = groups.first { it.collectionNames == listOf(collection) }
+        val groups = helper.buildGroups(listOf(defaultCollection, shardCollection))!!
+        val defaultGroup = groups.first { it.collectionNames == listOf(defaultCollection) }
         val shardGroup = groups.first { it.collectionNames == listOf(shardCollection) }
 
-        val defaultHits = mongoTemplate.find(Query(), Document::class.java, collection)
+        val defaultHits = mongoTemplate.find(Query(), Document::class.java, defaultCollection)
         val shardHits = mongoTemplate.find(
             shardGroup.criteriaCustomizer(Query()),
             Document::class.java,
@@ -116,12 +124,12 @@ class NodeBatchQueryJobIntegrationTest {
         assertEquals("projectY", defaultHits.first().getString("projectId"))
         assertEquals(1, shardHits.size)
         assertEquals("projectX", shardHits.first().getString("projectId"))
-        assertEquals(listOf(collection), defaultGroup.collectionNames)
+        assertEquals(listOf(defaultCollection), defaultGroup.collectionNames)
 
         mongoTemplate.dropCollection(shardCollection)
     }
 
-    private fun insertNode(projectId: String, name: String, col: String = collection) {
+    private fun insertNode(projectId: String, name: String, col: String) {
         mongoTemplate.insert(
             Document().apply {
                 put("projectId", projectId)

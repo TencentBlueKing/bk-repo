@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.mongo.routing
 
 import com.tencent.bkrepo.common.mongo.api.routing.RuleRoutingState
 import org.springframework.boot.context.properties.ConfigurationProperties
+import java.time.Instant
 
 
 @ConfigurationProperties(prefix = "spring.data.mongodb.multi-instance")
@@ -11,8 +12,6 @@ class MongoMultiInstanceProperties {
     var configVersion: Long = 0
     /** 所有Pod必须达到的最小配置版本 */
     var minConfigVersion: Long = 0
-    /** 同时进行双写的项目数上限（跨规则全局限制） */
-    var maxConcurrentDualWrite: Int = 1
 
     class RoutingRule(
         var routingType: RoutingType = RoutingType.PROJECT,
@@ -26,15 +25,29 @@ class MongoMultiInstanceProperties {
         /**
          * 规则级路由状态
          * - OFF：路由未启用
-         * - DUAL_WRITE：路由启用且处于双写期
-         * - ROUTED：路由启用且已完成切流
+         * - DUAL_WRITE：仅 routing-type=NONE（模式一）双写期
+         * - ROUTED：NONE=已切流；PROJECT=规则总闸已开启（非「全部项目已迁完」）
          */
         var routingState: RuleRoutingState = RuleRoutingState.OFF,
+        /**
+         * 模式一（NONE）切流延迟生效时刻（ISO-8601）。
+         * 模式二（PROJECT）使用 [projectEffectiveAt]。
+         */
+        var routingEffectiveAt: Instant? = null,
         /** per-rule 迁移配置 */
         var migration: MigrationConfig = MigrationConfig(),
         var instances: Map<String, InstanceConfig> = emptyMap(),
         /** projectId → 实例名 */
         var projectRouting: Map<String, String> = emptyMap(),
+        /**
+         * 模式二：当前处于双写迁移期的 projectId 集合。
+         * routing-state=ROUTED 时必须在 Consul 中配置（可为空列表）。
+         */
+        var dualWriteProjects: Set<String>? = null,
+        /**
+         * 模式二：单项目切 Heavy 延迟生效时刻（ISO-8601 UTC）；切流后永久保留。
+         */
+        var projectEffectiveAt: Map<String, Instant> = emptyMap(),
         /** 集合名 → 实例名（分片级路由，整个集合表迁移到 Heavy） */
         var shardRouting: Map<String, String> = emptyMap(),
         /** businessId → 实例名（Tier-Biz §3.5.2） */
@@ -54,12 +67,10 @@ class MongoMultiInstanceProperties {
             val historicalSyncStrategy: String = "NONE",
             val syncJob: SyncJobConfig = SyncJobConfig(),
             val none: NoneConfig = NoneConfig(),
-            /** 同时进行双写的项目数上限 */
-            val maxConcurrentDualWrite: Int = 1,
             /** 僵尸副本在 Default 上存活超过该小时数则阻断迁移（G-17，默认 7 天） */
             val maxZombieHours: Int = 168,
             /** 迁移期项目锁 */
-            val projectLocks: ProjectLocksConfig = ProjectLocksConfig(),
+            var projectLocks: ProjectLocksConfig = ProjectLocksConfig(),
             /** oplog 窗口下限（小时），INIT 校验用（G-32） */
             val minOplogHours: Int = 48,
         )
@@ -86,11 +97,6 @@ class MongoMultiInstanceProperties {
              * 保留 Default 副本以支持回滚。
              */
             val freezePhysicalDelete: Boolean = true,
-            /**
-             * DUAL_WRITE ~ CLEANUP 期间禁止 Default 侧 node 变更（§3.18.2）。
-             * 防止旁路写入造成双写不一致。
-             */
-            val freezeDefaultNodeMutation: Boolean = true,
         )
     }
 

@@ -6,8 +6,6 @@ import com.tencent.bkrepo.common.mongo.routing.MongoDualWriteCompensationService
 import com.tencent.bkrepo.common.mongo.routing.MongoRoutingMetrics
 import com.tencent.bkrepo.common.mongo.routing.ScatterMongoTemplateProvider
 import org.springframework.beans.factory.ObjectProvider
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -28,52 +26,45 @@ class NodeRoutingConfiguration(
     private var timeoutSeconds: Long = 5L
 
     @Bean
-    @ConditionalOnBean(MongoRoutingRegistry::class)
     fun nodeMongoOperations(
-        registry: MongoRoutingRegistry,
-        compensationService: MongoDualWriteCompensationService?,
+        registryProvider: ObjectProvider<MongoRoutingRegistry>,
+        compensationServiceProvider: ObjectProvider<MongoDualWriteCompensationService>,
         dualWriteExecutor: ObjectProvider<DualWriteExecutor>,
-    ): NodeMongoOperations = DefaultNodeMongoOperations(
-        registry,
-        defaultMongoTemplate,
-        compensationService,
-        dualWriteExecutor.ifAvailable,
-    )
-
-    @Bean("nodeMongoOperations")
-    @ConditionalOnMissingBean(MongoRoutingRegistry::class)
-    fun nodeMongoOperationsSimple(): NodeMongoOperations = SimpleNodeMongoOperations(defaultMongoTemplate)
+    ): NodeMongoOperations {
+        val registry = registryProvider.ifAvailable
+        val compensationService = compensationServiceProvider.ifAvailable
+        return if (registry != null && compensationService != null) {
+            DefaultNodeMongoOperations(
+                registry,
+                defaultMongoTemplate,
+                compensationService,
+                dualWriteExecutor.ifAvailable,
+            )
+        } else {
+            SimpleNodeMongoOperations(defaultMongoTemplate)
+        }
+    }
 
     @Bean
-    @ConditionalOnBean(MongoRoutingRegistry::class)
     fun nodeScatterQueryService(
-        registry: MongoRoutingRegistry,
+        registryProvider: ObjectProvider<MongoRoutingRegistry>,
+        batchQueryHelperProvider: ObjectProvider<NodeBatchQueryHelper>,
         metrics: ObjectProvider<MongoRoutingMetrics>,
         scatterTemplates: ObjectProvider<ScatterMongoTemplateProvider>,
-    ): NodeScatterQueryService =
-        nodeScatterQueryService(
+    ): NodeScatterQueryService? {
+        val registry = registryProvider.ifAvailable ?: return null
+        return nodeScatterQueryService(
             registry,
+            batchQueryHelperProvider.ifAvailable,
             NodeScatterQueryService.ScatterMode.valueOf(defaultMode.uppercase()),
             metrics.ifAvailable,
             scatterTemplates.ifAvailable,
         )
-
-    @Bean("degradeNodeScatterQueryService")
-    @ConditionalOnBean(MongoRoutingRegistry::class)
-    fun degradeNodeScatterQueryService(
-        registry: MongoRoutingRegistry,
-        metrics: ObjectProvider<MongoRoutingMetrics>,
-        scatterTemplates: ObjectProvider<ScatterMongoTemplateProvider>,
-    ): NodeScatterQueryService =
-        nodeScatterQueryService(
-            registry,
-            NodeScatterQueryService.ScatterMode.DEGRADE,
-            metrics.ifAvailable,
-            scatterTemplates.ifAvailable,
-        )
+    }
 
     private fun nodeScatterQueryService(
         registry: MongoRoutingRegistry,
+        batchQueryHelper: NodeBatchQueryHelper? = null,
         mode: NodeScatterQueryService.ScatterMode,
         metrics: com.tencent.bkrepo.common.mongo.routing.MongoRoutingMetrics? = null,
         scatterTemplates: com.tencent.bkrepo.common.mongo.routing.ScatterMongoTemplateProvider? = null,
@@ -90,5 +81,6 @@ class NodeRoutingConfiguration(
         mode = mode,
         metrics = metrics,
         scatterTemplates = scatterTemplates,
+        batchQueryHelper = batchQueryHelper,
     )
 }

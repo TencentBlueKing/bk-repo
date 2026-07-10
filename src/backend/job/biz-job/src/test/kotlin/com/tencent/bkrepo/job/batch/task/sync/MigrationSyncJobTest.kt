@@ -3,6 +3,7 @@ package com.tencent.bkrepo.job.batch.task.sync
 import com.mongodb.client.ListCollectionNamesIterable
 import com.mongodb.client.MongoCursor
 import com.mongodb.client.MongoDatabase
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingCollections
 import com.tencent.bkrepo.common.mongo.api.routing.MigrationPhase
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.common.mongo.dao.MigrationSyncStateDao
@@ -69,7 +70,6 @@ class MigrationSyncJobTest {
     private fun nodeStrategy() = ProjectShardMigrationScanStrategy(
         ruleName = nodeRule,
         shardCollectionsProvider = { (0 until 256).map { "node_$it" } },
-        syncFailedCollection = "node_project_sync_failed",
     )
 
     private fun oplogStrategy() = CollectionFamilyMigrationScanStrategy(
@@ -80,13 +80,11 @@ class MigrationSyncJobTest {
 
     private fun createEngine(
         strategies: Map<String, MigrationScanStrategy> = mapOf(nodeRule to nodeStrategy()),
-        dao: MigrationSyncStateDao? = null,
+        dao: MigrationSyncStateDao = syncStateDao,
     ) = MigrationSyncEngine(defaultTemplate, registry, dao, strategies)
 
-    private fun createJob(
-        engine: MigrationSyncEngine,
-        dao: MigrationSyncStateDao? = null,
-    ) = MigrationSyncJob(defaultTemplate, registry, dao, redisTemplate, lockOperation, engine)
+    private fun createJob(engine: MigrationSyncEngine) =
+        MigrationSyncJob(redisTemplate, lockOperation, engine)
 
     private fun injectNodeTask(
         engine: MigrationSyncEngine,
@@ -109,7 +107,9 @@ class MigrationSyncJobTest {
 
     private fun stubNodeCounts() {
         every { defaultTemplate.count(any<Query>(), any<String>()) } returns 0L
-        every { defaultTemplate.count(any<Query>(), "node_project_sync_failed") } returns 0L
+        every {
+            defaultTemplate.count(any<Query>(), MongoRoutingCollections.SYNC_FAILED)
+        } returns 0L
     }
 
     private fun stubFindEmpty() {
@@ -131,7 +131,7 @@ class MigrationSyncJobTest {
     fun `run does not scan when no active tasks in DB`() {
         every { syncStateDao.findByPhases(any()) } returns emptyList()
         val engine = createEngine(dao = syncStateDao)
-        createJob(engine, syncStateDao).run()
+        createJob(engine).run()
 
         assertTrue(engine.tasks.isEmpty())
         verify(exactly = 0) {
@@ -285,7 +285,7 @@ class MigrationSyncJobTest {
             defaultTemplate.upsert(
                 any<Query>(),
                 match<Update> { it.updateObject.containsKey("\$setOnInsert") },
-                "node_project_sync_failed",
+                MongoRoutingCollections.SYNC_FAILED,
             )
         }
     }
@@ -294,7 +294,7 @@ class MigrationSyncJobTest {
     fun `oplog INITIAL_SYNC uses setOnInsert upsert on target`() {
         val col = "${oplogPrefix}202601"
         stubOplogCollectionNames(col)
-        every { defaultTemplate.count(any<Query>(), "oplog_sync_failed") } returns 0L
+        every { defaultTemplate.count(any<Query>(), MongoRoutingCollections.SYNC_FAILED) } returns 0L
         val docId = ObjectId()
         val doc = Document("_id", docId).append("action", "download")
         var first = true
@@ -317,7 +317,7 @@ class MigrationSyncJobTest {
                 phase = MigrationPhase.INITIAL_SYNC,
             ),
         )
-        createJob(engine, syncStateDao).run()
+        createJob(engine).run()
 
         verify(atLeast = 1) {
             heavyTemplate.upsert(
@@ -329,10 +329,10 @@ class MigrationSyncJobTest {
     }
 
     @Test
-    fun `oplog INITIAL_SYNC writes to oplog_sync_failed after upsert retries exhausted`() {
+    fun `oplog INITIAL_SYNC writes to mongo_routing_sync_failed after upsert retries exhausted`() {
         val col = "${oplogPrefix}202601"
         stubOplogCollectionNames(col)
-        every { defaultTemplate.count(any<Query>(), "oplog_sync_failed") } returns 1L
+        every { defaultTemplate.count(any<Query>(), MongoRoutingCollections.SYNC_FAILED) } returns 1L
         val docId = ObjectId()
         val doc = Document("_id", docId)
         var first = true
@@ -357,13 +357,13 @@ class MigrationSyncJobTest {
                 phase = MigrationPhase.INITIAL_SYNC,
             ),
         )
-        createJob(engine, syncStateDao).run()
+        createJob(engine).run()
 
         verify(atLeast = 1) {
             defaultTemplate.upsert(
                 any<Query>(),
                 match<Update> { it.updateObject.containsKey("\$setOnInsert") },
-                "oplog_sync_failed",
+                MongoRoutingCollections.SYNC_FAILED,
             )
         }
         assertTrue(engine.tasks["$oplogRule:$oplogRule"]?.state != MigrationSyncJobState.DUAL_WRITE)

@@ -38,6 +38,7 @@ dependencies {
     api("cn.hutool:hutool-crypto:${Versions.HutoolCrypto}")
     api("commons-codec:commons-codec")
     compileOnly(project(":common:common-mongo"))
+    testImplementation(project(":common:common-mongo"))
 
     val assemblyMode = project.findPropertyOrNull("devops.assemblyMode")
     if (assemblyMode == null || assemblyMode.uppercase(getDefault()) == "CONSUL") {
@@ -50,4 +51,7 @@ dependencies {
     api(project(":common:common-metrics:metrics-api"))
     api("org.springframework.boot:spring-boot-starter-aop")
     api("org.springframework.boot:spring-boot-actuator-autoconfigure")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.mockito.kotlin:mockito-kotlin")
 }

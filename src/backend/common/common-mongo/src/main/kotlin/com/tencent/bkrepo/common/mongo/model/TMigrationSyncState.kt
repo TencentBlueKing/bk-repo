@@ -1,11 +1,12 @@
 package com.tencent.bkrepo.common.mongo.model
 
 import com.tencent.bkrepo.common.mongo.api.routing.MigrationPhase
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingCollections
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
-@Document("mongo_migration_sync_state")
+@Document(MongoRoutingCollections.MIGRATION_STATE)
 data class TMigrationSyncState(
     @Id
     var id: String? = null,

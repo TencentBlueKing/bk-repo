@@ -46,23 +46,44 @@ class MongoMigrationServiceTest {
     @Test
     fun `cleanup sets phase CLEANUP_READY not CLEANED`() {
         val request = MigrationProjectRequest(ruleName = "node", projectId = "p1")
-        every { syncStateDao.findByProjectId("p1") } returns TMigrationSyncState(
+        every { syncStateDao.findByRuleAndProject("node", "p1") } returns TMigrationSyncState(
+            id = "node:p1",
             projectId = "p1",
             ruleName = "node",
             targetInstance = "heavy",
             phase = MigrationPhase.ROUTED,
         )
+        every { registry.isProjectRoutedOut("node", "p1") } returns true
 
         service.cleanup(request)
 
-        verify(exactly = 1) { syncStateDao.updatePhase("p1", MigrationPhase.CLEANUP_READY) }
-        verify(exactly = 0) { syncStateDao.updatePhase("p1", MigrationPhase.CLEANED) }
+        verify(exactly = 1) { syncStateDao.updatePhase("node", "p1", MigrationPhase.CLEANUP_READY) }
+        verify(exactly = 0) { syncStateDao.updatePhase("block-node", "p1", any()) }
+        verify(exactly = 0) { syncStateDao.updatePhase(any(), any(), MigrationPhase.CLEANED) }
+    }
+
+    @Test
+    fun `cleanup rejects when effective routing not ROUTED yet`() {
+        val request = MigrationProjectRequest(ruleName = "node", projectId = "p1")
+        every { syncStateDao.findByRuleAndProject("node", "p1") } returns TMigrationSyncState(
+            id = "node:p1",
+            projectId = "p1",
+            ruleName = "node",
+            targetInstance = "heavy",
+            phase = MigrationPhase.ROUTED,
+        )
+        every { registry.isProjectRoutedOut("node", "p1") } returns false
+
+        val ex = assertThrows<ErrorCodeException> { service.cleanup(request) }
+        assertTrue(ex.params.any { it.toString().contains("effective routing not ROUTED") })
+        verify(exactly = 0) { syncStateDao.updatePhase(any(), any(), any()) }
     }
 
     @Test
     fun `cleanup rejects project not in ROUTED phase`() {
         val request = MigrationProjectRequest(ruleName = "node", projectId = "p1")
-        every { syncStateDao.findByProjectId("p1") } returns TMigrationSyncState(
+        every { syncStateDao.findByRuleAndProject("node", "p1") } returns TMigrationSyncState(
+            id = "node:p1",
             projectId = "p1",
             ruleName = "node",
             targetInstance = "heavy",
@@ -71,7 +92,7 @@ class MongoMigrationServiceTest {
 
         val ex = assertThrows<ErrorCodeException> { service.cleanup(request) }
         assertTrue(ex.params.any { it.toString().contains("ROUTED") })
-        verify(exactly = 0) { syncStateDao.updatePhase("p1", any()) }
+        verify(exactly = 0) { syncStateDao.updatePhase(any(), any(), any()) }
     }
 
     @Test

@@ -8,7 +8,6 @@ import org.springframework.data.mongodb.core.query.Query
 class ProjectShardMigrationScanStrategy(
     override val ruleName: String,
     private val shardCollectionsProvider: () -> List<String>,
-    override val syncFailedCollection: String,
 ) : MigrationScanStrategy {
 
     override val supportsCleanup: Boolean = true

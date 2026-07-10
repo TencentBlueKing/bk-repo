@@ -80,26 +80,7 @@ class MongoAutoConfiguration {
     fun mappingMongoConverter(
         mongoProperties: MongoProperties,
         mongoDatabaseFactory: MongoDatabaseFactory
-    ): MappingMongoConverter {
-        val dbRefResolver = DefaultDbRefResolver(mongoDatabaseFactory)
-
-        val localDateTimeReadConverter = LocalDateTimeReadConverter()
-
-        val conversions = MongoCustomConversions(
-            listOf(localDateTimeReadConverter)
-        )
-        val mappingContext = MongoMappingContext()
-        mappingContext.setSimpleTypeHolder(conversions.simpleTypeHolder)
-        mappingContext.afterPropertiesSet()
-        mappingContext.isAutoIndexCreation = mongoProperties.isAutoIndexCreation
-
-        val converter = MappingMongoConverter(dbRefResolver, mappingContext)
-        converter.customConversions = conversions
-        converter.setTypeMapper(DefaultMongoTypeMapper(null))
-        converter.afterPropertiesSet()
-        converter.setMapKeyDotReplacement("#dot#")
-        return converter
-    }
+    ): MappingMongoConverter = createConverter(mongoDatabaseFactory, mongoProperties.isAutoIndexCreation)
 
     @Bean
     @Primary
@@ -172,5 +153,31 @@ class MongoAutoConfiguration {
 
     companion object {
         private val logger = LoggerFactory.getLogger(MongoAutoConfiguration::class.java)
+
+        /**
+         * 构造去除 _class 的映射器。
+         *
+         * [autoIndexCreation] 必须为 false 用于多实例路由库：MongoTemplate 构造器发现
+         * MappingContext.autoIndexCreation=true 时，会注册 MongoPersistentEntityIndexCreator
+         * 并把 MappingContext 的事件发布器替换为指向自己，导致所有 @Document 实体的索引
+         * （连带集合）被建到最后构造的那个实例库上，即使该规则 routing-state=OFF。
+         */
+        fun createConverter(
+            mongoDatabaseFactory: MongoDatabaseFactory,
+            autoIndexCreation: Boolean,
+        ): MappingMongoConverter {
+            val conversions = MongoCustomConversions(listOf(LocalDateTimeReadConverter()))
+            val mappingContext = MongoMappingContext()
+            mappingContext.setSimpleTypeHolder(conversions.simpleTypeHolder)
+            mappingContext.afterPropertiesSet()
+            mappingContext.isAutoIndexCreation = autoIndexCreation
+
+            val converter = MappingMongoConverter(DefaultDbRefResolver(mongoDatabaseFactory), mappingContext)
+            converter.customConversions = conversions
+            converter.setTypeMapper(DefaultMongoTypeMapper(null))
+            converter.afterPropertiesSet()
+            converter.setMapKeyDotReplacement("#dot#")
+            return converter
+        }
     }
 }

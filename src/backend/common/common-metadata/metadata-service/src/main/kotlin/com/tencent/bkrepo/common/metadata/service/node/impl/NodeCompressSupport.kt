@@ -18,6 +18,7 @@ class NodeCompressSupport(
         with(nodeCompressedRequest) {
             val query = NodeQueryHelper.nodeQuery(projectId, repoName, fullPath)
             val update = Update().set(TNode::compressed.name, true)
+                .set(TNode::lastModifiedDate.name, LocalDateTime.now())
             nodeDao.updateFirst(query, update)
             logger.info("Success to compress node $projectId/$repoName/$fullPath")
         }

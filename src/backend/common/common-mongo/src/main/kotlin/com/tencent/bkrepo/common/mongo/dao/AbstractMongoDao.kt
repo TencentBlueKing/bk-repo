@@ -436,7 +436,7 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
     /**
      * NONE 整体迁移模式下的 matchedCount=0 静默风险拦截（§1.4.4a）。
      *
-     * NONE 模式（如 artifact_oplog 整体迁移）的双写期，主路径是 Offload 专属实例，副路径是 Default。
+     * NONE 模式（如 artifact_oplog 整体迁移）的双写期，主路径是 Default，副路径是 Offload 专属实例（Default-first，§1.3.1）。
      * 若 update/delete 时主路径命中但副路径数据不一致（如 Default 还未同步到对应 _id），
      * 副路径会静默返回 matchedCount=0，造成数据漂移。
      *

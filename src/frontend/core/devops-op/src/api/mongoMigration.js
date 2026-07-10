@@ -42,6 +42,13 @@ export function rollbackMigration(data) {
   })
 }
 
+export function rollbackVerify(projectId) {
+  return request({
+    url: `${PREFIX}/migration/rollback-verify/${projectId}`,
+    method: 'post'
+  })
+}
+
 export function getMigrationStatus(params) {
   return request({
     url: `${PREFIX}/migration/status`,
@@ -83,6 +90,20 @@ export function getCompensationHealth(ruleName) {
   return request({
     url: `${PREFIX}/compensation/health/${ruleName}`,
     method: 'get'
+  })
+}
+
+export function getAllCompensationHealth() {
+  return request({
+    url: `${PREFIX}/compensation/health`,
+    method: 'get'
+  })
+}
+
+export function triggerCompensation(ruleName) {
+  return request({
+    url: `${PREFIX}/compensation/trigger/${ruleName}`,
+    method: 'post'
   })
 }
 

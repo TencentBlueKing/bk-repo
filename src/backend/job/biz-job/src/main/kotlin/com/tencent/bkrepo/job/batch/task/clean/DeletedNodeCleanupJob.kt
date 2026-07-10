@@ -139,7 +139,7 @@ class DeletedNodeCleanupJob(
 
     override fun run(row: Node, collectionName: String, context: JobContext) {
         require(context is DeletedNodeCleanupJobContext)
-        // ─── migration.project-locks：freeze-physical-delete 检查（§3.18.2） ───
+        // ─── migration.project-locks：freeze-physical-delete 检查（§3.18.3） ───
         if (isPhysicalDeleteFrozen(row.projectId)) {
             logger.info(
                 "Physical delete frozen for project[${row.projectId}] (migration in progress), " +
@@ -159,7 +159,7 @@ class DeletedNodeCleanupJob(
         }
     }
 
-    // ─── migration.project-locks 辅助（§3.18.2） ────────────────────
+    // ─── migration.project-locks 辅助（§3.18.3） ────────────────────
 
     private fun isPhysicalDeleteFrozen(projectId: String): Boolean {
         val gate = migrationGate ?: return false

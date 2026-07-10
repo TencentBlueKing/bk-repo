@@ -4,7 +4,9 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
-@Document("mongo_routing_config")
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingCollections
+
+@Document(MongoRoutingCollections.CONFIG)
 data class TRoutingConfig(
     @Id
     var id: String = SINGLETON_ID,

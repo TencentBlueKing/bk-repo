@@ -2,6 +2,8 @@ package com.tencent.bkrepo.common.metadata.routing
 
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
@@ -27,7 +29,12 @@ import java.util.concurrent.Executors
  */
 class NodeScatterQueryServiceTest {
 
-    private val collections = listOf("node_0", "node_1")
+    private val routedProject = "projectA"
+    private val unroutedProject = "projectB"
+    private val collections = listOf(
+        shardFor(unroutedProject),
+        shardFor(routedProject),
+    )
 
     private lateinit var defaultTemplate: MongoTemplate
     private lateinit var heavy1Template: MongoTemplate
@@ -49,6 +56,7 @@ class NodeScatterQueryServiceTest {
         executor = Executors.newFixedThreadPool(4),
         timeoutSeconds = timeoutSeconds,
         mode = mode,
+        batchQueryHelper = NodeBatchQueryHelper(defaultTemplate, registry),
     )
 
     private fun makeNode(id: String, projectId: String = "proj", sha256: String = "abc") = TNode(
@@ -271,4 +279,7 @@ whenever(registry.primaryTemplateByInstance("node", "heavy1")).thenReturn(heavy1
         val result = service().scatterFind(Query(), TNode::class.java, collections)
         assertEquals(listOf("id-1", "id-2"), result.map { it.id })
     }
+
+    private fun shardFor(projectId: String): String =
+        "node_${HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)}"
 }

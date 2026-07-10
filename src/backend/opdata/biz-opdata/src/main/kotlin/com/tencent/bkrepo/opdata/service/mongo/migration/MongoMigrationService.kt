@@ -3,6 +3,8 @@ package com.tencent.bkrepo.opdata.service.mongo.migration
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.mongo.api.routing.MigrationPhase
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingCollections
+import com.tencent.bkrepo.common.mongo.api.routing.RuleRoutingState
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.common.mongo.dao.MigrationSyncStateDao
 import com.tencent.bkrepo.common.mongo.dao.RoutingConfigDao
@@ -13,10 +15,14 @@ import com.tencent.bkrepo.common.mongo.routing.MigrationGate
 import com.tencent.bkrepo.common.mongo.routing.MigrationInitValidator
 import com.tencent.bkrepo.common.mongo.routing.MongoDualWriteCompensationService
 import com.tencent.bkrepo.common.mongo.routing.MongoMultiInstanceProperties
+import com.tencent.bkrepo.common.mongo.routing.RoutingEffectiveState
 import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationBindingRequest
 import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationProjectRequest
+import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationRouteResponse
 import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationStatusListResponse
 import com.tencent.bkrepo.opdata.api.mongo.migration.MigrationStatusResponse
+import com.tencent.bkrepo.opdata.api.mongo.migration.RollbackVerifyCheck
+import com.tencent.bkrepo.opdata.api.mongo.migration.RollbackVerifyResult
 import com.tencent.bkrepo.opdata.api.mongo.migration.RoutingConfigRequest
 import com.tencent.bkrepo.opdata.api.mongo.migration.RoutingConfigResponse
 import com.tencent.bkrepo.opdata.routing.RoutingReadinessAggregator
@@ -26,6 +32,8 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
 @Service
 class MongoMigrationService(
@@ -93,9 +101,7 @@ class MongoMigrationService(
             }
         }
         for (projectId in projectIds) {
-            syncStateDao.upsert(
-                newState(request.copy(projectId = projectId), MigrationPhase.PENDING),
-            )
+            syncStateDao.upsert(newState(request.copy(projectId = projectId), MigrationPhase.PENDING))
         }
     }
 
@@ -111,12 +117,20 @@ class MongoMigrationService(
             throw badRequest("Invalid phase for start: ${state.phase}")
         }
         assertConcurrentDualWriteNotExceeded(request)
+        if (request.ruleName in PROJECT_ROUTING_RULES) {
+            assertConsulStartReady(request.ruleName, request.projectId)
+        }
         val init = initValidator?.validate(request.ruleName, request.projectId)
         if (init != null && !init.passed) {
-            syncStateDao.updatePhase(request.projectId, MigrationPhase.INIT_FAILED, init.checks.toString())
+            syncStateDao.updatePhase(
+                request.ruleName,
+                request.projectId,
+                MigrationPhase.INIT_FAILED,
+                init.checks.toString()
+            )
             throw badRequest("INIT validation failed")
         }
-        syncStateDao.updatePhase(request.projectId, MigrationPhase.INITIAL_SYNC)
+        syncStateDao.updatePhase(request.ruleName, request.projectId, MigrationPhase.INITIAL_SYNC)
     }
 
     private fun startOffloadRule(request: MigrationProjectRequest) {
@@ -129,10 +143,10 @@ class MongoMigrationService(
         assertConcurrentDualWriteNotExceeded(
             MigrationProjectRequest(ruleName = ruleName, projectId = ruleName),
         )
-        syncStateDao.updatePhase(ruleName, MigrationPhase.INITIAL_SYNC)
+        syncStateDao.updatePhase(ruleName, ruleName, MigrationPhase.INITIAL_SYNC)
     }
 
-    fun route(request: MigrationProjectRequest) {
+    fun route(request: MigrationProjectRequest): MigrationRouteResponse {
         val state = requireState(request)
         if (state.phase != MigrationPhase.DUAL_WRITE) {
             throw badRequest("Project must be DUAL_WRITE, current=${state.phase}")
@@ -145,13 +159,22 @@ class MongoMigrationService(
         if (request.ruleName in PROJECT_ROUTING_RULES) {
             assertProjectRuleReadiness(request.ruleName)
             assertBlockNodeBindingConsistency(request.projectId)
+            if (!registry.isProjectInDualWrite(request.ruleName, request.projectId)) {
+                throw badRequest(
+                    "Route gate blocked: project not in Consul dual-write phase " +
+                        "(check dual-write-projects)",
+                )
+            }
         }
         // 主动触发一次对账，确保门禁检查数据新鲜（而非依赖历史缓存）
         verifyProject(request.ruleName, request.projectId)
         val gate = migrationGate ?: throw badRequest("MigrationGate not available")
-        val pending = compensationService?.countPendingTasks(request.ruleName, request.projectId) ?: 0L
+        val compensation = compensationService
+            ?: throw badRequest("CompensationService not available")
+        val sidecar = sidecarVerifier ?: throw badRequest("SidecarVerifier not available")
+        val pending = compensation.countPendingTasks(request.ruleName, request.projectId)
         // 门禁 #3：旁路对账连续 3 轮 pass（spec §25.3.2 E-05）
-        val sidecarOk = sidecarVerifier?.isRecentVerificationPassed(request.projectId) ?: true
+        val sidecarOk = sidecar.isRecentVerificationPassed(request.ruleName, request.projectId)
         val result = gate.canSwitchToRouted(
             compensationQueueEmpty = pending == 0L,
             sidecarPassed = sidecarOk,
@@ -168,7 +191,23 @@ class MongoMigrationService(
                     otherMigratingProjects.map { it.projectId },
             )
         }
-        syncStateDao.updatePhase(request.projectId, MigrationPhase.ROUTED)
+        syncStateDao.updatePhase(request.ruleName, request.projectId, MigrationPhase.ROUTED)
+        val effectiveAt = RoutingEffectiveState.suggestRoutingEffectiveAt()
+        val nextConfigVersion = registry.getConfigVersion() + 1
+        return MigrationRouteResponse(
+            projectId = request.projectId,
+            ruleName = request.ruleName,
+            phase = MigrationPhase.ROUTED,
+            consulRoutingState = "ROUTED",
+            configVersion = nextConfigVersion,
+            routingEffectiveAt = CONSUL_INSTANT_FORMATTER.format(effectiveAt),
+            consulHint = buildRouteConsulHint(
+                request.ruleName,
+                request.projectId,
+                nextConfigVersion,
+                effectiveAt,
+            ),
+        )
     }
 
     fun cleanup(request: MigrationProjectRequest) {
@@ -176,7 +215,8 @@ class MongoMigrationService(
         if (state.phase != MigrationPhase.ROUTED) {
             throw badRequest("Project must be ROUTED, current=${state.phase}")
         }
-        syncStateDao.updatePhase(request.projectId, MigrationPhase.CLEANUP_READY)
+        assertEffectiveRoutingRouted(request.ruleName, request.projectId)
+        syncStateDao.updatePhase(request.ruleName, request.projectId, MigrationPhase.CLEANUP_READY)
         // 模式一（集合族迁移）：直接清理 Default 月集合，避免异步 Job 等待，完成后置 CLEANED
         // 模式二（node / block-node 路由）：由 *ProjectSyncJob 异步清理 Default 上 projectId 数据并置 CLEANED
         if (request.ruleName in registry.listOffloadRuleNames()) {
@@ -195,14 +235,14 @@ class MongoMigrationService(
             .filter { it.startsWith(prefix) }
             .toList()
         if (collections.isEmpty()) {
-            syncStateDao.updatePhase(request.projectId, MigrationPhase.CLEANED)
+            syncStateDao.updatePhase(request.ruleName, request.projectId, MigrationPhase.CLEANED)
             return
         }
         collections.forEach { col ->
             mongoTemplate.dropCollection(col)
             logger.info("CLEANUP dropped Default collection [$col] for rule [${request.ruleName}]")
         }
-        syncStateDao.updatePhase(request.projectId, MigrationPhase.CLEANED)
+        syncStateDao.updatePhase(request.ruleName, request.projectId, MigrationPhase.CLEANED)
     }
 
     fun rollback(request: MigrationProjectRequest) {
@@ -210,13 +250,42 @@ class MongoMigrationService(
         if (state.phase == MigrationPhase.CLEANED) {
             throw conflict("Default data already cleaned, manual full reverse dump required")
         }
+        if (state.phase.ordinal >= MigrationPhase.ROUTED.ordinal) {
+            throw conflict(
+                "Rollback API not available when phase=${state.phase}; follow §25.4.3 reverse migration SOP",
+            )
+        }
         compensationService?.deletePendingByRoutingKey(request.ruleName, request.projectId)
-        syncStateDao.updatePhase(request.projectId, MigrationPhase.ROLLBACK)
+        syncStateDao.updatePhase(request.ruleName, request.projectId, MigrationPhase.ROLLBACK)
+    }
+
+    fun rollbackVerify(projectId: String): RollbackVerifyResult {
+        val checks = mutableListOf<RollbackVerifyCheck>()
+        checks += RollbackVerifyCheck(
+            name = "routing-disabled",
+            passed = !registry.isRoutingEnabled(NODE_RULE) ||
+                projectId !in registry.allKnownProjectIds(NODE_RULE),
+        )
+        val collection = com.tencent.bkrepo.common.mongo.routing.NodeReconciliationHelper
+            .shardCollection(projectId)
+        val defaultReadable = runCatching {
+            mongoTemplate.count(
+                Query(Criteria.where("projectId").`is`(projectId)),
+                collection,
+            ) > 0L
+        }.getOrDefault(false)
+        checks += RollbackVerifyCheck(name = "default-readable", passed = defaultReadable)
+        val passed = checks.all { it.passed }
+        return RollbackVerifyResult(
+            projectId = projectId,
+            status = if (passed) "OK" else "FAILED",
+            checks = checks,
+        )
     }
 
     fun status(ruleName: String, projectId: String?): MigrationStatusListResponse {
         val states = if (projectId != null) {
-            listOfNotNull(syncStateDao.findByProjectId(projectId))
+            syncStateDao.findAllByProjectId(projectId)
         } else {
             syncStateDao.findByRuleName(ruleName)
         }
@@ -232,6 +301,16 @@ class MongoMigrationService(
 
     fun compensationHealth(ruleName: String) =
         compensationHealthChecker?.check(ruleName)
+            ?: throw badRequest("CompensationHealthChecker not available")
+
+    fun compensationAllHealth(): List<CompensationHealthChecker.CompensationHealthStatus> {
+        val checker = compensationHealthChecker
+            ?: throw badRequest("CompensationHealthChecker not available")
+        return listOf("node", "block-node", "artifact-oplog").map { checker.check(it) }
+    }
+
+    fun compensationTrigger(ruleName: String) =
+        compensationHealthChecker?.trigger(ruleName)
             ?: throw badRequest("CompensationHealthChecker not available")
 
     fun getConfig(): RoutingConfigResponse {
@@ -265,11 +344,32 @@ class MongoMigrationService(
             if (projectId in projects) {
                 val heavyTemplate = registry.primaryTemplateByInstance(ruleName, instanceName)
                     ?: throw badRequest("No template for instance $instanceName")
-                verifier.verifySingle(projectId, heavyTemplate)
+                verifier.verifySingle(ruleName, projectId, heavyTemplate)
                 return
             }
         }
         throw badRequest("Project $projectId not found in any configured instance for rule $ruleName")
+    }
+
+    /** 模式二 start 前置：Consul routing-state=ROUTED 且已配 project-routing + dual-write-projects */
+    private fun assertConsulStartReady(ruleName: String, projectId: String) {
+        val rule = properties.rules[ruleName]
+            ?: throw badRequest("Unknown rule: $ruleName")
+        if (rule.routingState != RuleRoutingState.ROUTED) {
+            throw badRequest(
+                "Start gate blocked: routing-state must be ROUTED (current=${rule.routingState})",
+            )
+        }
+        if (projectId !in rule.projectRouting) {
+            throw badRequest(
+                "Start gate blocked: project not in Consul project-routing",
+            )
+        }
+        if (projectId !in rule.dualWriteProjects.orEmpty()) {
+            throw badRequest(
+                "Start gate blocked: project not in Consul dual-write-projects",
+            )
+        }
     }
 
     private fun badRequest(message: String): Nothing =
@@ -283,15 +383,17 @@ class MongoMigrationService(
         )
 
     private fun requireState(request: MigrationProjectRequest) =
-        syncStateDao.findByProjectId(request.projectId)
-            ?: throw badRequest("No migration state for project ${request.projectId}")
+        syncStateDao.findByRuleAndProject(request.ruleName, request.projectId)
+            ?: throw badRequest(
+                "No migration state for rule ${request.ruleName} project ${request.projectId}",
+            )
 
     private fun newState(
         request: MigrationBindingRequest,
         phase: MigrationPhase,
         error: String? = null,
     ) = TMigrationSyncState(
-        id = request.projectId,
+        id = MigrationSyncStateDao.resolveId(request.ruleName, request.projectId),
         projectId = request.projectId,
         ruleName = request.ruleName,
         targetInstance = request.targetInstance,
@@ -308,6 +410,21 @@ class MongoMigrationService(
         }
         if (overdue.isNotEmpty()) {
             throw badRequest("ZOMBIE_OVERDUE: projects $overdue exceed max-zombie-hours, cleanup required")
+        }
+    }
+
+    /** cleanup 前：运行时路由须已切到 Heavy（模式二看 project-effective-at 到点） */
+    private fun assertEffectiveRoutingRouted(ruleName: String, projectId: String) {
+        val routed = if (ruleName in PROJECT_ROUTING_RULES) {
+            registry.isProjectRoutedOut(ruleName, projectId)
+        } else {
+            registry.isRoutingEnabled(ruleName) && !registry.isDualWrite(ruleName)
+        }
+        if (!routed) {
+            throw badRequest(
+                "Cleanup gate blocked: effective routing not ROUTED yet " +
+                    "(check Consul project-effective-at)",
+            )
         }
     }
 
@@ -376,21 +493,15 @@ class MongoMigrationService(
     private fun hasSyncFailures(ruleName: String, projectId: String): Boolean =
         countSyncFailed(ruleName, projectId) > 0L
 
-    private fun countSyncFailed(ruleName: String, projectId: String): Long = runCatching {
+    private fun countSyncFailed(ruleName: String, ownerId: String): Long = runCatching {
         mongoTemplate.count(
-            Query(Criteria.where("projectId").`is`(projectId)),
-            syncFailedCollection(ruleName),
+            Query(MongoRoutingCollections.syncFailedOwnerCriteria(ruleName, ownerId)),
+            MongoRoutingCollections.SYNC_FAILED,
         )
     }.getOrDefault(0L)
 
-    private fun syncFailedCollection(ruleName: String): String = when (ruleName) {
-        BLOCK_NODE_RULE -> BLOCK_NODE_SYNC_FAILED_COLLECTION
-        in registry.listOffloadRuleNames() -> OPLOG_SYNC_FAILED_COLLECTION
-        else -> NODE_SYNC_FAILED_COLLECTION
-    }
-
     /**
-     * ponytail: 手动触发全部 Offload 规则的历史数据同步（替代原 @Scheduled 定时轮询）。
+     * 手动触发全部 Offload 规则的历史数据同步（替代原 @Scheduled 定时轮询）。
      */
     fun syncHistoricalData() {
         registry.listOffloadRuleNames().forEach { ruleName -> syncHistoricalDataByRule(ruleName) }
@@ -437,9 +548,26 @@ class MongoMigrationService(
         private const val NODE_RULE = "node"
         private const val BLOCK_NODE_RULE = "block-node"
         private val PROJECT_ROUTING_RULES = setOf(NODE_RULE, BLOCK_NODE_RULE)
-        private const val NODE_SYNC_FAILED_COLLECTION = "node_project_sync_failed"
-        private const val BLOCK_NODE_SYNC_FAILED_COLLECTION = "block_node_project_sync_failed"
-        private const val OPLOG_SYNC_FAILED_COLLECTION = "oplog_sync_failed"
+        private val CONSUL_INSTANT_FORMATTER: DateTimeFormatter =
+            DateTimeFormatter.ISO_INSTANT.withZone(ZoneOffset.UTC)
         private val logger = LoggerFactory.getLogger(MongoMigrationService::class.java)
+
+        private fun buildRouteConsulHint(
+            ruleName: String,
+            projectId: String,
+            configVersion: Long,
+            effectiveAt: java.time.Instant,
+        ): String {
+            val effectiveAtStr = CONSUL_INSTANT_FORMATTER.format(effectiveAt)
+            val base = "Consul: rules.$ruleName.routing-state stays ROUTED, config-version=$configVersion, " +
+                "dual-write-projects remove $projectId, " +
+                "project-effective-at.$projectId=$effectiveAtStr"
+            return if (ruleName in PROJECT_ROUTING_RULES) {
+                val peer = if (ruleName == NODE_RULE) BLOCK_NODE_RULE else NODE_RULE
+                "$base; mirror same dual-write-projects/project-effective-at on rules.$peer"
+            } else {
+                base
+            }
+        }
     }
 }

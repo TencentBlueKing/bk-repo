@@ -14,7 +14,6 @@ class CollectionFamilyMigrationScanStrategy(
 ) : MigrationScanStrategy {
 
     override val supportsCleanup: Boolean = false
-    override val syncFailedCollection: String = OPLOG_SYNC_FAILED_COLLECTION
 
     override fun syncFailedOwnerId(task: MigrationSyncTask): String = task.ruleName
 
@@ -38,6 +37,5 @@ class CollectionFamilyMigrationScanStrategy(
 
     companion object {
         const val ARTIFACT_OPLOG_RULE = "artifact-oplog"
-        private const val OPLOG_SYNC_FAILED_COLLECTION = "oplog_sync_failed"
     }
 }

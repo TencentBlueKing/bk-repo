@@ -3,6 +3,8 @@ package com.tencent.bkrepo.common.metadata.routing
 import com.tencent.bkrepo.common.metadata.MetadataTestConfiguration
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -33,7 +35,12 @@ class NodeScatterQueryServiceIntegrationTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
 ) {
 
-    private val collections = listOf("node_0", "node_1")
+    private val routedProject = "projectA"
+    private val unroutedProject = "projectB"
+    private val collections = listOf(
+        shardFor(unroutedProject),
+        shardFor(routedProject),
+    )
     private lateinit var registry: MongoRoutingRegistry
     private lateinit var service: NodeScatterQueryService
 
@@ -62,8 +69,8 @@ whenever(registry.primaryTemplateByInstance("node", "heavy1")).thenReturn(mongoT
 
     @Test
     fun `scatterFind applies Default NOT IN and Heavy IN filters on embedded database`() {
-        insertNode("default-id", "projectB", "node_0")
-        insertNode("heavy-id", "projectA", "node_0")
+        insertNode("default-id", unroutedProject, shardFor(unroutedProject))
+        insertNode("heavy-id", routedProject, shardFor(routedProject))
 
         val result = service.scatterFind(Query(), TNode::class.java, collections)
 
@@ -74,8 +81,8 @@ whenever(registry.primaryTemplateByInstance("node", "heavy1")).thenReturn(mongoT
 
     @Test
     fun `scatterFind merges nodes across collections on embedded database`() {
-        insertNode("id-0", "projectB", "node_0")
-        insertNode("id-1", "projectA", "node_1")
+        insertNode("id-0", unroutedProject, shardFor(unroutedProject))
+        insertNode("id-1", routedProject, shardFor(routedProject))
 
         val result = service.scatterFind(Query(), TNode::class.java, collections)
 
@@ -85,8 +92,8 @@ whenever(registry.primaryTemplateByInstance("node", "heavy1")).thenReturn(mongoT
     @Test
     fun `pageBySha256 returns merged page from embedded database`() {
         val sha256 = "deadbeefcafebabe"
-        insertNode("page-default", "projectB", "node_0", sha256)
-        insertNode("page-heavy", "projectA", "node_0", sha256)
+        insertNode("page-default", unroutedProject, shardFor(unroutedProject), sha256)
+        insertNode("page-heavy", routedProject, shardFor(routedProject), sha256)
 
         val page = service.pageBySha256(sha256, PageRequest.of(0, 10), collections)
 
@@ -123,4 +130,7 @@ whenever(registry.primaryTemplateByInstance("node", "heavy1")).thenReturn(mongoT
             collection,
         )
     }
+
+    private fun shardFor(projectId: String): String =
+        "node_${HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)}"
 }

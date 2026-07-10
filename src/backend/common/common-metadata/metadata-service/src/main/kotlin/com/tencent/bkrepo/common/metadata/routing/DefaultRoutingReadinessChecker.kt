@@ -5,7 +5,6 @@ import com.tencent.bkrepo.common.mongo.api.routing.ReadinessCheckItem
 import com.tencent.bkrepo.common.mongo.api.routing.RoutingReadinessChecker
 import com.tencent.bkrepo.common.mongo.api.routing.RoutingReadinessResult
 import com.tencent.bkrepo.common.mongo.routing.MongoMultiInstanceProperties
-import com.tencent.bkrepo.common.mongo.routing.NodeDirectMongoAuditor
 import org.springframework.stereotype.Component
 
 @Component
@@ -35,13 +34,6 @@ class DefaultRoutingReadinessChecker(
             "M5-05",
             "G-43 scatter dedicated pool",
             classExists("com.tencent.bkrepo.common.mongo.routing.ScatterMongoTemplateProvider"),
-        )
-        val auditViolations = NodeDirectMongoAuditor.audit()
-        checks += item(
-            "G-34-CI",
-            "no direct node_ mongo access",
-            auditViolations.isEmpty(),
-            auditViolations.take(5).joinToString().ifEmpty { null },
         )
         val routingActive = registry?.isRoutingEnabled(NODE_RULE) == true
         LOCAL_P0_MANIFEST.forEach { (id, desc) ->

@@ -11,9 +11,9 @@ import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
-/** M8：bkrepo.mongo.routing.* 指标注册（ponytail: 仅核心计数/深度，P99 等由后续接入） */
+/** M8：bkrepo.mongo.routing.* 指标注册（仅核心计数/深度，P99 等由后续接入） */
 @Component
-@ConditionalOnBean(MongoRoutingRegistry::class)
+@ConditionalOnBean(value = [MongoRoutingRegistry::class, MeterRegistry::class])
 class MongoRoutingMetrics(
     private val meterRegistry: MeterRegistry,
     private val compensationService: MongoDualWriteCompensationService,
@@ -38,6 +38,25 @@ class MongoRoutingMetrics(
     private val noneMatchedCounter = Counter.builder("bkrepo.mongo.routing.none.matched.count")
         .description("NONE-mode dual-write primary matched (secondary may have missed)")
         .register(meterRegistry)
+
+    private val dualWritePrimaryFailCounter = Counter.builder("bkrepo.mongo.routing.dual_write.primary.fail")
+        .description("Dual-write primary path failures")
+        .register(meterRegistry)
+
+    private val dualWriteSecondaryFailCounter = Counter.builder("bkrepo.mongo.routing.dual_write.secondary.fail")
+        .description("Dual-write secondary path failures")
+        .register(meterRegistry)
+
+    private val compensationFailedCounter = Counter.builder("bkrepo.mongo.routing.compensation.failed")
+        .description("Compensation tasks permanently failed")
+        .register(meterRegistry)
+
+    private val compensationEnqueueRejectedCounter =
+        Counter.builder("bkrepo.mongo.routing.compensation.enqueue.rejected")
+            .description("Compensation tasks rejected by hard limit")
+            .register(meterRegistry)
+
+    private val reconciliationLastPassed = AtomicLong(0)
 
     init {
         listOf("node", "artifact-oplog").forEach { ruleName ->
@@ -86,6 +105,14 @@ class MongoRoutingMetrics(
         }
             .description("Dual-write executor active threads")
             .register(meterRegistry)
+
+        Gauge.builder("bkrepo.mongo.routing.reconciliation.last.passed") {
+            reconciliationLastPassed.get().toDouble()
+        }
+            .description("Last sidecar reconciliation passed (1=pass, 0=fail/none)")
+            .register(meterRegistry)
+
+        MongoDualWriteSupport.metrics = this
     }
 
     fun recordRoutingQuery(ruleName: String, hit: Boolean) {
@@ -109,6 +136,26 @@ class MongoRoutingMetrics(
 
     fun recordNoneMatched() {
         noneMatchedCounter.increment()
+    }
+
+    fun recordDualWritePrimaryFail() {
+        dualWritePrimaryFailCounter.increment()
+    }
+
+    fun recordDualWriteSecondaryFail() {
+        dualWriteSecondaryFailCounter.increment()
+    }
+
+    fun recordCompensationFailed() {
+        compensationFailedCounter.increment()
+    }
+
+    fun recordCompensationEnqueueRejected() {
+        compensationEnqueueRejectedCounter.increment()
+    }
+
+    fun recordReconciliationLastPassed(passed: Boolean) {
+        reconciliationLastPassed.set(if (passed) 1L else 0L)
     }
 
     fun recordScatterQuery(nanos: Long, partial: Boolean) {

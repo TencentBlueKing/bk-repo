@@ -1,7 +1,10 @@
 package com.tencent.bkrepo.common.mongo.routing
 
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingCollections
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.routing.NodeReconciliationHelper.BLOCK_NODE_RULE
+import com.tencent.bkrepo.common.mongo.routing.NodeReconciliationHelper.NODE_RULE
 import org.bson.Document
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.AfterEach
@@ -46,19 +49,28 @@ class DualWriteSidecarVerifierTest {
         heavyTemplate = mock()
         registry = mock()
         whenever(registry.isProjectInDualWrite(any(), any())).thenReturn(true)
+        whenever(registry.allConfiguredProjectsByInstance(BLOCK_NODE_RULE)).thenReturn(emptyMap())
         verifier = DualWriteSidecarVerifier(defaultTemplate, registry)
     }
 
     @AfterEach
     fun tearDown() {
         defaultTemplate.collectionNames
-            .filter { it.startsWith("node_") }
+            .filter { it.startsWith("node_") || it.startsWith("block_node_") }
             .forEach { defaultTemplate.dropCollection(it) }
+        if (defaultTemplate.collectionExists(MongoRoutingCollections.RECONCILIATION)) {
+            defaultTemplate.dropCollection(MongoRoutingCollections.RECONCILIATION)
+        }
     }
 
-    /**
-     * 与 [DualWriteSidecarVerifier.resolveShardCollection] 保持一致。
-     */
+    private fun blockShardCollection(projectId: String): String {
+        val shardIndex = HashShardingUtils.shardingSequenceFor(projectId, 256)
+        return "block_node_$shardIndex"
+    }
+
+    private fun passRecent(ruleName: String = NODE_RULE, projectId: String, rounds: Int = 1): Boolean =
+        verifier.isRecentVerificationPassed(ruleName, projectId, requiredPassRounds = rounds)
+
     private fun shardCollection(projectId: String): String {
         val shardIndex = HashShardingUtils.shardingSequenceFor(projectId, 256)
         return "node_$shardIndex"
@@ -74,7 +86,7 @@ class DualWriteSidecarVerifierTest {
             mapOf("heavy1" to setOf("projectA")),
         )
         localVerifier.verify()
-        assertFalse(localVerifier.isRecentVerificationPassed("projectA", requiredPassRounds = 1))
+        assertFalse(localVerifier.isRecentVerificationPassed(NODE_RULE, "projectA", requiredPassRounds = 1))
     }
 
     // ── 2. 无路由项目 → verify 跳过 ──────────────────────────────────
@@ -110,7 +122,7 @@ class DualWriteSidecarVerifierTest {
 
         verifier.verify()
 
-        assertTrue(verifier.isRecentVerificationPassed(projectId, requiredPassRounds = 1))
+        assertTrue(verifier.isRecentVerificationPassed(NODE_RULE,projectId, requiredPassRounds = 1))
     }
 
     // ── 3. 有差异 → not passed ──────────────────────────────────────
@@ -142,21 +154,21 @@ class DualWriteSidecarVerifierTest {
 
         verifier.verify()
 
-        assertFalse(verifier.isRecentVerificationPassed(projectId, requiredPassRounds = 1))
+        assertFalse(verifier.isRecentVerificationPassed(NODE_RULE,projectId, requiredPassRounds = 1))
     }
 
     // ── 4. 轮数不足 → false ─────────────────────────────────────────
 
     @Test
     fun `isRecentVerificationPassed returns false when not enough rounds`() {
-        assertFalse(verifier.isRecentVerificationPassed("unknown-project", requiredPassRounds = 3))
+        assertFalse(verifier.isRecentVerificationPassed(NODE_RULE,"unknown-project", requiredPassRounds = 3))
     }
 
     // ── 5. 获取对账历史 ──────────────────────────────────────────────
 
     @Test
     fun `getHistory returns empty for unknown project`() {
-        assertTrue(verifier.getHistory("unknown").isEmpty())
+        assertTrue(verifier.getHistory(NODE_RULE, "unknown").isEmpty())
     }
 
     // ── 6. Heavy 有数据但 Default 没有 → 视为 passed（空集合场景） ──
@@ -182,7 +194,7 @@ class DualWriteSidecarVerifierTest {
 
         verifier.verify()
 
-        assertFalse(verifier.isRecentVerificationPassed(projectId, requiredPassRounds = 1))
+        assertFalse(verifier.isRecentVerificationPassed(NODE_RULE,projectId, requiredPassRounds = 1))
     }
 
     // ── 7. 文档内容深度对比：_class 和 version 被排除 ─────────────────
@@ -216,7 +228,7 @@ class DualWriteSidecarVerifierTest {
 
         verifier.verify()
 
-        assertTrue(verifier.isRecentVerificationPassed(projectId, requiredPassRounds = 1))
+        assertTrue(verifier.isRecentVerificationPassed(NODE_RULE,projectId, requiredPassRounds = 1))
     }
 
     // ── 8. 多轮验证全部通过 → passed ──────────────────────────────────
@@ -247,7 +259,7 @@ class DualWriteSidecarVerifierTest {
             verifier.verify()
         }
 
-        assertTrue(verifier.isRecentVerificationPassed(projectId, requiredPassRounds = 3))
+        assertTrue(verifier.isRecentVerificationPassed(NODE_RULE,projectId, requiredPassRounds = 3))
     }
 
     // ── 9. 前两轮通过第三轮失败 → not passed ────────────────────────
@@ -284,7 +296,7 @@ class DualWriteSidecarVerifierTest {
         whenever(heavyTemplate.findById(id2, Document::class.java, collection)).thenReturn(heavyDiff)
         verifier.verify()
 
-        assertFalse(verifier.isRecentVerificationPassed(projectId, requiredPassRounds = 3))
+        assertFalse(verifier.isRecentVerificationPassed(NODE_RULE,projectId, requiredPassRounds = 3))
     }
 
     // ── 10. getHistory 返回对账历史 ─────────────────────────────────
@@ -309,7 +321,7 @@ class DualWriteSidecarVerifierTest {
             verifier.verify()
         }
 
-        val history = verifier.getHistory(projectId)
+        val history = verifier.getHistory(NODE_RULE, projectId)
         assertTrue(history.size >= 5)
         assertTrue(history.all { it.passed })
     }
@@ -337,7 +349,7 @@ class DualWriteSidecarVerifierTest {
             verifier.verify()
         }
 
-        val history = verifier.getHistory(projectId)
+        val history = verifier.getHistory(NODE_RULE, projectId)
         // 历史应被截断到 20 条
         assertTrue(history.size <= 20)
     }
@@ -376,7 +388,7 @@ class DualWriteSidecarVerifierTest {
         whenever(heavyTemplate.findById(id, Document::class.java, collection)).thenReturn(heavyDoc)
 
         verifier.verify()
-        assertTrue(verifier.isRecentVerificationPassed(projectId, requiredPassRounds = 1))
+        assertTrue(verifier.isRecentVerificationPassed(NODE_RULE,projectId, requiredPassRounds = 1))
     }
 
     @Test
@@ -411,7 +423,7 @@ class DualWriteSidecarVerifierTest {
         whenever(heavyTemplate.findById(id, Document::class.java, collection)).thenReturn(heavyDoc)
 
         verifier.verify()
-        assertFalse(verifier.isRecentVerificationPassed(projectId, requiredPassRounds = 1))
+        assertFalse(verifier.isRecentVerificationPassed(NODE_RULE,projectId, requiredPassRounds = 1))
     }
 
     // ── 13. 列表字段深度对比 ────────────────────────────────────────
@@ -442,7 +454,7 @@ class DualWriteSidecarVerifierTest {
         whenever(heavyTemplate.findById(id, Document::class.java, collection)).thenReturn(heavyDoc)
 
         verifier.verify()
-        assertTrue(verifier.isRecentVerificationPassed(projectId, requiredPassRounds = 1))
+        assertTrue(verifier.isRecentVerificationPassed(NODE_RULE,projectId, requiredPassRounds = 1))
     }
 
     @Test
@@ -471,7 +483,7 @@ class DualWriteSidecarVerifierTest {
         whenever(heavyTemplate.findById(id, Document::class.java, collection)).thenReturn(heavyDoc)
 
         verifier.verify()
-        assertFalse(verifier.isRecentVerificationPassed(projectId, requiredPassRounds = 1))
+        assertFalse(verifier.isRecentVerificationPassed(NODE_RULE,projectId, requiredPassRounds = 1))
     }
 
     // ── 14. 多个项目管理 ─────────────────────────────────────────────
@@ -507,7 +519,60 @@ class DualWriteSidecarVerifierTest {
 
         verifier.verify()
 
-        assertTrue(verifier.isRecentVerificationPassed(projectA, requiredPassRounds = 1))
-        assertFalse(verifier.isRecentVerificationPassed(projectB, requiredPassRounds = 1))
+        assertTrue(verifier.isRecentVerificationPassed(NODE_RULE,projectA, requiredPassRounds = 1))
+        assertFalse(verifier.isRecentVerificationPassed(NODE_RULE,projectB, requiredPassRounds = 1))
+    }
+
+    @Test
+    fun `isRecentVerificationPassed reads persisted log across verifier instances`() {
+        val projectId = "projectCrossPod"
+        val collection = shardCollection(projectId)
+        val id = ObjectId()
+        val doc = Document().apply {
+            put("_id", id)
+            put("projectId", projectId)
+            put("name", "consistent")
+        }
+
+        whenever(registry.allConfiguredProjectsByInstance("node")).thenReturn(
+            mapOf("heavy1" to setOf(projectId)),
+        )
+        whenever(registry.primaryTemplateByInstance("node", "heavy1")).thenReturn(heavyTemplate)
+        whenever(heavyTemplate.findById(id, Document::class.java, collection)).thenReturn(doc)
+
+        val podA = DualWriteSidecarVerifier(defaultTemplate, registry)
+        repeat(3) {
+            defaultTemplate.dropCollection(collection)
+            defaultTemplate.insert(doc, collection)
+            podA.verify()
+        }
+
+        val podB = DualWriteSidecarVerifier(defaultTemplate, registry)
+        assertTrue(podB.isRecentVerificationPassed(NODE_RULE, projectId, requiredPassRounds = 3))
+        assertTrue(podB.getHistory(NODE_RULE, projectId).isEmpty())
+    }
+
+    @Test
+    fun `verifySingle samples block_node collection for block-node rule`() {
+        val projectId = "blockProject"
+        val collection = blockShardCollection(projectId)
+        val id = ObjectId()
+        val doc = Document().apply {
+            put("_id", id)
+            put("projectId", projectId)
+            put("name", "block.bin")
+        }
+        defaultTemplate.insert(doc, collection)
+
+        whenever(registry.allConfiguredProjectsByInstance(BLOCK_NODE_RULE)).thenReturn(
+            mapOf("heavy1" to setOf(projectId)),
+        )
+        whenever(registry.primaryTemplateByInstance(BLOCK_NODE_RULE, "heavy1")).thenReturn(heavyTemplate)
+        whenever(heavyTemplate.findById(id, Document::class.java, collection)).thenReturn(doc)
+
+        verifier.verifySingle(BLOCK_NODE_RULE, projectId, heavyTemplate)
+
+        assertTrue(verifier.isRecentVerificationPassed(BLOCK_NODE_RULE, projectId, requiredPassRounds = 1))
+        assertFalse(verifier.isRecentVerificationPassed(NODE_RULE, projectId, requiredPassRounds = 1))
     }
 }

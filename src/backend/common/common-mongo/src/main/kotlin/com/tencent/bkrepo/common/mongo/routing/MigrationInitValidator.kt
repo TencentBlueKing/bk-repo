@@ -91,7 +91,7 @@ class MigrationInitValidator(
 
     private fun checkObjectIdSample(template: MongoTemplate, projectId: String): InitValidationCheck {
         return runCatching {
-            val col = "node_0"
+            val col = NodeReconciliationHelper.shardCollection(projectId)
             if (!template.collectionExists(col)) {
                 return InitValidationCheck("objectIdFormat", true, "no sample collection")
             }

@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.routing.NodeMongoOperations
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.mongo.routing.MigrationGate
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FULL_PATH
 import com.tencent.bkrepo.job.PROJECT
@@ -43,8 +44,8 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.DeletedRepositoryCleanupJobProperties
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -61,6 +62,8 @@ import kotlin.reflect.KClass
 class DeletedRepositoryCleanupJob(
     private val properties: DeletedRepositoryCleanupJobProperties,
     private val nodeMongoOperations: NodeMongoOperations,
+    @Autowired(required = false)
+    private val migrationGate: MigrationGate? = null,
 ) : DefaultContextMongoDbJob<DeletedRepositoryCleanupJob.Repository>(properties) {
 
 
@@ -72,14 +75,13 @@ class DeletedRepositoryCleanupJob(
     ) {
         companion object {
             fun from(row: Map<String, Any?>) = Repository(
-                id = row[ID].toString(),
-                projectId = row[PROJECT].toString(),
-                name = row[Repository::name.name].toString(),
-                deleted = TimeUtils.parseMongoDateTimeStr(row[DELETED_DATE].toString()),
+                id = row[ID]?.toString() ?: "",
+                projectId = row[PROJECT]?.toString() ?: "",
+                name = row[Repository::name.name]?.toString() ?: "",
+                deleted = row[DELETED_DATE]?.let { TimeUtils.parseMongoDateTimeStr(it.toString()) },
             )
         }
     }
-
 
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
@@ -96,6 +98,11 @@ class DeletedRepositoryCleanupJob(
     }
 
     override fun run(row: Repository, collectionName: String, context: JobContext) {
+        // spec §3.18.3 迁移期间冻结物理删除
+        if (migrationGate?.isPhysicalDeleteFrozen(row.projectId) == true) {
+            logger.info("freeze-physical-delete active, skip ${row.projectId}/${row.name}")
+            return
+        }
         // 仓库被标记为已删除，且该仓库下不存在任何节点时，删除仓库
         val nodeCollectionName = COLLECTION_NODE_PREFIX +
             MongoShardingUtils.shardingSequence(row.projectId, SHARDING_COUNT)

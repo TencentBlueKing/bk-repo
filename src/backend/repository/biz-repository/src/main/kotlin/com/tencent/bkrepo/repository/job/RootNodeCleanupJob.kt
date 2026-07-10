@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.repository.job
 
-import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.routing.NodeShardReadSupport
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.service.log.LoggerHolder
@@ -15,8 +14,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 class RootNodeCleanupJob(
-    private val nodeDao: NodeDao,
-    private val nodeShardReadSupport: NodeShardReadSupport? = null,
+    private val nodeShardReadSupport: NodeShardReadSupport,
 ) {
 
     fun cleanup() {
@@ -24,15 +22,7 @@ class RootNodeCleanupJob(
         var deletedCount = 0L
         val startTimeMillis = System.currentTimeMillis()
         val query = Query(where(TNode::name).inValues("", null))
-        if (nodeShardReadSupport != null) {
-            deletedCount = nodeShardReadSupport.removeOnShards(SHARDING_COUNT, "node_", query).deletedCount
-        } else {
-            val mongoTemplate = nodeDao.determineMongoTemplate()
-            for (sequence in 0 until SHARDING_COUNT) {
-                val collectionName = nodeDao.parseSequenceToCollectionName(sequence)
-                deletedCount += mongoTemplate.remove(query, collectionName).deletedCount
-            }
-        }
+        deletedCount = nodeShardReadSupport.removeOnShards(SHARDING_COUNT, "node_", query).deletedCount
         val elapseTimeMillis = System.currentTimeMillis() - startTimeMillis
         logger.info("deletedCount: $deletedCount, elapse [$elapseTimeMillis] ms totally.")
     }

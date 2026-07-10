@@ -39,7 +39,7 @@ Heavy 实例仅服务少数项目，连接池可适当缩小。
 
 ### 7.3 连接池观测与参数变更
 
-**参数变更**：连接池参数通过 Consul 配置，变更后 **滚动重启 Pod** 生效。ponytail: MongoDB Java driver 不支持运行时改 pool size，不做动态重建。
+**参数变更**：连接池参数通过 Consul 配置，变更后 **滚动重启 Pod** 生效。MongoDB Java driver 不支持运行时改 pool size，不做动态重建。
 
 **连接泄漏 / 等待告警**（`ConnectionPoolMonitor`）：
 
@@ -136,19 +136,45 @@ class MongoClientShutdownHandler(
 
 ### 8.1 索引同步策略
 
-Heavy 实例的 `node_*` 集合必须在数据迁移前创建与 Default 一致的索引。
+**索引创建分为两层**：
+
+| 层级 | 时机 | 目标实例 | 方式 |
+| --- | --- | --- | --- |
+| 启动时 | `@PostConstruct` | Default（主实例） | `ShardingMongoDao.ensureIndex()` 为全量分表建索引 |
+| 首次写入 | `insert` / `save` 入口 | Default + Heavy（按路由） | `ShardingMongoDao.ensureIndex(entity)` 按 `writeTemplates` 路由到目标实例 lazy 建索引 |
+
+**lazy ensureIndex 机制**：
+
+```text
+insert(entity) / save(entity)
+  → ensureIndex(entity)
+    → writeTemplates(collectionName, entity)  ← 按 entity.projectId 路由到 Default/Heavy
+    → 在路由到的实例上 ensureIndex（Guava Cache 去重，首次写入后缓存 1 天）
+  → super.insert/save  ← 正常写入
+```
+
+**关键行为**：
+
+- **Heavy 实例无需预先手动建索引**：首次项目数据写入 Heavy 时自动创建。
+- **INITIAL_SYNC 自动建索引**：`MigrationSyncJob` 全量同步的 `insert` 走 `ShardingMongoDao.insert(entity)`，首次写入时触发 Heavy 索引创建。索引在 INITIAL_SYNC 阶段即完成，DUAL_WRITE 前已就绪。
+- **projectId 热加载后首次写入**：无重启，写入自动触发 Heavy 索引创建。
+- **性能**：Guava Cache（200 条，1 天过期）确保同分表同索引仅检查一次；cache hit 后零开销。
+- **幂等**：`ensureIndex` 是 MongoDB 幂等操作，索引已存在时几乎无开销。
+- **`freeze-ddl` 豁免**：lazy ensureIndex 是迁移流程的内部机制，**不受 `freeze-ddl` 约束**（与 `MonthRangeShardingMongoDao` 行为一致）。外部 DDL（手动 `createIndex`/`dropIndex`）仍被 `freeze-ddl` 拦截。
+
+迁移前检查清单（简化）：
 
 ```text
 迁移前检查清单：
-1. 导出 Default 实例 node_* 索引定义
-2. 在 Heavy 实例创建同名集合并建立完全一致的索引
-3. 验证索引创建成功后再启动 MigrationSyncJob
+1. 确认应用启动日志中 Default 实例索引创建完成（搜索 "Ensure [N] index for sharding collection"）
+2. 验证 Heavy 实例连接正常（无需预建索引——首次写入自动创建）
+3. INIT 校验阶段会自动对比索引列表，缺失仅输出日志不阻塞
 ```
 
 ### 8.2 索引一致性校验
 
 `MigrationSyncJob` 在 `INIT` 阶段自动对比源和目标的索引列表，
-缺失索引时阻止进入 `INITIAL_SYNC`，输出差异日志。
+缺失索引时**输出差异日志但不阻断**（首次写入时由 `ShardingMongoDao.ensureIndex(entity)` 自动创建）。
 
 Offload 实例同理：`OplogMongoConfiguration` 初始化时校验
 `artifact_oplog_*` 索引与主实例一致。
@@ -243,15 +269,17 @@ data class TNode(
 
 ### 10.1 配置热加载
 
-项目路由配置变更（新增 / 移除 project-routing 条目）支持通过
-Spring Cloud 配置中心动态刷新，无需重启应用。
+项目路由配置变更（新增 / 移除 `project-routing` 条目、`routing-state` 切换）支持通过
+Spring Cloud 配置中心动态刷新，无需重启应用、无需重建连接池。
 
 实现要求：
-- `NodeMongoRoutingProperties` 标注 `@RefreshScope`。
-- `NodeMongoRoutingRegistry` 监听 `RefreshScopeRefreshedEvent`，
-  重新构建路由表。
-- 新增实例（`instances` 新增条目）需要重启，
-  因为 `MongoTemplate` Bean 需要重建。
+- 路由配置由 `MongoMultiInstanceProperties`（`@ConfigurationProperties` 绑定）承载；
+  `DefaultMongoRoutingRegistry` 在每次 `resolve()` 调用时 **live 读取** `properties.rules[ruleName]`，
+  因此 `routing-state` / `project-routing` 等 A 类配置变更经 Consul 原地重绑定后秒级生效。
+- **禁止**为 `mongoRoutingRegistry` Bean 添加 `@RefreshScope`：该 Bean 持有全部
+  `MongoClient` 连接池，刷新会销毁并重建整个 Registry（连带所有连接池重建），导致切流期间全量连接抖动。
+- 新增实例（`instances` 新增条目，B 类）需要滚动重启，
+  因为 `MongoClient` 连接池在启动期一次性建好（`buildPrimaryTemplates()`）。
 
 ### 10.2 配置校验
 
@@ -273,15 +301,19 @@ Spring Cloud 配置中心动态刷新，无需重启应用。
 
 | 存储 | 配置类别 | 写入方 | 读者 | 热路径 |
 |------|----------|--------|------|--------|
-| **Consul**（每区域一份） | `instances.*`、`routing-state`、`project-routing`、`shard-routing`、`business-routing`、`migration.*`、`scatter-query.*`、`compensation.*`、`config-version` | **仅运维/用户** | Registry 内存 | **是** |
-| **DB** `mongo_migration_sync_state` | `phase`、Job 断点、`strategy`、审计字段 | opdata API / Job | Job、opdata 面板 | **否** |
-| **DB** `mongo_routing_config` | `max-concurrent-dual-write`、`freeze-ddl` | opdata API | MigrationGate（低频） | **否** |
+| **Consul**（每区域一份） | `instances.*`、`routing-state`、`dual-write-projects`、`project-effective-at`、`project-routing`、`shard-routing`、`business-routing`、`migration.*`、`scatter-query.*`、`compensation.*`、`config-version` | **仅运维/用户** | Registry 内存 | **是** |
+| **DB** `mongo_routing_migration_state` | `phase`、Job 断点、`strategy`、审计字段 | opdata API / Job | Job、opdata 面板 | **否** |
+| **DB** `mongo_routing_sync_failed` | 历史全量同步失败 DLQ；`ruleName` + `ownerId` + `docId` | Job | Job、opdata 门禁 | **否** |
+| **DB** `mongo_routing_config` | `max-concurrent-dual-write`、`freeze-ddl` | opdata API | `MongoMigrationService`（`start`/`route` 门禁） | **否** |
+| **DB** `mongo_routing_compensation` | 双写补偿队列 | Job / 业务写路径 | Job、opdata 门禁 | **否** |
+| **DB** `mongo_routing_reconciliation` | 旁路对账日志 | opdata API | `POST /migration/route` 门禁 | **否** |
+| **DB** `mongo_routing_inconsistency` | 补偿后校验不一致 | Job | 运维排查 | **否** |
 
 **核心原则**：
 - **路由决策只读 Consul**：`MongoRoutingRegistry` 从 `MongoMultiInstanceProperties` 内存读取，node 热路径 **0 DB**
 - **代码/API 禁止写 Consul**：迁移 API 只写 DB（编排进度）；运维按 SOP 手动改 Consul
-- **DB 不进路由**：`mongo_migration_sync_state` 不参与 `resolveWriteRoute`；避免共用 DB 导致跨区路由串扰
-- **Pod 一致性**：同区域所有 Pod 读同一 Consul KV，`@RefreshScope` 秒级对齐；`bkrepo_mongo_routing_config_version` 对账
+- **DB 不进路由**：`mongo_routing_migration_state` 不参与 `resolveWriteRoute`；避免共用 DB 导致跨区路由串扰
+- **Pod 一致性**：同区域所有 Pod 读同一 Consul KV，`@ConfigurationProperties` 原地重绑定秒级对齐；`bkrepo_mongo_routing_config_version` 对账
 
 #### 10.3.2 配置读写流程
 
@@ -303,7 +335,7 @@ flowchart LR
 
     OP_CONSUL --> CONSUL
     OP_API --> DB
-    CONSUL -->|"RefreshScope"| REG
+    CONSUL -->|"@ConfigurationProperties 原地重绑定"| REG
     DB -->|"仅 Job / Gate"| JOB["MigrationSyncJob\nMigrationGate"]
 ```
 
@@ -312,22 +344,29 @@ flowchart LR
 | 机制 | 说明 |
 |------|------|
 | `MongoMultiInstanceProperties` | 从 Consul 绑定，基础设施 + **全部路由表** |
-| `MongoRoutingRegistry` | 只读 properties；`isProjectInDualWrite` = `routing-state=DUAL_WRITE` ∧ `projectId ∈ project-routing` |
-| `mongo_migration_sync_state` | API/Job 写；**不驱动路由** |
+| `MongoRoutingRegistry` | 只读 properties；模式二 `isProjectInDualWrite` / `isProjectRoutedOut` 委托 `ProjectRouteResolver` |
+| `mongo_routing_migration_state` | API/Job 写；**不驱动路由** |
+| `mongo_routing_sync_failed` | Job 写；按 `ruleName` + `ownerId` 计数 |
+| `mongo_routing_compensation` | Job 写/消费；切流门禁查 PENDING |
+| `mongo_routing_reconciliation` | 对账 API 写；切流门禁查最近 3 轮 |
+| `mongo_routing_inconsistency` | 补偿 post-check 写 |
 | `mongo_routing_config` | Gate 低频读；`scatter-query` 以 Consul 为准 |
 
 #### 10.3.4 模式二迁移 SOP（API + Consul 分工）
 
 | 步骤 | API（DB） | 运维（Consul） |
 |------|-----------|----------------|
+| 开迁前置 | — | 确认 §3.20.4 前置清单（100% 部署、Heavy 就绪等） |
+| 首次开闸 | — | `routing-state=ROUTED`（一次性；**须先于 binding**，G-34 INFRA-02） |
+| G-34 验收 | `GET /routing/readiness` 全绿 | — |
 | binding | `POST /migration/binding` | — |
-| 开迁前置 | — | 确认 §3.20.4 前置清单（G-34、100% 部署、config-version 等） |
-| 开启双写 | — | 加 `project-routing`；`routing-state=DUAL_WRITE`（**先于 start**） |
+| 开启双写 | — | 加 `project-routing` + `dual-write-projects`（**先于 start**） |
 | 启动同步 | `POST /migration/start` | — |
-| 历史同步 | Job 读 DB 断点 | Consul 保持 `DUAL_WRITE` |
-| 切流 | `POST /migration/route`（DB phase） | 确认后 `routing-state=ROUTED` |
-| 清理 | `POST /migration/cleanup` | 完成后删 `project-routing` 条目 |
-| 回滚 | `POST /migration/rollback` | `routing-state=OFF`；删 `project-routing` |
+| 历史同步 | Job 读 DB 断点 | Consul 保持该项目在 `dual-write-projects` |
+| 切流 | `POST /migration/route`（DB phase + 返回 Consul 建议） | 从 `dual-write-projects` 移除 + `project-effective-at` + `config-version++`；`routing-state` 保持 `ROUTED` |
+| 清理 | `POST /migration/cleanup`（须 `isProjectRoutedOut`） | **保留** `project-routing` 与 `project-effective-at` |
+| 回滚（`phase < ROUTED`） | `POST /migration/rollback` | 清除该项目 Consul 条目；`routing-state` 保持 `ROUTED` |
+| 全局紧急回滚 | — | `routing-state=OFF`（仅灾难场景） |
 
 > op admin 页面展示 DB 编排状态，并**提示**下一步 Consul 操作项；不自动写 Consul。
 
@@ -342,7 +381,7 @@ flowchart LR
 | 首次部署规则 + 实例 URI | Consul 直写 | **滚动重启** | §2.10.2 |
 | 开启双写 (`routing-state=DUAL_WRITE`) | **运维手动改 Consul** | **热加载** | §2.10.3 |
 | 执行历史数据 dump/restore | 不涉及配置变更 | — | §2.10.4 |
-| 切流 (`routing-state=ROUTED`) | **运维手动改 Consul** | **热加载** | §2.10.5 |
+| 切流 (`routing-state=ROUTED` + `routing-effective-at`) | **运维手动改 Consul** | **热加载** | §2.10.4 |
 | 清理 Default 数据 | 不涉及配置变更 | — | §2.10.6 |
 | 紧急回滚 (`routing-state=OFF`) | **运维手动改 Consul** | **热加载** | §2.10.8 |
 
@@ -353,13 +392,13 @@ flowchart LR
 | 操作 | 配置通道 | 生效方式 | 详细步骤 |
 |------|----------|----------|----------|
 | 首次部署规则 + 实例 URI（Consul bootstrap） | Consul 直写 | **滚动重启** | §3.20.2 |
-| 添加迁移项目（binding） | **API → DB** | RefreshScope | §3.20.3 |
+| 添加迁移项目（binding） | **API → DB** | @ConfigurationProperties 原地重绑定（秒级 live read） | §3.20.3 |
 | 开迁前置检查 | — | 运维 SOP | §3.20.4 前置清单 |
-| 开启双写 + 项目路由 | **运维 → Consul** `project-routing` + `routing-state=DUAL_WRITE` | 热加载 | §3.20.4（**先于 start**） |
+| 开启双写 + 项目路由 | **运维 → Consul** `project-routing` + `dual-write-projects`（`routing-state=ROUTED`） | 热加载 | §3.20.4（**先于 start**） |
 | 启动历史同步 | `POST /migration/start` + Job | DB 断点 | §3.20.5 |
-| 项目切流 | **API → DB**；**运维 → Consul `routing-state=ROUTED`** | 热加载 | §3.20.6 |
-| 清理 Default 副本 | Job + API | — | §3.20.7 |
-| 单项目回滚 | **API → DB**；**运维 → Consul 回滚** | 热加载 | §3.20.10 |
+| 项目切流 | **API → DB**；**运维 → Consul** 移除 `dual-write-projects` + `project-effective-at` + `config-version++` | 热加载；到点后自动 `ON_HEAVY` | §3.20.6 |
+| 清理 Default 副本 | Job + API | — | §3.20.7（**保留** `project-routing`） |
+| 单项目回滚 | **API → DB**；**运维 → Consul** 清除该项目条目 | 热加载；`routing-state` 保持 `ROUTED` | §3.20.10 |
 | 全局紧急回滚（`routing-state=OFF`） | **运维手动改 Consul** | **热加载** | §3.20.10 |
 
 > 模式二：`project-routing` / `routing-state` 由运维在 **本区域 Consul** 维护；API 只写 DB 编排状态。DB 跨区共用，**路由不进 DB**。
@@ -370,12 +409,12 @@ flowchart LR
 flowchart LR
     subgraph "模式一：artifact_oplog"
         direction TB
-        A1["Consul（基础设施）\nrouting-state\n运维手动改"] --> B1["@RefreshScope\n热加载"]
+        A1["Consul（基础设施）\nrouting-state\n运维手动改"] --> B1["@ConfigurationProperties\n原地重绑定\nlive read 秒级生效"]
         B1 --> C1["各 Pod 生效"]
     end
     subgraph "模式二：node"
         direction TB
-        A2["Consul\nrouting-state\nproject-routing\n运维手动改"] --> B2["@RefreshScope"]
+        A2["Consul\nrouting-state\ndual-write-projects\nproject-effective-at\nproject-routing\n运维手动改"] --> B2["@ConfigurationProperties\n原地重绑定"]
         A2b["DB\nJob 编排 phase\nAPI 写"] --> JOB2["Job / opdata"]
         B2 --> C2["各 Pod 路由生效"]
     end
@@ -384,11 +423,11 @@ flowchart LR
 | 对比维度 | 模式一 | 模式二 |
 |----------|--------|--------|
 | 配置变更频率 | 极低（全生命周期 1~2 次） | 高（逐项目增量，数十~数百次） |
-| Consul 配置 | `instances.*.uri`、`routing-state` | `instances.*.uri`、`routing-state` |
+| Consul 配置 | `instances.*.uri`、`routing-state` | `instances.*.uri`、`routing-state`、`dual-write-projects`、`project-effective-at` |
 | DB 配置 | 无 | Job 编排（`phase`、断点）；**不进路由** |
-| 运维操作方式 | Consul 直接修改 | API 写 DB + **运维改 Consul**（`project-routing` / `routing-state`） |
+| 运维操作方式 | Consul 直接修改 | API 写 DB + **运维改 Consul**（`project-routing` / `dual-write-projects` / `project-effective-at`） |
 | 审计粒度 | Consul 变更日志（Key 级）+ DB 变更日志 | Consul 变更日志 + DB audit log |
-| 回滚粒度 | 全局（`routing-state=OFF`） | 全局 + 单项目 |
+| 回滚粒度 | 全局（`routing-state=OFF`） | 单项目（清除 Consul 条目）+ 全局紧急（`routing-state=OFF`） |
 
 ### 10.5 迁移运维 API（opdata 编排层）
 
@@ -396,19 +435,20 @@ Consul 存全部路由配置（运维唯一写入源）。下列 API 只写 DB �
 
 | API | 说明 |
 |---|---|
-| `POST /migration/binding` | 声明迁移单元；指定 `historicalSyncStrategy`、Tier-Key/Biz；**写入 DB** `mongo_migration_sync_state` |
+| `POST /migration/binding` | 声明迁移单元；指定 `historicalSyncStrategy`、Tier-Key/Biz；**写入 DB** `mongo_routing_migration_state` |
 | `POST /migration/start` | PENDING → INITIAL_SYNC；**写入 DB** `phase` |
-| `POST /migration/route` | 补偿门禁 + 旁路对账后 **写入 DB** `phase=ROUTED`（前置：Consul `routing-state=DUAL_WRITE` + Job 已推进 `DUAL_WRITE`） |
-| `POST /migration/cleanup` | ROUTED → `CLEANUP_READY`（`MigrationSyncJob.doCleanup` 删完置 `CLEANED`） |
+| `POST /migration/route` | 补偿门禁 + 旁路对账（`mongo_routing_reconciliation` 最近 3 轮 SIDECAR `passed`）后 **写入 DB** `phase=ROUTED` |
+| `POST /migration/cleanup` | ROUTED → `CLEANUP_READY`；要求 `isProjectRoutedOut`（`project-effective-at` 到点） |
 | `POST /migration/rollback` | 回滚；按 projectId 清理 PENDING 补偿任务（G-29）；**写入 DB** `phase=ROLLBACK` |
 | `POST /migration/verify` | 触发全量 DUAL_WRITE 项目旁路对账（E-05） |
 | `POST /migration/verify/{ruleName}/{projectId}` | 触发指定项目旁路对账（E-05） |
 | `GET /migration/status` | 见下方 **StatusResponse** schema |
 | `GET /compensation/stats` | 补偿队列积压 |
 | `GET /compensation/health/{ruleName}` | 补偿队列健康（M2 逻辑，§25.2.3） |
-| `GET /routing/readiness` | **G-34** 就绪：§3.19.2 P0 清单完成度 |
-| `GET /config/routing` | 查询 Gate 参数（`max-concurrent-dual-write`、`freeze-ddl`） |
-| `PUT /config/routing` | 更新 Gate 参数，**写入 DB** `mongo_routing_config` |
+| `GET /routing/readiness` | **G-34** 就绪：运行时 **INFRA + M5** 检查（`RoutingReadinessAggregator`）；P0 静态探针由 CI 验证（modules §8.1） |
+| `POST /migration/rollback-verify/{projectId}` | 回滚后烟雾测试（E-13 / §24.14） |
+| `GET /config/routing` | 查询 Gate 参数（`max-concurrent-dual-write`；`freeze-ddl` 字段已废弃，仅审计） |
+| `PUT /config/routing` | 更新 Gate 参数，**写入 DB** `mongo_routing_config`（`freeze-ddl` 不生效，见 P1-05） |
 
 上述 API 在 op admin 分库迁移页面展示；Gate 参数经 `GET/PUT /config/routing` 管理，Consul 路由变更见页面 SOP 提示。
 **G-34 阻塞语义**
@@ -424,7 +464,7 @@ Consul 存全部路由配置（运维唯一写入源）。下列 API 只写 DB �
 | --- | --- | --- |
 | `projectId` / `ruleName` / `phase` | string | 迁移状态 |
 | `targetInstance` | string? | 目标实例名 |
-| `syncFailedCount` | long | `mongo_*_sync_failed` 未处理条数 |
+| `syncFailedCount` | long | `mongo_routing_sync_failed` 未处理条数（按 `ruleName` + `ownerId`） |
 | `compensationPendingCount` | long? | 该项目补偿队列 PENDING 数 |
 | `lastError` / `updatedAt` | string? | 最近错误与时间 |
 
@@ -579,7 +619,7 @@ project-routing > shard-routing > Default
 
 | 层级 | 测试内容 | 执行方式 |
 | --- | --- | --- |
-| 单元测试 | 路由决策逻辑（`NodeMongoRoutingRegistry`） | 覆盖 3.6.2 路由决策矩阵所有分支 |
+| 单元测试 | 路由决策逻辑（`MongoRoutingRegistry` / `DefaultMongoRoutingRegistry`） | 覆盖 3.6.2 路由决策矩阵所有分支 |
 | 单元测试 | projectId 提取逻辑 | 覆盖顶层、`$and`、`$or`（预期失败）、空条件 |
 | 单元测试 | `NodeBatchQueryHelper` 分组生成 | 验证 NOT IN / IN 条件正确 |
 | 集成测试 | 双写 + 补偿全流程 | 模拟专属实例不可用，验证补偿任务生成和消费 |
@@ -701,13 +741,15 @@ spring:
           node:                          # 规则名，任意字符串
             routing-type: project        # project | collection | none
             routing-key-field: projectId # 从 Query/Entity 提取路由键的字段名
-            routing-state: OFF
+            routing-state: OFF           # 模式二：OFF / ROUTED only
+            dual-write-projects: []      # 当前双写项目（routing-state=ROUTED 时必填）
+            project-effective-at: {}     # 已切流项目（永久保留）
             migration:
               historical-sync-strategy: JOB_ONLY
               sync-job:
                 batch-size: 500
-                parallel-projects: 3
-              max-concurrent-dual-write: 1
+                retry-count: 3
+            # max-concurrent-dual-write → mongo_routing_config（API），非本 YAML
             instances:
               heavy1:
                 uri: mongodb://heavy1-primary:27017/bkrepo
@@ -767,8 +809,6 @@ data class MongoMultiInstanceProperties(
         val historicalSyncStrategy: String = "NONE",
         val syncJob: SyncJobConfig = SyncJobConfig(),
         val none: NoneConfig = NoneConfig(),
-        /** 同时进行双写的项目数上限（仅 PROJECT 路由类型有效） */
-        val maxConcurrentDualWrite: Int = 1,
         /** 僵尸副本在 Default 上存活超过该小时数则阻断迁移（G-17） */
         val maxZombieHours: Int = 72,
         val projectLocks: ProjectLocksConfig = ProjectLocksConfig(),
@@ -777,6 +817,7 @@ data class MongoMultiInstanceProperties(
     )
     data class SyncJobConfig(
         val batchSize: Int = 500,
+        /** 配置项存在，同步引擎未读取（单 Job 按 ruleName 串行扫描项目） */
         val parallelProjects: Int = 3,
         val retryCount: Int = 3,
     )
@@ -791,7 +832,6 @@ data class MongoMultiInstanceProperties(
         val freezeDdl: Boolean = true,
         val freezeDdlInstances: List<String> = emptyList(),
         val freezePhysicalDelete: Boolean = true,
-        val freezeDefaultNodeMutation: Boolean = true,
     )
     data class InstanceConfig(
         val uri: String,
@@ -811,14 +851,14 @@ data class MongoMultiInstanceProperties(
 `MongoRoutingRegistry` 统一处理两种路由类型，全部由 `AbstractMongoDao` 基类钩子自动调用，**无需任何 DAO 改动**：
 
 ```kotlin
-@Component
-@RefreshScope
+// MongoMultiInstanceConfiguration 中 @Bean 构造（普通单例，非 @RefreshScope）
 class DefaultMongoRoutingRegistry(
     private val properties: MongoMultiInstanceProperties,
-    private val primaryTemplates: Map<String, Map<String, MongoTemplate>>,
-    private val secondaryTemplates: Map<String, Map<String, MongoTemplate>>,
-) {
-    // prefixIndex 仅缓存 collectionPrefix→ruleName；RoutingRule 从 properties live 读（A 类热加载）
+    private val poolMetricsListener: MongoMetricsConnectionPoolListener? = null,
+) : MongoRoutingRegistry, DisposableBean {
+    // prefixIndex 仅缓存 collectionPrefix→ruleName（构造时排序）
+    // primaryTemplates 由 buildPrimaryTemplates() 在启动期一次性建好（每个 instance 一个 MongoClient）
+    // RoutingRule（routing-state / project-routing 等）从 properties live 读（A 类热加载）
     private val prefixIndex: List<Pair<String, String>> = ...
 
     /**
@@ -854,7 +894,7 @@ class DefaultMongoRoutingRegistry(
         return when (rule.routingType) {
             RoutingType.NONE -> {
                 val instanceName = rule.instances.keys.firstOrNull() ?: return null
-                secondaryTemplates[ruleName]?.get(instanceName)
+                primaryTemplates[ruleName]?.get(instanceName)
             }
             RoutingType.PROJECT, RoutingType.COLLECTION -> {
                 val routingKey = extractKey(context, rule.routingKeyField)
@@ -862,7 +902,7 @@ class DefaultMongoRoutingRegistry(
                 val instanceName = rule.projectRouting[routingKey]
                     ?: rule.shardRouting[collectionName]
                     ?: return null
-                secondaryTemplates[ruleName]?.get(instanceName)
+                primaryTemplates[ruleName]?.get(instanceName)
             }
         }
     }
@@ -954,8 +994,8 @@ class DefaultMongoRoutingRegistry(
     fun allPrimaryTemplates(ruleName: String): Map<String, MongoTemplate> =
         primaryTemplates[ruleName] ?: emptyMap()
 
-    fun allSecondaryTemplates(ruleName: String): Map<String, MongoTemplate> =
-        secondaryTemplates[ruleName] ?: emptyMap()
+    fun allPrimaryTemplates(ruleName: String): Map<String, MongoTemplate> =
+        primaryTemplates[ruleName] ?: emptyMap()
 }
 ```
 
@@ -1085,7 +1125,7 @@ class MongoBatchQueryHelper(
                 }
             ))
             // 每个 Heavy 实例：只查该实例自己承载的项目子集，而非全部已路由项目
-            registry.allSecondaryTemplates(ruleName).forEach { (instanceName, tmpl) ->
+            registry.allPrimaryTemplates(ruleName).forEach { (instanceName, tmpl) ->
                 val projects = instanceProjects[instanceName] ?: return@forEach
                 if (projects.isEmpty()) return@forEach
                 add(BatchQueryGroup(
@@ -1108,7 +1148,7 @@ class MongoBatchQueryHelper(
 | 阶段 | 内容 | 影响范围 |
 | --- | --- | --- |
 | P1 | 新建通用框架（Properties / Registry / Context / DAO 基类），与现有 Node/Oplog 实现并存 | 新增文件，不改动已有代码 |
-| P2 | `NodeDao` 移除手写路由逻辑（由基类自动接管），删除 `NodeMongoRoutingRegistry`/`NodeMongoRoutingProperties`/`NodeMongoRoutingConfiguration` | Node 模块及相关测试 |
+| P2 | `NodeDao` 移除手写路由逻辑（由基类自动接管）；原 per-业务 `NodeMongoRouting*` / `OplogMongo*` 组件已由通用 `DefaultMongoRoutingRegistry` / `MongoMultiInstanceProperties` 统一替代 | Node 模块及相关测试 |
 | P3 | `OperateLogDao` 接入通用框架，废弃 `OplogMongoProperties` / `OplogMongoConfiguration` | Oplog 相关 DAO 及配置 |
 | P4 | 新业务集合（如 `package_*`）直接使用通用框架，**仅加配置条目，零代码改动** | 仅新增配置条目 |
 
@@ -1356,7 +1396,7 @@ flowchart TD
 | 实例 | RTO（恢复时间目标） | RPO（恢复点目标） | 说明 |
 | --- | --- | --- | --- |
 | Default | < 4 小时 | < 1 小时（oplog 增量） | 最高优先级 |
-| Heavy（DUAL_WRITE 期） | < 30 分钟 | 0（Default 副路径有全量副本） | DBA 恢复 Heavy，读仍走 Default |
+| Heavy（DUAL_WRITE 期） | < 30 分钟 | 0（Default 主路径有全量副本） | DBA 恢复 Heavy，读仍走 Default |
 | Heavy（ROUTED，未清理 Default） | < 30 分钟 | **ROUTED 期间增量可能丢失** | DBA 恢复 Heavy；**禁止**业务层 fallback Default（§3.11.2） |
 | Heavy（Default 已清理） | < 4 小时 | < 1 小时（oplog 增量） | 需从备份恢复 |
 | Oplog | < 24 小时 | < 7 天 | 审计日志可容忍更低的 RPO |
@@ -1414,6 +1454,7 @@ flowchart TD
 | --- | --- | --- | --- |
 | `compensation.queue.depth` | Gauge | 补偿队列深度（按 `ruleName`） | > 500 告警，> 1000 阻断切流 |
 | `compensation.failed.count` | Counter | 补偿最终失败次数（达重试上限） | > 0 P0 告警 |
+| `compensation.postcheck.mismatch` | Counter | G-42 字段级 post-check 不一致次数（陈旧补偿写脏的可感知点） | > 0 P1 告警，任务升级 FAILED 阻断切流 |
 
 > queue.depth 是最关键的单一指标：趋势上升 = 副路径异常，持续>0 = 数据不一致窗口，>1000 = 阻断切流。消费速率、重试次数、P99 延迟等均可从 depth 时间线推导，不单独上报。
 
@@ -1494,7 +1535,7 @@ flowchart TD
 | 级别 | 条件 | 响应时间 |
 | --- | --- | --- |
 | P0 紧急 | 实例不可用、路由上下文丢失 > 0、补偿最终失败 > 0、merge OOM > 0 | 5 分钟内 |
-| P1 严重 | 补偿队列深度 > 1000、对账差异 > 0、主路径写失败 > 0 | 15 分钟内 |
+| P1 严重 | 补偿队列深度 > 1000、对账差异 > 0、主路径写失败 > 0、`compensation.postcheck.mismatch` > 0 | 15 分钟内 |
 | P2 警告 | 路由命中率 < 80%、连接池活跃 > 90%、僵尸副本超时、NONE 过期、writeConcern 无效、freeze 未生效 | 1 小时内 |
 | P3 通知 | 迁移 phase 变更、清理完成、配置版本落后 | — |
 

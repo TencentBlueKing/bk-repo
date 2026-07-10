@@ -11,7 +11,7 @@
 2. **模式解耦**：模式一（集合族整体迁移）与模式二（node）代码路径分离，共用路由框架与补偿框架。
 3. **可短路**：`multi-instance.rules` 为空或 `routing-state=OFF` 时各模块零副作用，行为与现网等价。
 4. **组合交付**：按集成阶段（I1→I5）逐层叠加，每阶段可独立验收。
-5. **配置分层**：Consul 为本区域路由唯一写入源（`project-routing`、`routing-state`、`scatter-query.*`），运维手动管理；DB 仅存编排进度（`mongo_migration_sync_state`）与 Gate 参数（`mongo_routing_config`）。
+5. **配置分层**：Consul 为本区域路由唯一写入源（`project-routing`、`dual-write-projects`、`project-effective-at`、`routing-state`、`scatter-query.*`），运维手动管理；DB 仅存编排进度（`mongo_routing_migration_state`）与 Gate 参数（`mongo_routing_config`）。
 
 ---
 
@@ -47,10 +47,12 @@ interface MongoRoutingRegistry {
     fun getRoutedProjectIds(ruleName: String): Set<String>
     /** Tier-Biz：展开 business-routing 组内全部 projectId */
     fun expandBusinessGroupProjects(ruleName: String, businessId: String): Set<String>
-    /** `routing-state=ROUTED` + 项目在 project-routing（纯 Consul，不读 DB phase） */
+    /** `isProjectOnHeavy`：`project-effective-at` 已到点；纯 Consul，不读 DB phase */
     fun isProjectRoutedOut(ruleName: String, projectId: String): Boolean
-    /** `routing-state=DUAL_WRITE` + 项目在 project-routing（纯 Consul） */
+    /** 在 `dual-write-projects` 或切流缓冲内；缺配 fail-safe 双写；纯 Consul */
     fun isProjectInDualWrite(ruleName: String, projectId: String): Boolean
+    /** routing-state != OFF */
+    fun isRoutingEnabled(ruleName: String): Boolean
     fun validateOnStartup()
 }
 
@@ -84,13 +86,27 @@ data class BatchQueryGroup(
 
 ### 3.2 数据模型
 
+分库框架 MongoDB 集合统一 `mongo_routing_` 前缀，常量定义见 `common-mongo-api` `MongoRoutingCollections.kt`。
+
+| 集合 | 用途 |
+| --- | --- |
+| `mongo_routing_migration_state` | 迁移编排 phase、Job 断点、`strategy` |
+| `mongo_routing_sync_failed` | 历史全量同步失败 DLQ（`ruleName` + `ownerId`） |
+| `mongo_routing_config` | Gate 参数 |
+| `mongo_routing_compensation` | 双写补偿队列 |
+| `mongo_routing_reconciliation` | 旁路对账日志（切流门禁） |
+| `mongo_routing_inconsistency` | 补偿后校验不一致记录 |
+
 | 模型 | 存储 | 字段来源 |
 | --- | --- | --- |
 | `InstanceBinding` | Consul `project-routing` / `business-routing` | 主方案 §3.5、§3.5.2 |
-| `MigrationSyncState` | `mongo_migration_sync_state`（Default） | `common-mongo-api` `MigrationContracts.kt` |
-| `SyncFailedRecord` | `mongo_oplog_sync_failed` / `mongo_node_sync_failed` | 同上 |
-| `CompensationTask` | `mongo_dual_write_compensation` | 同上 |
+| `MigrationSyncState` | `mongo_routing_migration_state`（Default） | `MigrationContracts.kt` |
+| `SyncFailedRecord` | `mongo_routing_sync_failed` | 同上；按 `ruleName` + `ownerId` 隔离 |
+| `CompensationTask` | `mongo_routing_compensation` | 同上 |
+| `ReconciliationLog` | `mongo_routing_reconciliation` | `ReconciliationLog.kt` |
 | 运行时路由 | Consul `multi-instance.rules.*` | 主方案 §10 |
+
+`mongo_routing_sync_failed` 字段：`ruleName`、`ownerId`、`collectionName`、`docId`、`error`、`createdAt`；唯一键 `ruleName` + `docId`；门禁查询 `ruleName` + `ownerId`。
 
 ### 3.4 配置契约
 
@@ -102,7 +118,11 @@ data class BatchQueryGroup(
 | --- | --- | --- |
 | `spring.data.mongodb.uri` | M1 | Default 主连接（含密码，启动级） |
 | `multi-instance.rules.*.instances.*.uri` | M1 | 新增实例须滚动重启（含密码） |
-| `multi-instance.rules.*.routing-state` | M1/M2/M4 | 规则级路由状态：`OFF`/`DUAL_WRITE`/`ROUTED`。**应用只读**，运维通过 Consul 正规渠道手动修改 |
+| `multi-instance.rules.*.routing-state` | M1/M2/M4 | 规则级路由状态：模式一 `OFF`/`DUAL_WRITE`/`ROUTED`；模式二 **仅** `OFF`/`ROUTED`（禁止 `DUAL_WRITE`） |
+| `multi-instance.rules.*.routing-effective-at` | M1/M2/M4 | **模式一（NONE）**切流必填（ISO-8601 UTC）；模式二使用 `project-effective-at` |
+| `multi-instance.rules.*.dual-write-projects` | M1/M4 | 模式二：当前双写中的 projectId 集合 |
+| `multi-instance.rules.*.project-effective-at` | M1/M4 | 模式二：单项目切 Heavy 延迟生效（ISO-8601 UTC）；切流后永久保留 |
+| `multi-instance.config-version` | M1 | 切流时递增；Prometheus 对账全 Pod 配置一致 |
 | `multi-instance.rules.*.collection-prefix` | M1 | 规则元数据，启动级 |
 | `multi-instance.rules.*.routing-type` | M1 | 规则元数据，启动级 |
 | `scatter-query.dedicated-*-pool-size` | M5 | 散发查询专用连接池（启动级） |
@@ -112,12 +132,12 @@ data class BatchQueryGroup(
 | 配置项 | DB 集合/字段 | 模块 | 说明 |
 | --- | --- | --- | --- |
 | `project-routing`（项目→实例） | **Consul**（运维手动） | M1 | 路由热路径唯一来源 |
-| `phase` / Job 断点 | `mongo_migration_sync_state` | M6 | **仅编排/Job**，不参与路由 |
-| `business-routing`（Tier-Biz 绑定） | `mongo_migration_sync_state` | M1/M6 | 业务组绑定，运行时展开为 projectId 集合 |
-| `historical-sync-strategy` | `mongo_migration_sync_state.strategy` | M6 | 每个绑定级的历史同步策略 |
+| `phase` / Job 断点 | `mongo_routing_migration_state` | M6 | **仅编排/Job**，不参与路由 |
+| `business-routing`（Tier-Biz 绑定） | `mongo_routing_migration_state` | M1/M6 | 业务组绑定，运行时展开为 projectId 集合 |
+| `historical-sync-strategy` | `mongo_routing_migration_state.strategy` | M6 | 每个绑定级的历史同步策略 |
 | `max-concurrent-dual-write` | `mongo_routing_config` | M6 | 同时双写的项目数上限 |
-| `freeze-ddl` | `mongo_routing_config` | M6/M7 | 迁移期禁止 DDL |
-| `scatter-query.default-mode` / `timeout-seconds` | `mongo_routing_config` | M5 | 散发查询模式与超时 |
+| `freeze-ddl` | **Consul** `migration.project-locks.freeze-ddl` | M6/M7 | 迁移期禁止 DDL；DB `mongo_routing_config.freezeDdl` 已废弃 |
+| `scatter-query.default-mode` / `timeout-seconds` | **Consul/YAML** `rules.node.scatter-query.*` | M5 | 散发查询模式与总超时（秒），见 pattern2 §3.7 |
 | `config-version` | `mongo_routing_config` | M1 | 配置版本号，DB 变更时递增；供 Prometheus `bkrepo_mongo_routing_config_version` 对账（**非轮询触发**） |
 
 ### 3.5 指标名前缀
@@ -137,6 +157,7 @@ data class BatchQueryGroup(
 | `MongoRoutingRegistry` | `resolve` / `resolveOffload` / `resolveByCollection` / `listInstances` |
 | `StandardRoutingRegistry` | 无 rules 或 `routing-state=OFF` 恒返回 Default |
 | Tier-Biz 展开 | `business-routing` 运行时展开为 projectId 集合；`resolve` 与 `getRoutedProjectIds` 合并组内项目（§3.5.2） |
+| `ProjectRouteResolver` | 模式二热路径：`isProjectInDualWrite` / `isProjectOnHeavy`（纯 Consul 布尔判定） |
 | `resolveByCollection` | v1 仅用于 `shard-routing` 互斥校验（G-01）；配置入口不开放 |
 | `ProjectRoutingOverlay` | —（**已废弃**，路由纯 Consul） |
 | `config-version` 上报 | Consul `config-version` → Gauge `bkrepo_mongo_routing_config_version` |
@@ -175,15 +196,16 @@ data class BatchQueryGroup(
 
 | 能力 | 说明 |
 | --- | --- |
-| 入队 | 副路径同步写失败时写入 `mongo_dual_write_compensation` |
+| 入队 | 副路径同步写失败时写入 `mongo_routing_compensation` |
 | 消费 | 固定梯度退避 `[10s, 30s, 60s]`（`nextRetryAt` 字段，`MAX_RETRY=3`） |
 | 多实例幂等 | `findAndModify` 认领 PENDING → PROCESSING（G-24） |
 | 三级熔断 | softLimit **仅告警**（暂无限速，YAGNI）/ hardLimit 拒绝新任务（§3.17.9） |
 | 去重 | 按 `primaryKey`（`_id`）保留最新任务（§1.4） |
-| update `$max` | 补偿 update 对 `lastModifiedDate` 使用 `$max`，防旧任务降级（G-14、§3.15.7） |
+| 单文档 update 重读权威源 | `updateFirst`/`upsert`/`findAndModify`（带 `_id`）补偿时**重读 Default 当前文档整篇 upsert 副路径**，而非重放旧快照，从根上消除陈旧补偿写脏（G-14、§3.15.7）；Default 已删除则同步删副路径 |
+| update `$max` | 仅 `updateMulti`（无 `_id`，只能重放 query）保留对 `lastModifiedDate` 的 `$max` 兜底（G-14） |
 | `$inc` CAS 合并 | 仅 `status=PENDING` 时合并 `$inc`；失败则追加新任务（G-18） |
 | `enqueuedAt` 持久化 | 存 `Long` 时间戳，JVM 重启后按 `createdAt` 排序（G-15） |
-| `CompensationPostCheck` | 消费成功后 `_id`/关键字段校验（G-42） |
+| `CompensationPostCheck` | 消费成功后字段级校验：比对 `projectId/fullPath/deleted/sha256/createdDate/metadata/lastModifiedDate` 是否等于主路径当前值；不一致记指标 `bkrepo.mongo.routing.compensation.postcheck.mismatch` 并升级任务为 `FAILED`（G-42、G-14） |
 | 健康探针逻辑 | `CompensationHealthChecker`（队列深度、最老 PENDING 年龄）；由 M6 暴露 HTTP |
 
 ### 5.2 对外 API
@@ -198,7 +220,7 @@ interface DualWriteExecutor {
 }
 ```
 
-模式一（Default 主）、模式二（Heavy 主）、Pipeline oplog 均复用。
+模式一（Default 主）、模式二（Default 主）、Pipeline oplog 均复用。
 
 ### 5.3 验收
 
@@ -213,7 +235,7 @@ interface DualWriteExecutor {
 ### 6.1 职责
 
 - `AbstractMongoDao` 按 `collection-prefix: artifact_oplog_` 自动路由。
-- 双写：Offload Primary 主路径 → 同步写 Default Primary，失败则补偿（§2.5）。
+- 双写：Default Primary 主路径 → 同步写 Offload Primary，失败则补偿（§2.5）。
 - 默认策略 `historicalSyncStrategy=NONE`：不迁历史，双写切流后清 Default 存量。
 - ROUTED 后读/写 **fail-fast**，禁止 fallback Default（§2.11）。
 - Reactive：`ROperateLogDao` / `ROperateLogServiceImpl` 与 sync 对称，经同一 `AbstractMongoDao` 钩子路由。
@@ -227,7 +249,7 @@ interface DualWriteExecutor {
 
 ### 6.3 依赖
 
-M1 `resolveOffload(ruleName)` + M2 `DualWriteExecutor`
+M1 `resolveOffload(ruleName)` 提供 ROUTED 后的 Offload 模板 + M2 `DualWriteExecutor`（双写主路径为 Default，副路径为 Offload）
 
 ### 6.4 验收
 
@@ -245,7 +267,7 @@ M1 `resolveOffload(ruleName)` + M2 `DualWriteExecutor`
 | --- | --- |
 | `AbstractMongoDao` 钩子 | 集合前缀 `node_` + 反射 `projectId` 选模板 |
 | `NodeMongoOperations` | Job/异步写显式入口，传入 `projectId`；经 `DualWriteExecutor` 双写 |
-| Heavy 主路径双写 | Heavy 失败返错；Default 同步失败入补偿（§3.5.1） |
+| Default 主路径双写 | Default 失败返错；Heavy 同步失败入补偿（§3.5.1） |
 | 僵尸副本写保护 | `AbstractMongoDao` 写入口 fail-fast（G-02 / §25.2.2）；**实现本模块，P0 验收挂 §25.5 第 14 项** |
 | `lastModifiedDate` DAO 兜底 | `NodeDao` 覆写 `updateFirst`/`updateMulti`/`findAndModify` 统一 `touchLastModified`（G-08 子集，见 §17） |
 | ROUTED 读 fail-fast | 迁出项目读 Heavy 失败禁止自动读 Default（§20.2） |
@@ -255,10 +277,10 @@ M1 `resolveOffload(ruleName)` + M2 `DualWriteExecutor`
 
 **运行时**（`isProjectInDualWrite`，主方案 §3.5.1）——**纯 Consul**，不读 DB `phase`：
 
-1. `routing-state=DUAL_WRITE`
-2. `projectId` 在 `project-routing` 中
+1. `ProjectRouteResolver.isProjectInDualWrite` 为 true（在 `dual-write-projects`、或 `project-effective-at` 未到、或缺配 fail-safe）
+2. 项目须在 `project-routing` 中
 
-须在 `POST /migration/start` **之前**配好 Consul（§1.4.4），Consul 修改后等待 ≥ 30s（覆盖 `@RefreshScope` 默认 3s 刷新周期），并满足 §3.10 / §25.5 前置清单。DB `phase=DUAL_WRITE` 由 Job 在扫描完成后自动推进，仅供编排面板与 Gate，**不参与**运行时双写判定。
+须在 `POST /migration/start` **之前**在 Consul 配好 `project-routing` + `dual-write-projects`（`routing-state=ROUTED`），Consul 修改后等待 ≥ 30s，并满足 §3.10 / §25.5 前置清单。DB `phase=DUAL_WRITE` 由 Job 在扫描完成后自动推进，仅供编排面板与 Gate，**不参与**运行时双写判定。
 
 ### 7.3 改动面
 
@@ -284,7 +306,7 @@ M1 `resolveOffload(ruleName)` + M2 `DualWriteExecutor`
 
 ## 8. M5 — 散发查询 & Job 改造
 
-**模式二前置阻塞模块**：§3.19.2 P0 清单须在本模块完成且 **G-34** 通过后，方可将项目加入 `project-routing` 并启动 node 迁移。
+**模式二前置阻塞模块**：§3.19.2 P0 清单须在本模块完成且 CI 集成测试通过后，方可将项目加入 `project-routing` 并启动 node 迁移。G-34 运行时检查（INFRA + M5）由 `/routing/readiness` 在迁移前确认。
 
 ### 8.1 职责
 
@@ -298,7 +320,7 @@ M1 `resolveOffload(ruleName)` + M2 `DualWriteExecutor`
 | Default Job 过滤 | `projectId NOT IN [ROUTED 项目]` |
 | **P0 直连 Mongo 改造** | §3.19.2 清单全量 |
 | **§3.19.1 写路径（Job/Service）** | `MetadataServiceImpl`、`DeletedNodeCleanupJob` 等经 DAO 未覆盖的路径（见 §17） |
-| **`RoutingReadinessChecker`** | G-34 逻辑实现；M6 仅注入暴露 `GET /routing/readiness`（仅需任抽一个实例验证 G-34 P0 清单，**不做集群逐实例版本检查**——版本一致性由 Prometheus 指标 `bkrepo_mongo_routing_config_version` 监测） |
+| **`RoutingReadinessChecker`** | G-34 运行时基础设施检查（INFRA + M5）；M6 暴露 `GET /routing/readiness`。P0 清单由 CI 集成测试在构建阶段验证，无需运行时逐类探测 |
 
 ### 8.2 P0 改造归属（§3.19.2）
 
@@ -321,8 +343,8 @@ M1 只读 API：`listInstances()`、`getRoutedProjectIds()`
 
 - `pageBySha256` STRICT 模式跨实例结果完整。
 - Job 不处理已迁出项目；单 Heavy 不可用不阻塞其他 Group。
-- §3.19.2 P0 清单 100%；CI `node_` 直连审计 0 违规。
-- G-34 集成矩阵全绿。
+- §3.19.2 P0 清单 CI 集成测试通过。
+- G-34（INFRA + M5）`/routing/readiness` 全绿。
 
 ---
 
@@ -333,8 +355,12 @@ M1 只读 API：`listInstances()`、`getRoutedProjectIds()`
 | 能力 | 说明 |
 | --- | --- |
 | `MigrationSyncJob`（定时，`ruleName` 调度 node / block-node / artifact-oplog JOB_ONLY）/ `MongoMigrationService`（手动） | 历史同步引擎（主方案 §1.6）；`MigrationSyncEngine` + `MigrationScanStrategy` 统一状态机 |
-| `mongo_migration_sync_state` | 进度、project-routing、business-routing、historical-sync-strategy 持久化 |
+| `mongo_routing_migration_state` | 进度、project-routing、business-routing、historical-sync-strategy 持久化 |
+| `mongo_routing_sync_failed` | 历史全量同步失败 DLQ；统一集合，按 `ruleName` + `ownerId` 隔离；新增 rule 无需新建表 |
 | `mongo_routing_config` | Gate 参数：`max-concurrent-dual-write`、`freeze-ddl`、`config-version`（审计） |
+| `mongo_routing_compensation` | 双写补偿队列 |
+| `mongo_routing_reconciliation` | 旁路对账日志（切流门禁） |
+| `mongo_routing_inconsistency` | 补偿 post-check 不一致记录 |
 | `MongoMigrationController` | 迁移编排 API（§10.5）；**只写 DB**，不写 Consul |
 | op admin 分库迁移模块 | 迁移编排 + 检测 + Gate 参数；Consul SOP 提示 |
 | 状态机 | INIT → INITIAL_SYNC（与 Consul 双写并发）→ DUAL_WRITE（Job 自动推进）→ ROUTED → CLEANED |
@@ -358,17 +384,17 @@ M1 只读 API：`listInstances()`、`getRoutedProjectIds()`
 
 | 端点 | 说明 |
 | --- | --- |
-| `POST /migration/binding` | 声明迁移意图；**写入 DB** `mongo_migration_sync_state`（含 `historicalSyncStrategy`、`project-routing` 绑定） |
-| `POST /migration/start` | 写 DB `phase=INITIAL_SYNC` |
-| `POST /migration/route` | 全量扫描完成 + 补偿门禁 + 旁路对账后置 `phase=ROUTED`；**写入 DB** |
-| `POST /migration/cleanup` | ROUTED → `CLEANUP_READY`（Job 删完 Default 后置 `CLEANED`）；**写入 DB** |
+| `POST /migration/binding` | 声明迁移意图；**写入 DB** `mongo_routing_migration_state`（含 `historicalSyncStrategy`、`project-routing` 绑定） |
+| `POST /migration/start` | 写 DB `phase=INITIAL_SYNC`；**前置**：Consul `project-routing` + `dual-write-projects` |
+| `POST /migration/route` | 门禁通过后写 DB `phase=ROUTED`；**返回** `configVersion`、`projectEffectiveAt`、`consulHint` 供运维写 Consul |
+| `POST /migration/cleanup` | ROUTED → `CLEANUP_READY`；要求 DB `phase=ROUTED` **且** `isProjectRoutedOut`（`project-effective-at` 到点） |
 | `POST /migration/rollback` | 回滚；含 G-29 补偿队列清理；**写入 DB** `phase=ROLLBACK` |
 | `POST /migration/verify` | 触发全量 DUAL_WRITE 项目旁路对账（E-05） |
 | `POST /migration/verify/{ruleName}/{projectId}` | 触发指定项目旁路对账（E-05） |
 | `GET /migration/status` | `phase`、`syncFailedCount`、`lastSyncedId`、`compensationPendingCount`（§10.5） |
 | `GET /compensation/stats` | 补偿队列积压统计（§10.5） |
 | `GET /compensation/health/{ruleName}` | 补偿队列健康（委托 M2 `CompensationHealthChecker`） |
-| `GET /routing/readiness` | G-34 就绪状态（委托 M5 `RoutingReadinessChecker`） |
+| `GET /routing/readiness` | G-34 就绪状态（opdata 本地 INFRA + M5 检查） |
 | `POST /migration/historical-sync` | 手动触发全部规则的历史数据同步（MongoMigrationService） |
 | `POST /migration/historical-sync/{ruleName}` | 手动触发指定规则的历史数据同步（MongoMigrationService） |
 | `GET /config/routing` | 查询 Gate 参数（`max-concurrent-dual-write`、`freeze-ddl`） |
@@ -390,8 +416,10 @@ M1 只读 API：`listInstances()`、`getRoutedProjectIds()`
 
 | 配置项 | 操作 | 存储 | 说明 |
 | --- | --- | --- | --- |
-| `project-routing` | **运维改 Consul**（页面提示 SOP） | Consul | 路由热路径唯一来源 |
-| `max-concurrent-dual-write` | API 修改 | DB | MigrationGate 低频读 |
+| `project-routing` | **运维改 Consul**（页面提示 SOP） | Consul | 路由热路径；**cleanup 后保留** |
+| `dual-write-projects` | **运维改 Consul**（开迁时加入，切流时移除） | Consul | 模式二双写范围 |
+| `project-effective-at` | **运维改 Consul**（与切流同写） | Consul | 单项目延迟切流；到点前仍双写 |
+| `max-concurrent-dual-write` | API 修改 | DB | `MongoMigrationService`（`start`/`route` 门禁） |
 | `freeze-ddl` | API 开关 | DB | DDL Guard |
 | `scatter-query.*` | **运维改 Consul** | Consul | 散发查询运行时参数 |
 | `config-version` | 运维手调 Consul | Consul | Prometheus 对账；DB 版仅审计 |
@@ -400,9 +428,9 @@ M1 只读 API：`listInstances()`、`getRoutedProjectIds()`
 
 **`POST /migration/route` 前置门禁**（§3.10、§3.19.3）：
 
-1. 目标项目 phase = `DUAL_WRITE`，`mongo_*_sync_failed` 已清零
+1. 目标项目 phase = `DUAL_WRITE`，`mongo_routing_sync_failed` 已清零
 2. 补偿队列深度 = 0（该项目或全局，按策略）
-3. **旁路对账最近一次结果 `passed == true`**（手动触发后检查，§25.3.2 E-05）
+3. **最近 3 轮旁路对账 `passed == true`**（`mongo_routing_reconciliation`，`route` 会先触发一轮 verify；§25.3.2 E-05）
 4. **100% 实例** 已部署路由代码且 `routing-state != OFF`（**运维 SOP**：发布系统确认所有实例已部署，非 API 自动校验）
 5. `max-concurrent-dual-write` 未超限
 6. 同 rule 下无其他项目处于 `INITIAL_SYNC` 或 `DUAL_WRITE`（Consul 双写期计入）
@@ -418,7 +446,7 @@ M0 状态模型 + M1 路由表读取；路由配置 **纯 Consul**（用户唯�
 
 - 模式一 NONE：双写 → ROUTED → 清 Default 存量。
 - 模式二 JOB_ONLY：完整状态机走通。
-- `mongo_*_sync_failed` 清零后方可 Job 推进 DB `phase=DUAL_WRITE` 或切 `ROUTED`。
+- `mongo_routing_sync_failed` 清零后方可 Job 推进 DB `phase=DUAL_WRITE` 或切 `ROUTED`。
 - INIT 校验不满足 → `INIT_FAILED`，不进入同步阶段。
 - 回滚后该项目 PENDING 补偿任务已清理。
 
@@ -499,7 +527,7 @@ M1 + M2 + M3 + M4 + M5 + M6 + M7 → M8 部署与可观测
 | **I2** | + M2 + M3 | **artifact_oplog 生产切流**（不等 G-34） |
 | **I3** | + M4 + M6 | 路由框架 + 状态机空跑；INIT 校验包；不真实迁项目 |
 | **I4** | + M5 + M7 | §3.19.2 P0 全量 + 横切一致性 + 13/13 `lastModifiedDate` |
-| **I3.5** | G-34 | `GET /routing/readiness` 全绿；§25.5 中不依赖真实迁移的项（writeConcern INIT、CI `node_` 审计等） |
+| **I3.5** | G-34 | `GET /routing/readiness` 全绿（INFRA + M5 运行时检查；P0 清单由 CI 集成测试覆盖） |
 | **I5** | + M8 | 灰度 + 首个大项目 node 迁移 |
 
 ```text
@@ -527,7 +555,7 @@ I1 → I3(框架) → I4(P0改造) → I3.5(G-34) → I5(node迁移)
 1. M1 先交付 `StandardRoutingRegistry`，业务可提前接入接口。
 2. M3 与 M4 代码路径分离，可并行开发。
 3. M6 通过 Consul + Job 状态驱动 M4，不反向依赖 M4 实现。
-4. JOB_ONLY：运维先在 Consul 设 `routing-state=DUAL_WRITE` + `project-routing`，再 `POST /migration/start`；扫描与双写并发，完成后 Job 自动推进 DB `phase=DUAL_WRITE`。
+4. JOB_ONLY：运维先在 Consul 设 `routing-state=ROUTED` + `project-routing` + `dual-write-projects`，再 `POST /migration/start`；扫描与双写并发，完成后 Job 自动推进 DB `phase=DUAL_WRITE`。
 
 ---
 
@@ -572,7 +600,7 @@ I1 → I3(框架) → I4(P0改造) → I3.5(G-34) → I5(node迁移)
 | Zombie 写保护（G-02 / E-01） | §25.2.2 | **M4** `AbstractMongoDao` | §25.5 第 14 项；I4 |
 | `lastModifiedDate` 13/13（G-08 / E-03） | §3.19.1、§25.2.1 | **M4** DAO 兜底 + **M5** Job/Service + **M7** move/copy/archive | §25.5 第 8 项；I4 |
 | 补偿多实例幂等（G-24 / E-16） | §25.2.5 | **M2** | §25.5 第 9 项；I2+ |
-| G-34 路由就绪 | §3.19.2 | **M5** `RoutingReadinessChecker` | **M6** 暴露 API；I3.5 |
+| G-34 路由就绪 | §3.19.2 | **M5** `RoutingReadinessChecker`（INFRA + M5） | **M6** 暴露 API；I3.5 |
 | 100% 实例双写门禁 | §3.10 | **M8** 发布 SOP（发布系统确认所有实例已部署） | §3.19.3；I5 |
 | INIT 校验包（G-19/25/32） | §20a、§1.6.2 | **M6** `MigrationInitValidator` | I3 |
 | 回滚清补偿队列（G-29） | §3.11 | **M6** `rollback` | I3 |

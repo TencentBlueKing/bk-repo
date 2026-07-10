@@ -1,8 +1,9 @@
 package com.tencent.bkrepo.common.mongo.routing
 
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingCollections
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
-import com.tencent.bkrepo.common.mongo.api.routing.RouteTarget
 import com.tencent.bkrepo.common.mongo.api.routing.WriteRoute
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.bson.Document
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -45,7 +46,7 @@ class CompensationPostCheckTest {
     @BeforeEach
     fun setUp() {
         registry = mock()
-        postCheck = CompensationPostCheck(registry, defaultMongoTemplate)
+        postCheck = CompensationPostCheck(registry, defaultMongoTemplate, SimpleMeterRegistry())
         defaultMongoTemplate.dropCollection(testCollection)
     }
 
@@ -323,9 +324,9 @@ class CompensationPostCheckTest {
         val writeRoute = WriteRoute(primary = defaultMongoTemplate)
         whenever(registry.resolveWriteRoute(testCollection, "projectA", defaultMongoTemplate))
             .thenReturn(writeRoute)
-        defaultMongoTemplate.dropCollection("mongo_inconsistency_log")
+        defaultMongoTemplate.dropCollection(MongoRoutingCollections.INCONSISTENCY)
         postCheck.postReplayCheck(task)
-        val logs = defaultMongoTemplate.findAll(Document::class.java, "mongo_inconsistency_log")
+        val logs = defaultMongoTemplate.findAll(Document::class.java, MongoRoutingCollections.INCONSISTENCY)
         assertEquals(1, logs.size)
         assertEquals("node", logs[0].getString("ruleName"))
         assertEquals(testCollection, logs[0].getString("collectionName"))

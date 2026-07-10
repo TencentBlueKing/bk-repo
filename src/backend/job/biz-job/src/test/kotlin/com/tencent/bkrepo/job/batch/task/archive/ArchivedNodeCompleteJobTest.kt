@@ -46,6 +46,7 @@ class ArchivedNodeCompleteJobTest @Autowired constructor(
     private val nodeDao: NodeDao,
     private val job: ArchivedNodeCompleteJob,
     private val properties: ArchivedNodeCompleteJobProperties,
+    private val nodeCommonUtils: NodeCommonUtils,
 ) : JobBaseTest() {
 
     @MockitoBean
@@ -73,8 +74,6 @@ class ArchivedNodeCompleteJobTest @Autowired constructor(
     fun beforeAll() {
         // mock
         val storageCredentials = FileSystemCredentials(key = UT_STORAGE_CREDENTIALS_KEY)
-        NodeCommonUtils.mongoTemplate = mongoTemplate
-        NodeCommonUtils.migrateRepoStorageService = migrateRepoStorageService
         mockkObject(RepositoryCommonUtils)
         every { RepositoryCommonUtils.getRepositoryDetail(any(), any(), anyNullable()) }
             .returns(MigrateTestUtils.buildRepo(storageCredentials = storageCredentials))

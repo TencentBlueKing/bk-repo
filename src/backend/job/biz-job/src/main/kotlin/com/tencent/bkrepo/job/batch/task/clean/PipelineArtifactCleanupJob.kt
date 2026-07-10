@@ -32,6 +32,8 @@ import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.routing.NodeShardReadSupport
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.mongo.routing.MigrationGate
+import org.springframework.beans.factory.annotation.Autowired
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
@@ -58,6 +60,8 @@ class PipelineArtifactCleanupJob(
     private val nodeService: NodeService,
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private val nodeShardReadSupport: NodeShardReadSupport? = null,
+    @Autowired(required = false)
+    private val migrationGate: MigrationGate? = null,
 ) : DefaultContextMongoDbJob<PipelineArtifactCleanupJob.Node>(properties) {
     override fun collectionNames(): List<String> {
         return (0 until SHARDING_COUNT)
@@ -91,6 +95,11 @@ class PipelineArtifactCleanupJob(
     }
 
     override fun run(row: Node, collectionName: String, context: JobContext) {
+        // spec §3.18.3 迁移期间冻结物理删除
+        if (migrationGate?.isPhysicalDeleteFrozen(row.projectId) == true) {
+            logger.info("freeze-physical-delete active, skip ${row.projectId}")
+            return
+        }
         getEarliestBuildNode(collectionName, row)?.let { buildNode ->
             deleteBeforeBuild(buildNode)
         }

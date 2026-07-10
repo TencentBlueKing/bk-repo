@@ -35,6 +35,8 @@ import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
+import com.tencent.bkrepo.common.mongo.routing.MigrationGate
+import org.springframework.beans.factory.annotation.Autowired
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
@@ -71,6 +73,8 @@ class SystemGcJob(
     private val archiveClient: ArchiveClient,
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private val routingRegistry: MongoRoutingRegistry? = null,
+    @Autowired(required = false)
+    private val migrationGate: MigrationGate? = null,
 ) : DefaultContextJob(properties) {
 
     private var lastId = MIN_OBJECT_ID
@@ -106,6 +110,11 @@ class SystemGcJob(
     }
 
     private fun repoGc(projectId: String, repoName: String): GcMetric {
+        // spec §3.18.2 迁移期间冻结 GC，防止 Default 上 GC 误删迁出项目关联文件
+        if (migrationGate?.isProjectGcFrozen(projectId) == true) {
+            logger.info("freeze-gc active, skip $projectId/$repoName")
+            return GcMetric(0, 0, 0, 0)
+        }
         lastId = MIN_OBJECT_ID
         val seq = HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
         val collectionName = "node_$seq"

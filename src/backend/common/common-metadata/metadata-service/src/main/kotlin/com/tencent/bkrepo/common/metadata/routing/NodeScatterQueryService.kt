@@ -27,6 +27,7 @@ class NodeScatterQueryService(
     private val mode: ScatterMode = ScatterMode.STRICT,
     private val metrics: com.tencent.bkrepo.common.mongo.routing.MongoRoutingMetrics? = null,
     private val scatterTemplates: ScatterMongoTemplateProvider? = null,
+    private val batchQueryHelper: NodeBatchQueryHelper? = null,
 ) {
 
     enum class ScatterMode {
@@ -61,6 +62,23 @@ class NodeScatterQueryService(
             }
         }
         return joinScatterFutures(futures, started)
+    }
+
+    fun scatterExists(
+        query: Query,
+        clazz: Class<TNode>,
+        collectionNames: List<String>,
+    ): Boolean {
+        val groups = buildScatterGroups(collectionNames)
+        for (group in groups) {
+            val patchedQuery = group.queryPatch(query)
+            for (collection in group.collectionNames) {
+                if (group.template.exists(patchedQuery.limit(1), clazz, collection)) {
+                    return true
+                }
+            }
+        }
+        return false
     }
 
     fun pageBySha256(
@@ -130,10 +148,6 @@ class NodeScatterQueryService(
     private fun defaultReadTemplate(): MongoTemplate =
         scatterTemplates?.defaultTemplate() ?: defaultTemplate
 
-    private fun heavyReadTemplate(instanceName: String): MongoTemplate? =
-        scatterTemplates?.heavyTemplate(instanceName)
-            ?: registry.primaryTemplateByInstance(NODE_RULE, instanceName)
-
     private fun sha256Query(sha256: String): Query = Query(
         Criteria.where(TNode::sha256.name).`is`(sha256)
             .and(TNode::folder.name).`is`(false)
@@ -141,40 +155,14 @@ class NodeScatterQueryService(
     )
 
     private fun buildScatterGroups(collectionNames: List<String>): List<ScatterGroup> {
-        val routedProjects = registry.routedProjectIds(NODE_RULE)
-        val projectsByInstance = registry.projectsByInstance(NODE_RULE)
-        val shardRoutedCollections = registry.shardRoutedCollections(NODE_RULE)
-        val shardsByInstance = registry.shardsByInstance(NODE_RULE)
-
-        val groups = mutableListOf<ScatterGroup>()
-
-        val defaultCollections = collectionNames.filter { it !in shardRoutedCollections }
-        val defaultPatch: (Query) -> Query = if (routedProjects.isNotEmpty()) {
-            { q -> Query.of(q).addCriteria(Criteria.where(PROJECT_FIELD).nin(routedProjects)) }
-        } else {
-            { it }
-        }
-        if (defaultCollections.isNotEmpty()) {
-            groups += ScatterGroup(defaultReadTemplate(), defaultCollections, defaultPatch)
-        }
-
-        val allInstanceNames = (projectsByInstance.keys + shardsByInstance.keys).toSet()
-        allInstanceNames.forEach { instanceName ->
-            val tmpl = heavyReadTemplate(instanceName) ?: return@forEach
-            val shardCollections = shardsByInstance[instanceName].orEmpty()
-                .filter { it in collectionNames }
-            if (shardCollections.isNotEmpty()) {
-                groups += ScatterGroup(tmpl, shardCollections) { it }
-            }
-            val projects = projectsByInstance[instanceName].orEmpty()
-            val projectCollections = collectionNames.filter { it !in shardRoutedCollections }
-            if (projects.isEmpty() || projectCollections.isEmpty()) return@forEach
-            groups += ScatterGroup(tmpl, projectCollections) { q ->
-                Query.of(q).addCriteria(Criteria.where(PROJECT_FIELD).`in`(projects))
+        val helper = batchQueryHelper ?: NodeBatchQueryHelper(defaultReadTemplate(), registry)
+        val groups = helper.buildGroups(collectionNames, NODE_RULE)
+        if (groups != null) {
+            return groups.map { group ->
+                ScatterGroup(group.mongoTemplate, group.collectionNames, group.criteriaCustomizer)
             }
         }
-
-        return groups
+        return listOf(ScatterGroup(defaultReadTemplate(), collectionNames) { it })
     }
 
     companion object {
@@ -182,7 +170,6 @@ class NodeScatterQueryService(
         private const val MAX_SCATTER_OFFSET = 10_000L
         private const val MAX_SCATTER_FETCH = 10_000
         private const val NODE_RULE = "node"
-        private const val PROJECT_FIELD = "projectId"
         private val logger = LoggerFactory.getLogger(NodeScatterQueryService::class.java)
     }
 }

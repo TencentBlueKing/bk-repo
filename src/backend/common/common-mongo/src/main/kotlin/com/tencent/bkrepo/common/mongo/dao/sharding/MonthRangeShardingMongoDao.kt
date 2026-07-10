@@ -27,57 +27,15 @@
 
 package com.tencent.bkrepo.common.mongo.dao.sharding
 
-import com.google.common.cache.CacheBuilder
-import com.tencent.bkrepo.common.mongo.dao.util.MongoIndexResolver
 import com.tencent.bkrepo.common.mongo.api.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.common.mongo.api.util.sharding.ShardingUtils
-import org.springframework.data.mongodb.core.index.IndexDefinition
-import java.util.concurrent.TimeUnit
 
 /**
- * 注意：按月分表的索引只有在insert/save的情况下才会创建
+ * 注意：按月分表的索引只有在 insert/save 的情况下才会创建（见 [ShardingMongoDao] lazy ensureIndex）。
  */
 abstract class MonthRangeShardingMongoDao<E> : RangeShardingMongoDao<E>() {
 
-    private val indexCache = CacheBuilder.newBuilder()
-        .maximumSize(100)
-        .expireAfterWrite(1, TimeUnit.DAYS)
-        .build<String, Boolean>()
-
     override fun determineShardingUtils(): ShardingUtils {
         return MonthRangeShardingUtils
-    }
-
-    override fun insert(entity: E): E {
-        ensureIndex(entity)
-        return super.insert(entity)
-    }
-
-    override fun insert(entityCollection: Collection<E>): Collection<E> {
-        ensureIndex(entityCollection.first())
-        return super.insert(entityCollection)
-    }
-
-    override fun save(entity: E): E {
-        ensureIndex(entity)
-        return super.save(entity)
-    }
-
-    private fun getIndexCacheKey(collectionName: String, indexDefinition: IndexDefinition): String {
-        return collectionName + indexDefinition.indexKeys.keys
-    }
-
-    private fun ensureIndex(entity: E) {
-        val collectionName = determineCollectionName(entity)
-        val indexDefinitions = MongoIndexResolver.resolveIndexFor(classType)
-        val templates = writeTemplates(collectionName, entity)
-        indexDefinitions.forEach {
-            val indexCacheKey = getIndexCacheKey(collectionName, it)
-            if (indexCache.getIfPresent(indexCacheKey) != true) {
-                templates.forEach { template -> template.indexOps(collectionName).ensureIndex(it) }
-                indexCache.put(indexCacheKey, true)
-                logger.info("$collectionName create Index: $it")
-            }
-        }
     }
 }

@@ -70,8 +70,10 @@ spring.data.mongodb:
   multi-instance:
     rules:
       node:
-        routing-state: DUAL_WRITE     # OFF / DUAL_WRITE / ROUTED
+        routing-state: ROUTED          # 模式二：OFF / ROUTED only
         routing-type: project
+        dual-write-projects: []        # 当前双写项目
+        project-effective-at: {}       # 已切流项目（永久保留）
         instances:
           heavy1:
             uri: mongodb://heavy1-primary:27017/bkrepo
@@ -132,17 +134,17 @@ BK-REPO 当前所有元数据共享同一套 MongoDB 副本集，随着数据规
 | Primary | 副本集中的主节点，接受写入 |
 | Secondary | 副本集中的从节点，复制延迟读 |
 
-两种模式的双写主路径方向**不同**（模式一以 Offload 为主，模式二以 Default 为主），原因见 §1.3.1，分开描述。
+两种模式的双写主路径方向**一致（均以 Default 为主）**，但理由不同（见 §1.3.1），分开描述。
 
 **模式一（artifact_oplog 整体迁移）**
 
 | 阶段 | 写入节点 | 读取节点 | 一致性语义 |
 | --- | --- | --- | --- |
 | 迁移前 / `routing-state=OFF` | Default Primary | Default Primary | 强一致，与迁移前相同 |
-| 双写期（`routing-state=DUAL_WRITE`） | Offload Primary（主路径）→ 同步写 Default Primary，失败则补偿 | Default Primary（数据最完整，含旧实例写入） | 最终一致，补偿延迟上限 5 分钟 |
+| 双写期（**模式一** `routing-state=DUAL_WRITE`） | Default Primary（主路径）→ 同步写 Offload Primary，失败则补偿 | Default Primary（数据最完整，含旧实例写入） | 最终一致，补偿延迟上限 5 分钟 |
 | 切流后（`routing-state=ROUTED`） | Offload Primary | Offload Primary | 强一致 |
 
-双写期以 Offload 为主路径：Offload Primary 写失败则直接返回失败；Offload Primary 写成功后**同步尝试**写 Default Primary，同步失败则记录补偿任务并仍返回成功。双写期读走 Default Primary，保证滚动升级旧实例只写 Default 时读不到最新数据。
+双写期以 Default 为主路径：Default Primary 写失败则直接返回失败；Default Primary 写成功后**同步尝试**写 Offload Primary，同步失败则记录补偿任务并仍返回成功。双写期读走 Default Primary，写主路径与读路径同为 Default，天然 read-your-writes（见 §1.3.2）。
 
 **模式二（node 项目级路由）**
 
@@ -150,27 +152,27 @@ BK-REPO 当前所有元数据共享同一套 MongoDB 副本集，随着数据规
 | --- | --- | --- | --- | --- |
 | `routing-state=OFF` | — | Default Primary | Default Primary | 强一致，与迁移前相同 |
 | `routing-state=ROUTED` | 否（未迁出项目） | Default Primary | Default Primary | 强一致 |
-| `routing-state=ROUTED` | 是（已迁出项目） | Heavy Primary | Heavy Primary | 强一致 |
-| `routing-state=DUAL_WRITE` | 是（迁移双写期） | Default Primary（主路径）→ 同步写 Heavy Primary，失败则补偿 | Default Primary | 最终一致；主路径 Default 同步裁决唯一键，副路径 Heavy 写失败由补偿兜底 |
+| `ON_HEAVY`（`project-effective-at` 已到点） | 是（已迁出项目） | Heavy Primary | Heavy Primary | 强一致 |
+| 双写期（`dual-write-projects` 或 `project-effective-at` 未到） | 是 | Default Primary（主路径）→ 同步写 Heavy Primary，失败则补偿 | Default Primary | 最终一致；主路径 Default 同步裁决唯一键，副路径 Heavy 写失败由补偿兜底 |
 | 散发查询（`pageBySha256`，无 `projectId`） | — | — | 各实例（`uri` 专用连接池并发查询）后合并去重 | 最终一致，各实例延迟可能不同（默认 Primary；配置 `readPreference=secondaryPreferred` 时走 Secondary） |
 
-双写期以 **Default 为主路径**：Default Primary 写失败则直接返回失败（业务唯一键冲突当场暴露，与分库前一致）；Default Primary 写成功后**同步尝试**写 Heavy Primary，同步失败则记录补偿任务并仍返回成功。**双写期读走 Default Primary**（与写主路径同实例，read-your-writes）；`ROUTED` 切流后再读 Heavy Primary。与模式一相反的原因见 §1.3.1。
+双写期以 **Default 为主路径**：Default Primary 写失败则直接返回失败（业务唯一键冲突当场暴露，与分库前一致）；Default Primary 写成功后**同步尝试**写 Heavy Primary，同步失败则记录补偿任务并仍返回成功。**双写期读走 Default Primary**（与写主路径同实例，read-your-writes）；`ROUTED` 切流后再读 Heavy Primary。与模式一主路径方向一致、理由不同，见 §1.3.1。
 
 **关键约束**
 
 - 同一文档在任意时刻只属于一个实例（由 `projectId` 路由决定），不存在同一文档跨实例写入。
-- 两种模式的双写主路径方向**不同**（模式一以 Offload 为主，模式二以 Default 为主，原因见 §1.3.1），但补偿语义一致：主路径写成功即返回，副路径同步写失败则异步补偿，补偿队列未清零时阻断切流。
-- 模式二双写是否生效由 **`routing-state` + 项目状态**共同决定（见 §3.5.1），非 YAML 单一布尔值。
+- 两种模式的双写主路径方向**一致（均以 Default 为主）**，但理由不同（见 §1.3.1）；补偿语义一致：主路径写成功即返回，副路径同步写失败则异步补偿，补偿队列未清零时阻断切流。
+- 模式二双写是否生效由 **`ProjectRouteResolver.isProjectInDualWrite`** 决定（`dual-write-projects` + `project-effective-at`，见 §3.5.1），非 YAML 单一布尔值。
 - 散发查询（`pageBySha256`）是弱一致性查询，业务侧已容忍秒级差异。散发查询使用独立连接池（G-43），默认走 `instances.*.uri`。job 服务如需走 Secondary 卸流，在 Consul `config/job/` 覆写对应实例 URI 追加 `readPreference=secondaryPreferred` 即可（与 Default 实例覆写逻辑一致），无需额外字段。
 
-#### 1.3.1 双写方向设计理由（两种模式不同）
+#### 1.3.1 双写方向设计理由（两种模式均以 Default 为主，理由不同）
 
-**核心原则**：双写主路径 = **能同步裁决"写成功/失败"、且当时数据最完整的实例**。
+**核心原则**：双写主路径 = **能同步裁决"写成功/失败"、且当时数据最完整的实例**。两种模式均以 Default 为主路径，但理由不同：
 
-- **模式一（NONE，`artifact_oplog_*`）以 Offload 为主路径**：append-only 日志、无业务唯一索引、NONE 模式**不迁移历史**（Offload 起始为空且无并发全量同步），不存在"两侧对同一业务键各持一份"的可能。因此可让最终归宿 Offload 当主路径，提前完成切主。
+- **模式一（NONE，`artifact_oplog_*`）以 Default 为主路径**：双写期 Default 仍是权威源（迁移前全部历史都在 Default），且 Offload 是为本次迁移新建的空实例。让 Default 当主路径，写主路径与读路径（双写期读 Default，见 §2.5.2）同实例，天然 read-your-writes；append-only 日志、无业务唯一索引、NONE 模式**不迁移历史**，不存在"两侧对同一业务键各持一份"的可能，Default 写成功即提交、Offload 由补偿/切流门禁追平即可。
 - **模式二（PROJECT，`node_*`）以 Default 为主路径**：`node` 有业务唯一索引 `{projectId, repoName, fullPath, deleted}`，且**开启双写的同时并发跑全量同步**（INITIAL_SYNC 把 Default 历史灌入 Heavy）。Default 全程持有全量历史、是权威源；Heavy 是在建副本。此时**必须由持有全量数据的 Default 当主路径同步裁决唯一性**，否则会产生不可收敛的数据分叉（见下）。
 
-> 两种模式方向不同，本质是：**谁手里数据全、谁能正确判定唯一键冲突，谁就当主路径。** 模式一双方都无历史包袱，选归宿为主；模式二 Default 独家持有历史，必须 Default 为主。
+> 两种模式方向一致（均以 Default 为主），但理由不同：**模式一因 Default 是双写期权威源且与读路径同实例，模式二因 Default 独家持有历史、需就近裁决唯一键冲突。** 两者都让 Default 当主路径、归宿实例（Offload/Heavy）由「补偿 + 切流门禁」单向追平。
 
 ##### 为什么模式二必须先写 Default（先写 Heavy 的致命缺陷）
 
@@ -206,26 +208,26 @@ BK-REPO 当前所有元数据共享同一套 MongoDB 副本集，随着数据规
 
 > 相比先写 Heavy，先写 Default 额外收益：**读路径双写期本就走 Default（§1.3.2），主路径同为 Default 天然满足 read-your-writes**；且 Heavy 宕机只影响副路径（补偿兜底），业务写不中断。
 
-##### 模式一场景全景矩阵（Offload 为主路径，保持不变）
+##### 模式一场景全景矩阵（Default 为主路径）
 
-| 场景 | 写 Offload | 写 Default | 返回 | 后续处理 | 数据安全 |
+| 场景 | 写 Default | 写 Offload | 返回 | 后续处理 | 数据安全 |
 |---|---|---|---|---|---|
 | **正常双写** | ✅ | ✅ | 成功 | — | ✅ |
-| **Offload 写失败** | ❌ | 不写 | **失败** | 业务重试 | ✅ 两侧均无 |
-| **Offload 成功 + Default 失败** | ✅ | ❌ | 成功 | 记录补偿，异步重试 | ✅ 补偿兜底 |
-| **Offload 宕机** | — | — | artifact_oplog 写 fail-fast；读仍可用 | 恢复后业务重试 | ✅ 不丢数据 |
-| **Default 宕机** | ✅ | ❌ | 成功（全进补偿） | 补偿积压，禁止切流 | ⚠️ 依赖补偿 |
-| **旧实例只写 Default** | — | ✅ | 写成功 | 读 Default 可见 | ✅ 无丢失窗口 |
+| **Default 写失败** | ❌ | 不写 | **失败** | 业务重试 | ✅ 两侧均无 |
+| **Default 成功 + Offload 失败** | ✅ | ❌ | 成功 | 记录补偿，异步追平 Offload | ✅ 补偿兜底 |
+| **Default 宕机** | — | — | artifact_oplog 写 fail-fast；读仍可用 | 恢复后业务重试 | ✅ 不丢数据 |
+| **Offload 宕机** | ✅ | ❌ | 成功（全进补偿） | 补偿积压，禁止切流 | ⚠️ 依赖补偿 |
+| **旧实例只写 Default** | ✅ | — | 写成功 | 读 Default 可见 | ✅ 无丢失窗口 |
 
 ##### 精简总结
 
-> **两种模式方向不同，取决于"双写期谁的数据最完整、谁能正确裁决唯一键"。**
+> **两种模式方向一致（均以 Default 为主路径），但理由不同：模式一因 Default 是双写期权威源且与读路径同实例，模式二因 Default 独家持有历史需就近裁决唯一键冲突。**
 >
-> **模式一（`artifact_oplog_*`，NONE）**：append-only、无唯一索引、不迁历史，两侧无历史包袱 → 以最终归宿 **Offload 为主路径**，提前切主，切流后 Offload 独写独读。
+> **模式一（`artifact_oplog_*`，NONE）**：append-only、无唯一索引、不迁历史 → 以 **Default 为主路径**，写主路径与读路径同为 Default 天然 read-your-writes；切流后 Offload 独写独读。
 >
 > **模式二（`node_*`，PROJECT）**：有业务唯一索引且并发全量同步，Default 独家持有历史 → 以 **Default 为主路径**同步裁决唯一键，冲突当场 fail-fast（与分库前一致）；Heavy 由「全量同步 + 补偿」单向追平，切流门禁（补偿清零 + 对账零差异）保证 Heavy 追平后再 `ROUTED`。
 >
-> 简记：**模式一「归宿为主、提前切主」；模式二「Default 为主、冲突早暴露、Heavy 单向追平」。双写期两者读都走 Default，切流后读写同走归宿。**
+> 简记：**两种模式「Default 为主、读主同实例」；模式二额外「冲突早暴露、Heavy 单向追平」。双写期两者读都走 Default，切流后读写同走归宿。**
 
 #### 1.3.2 双写期的"写后读"一致性窗口分析
 
@@ -284,7 +286,7 @@ flowchart LR
         R3 --> V3["强一致 ✅\n读不受副路径滞后影响"]
     end
 
-    V1 -. "与迁移前完全一致" .- V2
+    V1 -.->|"与迁移前完全一致"| V2
 ```
 
 ##### 为什么读走 Default 而非 Heavy？
@@ -397,6 +399,11 @@ flowchart TD
 > - 批量操作（`updateMulti`、`remove`）补偿存 `query`，副路径重放；`$inc` / `$push` 等非幂等操作用 `$set` 绝对值替代（§3.15.4）。  
 > - 补偿任务结构扩展包含 `query`、`update` 字段（§3.15.2 完整定义），`primaryKey` 在批量操作场景为 null。
 
+> **§3.15.7 单文档 update 补偿：重读权威源自愈（G-14 根治）**。  
+> 单文档 update 补偿（`updateFirst` / `upsert` / 带 `_id` 的 `findAndModify`）**不再重放入队时的旧 update 快照**，而是补偿消费时**重读 Default（主路径权威源）当前文档，整篇 upsert 进副路径**。这样即使补偿任务陈旧（入队后该文档又被更新过），写入副路径的也是 Default 的当前值，旧快照不可能覆盖新值。若 Default 已无此文档（双写期被删除），则同步删除副路径，避免残留僵尸副本。  
+> 仅 `updateMulti`（无 `_id`、只能重放 query）保留对 `lastModifiedDate` 的 `$max` 兜底。  
+> 残留不一致的可感知通道：消费后 G-42 字段级 post-check 比对 `metadata` / `lastModifiedDate` 等是否等于主路径当前值，不一致记指标 `bkrepo.mongo.routing.compensation.postcheck.mismatch` 并将任务升级为 `FAILED`，由 §9.3 门禁第 3 项阻断切流。
+
 #### 1.4.4 历史数据迁移：双策略可配置
 
 > 策略枚举与统一流水线见 **§1.6**；本节保留选型论证与 NONE/JOB_ONLY 细节。
@@ -437,11 +444,12 @@ spring.data.mongodb.multi-instance.rules:
   node:
     routing-type: project
     routing-state: OFF
+    dual-write-projects: []
+    project-effective-at: {}
     migration:
       historical-sync-strategy: JOB_ONLY
       sync-job:
         batch-size: 500
-        parallel-projects: 3
         retry-count: 3
       none:
         scatter-query-merge: true
@@ -547,7 +555,7 @@ spring.data.mongodb.multi-instance.rules.node:
 
 #### 1.4.4a NONE 模式下双写的操作行为详解（insert / update / delete）
 
-**核心前提**：NONE 模式跳过历史迁移，Offload 专属实例上**没有任何存量数据**。进入 DUAL_WRITE 后所有写操作以 Offload 为主路径（§1.3）。
+**核心前提**：NONE 模式跳过历史迁移，Offload 专属实例上**没有任何存量数据**。进入 DUAL_WRITE 后所有写操作以 Default 为主路径（§1.3）。
 
 > **适用范围**：当前 NONE 模式仅用于 `artifact_oplog_*` 集合族。该集合族为 **append-only**（纯追加写，无 update/delete），因此本节中 Update/Delete 分析为**理论警示**——解释为何 NONE 模式不可用于有更新/删除操作的集合（如 `node_*`）。
 
@@ -556,8 +564,8 @@ spring.data.mongodb.multi-instance.rules.node:
 ```
 业务 insert oplog 记录（_id=0x...NEW）：
 
-  Offload Primary insert  → _id=0x...NEW 自动生成 → ✅ 成功
-  Default Primary insert(_id=0x...NEW, doc)        → ✅ 成功
+  Default Primary insert  → _id=0x...NEW 自动生成 → ✅ 成功
+  Offload Primary insert(_id=0x...NEW, doc)        → ✅ 成功
   结论：两侧 _id 一致，数据一致 ✅
 ```
 
@@ -617,13 +625,13 @@ fun dualWriteUpdate(collectionName: String, query: Query, update: Update): Updat
             // 文档不在 Offload → 在 Default 上（历史数据，NONE 未迁移）
             log.warn("Update matchedCount=0 and doc not found on Offload. " +
                      "If NONE mode, history doc only on Default. query={}", query)
-            // 仍需同步写 Default（以 Default 为准）
-            // 注意：此时 update 以 Default 现有数据为基准，补偿方向变为 Default→Offload
+            // 仍需同步写 Offload（以 Default 为准，Offload 为副路径）
+            // 注意：此时 update 以 Default 现有数据为基准，补偿方向为 Default→Offload
         }
     }
 
-    // 3. 副路径：Default Primary
-    defaultTemplate.updateFirst(query, update, collectionName)
+    // 3. 副路径：Offload Primary
+    offloadTemplate.updateFirst(query, update, collectionName)
     return result
 }
 ```
@@ -700,52 +708,55 @@ fun dualWriteDelete(collectionName: String, query: Query): DeleteResult {
 | 操作 | 冲突可能性 | 冲突位置 | 原因 | 处理 |
 |---|---|---|---|---|
 | insert（新文档） | ❌ 不可能 | — | `_id` 为 ObjectId 全局唯一 | — |
-| insert（补偿重试） | ✅ 可能 | Default 副路径 | 补偿任务重试，Default 已有相同 `_id` | 忽略 `DuplicateKeyException`（幂等） |
+| insert（补偿重试） | ✅ 可能 | Heavy 副路径 | 补偿任务重试，Heavy 已有相同 `_id` | 忽略 `DuplicateKeyException`（幂等） |
 | update | ❌ 不可能 | — | update 不创建新文档 | — |
 | delete | ❌ 不可能 | — | delete 不创建新文档 | — |
-| **insert + 业务唯一索引冲突** | ✅ 可能 | Offload 主路径 | `(projectId, fullPath)` 已存在 | 主路径失败 → 直接返回失败，业务重试 |
+| **insert + 业务唯一索引冲突** | ✅ 可能 | Default 主路径 | `(projectId, fullPath)` 已存在 | 主路径失败 → 直接返回失败，业务重试 |
 
 > **关于"同名文档"的索引重复**：`node_*` 集合的业务唯一性由复合唯一索引 `(projectId, fullPath, ...)` 保证。
-> 如果 insert 一个与已有文档相同 `(projectId, fullPath)` 的新文档，MongoDB 会在 **Offload 主路径**就抛出 `DuplicateKeyException`，
-> 此时路由层直接返回失败，**不会继续同步写 Default**。因此不存在"Offload 成功但 Default 因同名冲突失败"的跨实例不一致场景。
+> 如果 insert 一个与已有文档相同 `(projectId, fullPath)` 的新文档，MongoDB 会在 **Default 主路径**就抛出 `DuplicateKeyException`，
+> 此时路由层直接返回失败，**不会继续同步写 Heavy**。因此不存在"Default 成功但 Heavy 因同名冲突失败"的跨实例不一致场景。
 >
 > **NONE 模式的特殊情况（理论警示）**：如果同名文档（相同 business key，不同 `_id`）存在于 Default 的历史数据中但不在 Offload，
-> NONE 模式下 insert 同一 business key 的新文档会在 Offload 成功（Offload 上没有历史文档），
-> 然后同步 insert 到 Default 时会因 `(projectId, fullPath)` 冲突而失败 → **Default 同步失败，进入补偿队列**。
-> 补偿任务重试会因 `DuplicateKeyException` 被忽略（幂等处理），**Default 上保留历史版本，Offload 上保留新版本 → 两侧不一致**。
+> NONE 模式下 insert 同一 business key 的新文档会在 Default 成功（Default 持有全量历史），
+> 然后同步 insert 到 Offload 时会因 `(projectId, fullPath)` 冲突而失败 → **Offload 同步失败，进入补偿队列**。
+> 补偿任务重试会因 `DuplicateKeyException` 被忽略（幂等处理），**Offload 上追平 Default 的历史版本** → 两侧最终一致。
 > 这再次说明 NONE 模式必须转为 JOB_ONLY 的根本原因。
 
 ##### Consul 开启双写：前置条件与操作顺序
 
-**运行时双写只读 Consul**（`routing-state=DUAL_WRITE` + `projectId ∈ project-routing`），**不读** DB `phase`。Consul 变更**无 API 自动门禁**，须运维按 SOP 逐项确认（§3.10、§25.5）。
+**运行时双写只读 Consul**（`dual-write-projects` + `project-routing`，`routing-state=ROUTED`），**不读** DB `phase`。Consul 变更**无 API 自动门禁**，须运维按 SOP 逐项确认（§3.10、§25.5）。
 
-**前置条件**（全部满足后方可改 Consul）：
+**前置条件**（基础设施；binding/start 另受 G-34 代码门禁，见 pattern2 §3.20.0）：
 
 | # | 检查项 | 方式 |
 |---|---|---|
-| 1 | `POST /migration/binding` 完成（DB `phase=PENDING`） | API / 面板 |
-| 2 | G-34 路由就绪（P0 清单 100%） | `GET /routing/readiness` |
-| 3 | Heavy 部署完成、索引与 Default 一致、连通性 OK | 运维 / DBA |
-| 4 | 100% 实例已部署路由代码 | 发布系统确认（§3.10） |
-| 5 | 全集群 `config-version` 已传播 | Prometheus `bkrepo_mongo_routing_config_version`（E-06） |
-| 6 | `max-concurrent-dual-write` 未超限 | DB Gate |
-| 7 | `shard-routing` 与 `project-routing` 无冲突 | 启动 fail-fast（§13.3） |
+| 1 | Heavy 部署完成、索引与 Default 一致、连通性 OK | 运维 / DBA |
+| 2 | 100% 实例已部署路由代码 | 发布系统确认（§3.10） |
+| 3 | `shard-routing` 与 `project-routing` 无冲突 | 启动 fail-fast（§13.3） |
 
-**操作顺序**（JOB_ONLY）：
+**操作顺序**（JOB_ONLY；完整步骤见 pattern2 §3.20.0）：
 
 ```text
-① 确认前置清单（上表）
-② Consul：项目加入 project-routing + routing-state=DUAL_WRITE
-③ 等待 ≥ 30s（覆盖 `@RefreshScope` 默认 3s 刷新周期），或查 Prometheus `bkrepo_mongo_routing_config_version` 确认全集群一致
-④ POST /migration/start（INIT 校验通过 → DB phase=INITIAL_SYNC，Job 开扫）
-⑤ Job $setOnInsert 全量扫描与运行时双写并发
-⑥ 扫描完成 + sync_failed 清零 → Job 自动推进 DB phase=DUAL_WRITE
-⑦ 补偿清零 + 旁路对账通过 → POST /migration/route + Consul ROUTED
+① Consul：`routing-state=ROUTED`（首次开闸）→ 等待 ≥30s
+② GET /routing/readiness 全绿（G-34；binding/start 共用，须 INFRA-02 routing-enabled）
+③ POST /migration/binding（DB phase=PENDING）
+④ Consul：项目加入 `project-routing` + `dual-write-projects`
+⑤ 等待 ≥ 30s，或查 Prometheus `bkrepo_mongo_routing_config_version` 确认全集群一致
+⑥ POST /migration/start（INIT 校验通过 → DB phase=INITIAL_SYNC，Job 开扫）
+⑦ Job $setOnInsert 全量扫描与运行时双写并发
+⑧ 扫描完成 + sync_failed 清零 → Job 自动推进 DB phase=DUAL_WRITE
+⑨ 补偿清零 + 旁路对账通过 → POST /migration/route + Consul 移除 dual-write-projects + project-effective-at
 ```
 
-> **关键**：② 必须在 ④ **之前**。Job 开扫后若无双写，已扫区间的 update/delete 无法被 `$setOnInsert` 重放，产生数据缺口。
+> **配置生效方式分级（与主方案 §2 / pattern1 §2.10.1 对齐）**：
+> - **热加载级**：`routing-state`、`dual-write-projects`、`project-effective-at`
+> - **启动级**：`instances.*.uri`、`collection-prefix`、`routing-type`、`project-routing` 等
+
+> **关键**：④ 必须在 ⑥ **之前**（Consul 双写先于 start）。③ 必须在 ①② **之后**（G-34 阻塞 binding）。
+> Job 开扫后若无双写，已扫区间的 update/delete 无法被 `$setOnInsert` 重放，产生数据缺口。
 >
-> **INIT 失败回滚**：若 ④ 返回 `INIT_FAILED`，立即从 Consul 移除 `project-routing` 并设 `routing-state=OFF`。
+> **INIT 失败回滚**：若 ⑥ 返回 `INIT_FAILED`，立即从 Consul 移除该项目的 `project-routing` 与 `dual-write-projects` 条目；`routing-state` 保持 `ROUTED`。
 
 ##### 如何判断存量数据同步完成，可以进入 ROUTED？
 
@@ -755,32 +766,19 @@ fun dualWriteDelete(collectionName: String, query: Query): DeleteResult {
 
 | 判定项 | JOB_ONLY | NONE | 说明 |
 |---|---|---|---|
-| **count 对比** | Default.count(projectId) = Heavy.count(projectId) | N/A | JOB_ONLY：两侧 document 数量一致 |
 | **_id 范围抽样对账** | 按 `_id` 升序分段，每段抽样 100 条对比 | N/A | 确认具体文档内容一致 |
 | **全量扫描完成** | INITIAL_SYNC 进度 100% | N/A | 存量数据已全部写入 Heavy |
-| **补偿队列清零** | `mongo_dual_write_compensation` 该项目 PENDING=0 | 同左 | 双写增量已追平 |
+| **补偿队列清零** | `mongo_routing_compensation` 该项目 PENDING=0 | 同左 | 双写增量已追平 |
 | **`sync_failed` 队列为空** | 无可自动修复的失败记录 | N/A | 无残留差异 |
 
-**程序判定逻辑**（JOB_ONLY 在 INITIAL_SYNC 扫描完成 + sync_failed 清零后 Job 自动推进 DB `phase=DUAL_WRITE`，切 `ROUTED` 还须补偿清零 + 旁路对账）：
+**程序判定逻辑**（JOB_ONLY 在 INITIAL_SYNC 扫描完成 + sync_failed 清零后 Job 自动推进 DB `phase=DUAL_WRITE`，切 `ROUTED` 还须补偿清零 + 旁路对账最近 3 轮 `passed`，见 §25.3.2）：
 
 ```kotlin
 // MigrationSyncJob 持续检查，满足后输出日志
 fun canTransitionToReady(state: SyncState): Boolean {
     val projectId = state.projectId
 
-    // 1. count 对比
-    val defaultCount = defaultTemplate.count(
-        Query(Criteria.where("projectId").`is`(projectId)), "node_*"
-    )
-    val heavyCount = heavyTemplate.count(
-        Query(Criteria.where("projectId").`is`(projectId)), "node_*"
-    )
-    if (defaultCount != heavyCount) {
-        log.info("VERIFY: count mismatch default={} heavy={}", defaultCount, heavyCount)
-        return false
-    }
-
-    // 2. 全量扫描完成
+    // 1. 全量扫描完成
     if (state.historicalSyncStrategy == HistoricalSyncStrategy.JOB_ONLY) {
         if (state.syncProgress < 100.0) {
             log.info("ROUTE: sync progress={}% < 100%", state.syncProgress)
@@ -788,14 +786,14 @@ fun canTransitionToReady(state: SyncState): Boolean {
         }
     }
 
-    // 3. 抽样对账（按 _id 范围分段）
+    // 2. 抽样对账（按 _id 范围分段）
     val sampleResults = sampleVerify(projectId, segments = 10, samplesPerSegment = 100)
     if (sampleResults.hasMismatch()) {
         log.warn("VERIFY: sample mismatch, details={}", sampleResults.mismatches)
         return false
     }
 
-    // 4. sync_failed 队列为空
+    // 3. sync_failed 队列为空
     val failedCount = syncFailedDao.count(Query(Criteria.where("projectId").`is`(projectId)))
     if (failedCount > 0) {
         log.info("VERIFY: sync_failed queue has {} pending items", failedCount)
@@ -859,9 +857,9 @@ flowchart TD
 
 **迁移状态流转说明**：
 
-各策略的迁移状态（`INIT` / `INITIAL_SYNC` / `DUAL_WRITE` / `ROUTED` / `CLEANUP_READY` / `CLEANED`）持久化在 `mongo_migration_sync_state`。运维通过迁移 API 推进编排 phase，Job 写断点与自动 phase 跃迁。
+各策略的迁移状态（`INIT` / `INITIAL_SYNC` / `DUAL_WRITE` / `ROUTED` / `CLEANUP_READY` / `CLEANED`）持久化在 `mongo_routing_migration_state`。运维通过迁移 API 推进编排 phase，Job 写断点与自动 phase 跃迁。
 
-> **关键**：`historicalSyncStrategy` 从 DB `mongo_migration_sync_state.strategy` 读取（由 `POST /migration/binding` 写入）。Job 进度（`lastSyncedId` 等）写入 `mongo_migration_sync_state`，重启后断点续传。**运行时路由只读 Consul**（`project-routing` + `routing-state`），不读 DB phase。
+> **关键**：`historicalSyncStrategy` 从 DB `mongo_routing_migration_state.strategy` 读取（由 `POST /migration/binding` 写入）。Job 进度（`lastSyncedId` 等）写入 `mongo_routing_migration_state`，重启后断点续传。**运行时路由只读 Consul**（`project-routing` + `dual-write-projects` + `project-effective-at` + `routing-state`），不读 DB phase。
 
 #### 1.4.7 散发查询去重策略
 
@@ -909,7 +907,7 @@ node_188：141M 文档（文档数量热点）
 
 ### 1.6 历史同步统一框架
 
-模式一与模式二共用同一套同步引擎（**M6**），两种策略通过 `historical-sync-strategy` 配置（DB `mongo_migration_sync_state.strategy`，由 opdata 编排写入）。
+模式一与模式二共用同一套同步引擎（**M6**），两种策略通过 `historical-sync-strategy` 配置（DB `mongo_routing_migration_state.strategy`，由 opdata 编排写入）。
 
 #### 1.6.1 策略枚举与默认
 
@@ -951,7 +949,7 @@ node_188：141M 文档（文档数量热点）
 全量扫描统一使用 `$setOnInsert`（仅插入，不覆盖已有文档）。一致性由以下机制共同保证：
 - `$setOnInsert` 确保全量扫描不覆盖双写已写入的新数据。
 - 双写失败由补偿队列异步追平。
-- 全量扫描失败的批次写入 `mongo_node_sync_failed`，清零后方可进入 ROUTED。
+- 全量扫描失败的批次写入 `mongo_routing_sync_failed`（`ruleName` + `ownerId`），清零后方可进入 ROUTED。
 
 #### 1.6.4 与 §3.9.1 状态机的关系
 
@@ -963,7 +961,7 @@ node_188：141M 文档（文档数量热点）
 | `DUAL_WRITE` | Consul 双写生效 + Job 标记 |
 | `CLEANED` | `CLEANED` |
 
-路由决策（双写/切流/读路由）由 **DB 绑定配置（`project-routing`） + Consul `routing-state` + `mongo_migration_sync_state.phase`** 共同决定。
+路由决策（双写/切流/读路由）由 **Consul**（`project-routing` + `dual-write-projects` + `project-effective-at` + `routing-state`）决定；DB `mongo_routing_migration_state.phase` 仅供 Job / Gate / 面板。
 
 #### 1.6.5 对账门禁（→ ROUTED）
 
@@ -972,15 +970,15 @@ node_188：141M 文档（文档数量热点）
 | **NONE**（模式一） | 双写补偿队列 | = 0 |
 | **NONE**（模式一） | `[dualWriteStartAt, now)` count | Offload ≥ Default 同区间 |
 | **JOB_ONLY** | 全量扫描进度 | 100% 完成 |
-| **JOB_ONLY** | `mongo_*_sync_failed` | 为空 |
+| **JOB_ONLY** | `mongo_routing_sync_failed` | 为空（按 `ruleName` + `ownerId` 过滤） |
 | **JOB_ONLY** | `_id` + `lastModifiedDate` 抽样 | 通过 |
-| **全部** | 进 ROUTED | 补偿清零 + 旁路对账（§25.3.2） |
+| **全部** | 进 ROUTED | 补偿清零 + 旁路对账最近 3 轮 `passed`（§25.3.2，`mongo_routing_reconciliation`） |
 
 模式一 NONE **不做** Default vs Offload 全量历史 count 比对。
 
 #### 1.6.6 进度持久化
 
-集合 `mongo_migration_sync_state`（Default 实例，兼容扩展原 `node_project_sync_state`）：
+集合 `mongo_routing_migration_state`（Default 实例，兼容扩展原 `node_project_sync_state`）：
 
 | 字段 | 说明 |
 |---|---|
@@ -1234,7 +1232,7 @@ spring.data.mongodb:
 | **I2** | + M2 + M3 | **oplog 生产切流**（不等 G-34） |
 | **I3** | + M4 + M6 | 路由 + 状态机（不真实迁项目） |
 | **I4** | + M5 + M7 | §3.19.2 P0 全量 + 横切一致性 |
-| **I3.5** | G-34 | `GET /routing/readiness` 全绿 |
+| **I3.5** | G-34 | `GET /routing/readiness` 全绿（INFRA + M5） |
 | **I5** | + M8 灰度 | 首个大项目 node 迁移 |
 
 ```text
@@ -1276,7 +1274,7 @@ M7 上线前必查：§25.5 灰度门禁 **17 项**（含 G-34，模式二）+ �
 | ThreadLocal 在异步线程中丢失 | 中 | 路由上下文静默丢失，写操作降级 Default，无报错 | 三层防御：① 写操作强制显式传 `projectId`（`NodeMongoOperations`）② `NodeRoutingContext` 改 `TransmittableThreadLocal` ③ 自建线程池用 `TtlExecutors` 包装、`@Async` 配置 `TtlRunnable` TaskDecorator（详见 3.16 节） |
 | 双写补偿积压导致切流无限延迟 | 低 | 迁移计划延期 | 监控告警 + 补偿超时自动升级 |
 | oplog 窗口不足导致频繁 REBUILD | 低 | 迁移反复无法推进 | 提前评估 oplog 大小；低峰期迁移 |
-| 全局 `dual-write` 与项目状态脱节 | 中 | 已 ROUTED 项目误双写或 DUAL_WRITE 项目失去副路径 | per-project 双写决策 + `migrationGate`（§3.5.1） |
+| 全局 `dual-write` 与项目状态脱节 | 中 | 已 ROUTED 项目误双写或双写项目失去副路径 | per-project `dual-write-projects` + `ProjectRouteResolver`（§3.5.1） |
 | 双写期老 Pod 与 CATCH_UP 并存 | 高 | Heavy 缺数据、读不一致 | 100% 新 Pod 后再进 DUAL_WRITE；双写期读 Default（§3.10） |
 | sha256 缓存未失效 | 中 | `pageBySha256` 漏查部分实例 | increment/decrement 均 `invalidate`（§11.4） |
 | `projectId NOT IN` 列表过长 | 中 | Default 扫描/散发查询退化 | >20 项目改白名单 IN（§3.7.2） |
@@ -1284,7 +1282,7 @@ M7 上线前必查：§25.5 灰度门禁 **17 项**（含 G-34，模式二）+ �
 | ROUTED 后 Default 僵尸副本被误操作 | 中 | 数据不一致、file_reference 计数错误 | `migration.project-locks` + Job `NOT IN` 过滤（§3.9.5、§3.18） |
 | 散发查询静默丢结果 | 中 | 去重/溯源结果不完整 | 默认 `STRICT` 模式（§3.7） |
 | 连接池打满 MongoDB | 中 | 全站 MongoDB 不可用 | 连接数估算 + 上限（§4.1） |
-| `lastModifiedDate` 遗漏更新 | 低 | 补偿 update 覆盖新数据 | 队列去重 + `$max` 双重防护（§3.15.7）+ 写路径审计（§3.19.1） |
+| `lastModifiedDate` 遗漏更新 | 低 | 补偿 update 覆盖新数据 | 单文档补偿重读权威源整篇 upsert（§3.15.7、M2 §5.1）+ G-42 字段级校验（含 `metadata`/`lastModifiedDate`）+ 写路径审计（§3.19.1） |
 
 ### 17.3 团队与协作风险
 

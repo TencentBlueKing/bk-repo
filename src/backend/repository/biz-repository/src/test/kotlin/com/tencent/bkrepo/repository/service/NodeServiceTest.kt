@@ -922,6 +922,50 @@ class NodeServiceTest @Autowired constructor(
         }
     }
 
+    @Test
+    @DisplayName("测试batchByIds模式deleteBeforeDate删除节点数超过batchSize")
+    fun `should deleteBeforeDate with batchByIds when node count exceeds batchSize`() {
+        val originalDeleteMode = repositoryProperties.deleteMode
+        val originalBatchSize = repositoryProperties.deleteBatchSize
+        try {
+            repositoryProperties.deleteMode = RepositoryProperties.DELETE_MODE_BATCH_BY_IDS
+            repositoryProperties.deleteBatchSize = 3
+
+            val basePath = "/before-date"
+            val cutoff = LocalDateTime.now().plusHours(1)
+            val nodeCount = 10
+            for (i in 1..nodeCount) {
+                nodeService.createNode(createRequest("$basePath/$i.txt", folder = false))
+            }
+
+            val keepPath = "$basePath/keep.txt"
+            nodeService.createNode(createRequest(keepPath, folder = false))
+            setNodeLastDates(keepPath, cutoff.plusHours(1))
+
+            val listOption = NodeListOption(includeFolder = false, deep = true)
+            assertEquals(nodeCount + 1, nodeService.listNode(node(basePath), listOption).size)
+
+            nodeService.deleteBeforeDate(
+                projectId = UT_PROJECT_ID,
+                repoName = UT_REPO_NAME,
+                date = cutoff,
+                operator = UT_USER,
+                path = basePath,
+                decreaseVolume = false,
+                source = null,
+            )
+
+            val remaining = nodeService.listNode(node(basePath), listOption)
+            assertEquals(1, remaining.size)
+            assertEquals(keepPath, remaining.first().fullPath)
+            assertTrue(nodeService.checkExist(node(keepPath)))
+            assertFalse(nodeService.checkExist(node("$basePath/1.txt")))
+        } finally {
+            repositoryProperties.deleteMode = originalDeleteMode
+            repositoryProperties.deleteBatchSize = originalBatchSize
+        }
+    }
+
     private fun setNodeCreatedDate(fullPath: String, createdDate: LocalDateTime) {
         val query = Query(
             Criteria.where(TNode::projectId.name).isEqualTo(UT_PROJECT_ID)
@@ -930,6 +974,21 @@ class NodeServiceTest @Autowired constructor(
                 .and(TNode::deleted.name).isEqualTo(null)
         )
         nodeDao.updateFirst(query, Update().set(TNode::createdDate.name, createdDate))
+    }
+
+    private fun setNodeLastDates(fullPath: String, lastModifiedDate: LocalDateTime) {
+        val query = Query(
+            Criteria.where(TNode::projectId.name).isEqualTo(UT_PROJECT_ID)
+                .and(TNode::repoName.name).isEqualTo(UT_REPO_NAME)
+                .and(TNode::fullPath.name).isEqualTo(fullPath)
+                .and(TNode::deleted.name).isEqualTo(null)
+        )
+        nodeDao.updateFirst(
+            query,
+            Update()
+                .set(TNode::lastModifiedDate.name, lastModifiedDate)
+                .set(TNode::lastAccessDate.name, lastModifiedDate),
+        )
     }
 
     private fun createRequest(

@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.common.metadata.routing
 
-import com.tencent.bkrepo.common.metadata.MetadataTestConfiguration
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
@@ -28,6 +27,7 @@ import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
+import java.time.Instant
 import java.time.LocalDateTime
 
 /**
@@ -182,6 +182,9 @@ class NodeDaoRoutingIntegrationTest @Autowired constructor(
         @Autowired
         lateinit var defaultTemplate: MongoTemplate
 
+        @Autowired
+        lateinit var mongoClient: com.mongodb.client.MongoClient
+
         var heavyTemplate: MongoTemplate? = null
         var registry: DefaultMongoRoutingRegistry? = null
 
@@ -201,6 +204,8 @@ class NodeDaoRoutingIntegrationTest @Autowired constructor(
                             )
                         ),
                         projectRouting = mapOf("projectA" to "heavy1"),
+                        dualWriteProjects = emptySet(),
+                        projectEffectiveAt = mapOf("projectA" to Instant.EPOCH),
                     )
                 )
             }
@@ -215,11 +220,9 @@ class NodeDaoRoutingIntegrationTest @Autowired constructor(
         }
 
         private fun buildHeavyTemplate(): MongoTemplate {
-            val defaultDbf = defaultTemplate.mongoDbFactory as SimpleMongoClientDatabaseFactory
-            val clientField = SimpleMongoClientDatabaseFactory::class.java.getDeclaredField("mongoClient")
-            clientField.isAccessible = true
-            val mongoClient = clientField.get(defaultDbf) as com.mongodb.client.MongoClient
-            return MongoTemplate(SimpleMongoClientDatabaseFactory(mongoClient, "metadata_routing_heavy"))
+            return MongoTemplate(
+                SimpleMongoClientDatabaseFactory(mongoClient, "metadata_routing_heavy"),
+            )
         }
     }
 }

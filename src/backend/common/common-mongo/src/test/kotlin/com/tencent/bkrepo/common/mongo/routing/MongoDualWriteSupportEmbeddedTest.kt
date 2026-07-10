@@ -5,7 +5,6 @@ import com.tencent.bkrepo.common.mongo.api.routing.WriteRoute
 import org.bson.Document
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -33,6 +32,9 @@ class MongoDualWriteSupportEmbeddedTest {
 
     @Autowired
     lateinit var defaultTemplate: MongoTemplate
+
+    @Autowired
+    lateinit var mongoClient: com.mongodb.client.MongoClient
 
     private lateinit var heavyTemplate: MongoTemplate
     private lateinit var compensationService: MongoDualWriteCompensationService
@@ -87,6 +89,7 @@ class MongoDualWriteSupportEmbeddedTest {
     @Test
     fun `executePrimaryWrite throws when zombie replica detected`() {
         val zombieRegistry: MongoRoutingRegistry = mock()
+        whenever(zombieRegistry.resolveRuleName("node_0")).thenReturn("node")
         whenever(zombieRegistry.isProjectRoutedOut("node", routedProject)).thenReturn(true)
         val route = WriteRoute(primary = defaultTemplate, isDefaultInstance = true, ruleName = "node",
             routingKey = routedProject)
@@ -134,6 +137,7 @@ class MongoDualWriteSupportEmbeddedTest {
             secondaryTarget = com.tencent.bkrepo.common.mongo.api.routing.RouteTarget(
                 ruleName = "node", instanceName = "heavy1"
             ),
+            syncSecondaryWrite = true,
             routingKey = routedProject,
             ruleName = "node",
         )
@@ -164,11 +168,10 @@ class MongoDualWriteSupportEmbeddedTest {
     // ── helpers ────────────────────────────────────────────────
 
     private fun buildHeavyTemplate(): MongoTemplate {
-        val factory = defaultTemplate.mongoDbFactory as SimpleMongoClientDatabaseFactory
-        val clientField = SimpleMongoClientDatabaseFactory::class.java.getDeclaredField("mongoClient")
-        clientField.isAccessible = true
-        val client = clientField.get(factory) as com.mongodb.client.MongoClient
-        return MongoTemplate(SimpleMongoClientDatabaseFactory(client, "dual_write_heavy_test"))
+        return MongoTemplate(
+            SimpleMongoClientDatabaseFactory(mongoClient, "dual_write_heavy_test"),
+            defaultTemplate.converter,
+        )
     }
 
     private fun heavyTemplateOnlyRegistry(): MongoRoutingRegistry {

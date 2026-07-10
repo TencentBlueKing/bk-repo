@@ -33,7 +33,6 @@ class NodeReconciliationHelperTest {
     @AfterEach
     fun tearDown() {
         mongoTemplate.dropCollection(collection)
-        mongoTemplate.dropCollection(NodeReconciliationHelper.RECONCILIATION_LOG_COLLECTION)
     }
 
     @Test
@@ -65,18 +64,6 @@ class NodeReconciliationHelperTest {
         assertEquals(1L, snap.count)
         assertEquals(1L, snap.deletedCount)
         assertTrue(NodeReconciliationHelper.checksumsEqual(snap, snap))
-    }
-
-    @Test
-    fun `persistLog writes reconciliation record`() {
-        NodeReconciliationHelper.persistLog(mongoTemplate, projectId, "TEST", true, "ok")
-        val logs = mongoTemplate.findAll(
-            Document::class.java,
-            NodeReconciliationHelper.RECONCILIATION_LOG_COLLECTION,
-        )
-        assertEquals(1, logs.size)
-        assertEquals(projectId, logs[0]["projectId"])
-        assertTrue(logs[0].getBoolean("passed"))
     }
 
     @Test

@@ -16,11 +16,13 @@ import io.micrometer.core.instrument.binder.mongodb.MongoMetricsConnectionPoolLi
 import org.springframework.beans.factory.DisposableBean
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory
+import org.springframework.data.mongodb.core.convert.MongoConverter
 import org.springframework.data.mongodb.core.query.Query
 
 /** M1 多实例路由注册表实现。 */
 class DefaultMongoRoutingRegistry(
     private val properties: MongoMultiInstanceProperties,
+    private val mongoConverter: MongoConverter? = null,
     private val poolMetricsListener: MongoMetricsConnectionPoolListener? = null,
 ) : MongoRoutingRegistry, DisposableBean {
 
@@ -76,7 +78,7 @@ class DefaultMongoRoutingRegistry(
 
     override fun resolveByCollection(ruleName: String, collectionName: String): RoutedTemplate? {
         val rule = properties.rules[ruleName] ?: return null
-        if (rule.routingState == RuleRoutingState.OFF) return null
+        if (effectiveRoutingState(ruleName, rule) == RuleRoutingState.OFF) return null
         val instanceName = rule.shardRouting[collectionName] ?: return null
         return toRoutedTemplate(ruleName, instanceName)
     }
@@ -127,7 +129,7 @@ class DefaultMongoRoutingRegistry(
 
     override fun getRoutedProjectIds(ruleName: String): Set<String> {
         val rule = properties.rules[ruleName] ?: return emptySet()
-        if (rule.routingState == RuleRoutingState.OFF) return emptySet()
+        if (effectiveRoutingState(ruleName, rule) == RuleRoutingState.OFF) return emptySet()
         return rule.projectRouting.keys.filterTo(mutableSetOf()) {
             isProjectRoutedOut(ruleName, it)
         }
@@ -148,10 +150,11 @@ class DefaultMongoRoutingRegistry(
             ?: return ReadRoute(defaultTemplate)
         val (_, ruleName) = entry
         val rule = properties.rules[ruleName] ?: return ReadRoute(defaultTemplate)
-        if (rule.routingState == RuleRoutingState.OFF) return ReadRoute(defaultTemplate)
+        if (effectiveRoutingState(ruleName, rule) == RuleRoutingState.OFF) return ReadRoute(defaultTemplate)
         return when (rule.routingType) {
             MongoMultiInstanceProperties.RoutingType.NONE -> {
-                if (rule.routingState == RuleRoutingState.DUAL_WRITE) return ReadRoute(defaultTemplate)
+                if (effectiveRoutingState(ruleName, rule) == RuleRoutingState.DUAL_WRITE)
+                    return ReadRoute(defaultTemplate)
                 val instanceName = rule.instances.keys.firstOrNull() ?: return ReadRoute(defaultTemplate)
                 val template = primaryTemplates[ruleName]?.get(instanceName) ?: return ReadRoute(defaultTemplate)
                 ReadRoute(
@@ -188,12 +191,10 @@ class DefaultMongoRoutingRegistry(
 
     /**
      * 解析写操作路由，感知双写方向。
-     * - NONE + dualWrite=true  → primary=Default，secondary=实例（Default 先写，同步）
-     * - NONE + dualWrite=false → primary=实例，secondary=null
-     * - PROJECT + dualWrite=true  → primary=实例，secondary=Default（实例先写）
-     * - PROJECT + dualWrite=false → primary=实例，secondary=null
-     *
-     * @param defaultTemplate 调用方自身的 Default MongoTemplate（回退模板）
+     * - NONE + DUAL_WRITE → primary=Default，secondary=实例（Default 先写）
+     * - NONE + ROUTED → primary=实例
+     * - PROJECT + isProjectInDualWrite → primary=Default，secondary=Heavy（Default 先写，§3.6.3）
+     * - PROJECT + isProjectOnHeavy → primary=Heavy
      */
     override fun resolveWriteRoute(
         collectionName: String,
@@ -204,14 +205,14 @@ class DefaultMongoRoutingRegistry(
             ?: return WriteRoute(defaultTemplate)
         val (_, ruleName) = entry
         val rule = properties.rules[ruleName] ?: return WriteRoute(defaultTemplate)
-        if (rule.routingState == RuleRoutingState.OFF) return WriteRoute(defaultTemplate)
+        if (effectiveRoutingState(ruleName, rule) == RuleRoutingState.OFF) return WriteRoute(defaultTemplate)
         return when (rule.routingType) {
             MongoMultiInstanceProperties.RoutingType.NONE -> {
                 val instanceName = rule.instances.keys.firstOrNull()
                     ?: return WriteRoute(defaultTemplate)
                 val instanceTmpl = primaryTemplates[ruleName]?.get(instanceName)
                     ?: return WriteRoute(defaultTemplate)
-                if (rule.routingState == RuleRoutingState.DUAL_WRITE) {
+                if (effectiveRoutingState(ruleName, rule) == RuleRoutingState.DUAL_WRITE) {
                     // 模式一双写期与模式二统一 Default-first（§1.3.1）
                     WriteRoute(
                         primary = defaultTemplate,
@@ -259,8 +260,10 @@ class DefaultMongoRoutingRegistry(
                     ?: return WriteRoute(defaultTemplate)
                 val dualWrite = if (hitProjectRouting) {
                     isProjectInDualWrite(ruleName, key!!)
+                } else if (ProjectRouteResolver.isProjectTypeRule(rule)) {
+                    false
                 } else {
-                    rule.routingState == RuleRoutingState.DUAL_WRITE
+                    effectiveRoutingState(ruleName, rule) == RuleRoutingState.DUAL_WRITE
                 }
                 if (dualWrite) {
                     // 模式二双写：Default 为主路径（先写），Heavy 为副路径（§3.6.3）。
@@ -291,20 +294,24 @@ class DefaultMongoRoutingRegistry(
 
     // ─── 路由状态查询 ───────────────────────────────────────────────
 
-    override fun isRoutingEnabled(ruleName: String): Boolean =
-        properties.rules[ruleName]?.routingState != RuleRoutingState.OFF
+    override fun isRoutingEnabled(ruleName: String): Boolean {
+        val rule = properties.rules[ruleName] ?: return false
+        return rule.routingState != RuleRoutingState.OFF
+    }
 
-    override fun isDualWrite(ruleName: String): Boolean =
-        properties.rules[ruleName]?.routingState == RuleRoutingState.DUAL_WRITE
+    override fun isDualWrite(ruleName: String): Boolean {
+        val rule = properties.rules[ruleName] ?: return false
+        if (ProjectRouteResolver.isProjectTypeRule(rule)) {
+            return rule.dualWriteProjects?.isNotEmpty() == true
+        }
+        return effectiveRoutingState(ruleName, rule) == RuleRoutingState.DUAL_WRITE
+    }
 
-    /**
-     * 判断指定项目在指定规则下当前是否处于双写阶段（§3.5.1）。
-     * 纯 Consul：`routing-state=DUAL_WRITE` 且 `projectId ∈ project-routing`；不读 DB phase。
-     */
+    /** 模式二：项目在双写迁移期（含 cutover 缓冲；缺配 fail-safe 双写）。 */
     override fun isProjectInDualWrite(ruleName: String, projectId: String): Boolean {
         val rule = properties.rules[ruleName] ?: return false
-        if (rule.routingState != RuleRoutingState.DUAL_WRITE) return false
-        return projectId in rule.projectRouting
+        if (!ProjectRouteResolver.isProjectTypeRule(rule)) return false
+        return ProjectRouteResolver.isProjectInDualWrite(rule, projectId)
     }
 
     /**
@@ -329,7 +336,7 @@ class DefaultMongoRoutingRegistry(
 
     override fun projectsByInstance(ruleName: String): Map<String, Set<String>> {
         val rule = properties.rules[ruleName] ?: return emptyMap()
-        if (rule.routingState == RuleRoutingState.OFF) return emptyMap()
+        if (effectiveRoutingState(ruleName, rule) == RuleRoutingState.OFF) return emptyMap()
         return rule.projectRouting.entries
             .filter { isProjectRoutedOut(ruleName, it.key) }
             .groupBy({ it.value }, { it.key })
@@ -338,13 +345,13 @@ class DefaultMongoRoutingRegistry(
 
     override fun shardRoutedCollections(ruleName: String): Set<String> {
         val rule = properties.rules[ruleName] ?: return emptySet()
-        if (rule.routingState == RuleRoutingState.OFF) return emptySet()
+        if (effectiveRoutingState(ruleName, rule) == RuleRoutingState.OFF) return emptySet()
         return rule.shardRouting.keys
     }
 
     override fun shardsByInstance(ruleName: String): Map<String, Set<String>> {
         val rule = properties.rules[ruleName] ?: return emptyMap()
-        if (rule.routingState == RuleRoutingState.OFF) return emptyMap()
+        if (effectiveRoutingState(ruleName, rule) == RuleRoutingState.OFF) return emptyMap()
         return rule.shardRouting.entries
             .groupBy({ it.value }, { it.key })
             .mapValues { it.value.toSet() }
@@ -376,15 +383,16 @@ class DefaultMongoRoutingRegistry(
         properties.rules[ruleName]?.projectRouting.orEmpty().keys
 
     /**
-     * 判断指定项目在给定规则下是否已迁出（ROUTED）。
-     * 纯 Consul：`routing-state=ROUTED` 且 `projectId ∈ project-routing`。
+     * 模式二：项目已单写 Heavy（project-effective-at 已到点）。
      */
     override fun isProjectRoutedOut(ruleName: String, projectId: String): Boolean {
         val rule = properties.rules[ruleName] ?: return false
-        if (rule.routingState == RuleRoutingState.OFF) return false
-        if (projectId !in rule.projectRouting) return false
-        if (isProjectInDualWrite(ruleName, projectId)) return false
-        return rule.routingState == RuleRoutingState.ROUTED
+        if (!ProjectRouteResolver.isProjectTypeRule(rule)) {
+            if (effectiveRoutingState(ruleName, rule) == RuleRoutingState.OFF) return false
+            if (projectId !in rule.projectRouting) return false
+            return effectiveRoutingState(ruleName, rule) == RuleRoutingState.ROUTED
+        }
+        return ProjectRouteResolver.isProjectOnHeavy(rule, projectId)
     }
 
     /**
@@ -402,11 +410,15 @@ class DefaultMongoRoutingRegistry(
 
     override fun validateOnStartup() {
         val heavyCount = properties.rules.values
-            .filter { it.routingState != RuleRoutingState.OFF && it.routingType == MongoMultiInstanceProperties.RoutingType.PROJECT }
+            .filter {
+                it.routingState != RuleRoutingState.OFF &&
+                    it.routingType == MongoMultiInstanceProperties.RoutingType.PROJECT
+            }
             .sumOf { it.instances.size }
         check(heavyCount <= MAX_HEAVY_INSTANCES) {
             "Heavy instance count $heavyCount exceeds limit $MAX_HEAVY_INSTANCES (§4.1)"
         }
+        validateCollectionPrefixExclusivity()
         validateNodeBlockNodeBindingConsistency()
         properties.rules.forEach { (ruleName, rule) ->
             val knownInstances = rule.instances.keys
@@ -434,6 +446,47 @@ class DefaultMongoRoutingRegistry(
                 check(instanceName in knownInstances) {
                     "Rule '$ruleName': shard '$collectionName' → instance '$instanceName' " +
                         "not found in instances $knownInstances"
+                }
+            }
+            validateProjectRuleConfig(ruleName, rule)
+        }
+    }
+
+    private fun validateProjectRuleConfig(ruleName: String, rule: MongoMultiInstanceProperties.RoutingRule) {
+        if (!ProjectRouteResolver.isProjectTypeRule(rule)) return
+        check(rule.routingState != RuleRoutingState.DUAL_WRITE) {
+            "Rule '$ruleName': PROJECT rules must not use routing-state=DUAL_WRITE; " +
+                "use dual-write-projects instead"
+        }
+        if (rule.routingState == RuleRoutingState.OFF) return
+        check(rule.dualWriteProjects != null) {
+            "Rule '$ruleName': dual-write-projects must be configured when routing-state is ROUTED"
+        }
+        rule.dualWriteProjects.orEmpty().forEach { projectId ->
+            check(projectId in rule.projectRouting) {
+                "Rule '$ruleName': dual-write-projects contains '$projectId' " +
+                    "but project-routing does not"
+            }
+        }
+        rule.projectEffectiveAt.keys.forEach { projectId ->
+            check(projectId in rule.projectRouting) {
+                "Rule '$ruleName': project-effective-at contains '$projectId' " +
+                    "but project-routing does not"
+            }
+        }
+    }
+
+    /** 任意两个 rule 的 collection-prefix 不得互为前缀。 */
+    private fun validateCollectionPrefixExclusivity() {
+        val prefixes = properties.rules.entries
+            .filter { it.value.collectionPrefix.isNotBlank() }
+            .map { it.key to it.value.collectionPrefix }
+        for (i in prefixes.indices) {
+            for (j in i + 1 until prefixes.size) {
+                val (nameA, prefixA) = prefixes[i]
+                val (nameB, prefixB) = prefixes[j]
+                check(!(prefixA.startsWith(prefixB) || prefixB.startsWith(prefixA))) {
+                    "collection-prefix conflict: rule '$nameA' ($prefixA) vs '$nameB' ($prefixB)"
                 }
             }
         }
@@ -464,7 +517,18 @@ class DefaultMongoRoutingRegistry(
                     "but ${nodeInstance?.let { "'$it'" } ?: "is missing"} in rule '$NODE_RULE'"
             }
         }
+        check(nodeRule.dualWriteProjects == blockNodeRule.dualWriteProjects) {
+            "G-39: dual-write-projects mismatch between '$NODE_RULE' and '$BLOCK_NODE_RULE'"
+        }
+        check(nodeRule.projectEffectiveAt == blockNodeRule.projectEffectiveAt) {
+            "G-39: project-effective-at mismatch between '$NODE_RULE' and '$BLOCK_NODE_RULE'"
+        }
     }
+
+    private fun effectiveRoutingState(
+        ruleName: String,
+        rule: MongoMultiInstanceProperties.RoutingRule,
+    ): RuleRoutingState = RoutingEffectiveState.effectiveRoutingState(rule, ruleName = ruleName)
 
     private fun toRoutedTemplate(ruleName: String, instanceName: String): RoutedTemplate {
         val primary = primaryTemplates[ruleName]?.get(instanceName)
@@ -476,12 +540,12 @@ class DefaultMongoRoutingRegistry(
         val (_, ruleName) = prefixIndex
             .firstOrNull { collectionName.startsWith(it.first) } ?: return null
         val rule = properties.rules[ruleName] ?: return null
-        if (rule.routingState == RuleRoutingState.OFF) return null
+        if (effectiveRoutingState(ruleName, rule) == RuleRoutingState.OFF) return null
 
         return when (rule.routingType) {
             MongoMultiInstanceProperties.RoutingType.NONE -> {
                 // 双写期 Default 是主路径，读写均走 Default（返回 null 由调用方使用其 Default）
-                if (rule.routingState == RuleRoutingState.DUAL_WRITE) return null
+                if (effectiveRoutingState(ruleName, rule) == RuleRoutingState.DUAL_WRITE) return null
                 val instanceName = rule.instances.keys.firstOrNull() ?: return null
                 primaryTemplates[ruleName]?.get(instanceName)
             }
@@ -509,7 +573,7 @@ class DefaultMongoRoutingRegistry(
         if (routingKey != null && isProjectRoutedOut(ruleName, routingKey)) {
             return false
         }
-        return rule.routingState != RuleRoutingState.DUAL_WRITE &&
+        return effectiveRoutingState(ruleName, rule) != RuleRoutingState.DUAL_WRITE &&
             (rule.instances[instanceName]?.fallbackBeforeCleanup == true)
     }
 
@@ -591,7 +655,8 @@ class DefaultMongoRoutingRegistry(
         properties.rules.entries
             .associate { (ruleName, rule) ->
                 ruleName to rule.instances.mapValues { (_, cfg) ->
-                    MongoTemplate(createFactory(cfg.uri, cfg))
+                    val factory = createFactory(cfg.uri, cfg)
+                    mongoConverter?.let { MongoTemplate(factory, it) } ?: MongoTemplate(factory)
                 }
             }
 

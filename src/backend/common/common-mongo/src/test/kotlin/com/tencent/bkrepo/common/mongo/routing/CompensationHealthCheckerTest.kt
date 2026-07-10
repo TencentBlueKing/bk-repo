@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.mongo.routing
 
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingCollections
 import org.bson.Document
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.AfterEach
@@ -34,7 +35,7 @@ class CompensationHealthCheckerTest {
     private lateinit var service: MongoDualWriteCompensationService
     private lateinit var checker: CompensationHealthChecker
 
-    private val compensationCollection = "mongo_dual_write_compensation"
+    private val compensationCollection = MongoRoutingCollections.COMPENSATION
     private val ruleName = "node"
 
     @BeforeEach

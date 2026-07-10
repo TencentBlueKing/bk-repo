@@ -7,7 +7,6 @@ import org.springframework.data.mongodb.core.query.Query
 interface MigrationScanStrategy {
     val ruleName: String
     val supportsCleanup: Boolean
-    val syncFailedCollection: String
 
     fun syncFailedOwnerId(task: MigrationSyncTask): String
 

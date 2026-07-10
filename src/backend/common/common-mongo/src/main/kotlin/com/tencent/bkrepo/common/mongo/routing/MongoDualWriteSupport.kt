@@ -18,6 +18,9 @@ object MongoDualWriteSupport {
 
   private val logger = LoggerFactory.getLogger(MongoDualWriteSupport::class.java)
 
+  @Volatile
+  var metrics: MongoRoutingMetrics? = null
+
   internal val executor = ThreadPoolExecutor(
     2, 16, 60L, TimeUnit.SECONDS,
     ArrayBlockingQueue(1000),
@@ -43,6 +46,7 @@ object MongoDualWriteSupport {
     return try {
       action(route.primary)
     } catch (exception: Exception) {
+      metrics?.recordDualWritePrimaryFail()
       val fallback = route.fallbackTemplate
       if (route.fallbackToDefault && fallback != null && fallback !== route.primary) {
         logger.warn(
@@ -66,6 +70,7 @@ object MongoDualWriteSupport {
     val runSecondary = {
       runCatching { action(secondary) }
         .onFailure {
+          metrics?.recordDualWriteSecondaryFail()
           logger.error("Dual-write secondary write failed [{}]: {}", collectionName, it.message)
           enqueue()
         }

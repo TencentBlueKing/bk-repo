@@ -78,48 +78,7 @@ class NodeCommonUtils(
         @Volatile
         private var instance: NodeCommonUtils? = null
 
-        // 向后兼容 fallback：测试可能直接设置这些字段（非生产路径）
-        @Volatile @JvmField var fallbackMongoTemplate: MongoTemplate? = null
-        @Volatile @JvmField var fallbackMigrateRepoStorageService: MigrateRepoStorageService? = null
-        @Volatile @JvmField var fallbackSeparationTaskService: SeparationTaskService? = null
-        @Volatile @JvmField var fallbackRoutingRegistry: MongoRoutingRegistry? = null
-        @Volatile @JvmField var fallbackNodeBatchQueryHelper: NodeBatchQueryHelper? = null
-
-        // 向后兼容 deprecated setter：旧测试代码直接 set 这些属性时存储到 fallback
-        @Deprecated("Use instance fields or fallback fields", ReplaceWith("fallbackMongoTemplate"))
-        @get:Deprecated("Use instance fields or fallback fields")
-        @set:Deprecated("Use instance fields or fallback fields")
-        var mongoTemplate: MongoTemplate
-            get() = instance?.mongoTemplate ?: fallbackMongoTemplate!!
-            set(value) { fallbackMongoTemplate = value }
-
-        @Deprecated("Use instance fields or fallback fields", ReplaceWith("fallbackMigrateRepoStorageService"))
-        @get:Deprecated("Use instance fields or fallback fields")
-        @set:Deprecated("Use instance fields or fallback fields")
-        var migrateRepoStorageService: MigrateRepoStorageService
-            get() = instance?.migrateRepoStorageService ?: fallbackMigrateRepoStorageService!!
-            set(value) { fallbackMigrateRepoStorageService = value }
-
-        @Deprecated("Use instance fields or fallback fields", ReplaceWith("fallbackSeparationTaskService"))
-        @get:Deprecated("Use instance fields or fallback fields")
-        @set:Deprecated("Use instance fields or fallback fields")
-        var separationTaskService: SeparationTaskService
-            get() = instance?.separationTaskService ?: fallbackSeparationTaskService!!
-            set(value) { fallbackSeparationTaskService = value }
-
-        @Deprecated("Use instance fields or fallback fields", ReplaceWith("fallbackRoutingRegistry"))
-        @get:Deprecated("Use instance fields or fallback fields")
-        @set:Deprecated("Use instance fields or fallback fields")
-        var routingRegistry: MongoRoutingRegistry?
-            get() = instance?.routingRegistry ?: fallbackRoutingRegistry
-            set(value) { fallbackRoutingRegistry = value }
-
-        @Deprecated("Use instance fields or fallback fields", ReplaceWith("fallbackNodeBatchQueryHelper"))
-        @get:Deprecated("Use instance fields or fallback fields")
-        @set:Deprecated("Use instance fields or fallback fields")
-        var nodeBatchQueryHelper: NodeBatchQueryHelper?
-            get() = instance?.nodeBatchQueryHelper ?: fallbackNodeBatchQueryHelper
-            set(value) { fallbackNodeBatchQueryHelper = value }
+        private val ctx get() = instance ?: error("NodeCommonUtils not initialized")
 
         private const val COLLECTION_NAME_PREFIX = "node_"
         private const val NODE_RULE = "node"
@@ -141,25 +100,28 @@ class NodeCommonUtils(
         )
 
         private fun templateFor(collectionName: String, query: Query? = null): MongoTemplate =
-            routingRegistry?.routeRead(collectionName, query) ?: mongoTemplate
+            ctx.routingRegistry?.routeRead(collectionName, query) ?: ctx.mongoTemplate
 
         private fun buildNodeScanGroups(
             baseQuery: Query,
             collectionNames: List<String>,
         ): List<RoutedScanGroup> {
-            val registry = routingRegistry
+            val registry = ctx.routingRegistry
             val explicitProjectId = baseQuery.queryObject[PROJECT_FIELD] as? String
             if (explicitProjectId != null && registry != null) {
-                val template = registry.routeRead(collectionNames.first(), explicitProjectId) ?: mongoTemplate
-                return listOf(RoutedScanGroup(template, collectionNames) { Query.of(it) })
+                val shardCollection = "$COLLECTION_NAME_PREFIX${
+                    HashShardingUtils.shardingSequenceFor(explicitProjectId, SHARDING_COUNT)
+                }"
+                val template = registry.routeRead(shardCollection, explicitProjectId) ?: ctx.mongoTemplate
+                return listOf(RoutedScanGroup(template, listOf(shardCollection)) { Query.of(it) })
             }
-            val groups = nodeBatchQueryHelper?.buildGroups(collectionNames)
+            val groups = ctx.nodeBatchQueryHelper?.buildGroups(collectionNames)
             if (groups != null) {
                 return groups.map { group ->
                     RoutedScanGroup(group.mongoTemplate, group.collectionNames, group.criteriaCustomizer)
                 }
             }
-            return listOf(RoutedScanGroup(mongoTemplate, collectionNames) { Query.of(it) })
+            return listOf(RoutedScanGroup(ctx.mongoTemplate, collectionNames) { Query.of(it) })
         }
 
         fun findNodes(query: Query, storageCredentialsKey: String?, checkMigrating: Boolean = true): List<Node> {
@@ -175,7 +137,7 @@ class NodeCommonUtils(
                         val repo = RepositoryCommonUtils.getRepositoryDetail(it.projectId, it.repoName)
                         val key = if (
                             checkMigrating &&
-                            migrateRepoStorageService.migrating(it.projectId, it.repoName)
+                            ctx.migrateRepoStorageService.migrating(it.projectId, it.repoName)
                         ) {
                             repo.oldCredentialsKey
                         } else {
@@ -208,7 +170,7 @@ class NodeCommonUtils(
                 return existsInRoutedGroups(query, collectionNames, storageCredentialsKey)
             }
             for (i in 0 until shardingCount) {
-                if (doExist(mongoTemplate, "${collection}_$i", query, storageCredentialsKey)) {
+                if (doExist(ctx.mongoTemplate, "${collection}_$i", query, storageCredentialsKey)) {
                     return true
                 }
             }
@@ -237,12 +199,12 @@ class NodeCommonUtils(
         }
 
         private fun separationNodeExist(query: Query, storageCredentialsKey: String?): Boolean {
-            val separationDates = separationTaskService.findDistinctSeparationDate()
+            val separationDates = ctx.separationTaskService.findDistinctSeparationDate()
             for (date in separationDates) {
                 val collection = SEPARATION_COLLECTION_NAME_PREFIX.plus(
                     MonthRangeShardingUtils.shardingSequenceFor(date, 1)
                 )
-                if (doExist(mongoTemplate, collection, query, storageCredentialsKey)) {
+                if (doExist(ctx.mongoTemplate, collection, query, storageCredentialsKey)) {
                     return true
                 }
             }
@@ -263,7 +225,7 @@ class NodeCommonUtils(
             query: Query,
             batchSize: Int = BATCH_SIZE,
             shardingCount: Int = SHARDING_COUNT,
-            mongoTemplate: MongoTemplate = Companion.mongoTemplate,
+            mongoTemplate: MongoTemplate? = null,
             consumer: Consumer<Map<String, Any?>>,
         ) {
             val futures = mutableListOf<Future<*>>()
@@ -284,13 +246,13 @@ class NodeCommonUtils(
             consumer: Consumer<Map<String, Any?>>,
         ) {
             val futures = mutableListOf<Future<*>>()
-            val separationDates = separationTaskService.findDistinctSeparationDate()
+            val separationDates = ctx.separationTaskService.findDistinctSeparationDate()
             for (date in separationDates) {
                 val collection = SEPARATION_COLLECTION_NAME_PREFIX.plus(
                     MonthRangeShardingUtils.shardingSequenceFor(date, 1)
                 )
                 futures.add(workPool.submit(TransmitterRunnableWrapper {
-                    findByCollection(query, batchSize, collection, mongoTemplate, consumer)
+                    findByCollection(query, batchSize, collection, ctx.mongoTemplate, consumer)
                 }))
 
             }
@@ -301,9 +263,10 @@ class NodeCommonUtils(
             query: Query,
             batchSize: Int,
             collection: String,
-            mongoTemplate: MongoTemplate = Companion.mongoTemplate,
+            mongoTemplate: MongoTemplate? = null,
             consumer: Consumer<Map<String, Any?>>,
         ) {
+            val template = mongoTemplate ?: ctx.mongoTemplate
             var querySize: Int
             var lastId = ObjectId(MIN_OBJECT_ID)
             do {
@@ -311,7 +274,7 @@ class NodeCommonUtils(
                     .addCriteria(Criteria.where(ID).gt(lastId))
                     .limit(batchSize)
                     .with(Sort.by(ID).ascending())
-                val data = mongoTemplate.find<Map<String, Any?>>(
+                val data = template.find<Map<String, Any?>>(
                     newQuery,
                     collection,
                 )
@@ -328,7 +291,7 @@ class NodeCommonUtils(
             query: Query,
             batchSize: Int,
             collection: String,
-            mongoTemplate: MongoTemplate = Companion.mongoTemplate,
+            mongoTemplate: MongoTemplate? = null,
             consumer: Consumer<Map<String, Any?>>,
         ): Mono<Unit> {
             return Mono.fromCallable {
@@ -350,6 +313,26 @@ class NodeCommonUtils(
         }
 
         @Suppress("UnstableApiUsage")
+        /**
+         * 跨实例检查 node 集合中是否存在满足 query 的记录。
+         * 通过 [buildNodeScanGroups] 自动路由到 Default 和 Heavy 实例，避免 fallback 为仅查 Default。
+         */
+        fun crossInstanceNodeExist(query: Query, shardingCount: Int = SHARDING_COUNT): Boolean {
+            val collectionNames = (0 until shardingCount).map { "${COLLECTION_NAME_PREFIX}$it" }
+            buildNodeScanGroups(query, collectionNames).forEach { group ->
+                group.collectionNames.forEach { collectionName ->
+                    if (group.mongoTemplate.exists(
+                            group.queryCustomizer(query).limit(1),
+                            collectionName,
+                        )
+                    ) {
+                        return true
+                    }
+                }
+            }
+            return false
+        }
+
         fun buildNodeBloomFilter(expectedInsertions: Long, fpp: Double): BloomFilter<CharSequence> {
             return buildBloomFilter(expectedInsertions, fpp) { bf ->
                 val query = Query(Criteria.where(FOLDER).isEqualTo(false))
@@ -386,11 +369,12 @@ class NodeCommonUtils(
             shardingCount: Int,
             expectedInsertions: Long,
             fpp: Double,
-            mongoTemplate: MongoTemplate = Companion.mongoTemplate,
+            mongoTemplate: MongoTemplate? = null,
         ): BloomFilter<CharSequence> {
+            val template = mongoTemplate ?: ctx.mongoTemplate
             return buildBloomFilter(expectedInsertions, fpp) { bf ->
                 val query = Query().apply { fields().include(SHA256) }
-                forEachByCollectionParallel(collectionName, query, BATCH_SIZE, shardingCount, mongoTemplate) {
+                forEachByCollectionParallel(collectionName, query, BATCH_SIZE, shardingCount, template) {
                     it[SHA256]?.toString()?.let { sha256 -> bf.put(sha256) }
                 }
             }
@@ -420,7 +404,7 @@ class NodeCommonUtils(
                 .distinctBy { it.projectId + it.repoName }
                 .any {
                     // node正在迁移时无法判断是否存在于存储[storageCredentialsKey]上
-                    if (migrateRepoStorageService.migrating(it.projectId, it.repoName)) {
+                    if (ctx.migrateRepoStorageService.migrating(it.projectId, it.repoName)) {
                         throw RepoMigratingException("repo[${it.projectId}/${it.repoName}] was migrating")
                     }
                     val repo = RepositoryCommonUtils.getRepositoryDetail(it.projectId, it.repoName)

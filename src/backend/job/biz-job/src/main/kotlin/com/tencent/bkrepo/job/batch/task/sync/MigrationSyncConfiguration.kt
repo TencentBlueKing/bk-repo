@@ -1,17 +1,22 @@
 package com.tencent.bkrepo.job.batch.task.sync
 
+import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.metadata.properties.BlockNodeProperties
 import com.tencent.bkrepo.common.metadata.util.BlockNodeCollectionNaming
 import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.common.mongo.dao.MigrationSyncStateDao
+import com.tencent.bkrepo.common.mongo.routing.MongoMultiInstanceConfiguration
 import com.tencent.bkrepo.common.mongo.routing.MongoMultiInstanceProperties
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.boot.autoconfigure.AutoConfiguration
+import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.redis.core.RedisTemplate
 
-@Configuration
+@AutoConfiguration
+@AutoConfigureAfter(MongoMultiInstanceConfiguration::class)
 @ConditionalOnBean(MongoRoutingRegistry::class)
 class MigrationSyncConfiguration {
 
@@ -20,7 +25,6 @@ class MigrationSyncConfiguration {
         ProjectShardMigrationScanStrategy(
             ruleName = NODE_RULE,
             shardCollectionsProvider = { (0 until NODE_SHARD_COUNT).map { "$NODE_COLLECTION_PREFIX$it" } },
-            syncFailedCollection = NODE_SYNC_FAILED_COLLECTION,
         )
 
     @Bean
@@ -32,7 +36,6 @@ class MigrationSyncConfiguration {
             val count = BlockNodeCollectionNaming.shardCount(blockNodeProperties)
             (0 until count).map { BlockNodeCollectionNaming.shardCollection(it, blockNodeProperties) }
         },
-        syncFailedCollection = BLOCK_NODE_SYNC_FAILED_COLLECTION,
     )
 
     @Bean
@@ -49,7 +52,7 @@ class MigrationSyncConfiguration {
     fun migrationSyncEngine(
         @Qualifier("mongoTemplate") defaultMongoTemplate: MongoTemplate,
         registry: MongoRoutingRegistry,
-        syncStateDao: MigrationSyncStateDao?,
+        syncStateDao: MigrationSyncStateDao,
         strategies: List<MigrationScanStrategy>,
     ): MigrationSyncEngine = MigrationSyncEngine(
         defaultMongoTemplate = defaultMongoTemplate,
@@ -58,12 +61,21 @@ class MigrationSyncConfiguration {
         strategies = strategies.associateBy { it.ruleName },
     )
 
+    @Bean
+    fun migrationSyncJob(
+        redisTemplate: RedisTemplate<String, String>,
+        lockOperation: LockOperation,
+        engine: MigrationSyncEngine,
+    ): MigrationSyncJob = MigrationSyncJob(
+        redisTemplate = redisTemplate,
+        lockOperation = lockOperation,
+        engine = engine,
+    )
+
     companion object {
         private const val NODE_RULE = "node"
         private const val BLOCK_NODE_RULE = "block-node"
         private const val NODE_COLLECTION_PREFIX = "node_"
         private const val NODE_SHARD_COUNT = 256
-        private const val NODE_SYNC_FAILED_COLLECTION = "node_project_sync_failed"
-        private const val BLOCK_NODE_SYNC_FAILED_COLLECTION = "block_node_project_sync_failed"
     }
 }

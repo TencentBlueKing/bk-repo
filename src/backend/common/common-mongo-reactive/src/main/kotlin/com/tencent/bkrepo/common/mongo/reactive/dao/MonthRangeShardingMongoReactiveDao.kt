@@ -39,24 +39,30 @@ abstract class MonthRangeShardingMongoReactiveDao<E> : RangeShardingMongoReactiv
         return super.save(entity)
     }
 
-    private fun getIndexCacheKey(collectionName: String, indexDefinition: IndexDefinition): String {
-        return collectionName + indexDefinition.indexKeys.keys
+    private fun getIndexCacheKey(
+        template: org.springframework.data.mongodb.core.ReactiveMongoTemplate,
+        collectionName: String,
+        indexDefinition: IndexDefinition,
+    ): String {
+        return "${System.identityHashCode(template)}:$collectionName:${indexDefinition.indexKeys.keys}"
     }
 
     private fun ensureIndex(entity: E) {
         val collectionName = determineCollectionName(entity)
         val indexDefinitions = MongoIndexResolver.resolveIndexFor(classType)
         val templates = writeReactiveTemplates(collectionName, entity)
-        indexDefinitions.forEach {
-            val indexCacheKey = getIndexCacheKey(collectionName, it)
-            if (indexCache.getIfPresent(indexCacheKey) != true) {
-                templates.forEach { template ->
-                    template.indexOps(collectionName).ensureIndex(it)
-                        .subscribe { indexName ->
-                            logger.info("$collectionName create Index: $indexName")
-                        }
+        indexDefinitions.forEach { indexDefinition ->
+            templates.forEach { template ->
+                val indexCacheKey = getIndexCacheKey(template, collectionName, indexDefinition)
+                if (indexCache.getIfPresent(indexCacheKey) == true) {
+                    return@forEach
                 }
-                indexCache.put(indexCacheKey, true)
+                template.indexOps(collectionName).ensureIndex(indexDefinition)
+                    .doOnSuccess { indexName ->
+                        indexCache.put(indexCacheKey, true)
+                        logger.info("$collectionName create Index: $indexName")
+                    }
+                    .subscribe()
             }
         }
     }

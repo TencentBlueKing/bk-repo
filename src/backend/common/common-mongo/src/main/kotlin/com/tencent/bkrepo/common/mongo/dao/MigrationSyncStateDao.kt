@@ -13,7 +13,14 @@ import java.time.LocalDateTime
 @Repository
 class MigrationSyncStateDao : SimpleMongoDao<TMigrationSyncState>() {
 
+    fun findByRuleAndProject(ruleName: String, projectId: String): TMigrationSyncState? =
+        findById(resolveId(ruleName, projectId))
+
+    /** 模式一 offload：id 与 projectId 相同；模式二：id = ruleName:projectId */
     fun findByProjectId(projectId: String): TMigrationSyncState? = findById(projectId)
+
+    fun findAllByProjectId(projectId: String): List<TMigrationSyncState> =
+        find(Query(TMigrationSyncState::projectId.isEqualTo(projectId)))
 
     fun findByRuleName(ruleName: String): List<TMigrationSyncState> =
         find(Query(TMigrationSyncState::ruleName.isEqualTo(ruleName)))
@@ -22,7 +29,7 @@ class MigrationSyncStateDao : SimpleMongoDao<TMigrationSyncState>() {
         find(Query(Criteria.where(TMigrationSyncState::phase.name).`in`(phases)))
 
     fun upsert(state: TMigrationSyncState) {
-        val id = state.id ?: state.projectId
+        val id = state.id ?: resolveId(state.ruleName, state.projectId)
         val query = Query(Criteria.where(ID).isEqualTo(id))
         val update = Update()
             .set(TMigrationSyncState::projectId.name, state.projectId)
@@ -38,16 +45,21 @@ class MigrationSyncStateDao : SimpleMongoDao<TMigrationSyncState>() {
         upsert(query, update)
     }
 
-    fun updatePhase(projectId: String, phase: MigrationPhase, error: String? = null) {
+    fun updatePhase(ruleName: String, projectId: String, phase: MigrationPhase, error: String? = null) {
         if (projectId.isBlank()) {
             return
         }
         updateFirst(
-            Query(Criteria.where(ID).isEqualTo(projectId)),
+            Query(Criteria.where(ID).isEqualTo(resolveId(ruleName, projectId))),
             Update()
                 .set(TMigrationSyncState::phase.name, phase)
                 .set(TMigrationSyncState::lastError.name, error)
                 .set(TMigrationSyncState::updatedAt.name, LocalDateTime.now()),
         )
+    }
+
+    companion object {
+        fun resolveId(ruleName: String, projectId: String): String =
+            if (projectId == ruleName) projectId else "$ruleName:$projectId"
     }
 }
