@@ -1,7 +1,5 @@
-// ponytail: 仅 blur 判定协议框；无协议框时持续轮询至绝对超时；focus 后 5s 宽限
-const DIALOG_IDLE_MS = 30000
+// ponytail: 客户端端口可达则持续等 ack；仅端口不可达 quickMs 超时或用户回焦放弃时降级
 const DIALOG_GRACE_MS = 5000
-const ABSOLUTE_MAX_MS = 60000
 const DIALOG_POLL_MS = 3000
 
 let activeWaitToken = null
@@ -61,12 +59,12 @@ async function fetchLocal (url) {
     }
 }
 
-async function pollAck (ackUrl) {
+async function probeClient (ackUrl) {
     try {
         const response = await fetchLocal(ackUrl)
-        return response.ok
+        return { reachable: true, acked: response.ok }
     } catch (e) {
-        return false
+        return { reachable: false, acked: false }
     }
 }
 
@@ -87,7 +85,9 @@ function buildDownloadContext (context) {
  */
 export function buildSchemeDownloadUrl (row, context, rid) {
     const { subPath, origin, projectId, repoName } = buildDownloadContext(context)
-    const genericUrl = `${origin}${subPath}web/generic/${projectId}/${repoName}${row.fullPath}`
+    const transPath = encodeURIComponent(row.fullPath)
+    const genericUrl = `${origin}${subPath}web/generic/${projectId}/${repoName}/${transPath}`
+        + `?download=true&x-bkrepo-project-id=${projectId}`
     const params = new URLSearchParams({
         action: 'download',
         url: genericUrl,
@@ -134,10 +134,46 @@ export function launchScheme (schemeUrl) {
     getTopWindow().location.href = schemeUrl
 }
 
+function bindDialogListeners (state) {
+    const markDialogSeen = () => {
+        state.dialogSeen = true
+    }
+    const onBlur = () => markDialogSeen()
+    const onFocus = () => {
+        if (state.dialogSeen) {
+            state.userDecided = true
+            state.userDecidedAt = Date.now()
+        }
+    }
+    const onVisibilityChange = () => {
+        if (document.hidden) {
+            markDialogSeen()
+        }
+    }
+    const wins = [window]
+    const topWin = getTopWindow()
+    if (topWin !== window) {
+        wins.push(topWin)
+    }
+    for (const win of wins) {
+        win.addEventListener('blur', onBlur)
+        win.addEventListener('focus', onFocus)
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+        for (const win of wins) {
+            win.removeEventListener('blur', onBlur)
+            win.removeEventListener('focus', onFocus)
+        }
+        document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+}
+
 /**
- * 无协议框 → 持续高频轮询至绝对超时
- * 有协议框未操作 → 低频探测，30s 后降级
- * 用户 focus（打开/取消）→ 5s 宽限，无 ack 降级
+ * ack 成功 → 客户端已接管
+ * 客户端端口不可达且超过 quickMs → 降级（未安装）
+ * 用户回焦后 grace 内无 ack → 降级（放弃/取消）
+ * 客户端端口可达、用户仍在操作 → 持续等待，不降级
  *
  * @param {string} rid
  * @param {{ port: number, timeout: number, interval: number, waitToken: object }} options
@@ -151,69 +187,57 @@ export async function waitClientAck (rid, options) {
     const ackUrl = `http://127.0.0.1:${port}/deeplink/ack?rid=${encodeURIComponent(rid)}`
 
     const startedAt = Date.now()
-    const absoluteUntil = startedAt + ABSOLUTE_MAX_MS
     const quickUntil = startedAt + quickMs
 
-    let dialogSeen = false
-    let dialogSeenAt = 0
-    let userDecided = false
-    let userDecidedAt = 0
-    let lastDialogPollAt = 0
-
-    const topWin = getTopWindow()
-    const onBlur = () => {
-        if (!dialogSeen) {
-            dialogSeen = true
-            dialogSeenAt = Date.now()
-        }
+    const state = {
+        dialogSeen: false,
+        userDecided: false,
+        userDecidedAt: 0
     }
-    const onFocus = () => {
-        if (dialogSeen) {
-            userDecided = true
-            userDecidedAt = Date.now()
-        }
-    }
-    topWin.addEventListener('blur', onBlur)
-    topWin.addEventListener('focus', onFocus)
+    let clientReachable = false
+    let lastSlowPollAt = 0
+    const unbindDialogListeners = bindDialogListeners(state)
 
     try {
-        while (Date.now() < absoluteUntil) {
+        while (true) {
             if (waitToken && activeWaitToken !== waitToken) {
                 return false
             }
 
             const now = Date.now()
+            const { userDecided, userDecidedAt } = state
 
             if (userDecided && now - userDecidedAt >= DIALOG_GRACE_MS) {
-                return false
-            }
-            if (dialogSeen && !userDecided && now - dialogSeenAt >= DIALOG_IDLE_MS) {
                 return false
             }
 
             const inQuickPhase = now < quickUntil
             const inGracePhase = userDecided && now - userDecidedAt < DIALOG_GRACE_MS
-            const noDialog = !dialogSeen
-            const dialogWaiting = dialogSeen && !userDecided
-            const shouldPoll = inQuickPhase || inGracePhase || noDialog
-                || (dialogWaiting && (!lastDialogPollAt || now - lastDialogPollAt >= DIALOG_POLL_MS))
+            const slowWait = clientReachable && !userDecided
+            const shouldPoll = inQuickPhase || inGracePhase || !clientReachable
+                || (slowWait && (!lastSlowPollAt || now - lastSlowPollAt >= DIALOG_POLL_MS))
 
             if (shouldPoll) {
-                if (dialogWaiting) {
-                    lastDialogPollAt = now
+                if (slowWait) {
+                    lastSlowPollAt = now
                 }
-                if (await pollAck(ackUrl)) {
+                const { reachable, acked } = await probeClient(ackUrl)
+                if (reachable) {
+                    clientReachable = true
+                }
+                if (acked) {
                     return true
+                }
+                if (!clientReachable && now - startedAt >= quickMs) {
+                    return false
                 }
             }
 
-            const fastPoll = inQuickPhase || inGracePhase || noDialog
-            await sleep(fastPoll ? interval : 200)
+            const fastPoll = inQuickPhase || inGracePhase || !clientReachable
+            await sleep(fastPoll ? interval : DIALOG_POLL_MS)
         }
-        return false
     } finally {
-        topWin.removeEventListener('blur', onBlur)
-        topWin.removeEventListener('focus', onFocus)
+        unbindDialogListeners()
     }
 }
 

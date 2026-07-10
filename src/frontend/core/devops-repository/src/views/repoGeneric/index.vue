@@ -1130,68 +1130,83 @@
                     fullPath
                 })
             },
-            downloadFromWeb (row) {
+            buildDownloadFetchUrl (row) {
                 const transPath = encodeURIComponent(row.fullPath)
-                const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
-                fetch(window.BK_SUBPATH + 'web' + url, {
+                return `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
+            },
+            openDownloadUrl (url) {
+                window.open(
+                    window.BK_SUBPATH + 'web' + url + `&x-bkrepo-project-id=${this.projectId}`,
+                    '_self'
+                )
+            },
+            probeDownload (row) {
+                const url = this.buildDownloadFetchUrl(row)
+                return fetch(window.BK_SUBPATH + 'web' + url, {
                     credentials: 'include',
-                    headers: { Range: 'bytes=0-1' } // 限制范围
-                }).then(async response => {
-                    if (response.ok) {
-                        window.open(
-                            window.BK_SUBPATH + 'web' + url + `&x-bkrepo-project-id=${this.projectId}`,
-                            '_self'
-                        )
-                    } else if (response.status === 451) {
-                        const resJson = await response.json()
-                        this.$refs.loading.isShow = true
-                        this.$refs.loading.complete = false
-                        this.$refs.loading.title = ''
-                        this.$refs.loading.backUp = true
-                        this.$refs.loading.cancelMessage = this.$t('downloadLater')
-                        this.$refs.loading.subMessage = resJson.message
-                        this.$refs.loading.message = this.$t('backUpMessage', { 0: row.name })
-                        this.timerDownload(url, row.fullPath, row.name)
-                    } else if (response.status === 403) {
-                        this.getPermissionUrl({
-                            body: {
-                                projectId: this.projectId,
-                                action: 'READ',
-                                resourceType: 'NODE',
-                                uid: this.userInfo.name,
-                                repoName: this.repoName,
-                                path: row.fullPath
-                            }
-                        }).then(res => {
-                            if (res !== '') {
-                                this.showIamDenyDialog = true
-                                this.showData = {
-                                    projectId: this.projectId,
-                                    repoName: this.repoName,
-                                    path: row.fullPath,
-                                    action: 'READ',
-                                    url: res
-                                }
-                            } else {
-                                const message = this.$t('fileDownloadError', [this.$route.params.projectId])
-                                this.$bkMessage({
-                                    theme: 'error',
-                                    message
-                                })
-                            }
-                        })
-                    } else if (response.status === 429) {
-                        const resJson = await response.json()
-                        this.$bkMessage({
-                            theme: 'error',
-                            message: resJson.message
-                        })
+                    headers: { Range: 'bytes=0-1' }
+                }).then(response => ({ response, url }))
+            },
+            async resolveDownloadProbe (response, row, url) {
+                if (response.ok) {
+                    return true
+                }
+                if (response.status === 451) {
+                    const resJson = await response.json()
+                    this.$refs.loading.isShow = true
+                    this.$refs.loading.complete = false
+                    this.$refs.loading.title = ''
+                    this.$refs.loading.backUp = true
+                    this.$refs.loading.cancelMessage = this.$t('downloadLater')
+                    this.$refs.loading.subMessage = resJson.message
+                    this.$refs.loading.message = this.$t('backUpMessage', { 0: row.name })
+                    this.timerDownload(url, row.fullPath, row.name)
+                } else if (response.status === 403) {
+                    const res = await this.getPermissionUrl({
+                        body: {
+                            projectId: this.projectId,
+                            action: 'READ',
+                            resourceType: 'NODE',
+                            uid: this.userInfo.name,
+                            repoName: this.repoName,
+                            path: row.fullPath
+                        }
+                    })
+                    if (res !== '') {
+                        this.showIamDenyDialog = true
+                        this.showData = {
+                            projectId: this.projectId,
+                            repoName: this.repoName,
+                            path: row.fullPath,
+                            action: 'READ',
+                            url: res
+                        }
                     } else {
-                        const message = this.$t('fileError')
+                        const message = this.$t('fileDownloadError', [this.$route.params.projectId])
                         this.$bkMessage({
                             theme: 'error',
                             message
                         })
+                    }
+                } else if (response.status === 429) {
+                    const resJson = await response.json()
+                    this.$bkMessage({
+                        theme: 'error',
+                        message: resJson.message
+                    })
+                } else {
+                    const message = this.$t('fileError')
+                    this.$bkMessage({
+                        theme: 'error',
+                        message
+                    })
+                }
+                return false
+            },
+            downloadFromWeb (row) {
+                this.probeDownload(row).then(async ({ response, url }) => {
+                    if (await this.resolveDownloadProbe(response, row, url)) {
+                        this.openDownloadUrl(url)
                     }
                 })
             },
@@ -1203,9 +1218,13 @@
                 }
                 this.clientDownloading = true
                 try {
+                    const { response, url } = await this.probeDownload(row)
+                    if (!(await this.resolveDownloadProbe(response, row, url))) {
+                        return
+                    }
                     const success = await tryClientDownload(row, this.clientDownloadContext())
                     if (!success) {
-                        this.downloadFromWeb(row)
+                        this.openDownloadUrl(url)
                     }
                 } catch (e) {
                     this.downloadFromWeb(row)
