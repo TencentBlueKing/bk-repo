@@ -144,6 +144,7 @@ class RDriveNodeDao : DriveHashShardingMongoReactiveDao<TDriveNode>() {
             .set(TDriveNode::metadata.name, updatedNode.metadata)
             .set(TDriveNode::lastModifiedBy.name, updatedNode.lastModifiedBy)
             .set(TDriveNode::lastModifiedDate.name, updatedNode.lastModifiedDate)
+            .set(TDriveNode::lastModifiedClientId.name, updatedNode.lastModifiedClientId)
         return updateFirst(
             Query(criteria),
             update
