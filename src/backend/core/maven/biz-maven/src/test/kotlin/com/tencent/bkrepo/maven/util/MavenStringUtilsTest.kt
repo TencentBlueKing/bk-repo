@@ -2,6 +2,7 @@ package com.tencent.bkrepo.maven.util
 
 import com.tencent.bkrepo.maven.pojo.MavenVersion
 import com.tencent.bkrepo.maven.util.MavenStringUtils.parseMavenFileName
+import com.tencent.bkrepo.maven.util.MavenStringUtils.resolverName
 import com.tencent.bkrepo.maven.util.MavenStringUtils.setVersion
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -147,6 +148,42 @@ internal class MavenStringUtilsTest {
             { Assertions.assertEquals("aar", mavenVersion.packaging) }
         )
         println("$mavenVersion")
+    }
+
+    @Test
+    fun resolverNameWithPlaceholderVersion() {
+        // MavenLocalRepository.getUniquePath:634
+        // name.resolverName(mavenArtifactInfo.artifactId, mavenArtifactInfo.versionId)
+        val name = "uedm-parent-\${revision}-SNAPSHOT.pom"
+        val artifactId = "uedm-parent"
+        val versionId = "\${revision}-SNAPSHOT"
+        val mavenVersion = name.resolverName(artifactId, versionId)
+        assertAll(
+            { Assertions.assertEquals(artifactId, mavenVersion.artifactId) },
+            { Assertions.assertEquals(versionId, mavenVersion.version) },
+            { Assertions.assertEquals(null, mavenVersion.timestamp) },
+            { Assertions.assertEquals(null, mavenVersion.buildNo) },
+            { Assertions.assertEquals(null, mavenVersion.classifier) },
+            { Assertions.assertEquals("pom", mavenVersion.packaging) }
+        )
+    }
+
+    @Test
+    fun resolverNameWithPlaceholderArtifactId() {
+        val artifactId = "my-\${property}"
+        val jarName = "my-\${property}-1.0.pom"
+        val mavenVersion = MavenVersion(
+            artifactId = artifactId,
+            version = "1.0",
+            packaging = "pom"
+        )
+        mavenVersion.setVersion(jarName)
+        assertAll(
+            { Assertions.assertEquals(artifactId, mavenVersion.artifactId) },
+            { Assertions.assertEquals("1.0", mavenVersion.version) },
+            { Assertions.assertEquals(null, mavenVersion.classifier) },
+            { Assertions.assertEquals("pom", mavenVersion.packaging) }
+        )
     }
 
     @Test
