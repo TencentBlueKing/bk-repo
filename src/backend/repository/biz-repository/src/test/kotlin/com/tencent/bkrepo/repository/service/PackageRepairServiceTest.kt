@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
 import com.tencent.bkrepo.common.metadata.model.TPackage
@@ -53,6 +54,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.context.annotation.Import
@@ -245,17 +247,18 @@ class PackageRepairServiceTest @Autowired constructor(
     }
 
     @Test
-    @DisplayName("指定不存在的 packageKey 时返回空结果")
-    fun `should return empty result when packageKey not found`() {
+    @DisplayName("指定不存在的 packageKey 时抛出 PackageNotFoundException")
+    fun `should throw PackageNotFoundException when specified packageKey not found`() {
+        // 仓库内存在其他包，但 admin 指定了一个不存在的 key —— 这是一种明确的输入错误，
+        // 实现选择抛出 PackageNotFoundException（见 PackageRepairServiceImpl.repairPackageMetadata），
+        // 让调用方感知到 key 拼错/不存在，而不是静默返回 total=0 造成误解。
         packageService.createPackageVersion(buildCreateRequest(version = "1.0.0"))
 
-        val result = packageRepairService.repairPackageMetadata(
-            UT_PROJECT_ID, UT_REPO_NAME, "non-exist"
-        )
-        Assertions.assertEquals(0, result.total)
-        Assertions.assertEquals(0, result.updated)
-        Assertions.assertEquals(0, result.skipped)
-        Assertions.assertEquals(0, result.failed)
+        assertThrows<PackageNotFoundException> {
+            packageRepairService.repairPackageMetadata(
+                UT_PROJECT_ID, UT_REPO_NAME, "non-exist"
+            )
+        }
     }
 
     @Test
