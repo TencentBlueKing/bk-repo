@@ -46,5 +46,7 @@ data class UserRepoUpdateRequest(
     @get:Schema(title = "仓库配额", required = false)
     val quota: Long? = null,
     @get:Schema(title = "是否展示", required = true)
-    val display: Boolean = true
+    val display: Boolean = true,
+    @get:Schema(title = "仓库展示名称", required = false)
+    val displayName: String? = null,
 )

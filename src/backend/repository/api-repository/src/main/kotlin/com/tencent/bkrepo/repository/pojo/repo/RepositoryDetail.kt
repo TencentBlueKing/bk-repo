@@ -74,6 +74,8 @@ data class RepositoryDetail(
     val quota: Long?,
     @get:Schema(title = "仓库已使用容量")
     val used: Long?,
+    @get:Schema(title = "仓库展示名称")
+    val displayName: String? = null,
     @get:Schema(title = "仓库可见性类型")
     val visibility: RepositoryVisibility? = null,
     @get:Schema(title = "仓库所有者，PERSONAL 类型仓库有效")
