@@ -98,12 +98,13 @@ class PackageRepairServiceTest @Autowired constructor(
         // 此时 latest = 1.0.2
 
         // 手动删除 1.0.2 版本记录但不动 TPackage
-        val toDelete = packageService.findVersionByName(
-            UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "1.0.2"
-        )!!
+        // 注意：packageService.findVersionByName 返回的是 pojo PackageVersion，仅暴露 name 等展示字段，
+        // 没有 mongo _id，因此这里通过 packageId + name 组合唯一定位 TPackageVersion 后删除。
+        val ownerPkg = packageDao.findByKey(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY)!!
         mongoTemplate.remove(
             Query.query(
-                org.springframework.data.mongodb.core.query.Criteria.where("_id").`is`(toDelete.id)
+                org.springframework.data.mongodb.core.query.Criteria.where("packageId").`is`(ownerPkg.id)
+                    .and("name").`is`("1.0.2")
             ),
             TPackageVersion::class.java
         )
