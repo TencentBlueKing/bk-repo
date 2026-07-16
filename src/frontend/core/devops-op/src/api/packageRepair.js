@@ -1,8 +1,8 @@
 import request from '@/utils/request'
 
 const PREFIX_PACKAGE_REPAIR = '/repository/api/package/metadata/repair'
-const PREFIX_HISTORY_VERSION_REPAIR = '/repository/api/version/history/repair'
-const PREFIX_VERSION_RECOUNT = '/repository/api/package/version/recount'
+const PREFIX_HISTORY_VERSION_REPAIR = '/repository/version/history/repair'
+const PREFIX_VERSION_RECOUNT = '/repository/package/version/recount'
 
 /**
  * 触发 Package 元数据修复（latest、historyVersion）

@@ -149,7 +149,7 @@
 
         <el-descriptions :column="1" border style="margin-bottom: 15px;">
           <el-descriptions-item label="接口">
-            <code>GET /repository/api/version/history/repair</code>
+<code>GET /repository/version/history/repair</code>
           </el-descriptions-item>
           <el-descriptions-item label="执行模式">
             <el-tag size="mini" type="warning">异步（fire-and-forget）</el-tag>
@@ -188,7 +188,7 @@
 
         <el-descriptions :column="1" border style="margin-bottom: 15px;">
           <el-descriptions-item label="接口">
-            <code>PUT /repository/api/package/version/recount</code>
+<code>PUT /repository/package/version/recount</code>
           </el-descriptions-item>
           <el-descriptions-item label="执行模式">
             <el-tag size="mini" type="warning">异步（fire-and-forget）</el-tag>

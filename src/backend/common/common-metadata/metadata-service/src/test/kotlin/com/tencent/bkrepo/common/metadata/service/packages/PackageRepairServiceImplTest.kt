@@ -41,15 +41,13 @@ class PackageRepairServiceImplTest {
 
     private lateinit var packageDao: PackageDao
     private lateinit var packageVersionDao: PackageVersionDao
-    private lateinit var packageService: PackageService
     private lateinit var service: PackageRepairServiceImpl
 
     @BeforeEach
     fun setUp() {
         packageDao = mock()
         packageVersionDao = mock()
-        packageService = mock()
-        service = PackageRepairServiceImpl(packageService, packageDao, packageVersionDao)
+        service = PackageRepairServiceImpl(packageDao, packageVersionDao)
         // 默认 updateFirst 返回“更新成功”的结果，个别用例可自行覆盖
         whenever(packageDao.updateFirst(any(), any())).thenReturn(updateResult(modified = 1))
     }
@@ -59,8 +57,8 @@ class PackageRepairServiceImplTest {
     fun `should skip when metadata already consistent`() {
         val pkg = newPackage(id = "pkg-1", latest = "1.0.0", historyVersion = setOf("1.0.0", "0.9.0"))
         whenever(packageDao.findByKey(PROJECT, REPO, PKG_KEY)).thenReturn(pkg)
-        whenever(packageVersionDao.listByPackageId("pkg-1")).thenReturn(
-            listOf(newVersion("0.9.0", 1), newVersion("1.0.0", 2))
+        whenever(packageVersionDao.listVersionNamesByPackageId("pkg-1")).thenReturn(
+            listOf("0.9.0", "1.0.0")
         )
         whenever(packageVersionDao.findLatest("pkg-1")).thenReturn(newVersion("1.0.0", 2))
 
@@ -84,8 +82,8 @@ class PackageRepairServiceImplTest {
             historyVersion = setOf("0.9.0", "1.0.0", "999.0.0")
         )
         whenever(packageDao.findByKey(PROJECT, REPO, PKG_KEY)).thenReturn(pkg)
-        whenever(packageVersionDao.listByPackageId("pkg-2")).thenReturn(
-            listOf(newVersion("0.9.0", 1), newVersion("1.0.0", 2))
+        whenever(packageVersionDao.listVersionNamesByPackageId("pkg-2")).thenReturn(
+            listOf("0.9.0", "1.0.0")
         )
         whenever(packageVersionDao.findLatest("pkg-2")).thenReturn(newVersion("1.0.0", 2))
 
@@ -121,7 +119,7 @@ class PackageRepairServiceImplTest {
     fun `should set latest null and history empty when no versions`() {
         val pkg = newPackage(id = "pkg-3", latest = "1.0.0", historyVersion = setOf("1.0.0"))
         whenever(packageDao.findByKey(PROJECT, REPO, PKG_KEY)).thenReturn(pkg)
-        whenever(packageVersionDao.listByPackageId("pkg-3")).thenReturn(emptyList())
+        whenever(packageVersionDao.listVersionNamesByPackageId("pkg-3")).thenReturn(emptyList())
         whenever(packageVersionDao.findLatest("pkg-3")).thenReturn(null)
 
         val result = service.repairPackageMetadata(PROJECT, REPO, PKG_KEY)
@@ -152,15 +150,15 @@ class PackageRepairServiceImplTest {
             .whenever(packageDao).find(any<Query>())
 
         // pkg-a 需要更新
-        whenever(packageVersionDao.listByPackageId("id-a")).thenReturn(listOf(newVersion("1.0.0", 1)))
+        whenever(packageVersionDao.listVersionNamesByPackageId("id-a")).thenReturn(listOf("1.0.0"))
         whenever(packageVersionDao.findLatest("id-a")).thenReturn(newVersion("1.0.0", 1))
 
         // pkg-b 已一致
-        whenever(packageVersionDao.listByPackageId("id-b")).thenReturn(listOf(newVersion("1.0.0", 1)))
+        whenever(packageVersionDao.listVersionNamesByPackageId("id-b")).thenReturn(listOf("1.0.0"))
         whenever(packageVersionDao.findLatest("id-b")).thenReturn(newVersion("1.0.0", 1))
 
         // pkg-c 抛异常
-        whenever(packageVersionDao.listByPackageId("id-c"))
+        whenever(packageVersionDao.listVersionNamesByPackageId("id-c"))
             .thenThrow(IllegalStateException("boom"))
 
         val result = service.repairPackageMetadata(PROJECT, REPO, packageKey = null)

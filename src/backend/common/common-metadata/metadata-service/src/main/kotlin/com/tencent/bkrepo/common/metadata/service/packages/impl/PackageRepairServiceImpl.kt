@@ -8,10 +8,7 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
 import com.tencent.bkrepo.common.metadata.model.TPackage
-import com.tencent.bkrepo.common.metadata.model.TPackageVersion
-import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.common.metadata.service.packages.PackageRepairService
-import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.util.PackageQueryHelper
 import com.tencent.bkrepo.repository.pojo.packages.PackageMetadataRepairResult
 import org.slf4j.Logger
@@ -30,7 +27,6 @@ import kotlin.system.measureNanoTime
 @Service
 @Conditional(SyncCondition::class)
 class PackageRepairServiceImpl(
-    private val packageService: PackageService,
     private val packageDao: PackageDao,
     private val packageVersionDao: PackageVersionDao
 ) : PackageRepairService {
@@ -200,8 +196,8 @@ class PackageRepairServiceImpl(
      */
     private fun doRepairPackageMetadata(tPackage: TPackage): Boolean {
         val packageId = tPackage.id ?: return false
-        val versions: List<TPackageVersion> = packageVersionDao.listByPackageId(packageId)
-        val actualHistoryVersion: Set<String> = versions.map { it.name }.toSet()
+        // 仅需要版本名集合，走 projection 查询降低 IO/内存开销（避免全量加载 TPackageVersion 文档）
+        val actualHistoryVersion: Set<String> = packageVersionDao.listVersionNamesByPackageId(packageId).toSet()
         val actualLatest: String? = packageVersionDao.findLatest(packageId)?.name
 
         val latestEquals = tPackage.latest == actualLatest
@@ -273,9 +269,9 @@ class PackageRepairServiceImpl(
      */
     private fun doRepairPackageHistoryVersion(tPackage: TPackage) {
         with(tPackage) {
-            val allVersion = packageService.listAllVersion(projectId, repoName, key, VersionListOption())
-                .map { it.name }
-                .toSet()
+            // 直接查 package_version 集合并投影 name，避免经 Service 层拉整份 PackageVersion pojo
+            val packageId = id ?: return
+            val allVersion = packageVersionDao.listVersionNamesByPackageId(packageId).toSet()
             val query = PackageQueryHelper.packageQuery(projectId, repoName, key)
             val update = Update().set(TPackage::historyVersion.name, allVersion)
             packageDao.updateFirst(query, update)

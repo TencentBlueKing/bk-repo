@@ -11,12 +11,10 @@ import io.swagger.v3.oas.annotations.Parameter
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/api")
 class UserPackageRepairController(
     private val packageRepairService: PackageRepairService
 ) {
@@ -39,7 +37,7 @@ class UserPackageRepairController(
 
     @Operation(summary = "按范围修复 Package 元数据（latest、historyVersion）")
     @Principal(PrincipalType.ADMIN)
-    @PostMapping("/package/metadata/repair")
+    @PostMapping("/api/package/metadata/repair")
     fun repairPackageMetadata(
         @Parameter(description = "项目 ID", required = true)
         @RequestParam projectId: String,

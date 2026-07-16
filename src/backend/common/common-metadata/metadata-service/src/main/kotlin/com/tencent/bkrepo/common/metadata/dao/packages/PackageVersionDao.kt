@@ -56,6 +56,18 @@ class PackageVersionDao : SimpleMongoDao<TPackageVersion>() {
         return this.find(PackageQueryHelper.versionListQuery(packageId))
     }
 
+    /**
+     * 仅查询指定 package 下所有版本的 name 字段。
+     *
+     * 相比 [listByPackageId] 全量返回 [TPackageVersion] 文档，本方法通过 projection 只加载 `name` 字段，
+     * 适用于元数据修复等仅需要版本名集合的场景，降低 Mongo IO 与内存开销。
+     */
+    fun listVersionNamesByPackageId(packageId: String): List<String> {
+        val query = PackageQueryHelper.versionListQuery(packageId)
+        query.fields().include(TPackageVersion::name.name)
+        return this.find(query).map { it.name }
+    }
+
     fun findByTag(packageId: String, tag: String): TPackageVersion? {
         return this.findOne(PackageQueryHelper.versionQuery(packageId, tag = tag))
     }
