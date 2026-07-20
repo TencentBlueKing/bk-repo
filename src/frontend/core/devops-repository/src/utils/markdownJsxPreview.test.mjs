@@ -6,7 +6,8 @@ import {
     prepareJsxSource,
     rewriteBareImports,
     rewriteMarkdownImageUrls,
-    normalizeMarkdownText
+    normalizeMarkdownText,
+    buildJsxSandboxSrcdoc
 } from './markdownJsxPreviewCore.js'
 
 test('resolveRelativePath resolves sibling and parent paths', () => {
@@ -103,4 +104,16 @@ test('rewriteMarkdownImageUrls rewrites double and single quoted src', () => {
         rewriteMarkdownImageUrls('<img src="https://example.com/c.png">', resolve),
         '<img src="https://example.com/c.png">'
     )
+})
+
+test('buildJsxSandboxSrcdoc shims fragment navigation and sandbox APIs', () => {
+    const srcdoc = buildJsxSandboxSrcdoc(
+        'export default function App () { return <a href="#modes">modes</a> }',
+        '/ui/libs/'
+    )
+    assert.match(srcdoc, /a\[href\^="#"]/)
+    assert.match(srcdoc, /scrollIntoView/)
+    assert.match(srcdoc, /defineProperty\(document, 'cookie'/)
+    assert.match(srcdoc, /defineProperty\(navigator, 'serviceWorker'/)
+    assert.match(srcdoc, /__isSandboxCapabilityError/)
 })

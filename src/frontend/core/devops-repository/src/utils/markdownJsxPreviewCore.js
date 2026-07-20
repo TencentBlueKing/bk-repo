@@ -195,6 +195,10 @@ export function buildJsxSandboxSrcdoc (jsxSource, libBase) {
       var message = error && error.message ? error.message : String(error);
       document.body.innerHTML = '<pre class="error">' + message + '</pre>';
     }
+    function __isSandboxCapabilityError(error) {
+      var message = error && error.message ? error.message : String(error || '');
+      return /sandboxed|allow-same-origin|serviceWorker|Failed to set the 'cookie'/i.test(message);
+    }
     function __copyTextFallback(text) {
       var textarea = document.createElement('textarea');
       textarea.value = text == null ? '' : String(text);
@@ -214,6 +218,47 @@ export function buildJsxSandboxSrcdoc (jsxSource, libBase) {
       }
       return Promise.resolve();
     }
+    // Opaque-origin sandbox: cookie / serviceWorker throw SecurityError and would blank the preview.
+    try {
+      Object.defineProperty(document, 'cookie', {
+        configurable: true,
+        get: function () { return ''; },
+        set: function () {}
+      });
+    } catch (e) { /* ignore */ }
+    try {
+      Object.defineProperty(navigator, 'serviceWorker', {
+        configurable: true,
+        get: function () { return undefined; }
+      });
+    } catch (e) { /* ignore */ }
+    // Fragment links in sandboxed srcdoc are treated as cross-origin navigations and blank the frame.
+    document.addEventListener('click', function (event) {
+      var anchor = event.target && event.target.closest ? event.target.closest('a[href^="#"]') : null;
+      if (!anchor) {
+        return;
+      }
+      var href = anchor.getAttribute('href');
+      if (!href || href === '#') {
+        event.preventDefault();
+        return;
+      }
+      if (event.defaultPrevented) {
+        return;
+      }
+      var id = decodeURIComponent(href.slice(1));
+      var target = document.getElementById(id) || document.getElementsByName(id)[0];
+      if (!target) {
+        return;
+      }
+      event.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      try {
+        if (history.replaceState) {
+          history.replaceState(null, '', href);
+        }
+      } catch (e) { /* opaque origin may block history */ }
+    }, true);
     if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
       var __nativeWriteText = navigator.clipboard.writeText.bind(navigator.clipboard);
       navigator.clipboard.writeText = function (text) {
@@ -227,9 +272,18 @@ export function buildJsxSandboxSrcdoc (jsxSource, libBase) {
       };
     }
     window.addEventListener('error', function (event) {
-      __showPreviewError(event.error || event.message);
+      var error = event.error || event.message;
+      if (__isSandboxCapabilityError(error)) {
+        event.preventDefault();
+        return;
+      }
+      __showPreviewError(error);
     });
     window.addEventListener('unhandledrejection', function (event) {
+      if (__isSandboxCapabilityError(event.reason)) {
+        event.preventDefault();
+        return;
+      }
       __showPreviewError(event.reason);
     });
   <\/script>
