@@ -118,6 +118,26 @@ export function rewriteBareImports (source) {
     return result
 }
 
+/**
+ * Babel standalone `preset-react` defaults to classic runtime
+ * (`React.createElement`). User JSX often omits `import React`
+ * (new JSX transform style). Detect whether `React` is already bound.
+ */
+export function hasReactBinding (source) {
+    if (!source) {
+        return false
+    }
+    return /^\s*import\s+React(?:\s*,|\s+from\b)/m.test(source)
+        || /^\s*import\s+\*\s+as\s+React\s+from\b/m.test(source)
+}
+
+export function ensureReactImport (source) {
+    if (hasReactBinding(source)) {
+        return source
+    }
+    return `import React from '${ESM_CDN_PREFIX}react';\n${source}`
+}
+
 export function prepareJsxSource (jsxSource) {
     if (!jsxSource || !jsxSource.trim()) {
         throw new Error('JSX file is empty')
@@ -125,7 +145,8 @@ export function prepareJsxSource (jsxSource) {
     if (/\brequire\s*\(/.test(jsxSource)) {
         throw new Error('require() is not supported in JSX preview; use ESM import instead')
     }
-    let source = rewriteBareImports(jsxSource)
+    // Inject React into preview host scope; do not require user files to import it.
+    let source = ensureReactImport(rewriteBareImports(jsxSource))
     if (/export\s+default\s+/m.test(source)) {
         source = source.replace(/export\s+default\s+/m, 'const __PREVIEW_COMPONENT__ = ')
     }
@@ -134,10 +155,9 @@ export function prepareJsxSource (jsxSource) {
     }
     source = `${source}
 
-import __PreviewReact from '${ESM_CDN_PREFIX}react';
 import { createRoot as __createPreviewRoot } from '${ESM_CDN_PREFIX}react-dom/client';
 const __previewRoot = __createPreviewRoot(document.getElementById('root'));
-__previewRoot.render(__PreviewReact.createElement(__PREVIEW_COMPONENT__));
+__previewRoot.render(React.createElement(__PREVIEW_COMPONENT__));
 `
     return source.replace(/<\/script/gi, '<\\/script')
 }
