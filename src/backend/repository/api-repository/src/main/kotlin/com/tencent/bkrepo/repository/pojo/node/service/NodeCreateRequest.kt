@@ -75,6 +75,8 @@ data class NodeCreateRequest(
     override var createdDate: LocalDateTime? = null,
     override val lastModifiedBy: String? = null,
     override var lastModifiedDate: LocalDateTime? = null,
+    @get:Schema(title = "最后访问时间")
+    val lastAccessDate: LocalDateTime? = null,
     @get:Schema(title = "是否SEPARATE_UPLOAD")
     val separate: Boolean = false,
     @get:Schema(title = "操作来源,联邦仓库同步时源集群name", required = false)

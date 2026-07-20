@@ -203,7 +203,16 @@ class ClusterReplicator(
                 packageMetadata = packageMetadata,
                 extension = packageVersion.extension,
                 overwrite = true,
-                createdBy = packageVersion.createdBy
+                createdBy = packageVersion.createdBy,
+                createdDate = packageVersion.createdDate,
+                lastModifiedBy = packageVersion.lastModifiedBy,
+                lastModifiedDate = packageVersion.lastModifiedDate,
+                downloads = packageVersion.downloads,
+                packageCreatedBy = packageSummary.createdBy,
+                packageCreatedDate = packageSummary.createdDate,
+                packageLastModifiedBy = packageSummary.lastModifiedBy,
+                packageLastModifiedDate = packageSummary.lastModifiedDate,
+                packageDownloads = packageSummary.downloads,
             )
             artifactReplicaClient!!.replicaPackageVersionCreatedRequest(request)
         }
@@ -416,7 +425,10 @@ class ClusterReplicator(
                 createdBy = node.createdBy,
                 createdDate = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = node.lastModifiedBy,
-                lastModifiedDate = LocalDateTime.parse(node.lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME)
+                lastModifiedDate = LocalDateTime.parse(node.lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME),
+                lastAccessDate = node.lastAccessDate?.let {
+                    LocalDateTime.parse(it, DateTimeFormatter.ISO_DATE_TIME)
+                },
             )
         }
     }

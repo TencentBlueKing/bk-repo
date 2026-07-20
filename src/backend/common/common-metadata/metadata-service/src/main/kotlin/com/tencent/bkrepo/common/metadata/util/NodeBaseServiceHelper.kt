@@ -82,9 +82,11 @@ object NodeBaseServiceHelper {
                 metadata = metadata,
                 createdBy = createdBy ?: operator,
                 createdDate = createdDate ?: LocalDateTime.now(ZoneIdContext.getZoneId()),
-                lastModifiedBy = createdBy ?: operator,
+                lastModifiedBy = lastModifiedBy ?: createdBy ?: operator,
                 lastModifiedDate = lastModifiedDate ?: LocalDateTime.now(ZoneIdContext.getZoneId()),
-                lastAccessDate = LocalDateTime.now(),
+                lastAccessDate = lastAccessDate
+                    ?: lastModifiedDate
+                    ?: LocalDateTime.now(ZoneIdContext.getZoneId()),
                 federatedSource = source
             )
         }
