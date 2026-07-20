@@ -2,6 +2,7 @@
   - [通用接口协议](/apidoc-user/common/common.md)
   - [自定义搜索协议](/apidoc-user/common/search.md)
   - [事件类型](/apidoc-user/common/event.md)
+  - [短链接接口](/apidoc-user/common/shortlink.md)
 - **项目/仓库**
   - [项目接口](/apidoc-user/repo/project.md)
   - [仓库接口](/apidoc-user/repo/repository.md)
