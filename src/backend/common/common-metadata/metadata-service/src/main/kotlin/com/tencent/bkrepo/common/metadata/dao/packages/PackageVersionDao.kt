@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.common.metadata.util.PackageQueryHelper
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import org.bson.Document
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.FindAndModifyOptions
@@ -74,7 +75,10 @@ class PackageVersionDao : SimpleMongoDao<TPackageVersion>() {
             .with(Sort.by(Sort.Direction.ASC, "_id"))
             .limit(batchSize)
         query.fields().include("_id").include(TPackageVersion::name.name)
-        return this.find(query).map { it.id!! to it.name }
+        // 采用 Document 接收 projection 结果，避免反序列化为 TPackageVersion 时因缺少必填字段报错
+        return this.find(query, Document::class.java).map {
+            it.getObjectId("_id").toHexString() to it.getString(TPackageVersion::name.name)
+        }
     }
 
     /**
@@ -90,7 +94,9 @@ class PackageVersionDao : SimpleMongoDao<TPackageVersion>() {
             .and(TPackageVersion::name.name).`in`(names)
         val query = Query(criteria)
         query.fields().include(TPackageVersion::name.name)
-        return this.find(query).mapTo(HashSet(names.size)) { it.name }
+        // 同 pageVersionNamesAfterId：仅取 name 字段，反序列化到 Document 避免实体必填字段初始化报错
+        return this.find(query, Document::class.java)
+            .mapTo(HashSet(names.size)) { it.getString(TPackageVersion::name.name) }
     }
 
     fun findByTag(packageId: String, tag: String): TPackageVersion? {
