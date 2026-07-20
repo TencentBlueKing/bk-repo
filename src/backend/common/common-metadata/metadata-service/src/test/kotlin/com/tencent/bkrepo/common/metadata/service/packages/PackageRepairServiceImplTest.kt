@@ -168,7 +168,8 @@ class PackageRepairServiceImplTest {
         val pkg = newPackage(id = "large-pkg", latest = "v-100000", historyVersion = largeVersions)
         whenever(packageDao.findByKey(PROJECT, REPO, PKG_KEY)).thenReturn(pkg)
         mockVersionNames("large-pkg", largeVersions.toList())
-        whenever(packageVersionDao.findLatest("large-pkg")).thenReturn(newVersion("v-100000", 100_000))
+        whenever(packageVersionDao.findLatest("large-pkg"))
+            .thenReturn(newVersion("v-100000", 100_000))
 
         val result = service.repairPackageMetadata(PROJECT, REPO, PKG_KEY)
 
@@ -252,13 +253,15 @@ class PackageRepairServiceImplTest {
         // 伪 id 用 4 位左填 0，保证按字符串比较结果与索引顺序一致
         val pairs = actualNames.mapIndexed { idx, name -> "id-%08d".format(idx) to name }
         val actualSet = actualNames.toHashSet()
-        whenever(packageVersionDao.pageVersionNamesAfterId(eq(packageId), anyOrNull(), any())).thenAnswer { invocation ->
-            val lastId = invocation.arguments[1] as String?
-            val batchSize = invocation.arguments[2] as Int
-            val startIndex = if (lastId == null) 0 else pairs.indexOfFirst { it.first > lastId }
-            if (startIndex < 0) emptyList<Pair<String, String>>()
-            else pairs.subList(startIndex, minOf(startIndex + batchSize, pairs.size))
-        }
+        whenever(packageVersionDao.pageVersionNamesAfterId(eq(packageId), anyOrNull(), any()))
+            .thenAnswer { invocation ->
+                val lastId = invocation.arguments[1] as String?
+                val batchSize = invocation.arguments[2] as Int
+                val startIndex =
+                    if (lastId == null) 0 else pairs.indexOfFirst { it.first > lastId }
+                if (startIndex < 0) emptyList<Pair<String, String>>()
+                else pairs.subList(startIndex, minOf(startIndex + batchSize, pairs.size))
+            }
         whenever(packageVersionDao.findExistingNames(eq(packageId), any())).thenAnswer { invocation ->
             @Suppress("UNCHECKED_CAST")
             val names = invocation.arguments[1] as Collection<String>
