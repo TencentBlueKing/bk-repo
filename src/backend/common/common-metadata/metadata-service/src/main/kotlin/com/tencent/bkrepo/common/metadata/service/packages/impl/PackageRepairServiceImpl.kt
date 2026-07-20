@@ -58,7 +58,7 @@ class PackageRepairServiceImpl(
                 val repoName = it.repoName
                 val key = it.key
                 try {
-                    // 添加包管理
+                    // 只修 historyVersion，不动 latest，保持全库入口的原始语义
                     doRepairPackageHistoryVersion(it)
                     logger.info("Success to repair history version for [$key] in repo [$projectId/$repoName].")
                     successCount += 1
@@ -184,42 +184,105 @@ class PackageRepairServiceImpl(
     }
 
     /**
-     * 修复单个 package 的 latest 与 historyVersion 字段。
+     * 以 package_version 为权威源修复单个 package 的 latest 与 historyVersion。
      *
-     * 以 package_version 集合为权威数据源：
-     * - latest 复用 [PackageVersionDao.findLatest]（ordinal DESC + limit 1），
-     *   与主流程 findLatestBySemVer / deleteVersion 后重算 latest 使用同一套逻辑，
-     *   避免修复行为与业务上传/删除时的语义出现分歧。
-     * - historyVersion = 当前所有版本名的集合，全量覆盖。
-     *
-     * @return true 表示实际发生了 DB 更新；false 表示元数据已一致，无需更新
+     * @return true 表示实际发生 DB 更新，false 表示元数据已一致
      */
     private fun doRepairPackageMetadata(tPackage: TPackage): Boolean {
         val packageId = tPackage.id ?: return false
-        // 仅需要版本名集合，走 projection 查询降低 IO/内存开销（避免全量加载 TPackageVersion 文档）
-        val actualHistoryVersion: Set<String> = packageVersionDao.listVersionNamesByPackageId(packageId).toSet()
-        val actualLatest: String? = packageVersionDao.findLatest(packageId)?.name
-
-        val latestEquals = tPackage.latest == actualLatest
-        val historyEquals = tPackage.historyVersion == actualHistoryVersion
-        if (latestEquals && historyEquals) {
-            return false
-        }
-
         val query = PackageQueryHelper.packageQuery(tPackage.projectId, tPackage.repoName, tPackage.key)
-        // latest 允许为 null（无版本时置 null），保持字段存在以便查询语义一致
-        val update = Update()
-            .set(TPackage::historyVersion.name, actualHistoryVersion)
-            .set(TPackage::latest.name, actualLatest)
-        val result = packageDao.updateFirst(query, update)
+        val latestMutated = repairLatestField(tPackage, packageId, query)
+        val historyMutated = doRepairPackageHistoryVersion(tPackage)
+        return latestMutated || historyMutated
+    }
+
+    /** 若 latest 与 [PackageVersionDao.findLatest]（ordinal DESC）不一致，则 `$set` 覆盖。 */
+    private fun repairLatestField(tPackage: TPackage, packageId: String, query: Query): Boolean {
+        val actualLatest: String? = packageVersionDao.findLatest(packageId)?.name
+        if (tPackage.latest == actualLatest) return false
+        val r = packageDao.updateFirst(query, Update().set(TPackage::latest.name, actualLatest))
         logger.info(
-            "Repair package metadata for [${tPackage.key}] in repo " +
-                "[${tPackage.projectId}/${tPackage.repoName}]: " +
-                "latest [${tPackage.latest}] -> [$actualLatest], " +
-                "historyVersion size [${tPackage.historyVersion.size}] -> [${actualHistoryVersion.size}], " +
-                "modified=${result.modifiedCount}"
+            "Repair latest for [${tPackage.key}] in repo " +
+                "[${tPackage.projectId}/${tPackage.repoName}]: [${tPackage.latest}] -> [$actualLatest]"
         )
-        return result.modifiedCount > 0L
+        return r.modifiedCount > 0L
+    }
+
+    /**
+     * 分批修复 historyVersion：补差 [addMissingVersionNames] + 删差 [removeOrphanVersionNames]，
+     * 等价于以 package_version 为源全量覆盖。单批 payload 恒为 O([REPAIR_VERSION_BATCH_SIZE])，
+     * 与包版本总数解耦，可安全处理 10w+ 版本的大包。
+     *
+     * @return true 表示触发过 DB 更新
+     */
+    private fun doRepairPackageHistoryVersion(tPackage: TPackage): Boolean {
+        val packageId = tPackage.id ?: return false
+        val originalHistory = tPackage.historyVersion
+
+        val (addMutated, addedCount) = addMissingVersionNames(packageId, originalHistory)
+        val (removeMutated, removedCount) = removeOrphanVersionNames(packageId, originalHistory)
+
+        if (addedCount > 0 || removedCount > 0) {
+            logger.info(
+                "Repair historyVersion for [${tPackage.key}] in repo " +
+                    "[${tPackage.projectId}/${tPackage.repoName}]: " +
+                    "originalSize=${originalHistory.size}, added=$addedCount, removed=$removedCount"
+            )
+        }
+        return addMutated || removeMutated
+    }
+
+    /**
+     * 补差：按 `_id` 游标分页读 package_version，将 [originalHistory] 中缺失的 name 分批 `$addToSet`。
+     * 用应用侧 [HashSet] 跨批去重仅为让计数精确，DB 侧 `$addToSet` 天然幂等。
+     */
+    private fun addMissingVersionNames(
+        packageId: String,
+        originalHistory: Set<String>
+    ): Pair<Boolean, Int> {
+        var mutated = false
+        var addedCount = 0
+        val addBuffer = ArrayList<String>(REPAIR_VERSION_BATCH_SIZE)
+        val addedNames = HashSet<String>()
+        var lastId: String? = null
+
+        while (true) {
+            val batch = packageVersionDao.pageVersionNamesAfterId(packageId, lastId, REPAIR_VERSION_BATCH_SIZE)
+            if (batch.isEmpty()) break
+            batch.forEach { (_, name) ->
+                if (name !in originalHistory && addedNames.add(name)) addBuffer.add(name)
+            }
+            lastId = batch.last().first
+            if (addBuffer.isNotEmpty()) {
+                // 传入快照拷贝而非复用 buffer，避免下游持有引用后被 clear 清空
+                if (packageDao.appendHistoryVersions(packageId, ArrayList(addBuffer))) mutated = true
+                addedCount += addBuffer.size
+                addBuffer.clear()
+            }
+            if (batch.size < REPAIR_VERSION_BATCH_SIZE) break
+        }
+        return mutated to addedCount
+    }
+
+    /**
+     * 删差：将 [originalHistory] 按 [REPAIR_VERSION_BATCH_SIZE] 分块反查存在性，
+     * 不存在的分批 `$pullAll`。仅清理修复前已存在的 name，与补差新增的天然不相交。
+     */
+    private fun removeOrphanVersionNames(
+        packageId: String,
+        originalHistory: Set<String>
+    ): Pair<Boolean, Int> {
+        var mutated = false
+        var removedCount = 0
+        originalHistory.chunked(REPAIR_VERSION_BATCH_SIZE).forEach { chunk ->
+            val existing = packageVersionDao.findExistingNames(packageId, chunk)
+            val orphans = chunk.filter { it !in existing }
+            if (orphans.isNotEmpty()) {
+                if (packageDao.removeHistoryVersions(packageId, orphans)) mutated = true
+                removedCount += orphans.size
+            }
+        }
+        return mutated to removedCount
     }
 
     /**
@@ -261,23 +324,6 @@ class PackageRepairServiceImpl(
         }
     }
 
-    /**
-     * 全量覆盖 package 的 historyVersion 字段，清理已不存在于 package_version 的脏数据。
-     *
-     * 使用 updateFirst 只更新 historyVersion 一个字段，避免 save 整个文档时把并发写入
-     * 的 latest / versions 等字段覆盖回旧值造成 lost-update。
-     */
-    private fun doRepairPackageHistoryVersion(tPackage: TPackage) {
-        with(tPackage) {
-            // 直接查 package_version 集合并投影 name，避免经 Service 层拉整份 PackageVersion pojo
-            val packageId = id ?: return
-            val allVersion = packageVersionDao.listVersionNamesByPackageId(packageId).toSet()
-            val query = PackageQueryHelper.packageQuery(projectId, repoName, key)
-            val update = Update().set(TPackage::historyVersion.name, allVersion)
-            packageDao.updateFirst(query, update)
-        }
-    }
-
     private fun queryPackage(page: Int): Page<TPackage> {
         val query = Query().with(
             Sort.by(Sort.Direction.DESC, TPackage::projectId.name, TPackage::repoName.name, TPackage::key.name)
@@ -291,5 +337,11 @@ class PackageRepairServiceImpl(
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(PackageRepairServiceImpl::class.java)
         private const val REPAIR_PAGE_SIZE = 500
+
+        /**
+         * 修复 historyVersion 的分批大小，同时用于分页读取 package_version 与分块反查脏数据。
+         * 取 1000：mongo `$addToSet.$each` / `$in` / `$pullAll` 在此量级下 payload 与性能最平衡。
+         */
+        private const val REPAIR_VERSION_BATCH_SIZE = 1_000
     }
 }

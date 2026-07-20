@@ -17,6 +17,7 @@ import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.common.metadata.service.packages.impl.PackageRepairServiceImpl
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import org.bson.BsonValue
+import org.bson.Document
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
@@ -48,8 +50,11 @@ class PackageRepairServiceImplTest {
         packageDao = mock()
         packageVersionDao = mock()
         service = PackageRepairServiceImpl(packageDao, packageVersionDao)
-        // 默认 updateFirst 返回“更新成功”的结果，个别用例可自行覆盖
+        // 默认 latest 修复走的 updateFirst 返回成功；
+        // historyVersion 的追加/移除走 DAO 语义方法，默认返回 true 表示有写入。
         whenever(packageDao.updateFirst(any(), any())).thenReturn(updateResult(modified = 1))
+        whenever(packageDao.appendHistoryVersions(any(), any())).thenReturn(true)
+        whenever(packageDao.removeHistoryVersions(any(), any())).thenReturn(true)
     }
 
     @Test
@@ -57,9 +62,7 @@ class PackageRepairServiceImplTest {
     fun `should skip when metadata already consistent`() {
         val pkg = newPackage(id = "pkg-1", latest = "1.0.0", historyVersion = setOf("1.0.0", "0.9.0"))
         whenever(packageDao.findByKey(PROJECT, REPO, PKG_KEY)).thenReturn(pkg)
-        whenever(packageVersionDao.listVersionNamesByPackageId("pkg-1")).thenReturn(
-            listOf("0.9.0", "1.0.0")
-        )
+        mockVersionNames("pkg-1", listOf("0.9.0", "1.0.0"))
         whenever(packageVersionDao.findLatest("pkg-1")).thenReturn(newVersion("1.0.0", 2))
 
         val result = service.repairPackageMetadata(PROJECT, REPO, PKG_KEY)
@@ -69,22 +72,24 @@ class PackageRepairServiceImplTest {
         assertEquals(1, result.skipped)
         assertEquals(0, result.failed)
         assertTrue(result.failedItems.isEmpty())
+        // 已一致时：不会触发 latest updateFirst，也不会调用 append/remove
         verify(packageDao, never()).updateFirst(any(), any())
+        verify(packageDao, never()).appendHistoryVersions(any(), any())
+        verify(packageDao, never()).removeHistoryVersions(any(), any())
     }
 
     @Test
-    @DisplayName("指定包，historyVersion 存在脏数据时应全量覆盖并同步 latest")
+    @DisplayName("指定包，historyVersion 存在脏数据时应分批修正")
     fun `should update when history version contains dirty data`() {
-        // 元数据里 historyVersion 多了一个 999.0.0 脏数据，latest 也过期
+        // 元数据里 historyVersion 多了一个 999.0.0 脏数据，缺少 1.0.0，latest 也过期
         val pkg = newPackage(
             id = "pkg-2",
             latest = "0.9.0",
-            historyVersion = setOf("0.9.0", "1.0.0", "999.0.0")
+            historyVersion = setOf("0.9.0", "999.0.0")
         )
         whenever(packageDao.findByKey(PROJECT, REPO, PKG_KEY)).thenReturn(pkg)
-        whenever(packageVersionDao.listVersionNamesByPackageId("pkg-2")).thenReturn(
-            listOf("0.9.0", "1.0.0")
-        )
+        // 实际 package_version 中的版本：0.9.0 + 1.0.0
+        mockVersionNames("pkg-2", listOf("0.9.0", "1.0.0"))
         whenever(packageVersionDao.findLatest("pkg-2")).thenReturn(newVersion("1.0.0", 2))
 
         val result = service.repairPackageMetadata(PROJECT, REPO, PKG_KEY)
@@ -94,13 +99,26 @@ class PackageRepairServiceImplTest {
         assertEquals(0, result.skipped)
         assertEquals(0, result.failed)
 
-        // 校验实际下发的 Update 语义：historyVersion 覆盖为实际集合，latest 修正为 1.0.0
+        // latest 修复途径仍然走 updateFirst，验证写入值为真正的 latest "1.0.0"
         val updateCaptor = argumentCaptor<Update>()
-        verify(packageDao).updateFirst(any(), updateCaptor.capture())
-        val setDoc = updateCaptor.firstValue.updateObject["\$set"] as org.bson.Document
-        @Suppress("UNCHECKED_CAST")
-        assertEquals(setOf("0.9.0", "1.0.0"), (setDoc["historyVersion"] as Collection<String>).toSet())
-        assertEquals("1.0.0", setDoc["latest"])
+        verify(packageDao, org.mockito.kotlin.atLeast(1))
+            .updateFirst(any(), updateCaptor.capture())
+        val latestUpdate = updateCaptor.allValues.firstOrNull {
+            (it.updateObject["\$set"] as? Document)?.containsKey("latest") == true
+        }
+        assertEquals("1.0.0", (latestUpdate?.updateObject?.get("\$set") as? Document)?.get("latest"))
+
+        // historyVersion 追加：验证 append 调用参数集合中包含 1.0.0
+        val appendCaptor = argumentCaptor<Collection<String>>()
+        verify(packageDao, org.mockito.kotlin.atLeast(1))
+            .appendHistoryVersions(eq("pkg-2"), appendCaptor.capture())
+        assertTrue(appendCaptor.allValues.any { "1.0.0" in it })
+
+        // historyVersion 移除：验证 remove 调用参数集合中包含 999.0.0
+        val removeCaptor = argumentCaptor<Collection<String>>()
+        verify(packageDao, org.mockito.kotlin.atLeast(1))
+            .removeHistoryVersions(eq("pkg-2"), removeCaptor.capture())
+        assertTrue(removeCaptor.allValues.any { "999.0.0" in it })
     }
 
     @Test
@@ -115,11 +133,11 @@ class PackageRepairServiceImplTest {
     }
 
     @Test
-    @DisplayName("包无任何版本时，latest 应置为 null 且 historyVersion 置为空集")
-    fun `should set latest null and history empty when no versions`() {
+    @DisplayName("包无任何版本时，latest 应置为 null 且 historyVersion 内脏数据被清空")
+    fun `should set latest null and pull all when no versions`() {
         val pkg = newPackage(id = "pkg-3", latest = "1.0.0", historyVersion = setOf("1.0.0"))
         whenever(packageDao.findByKey(PROJECT, REPO, PKG_KEY)).thenReturn(pkg)
-        whenever(packageVersionDao.listVersionNamesByPackageId("pkg-3")).thenReturn(emptyList())
+        mockVersionNames("pkg-3", emptyList())
         whenever(packageVersionDao.findLatest("pkg-3")).thenReturn(null)
 
         val result = service.repairPackageMetadata(PROJECT, REPO, PKG_KEY)
@@ -127,18 +145,47 @@ class PackageRepairServiceImplTest {
         assertEquals(1, result.total)
         assertEquals(1, result.updated)
 
+        // latest 应被 $set 为 null
         val updateCaptor = argumentCaptor<Update>()
-        verify(packageDao).updateFirst(any(), updateCaptor.capture())
-        val setDoc = updateCaptor.firstValue.updateObject["\$set"] as org.bson.Document
-        assertTrue((setDoc["historyVersion"] as Collection<*>).isEmpty())
-        assertNull(setDoc["latest"])
+        verify(packageDao, org.mockito.kotlin.atLeast(1))
+            .updateFirst(any(), updateCaptor.capture())
+        val latestUpdate = updateCaptor.allValues.firstOrNull {
+            (it.updateObject["\$set"] as? Document)?.containsKey("latest") == true
+        }
+        assertNull((latestUpdate?.updateObject?.get("\$set") as? Document)?.get("latest"))
+
+        // 原有 historyVersion 中的 1.0.0 应被移除
+        val removeCaptor = argumentCaptor<Collection<String>>()
+        verify(packageDao, org.mockito.kotlin.atLeast(1))
+            .removeHistoryVersions(eq("pkg-3"), removeCaptor.capture())
+        assertTrue(removeCaptor.allValues.any { "1.0.0" in it })
+    }
+
+    @Test
+    @DisplayName("大包（10w 版本）且元数据一致时，无前置短路依旧不触发 updateFirst")
+    fun `should skip large package without triggering updates`() {
+        val largeVersions = (1..100_000).mapTo(LinkedHashSet()) { "v-$it" }
+        val pkg = newPackage(id = "large-pkg", latest = "v-100000", historyVersion = largeVersions)
+        whenever(packageDao.findByKey(PROJECT, REPO, PKG_KEY)).thenReturn(pkg)
+        mockVersionNames("large-pkg", largeVersions.toList())
+        whenever(packageVersionDao.findLatest("large-pkg")).thenReturn(newVersion("v-100000", 100_000))
+
+        val result = service.repairPackageMetadata(PROJECT, REPO, PKG_KEY)
+
+        assertEquals(1, result.total)
+        assertEquals(1, result.skipped)
+        assertEquals(0, result.updated)
+        // 已一致时不会触发任何 latest / append / remove 写入
+        verify(packageDao, never()).updateFirst(any(), any())
+        verify(packageDao, never()).appendHistoryVersions(any(), any())
+        verify(packageDao, never()).removeHistoryVersions(any(), any())
     }
 
     @Test
     @DisplayName("未指定 packageKey 时全仓库遍历，异常包记入失败明细，其余包按预期分类")
     fun `should collect failed items when iterating repo and one package fails`() {
-        // 三个 package：pkg-a 需要更新，pkg-b 已一致（skipped），pkg-c 处理时抛异常
-        val pkgA = newPackage(id = "id-a", key = "a", latest = "old", historyVersion = setOf("old"))
+        // 三个 package：pkg-a 需要更新（latest 不一致），pkg-b 已一致（skipped），pkg-c 抛异常
+        val pkgA = newPackage(id = "id-a", key = "a", latest = "old", historyVersion = setOf("1.0.0"))
         val pkgB = newPackage(id = "id-b", key = "b", latest = "1.0.0", historyVersion = setOf("1.0.0"))
         val pkgC = newPackage(id = "id-c", key = "c", latest = "1.0.0", historyVersion = setOf("1.0.0"))
 
@@ -149,16 +196,16 @@ class PackageRepairServiceImplTest {
         doAnswer { pages[minOf(callIndex[0]++, pages.lastIndex)] }
             .whenever(packageDao).find(any<Query>())
 
-        // pkg-a 需要更新
-        whenever(packageVersionDao.listVersionNamesByPackageId("id-a")).thenReturn(listOf("1.0.0"))
+        // pkg-a 需要更新（latest 不一致就会触发）
+        mockVersionNames("id-a", listOf("1.0.0"))
         whenever(packageVersionDao.findLatest("id-a")).thenReturn(newVersion("1.0.0", 1))
 
         // pkg-b 已一致
-        whenever(packageVersionDao.listVersionNamesByPackageId("id-b")).thenReturn(listOf("1.0.0"))
+        mockVersionNames("id-b", listOf("1.0.0"))
         whenever(packageVersionDao.findLatest("id-b")).thenReturn(newVersion("1.0.0", 1))
 
-        // pkg-c 抛异常
-        whenever(packageVersionDao.listVersionNamesByPackageId("id-c"))
+        // pkg-c 抛异常：在 findLatest 阶段就抛，无需 mock 后续方法
+        whenever(packageVersionDao.findLatest("id-c"))
             .thenThrow(IllegalStateException("boom"))
 
         val result = service.repairPackageMetadata(PROJECT, REPO, packageKey = null)
@@ -190,6 +237,34 @@ class PackageRepairServiceImplTest {
     }
 
     // ------------------------------ helpers ------------------------------
+
+    /**
+     * 统一 stub 版本 DAO 的三个查询：countVersion / pageVersionNamesAfterId / findExistingNames。
+     *
+     * 传入的 [actualNames] 代表 Mongo 侧真实存在的版本名列表。
+     * - `pageVersionNamesAfterId(pkgId, lastId, size)` 按 (index+1) 作为伪 id 排序，
+     *   按 [batchSize] 真实分批返回，贴近生产侧游标分页行为；避免大数据集下把整份数据当作一批返回。
+     * - `findExistingNames(pkgId, names)` 返回 names 与 actualNames 的交集；
+     *   actualNames 预先转成 [HashSet]，将 contains 从 List 的 O(N) 降到 O(1)，避免 10w 场景下 O(N²) 退化。
+     */
+    private fun mockVersionNames(packageId: String, actualNames: List<String>) {
+        whenever(packageVersionDao.countVersion(packageId)).thenReturn(actualNames.size.toLong())
+        // 伪 id 用 4 位左填 0，保证按字符串比较结果与索引顺序一致
+        val pairs = actualNames.mapIndexed { idx, name -> "id-%08d".format(idx) to name }
+        val actualSet = actualNames.toHashSet()
+        whenever(packageVersionDao.pageVersionNamesAfterId(eq(packageId), anyOrNull(), any())).thenAnswer { invocation ->
+            val lastId = invocation.arguments[1] as String?
+            val batchSize = invocation.arguments[2] as Int
+            val startIndex = if (lastId == null) 0 else pairs.indexOfFirst { it.first > lastId }
+            if (startIndex < 0) emptyList<Pair<String, String>>()
+            else pairs.subList(startIndex, minOf(startIndex + batchSize, pairs.size))
+        }
+        whenever(packageVersionDao.findExistingNames(eq(packageId), any())).thenAnswer { invocation ->
+            @Suppress("UNCHECKED_CAST")
+            val names = invocation.arguments[1] as Collection<String>
+            names.filterTo(HashSet(names.size)) { it in actualSet }
+        }
+    }
 
     private fun newPackage(
         id: String,
