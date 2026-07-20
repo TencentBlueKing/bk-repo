@@ -42,4 +42,9 @@ class DriveProperties {
      * Drive 临时访问链接默认 host，用于 createUrl 生成完整 URL。
      */
     var domain: String = ""
+
+    /**
+     * 短链接过期天数
+     */
+    var shortLinkExpireDuration: Duration = Duration.ofDays(180)
 }

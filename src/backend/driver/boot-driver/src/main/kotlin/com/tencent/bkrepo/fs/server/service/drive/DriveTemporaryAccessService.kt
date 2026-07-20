@@ -13,7 +13,9 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.client.RAuthClient
+import com.tencent.bkrepo.common.metadata.pojo.shortlink.ShortLinkCreateRequest
 import com.tencent.bkrepo.common.metadata.service.project.RProjectService
+import com.tencent.bkrepo.common.metadata.service.shortlink.RShortLinkService
 import com.tencent.bkrepo.fs.server.RepositoryCache
 import com.tencent.bkrepo.fs.server.config.properties.drive.DriveProperties
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
@@ -35,6 +37,7 @@ class DriveTemporaryAccessService(
     private val permissionService: PermissionService,
     private val projectService: RProjectService,
     private val driveProperties: DriveProperties,
+    private val shortLinkService: RShortLinkService
 ) {
     suspend fun createToken(request: TemporaryTokenCreateRequest, userId: String): List<DriveTemporaryAccessToken> {
         Preconditions.checkArgument(
@@ -77,7 +80,7 @@ class DriveTemporaryAccessService(
                     projectId = token.projectId,
                     repoName = token.repoName,
                     fullPath = token.fullPath,
-                    url = generateAccessUrl(token, type, host),
+                    url = generateAccessUrl(userId, token, type, host),
                     authorizedUserList = token.authorizedUserList,
                     authorizedIpList = token.authorizedIpList,
                     expireDate = token.expireDate,
@@ -247,7 +250,12 @@ class DriveTemporaryAccessService(
         }
     }
 
-    private fun generateAccessUrl(token: DriveTemporaryAccessToken, tokenType: TokenType, host: String?): String {
+    private suspend fun generateAccessUrl(
+        userId: String,
+        token: DriveTemporaryAccessToken,
+        tokenType: TokenType,
+        host: String?
+    ): String {
         val urlHost = host?.takeIf { it.isNotBlank() } ?: driveProperties.domain
         val endpoint = when (tokenType) {
             TokenType.DOWNLOAD -> TEMPORARY_DOWNLOAD_ENDPOINT
@@ -256,7 +264,14 @@ class DriveTemporaryAccessService(
             TokenType.PREVIEW -> TEMPORARY_DOWNLOAD_ENDPOINT
         }
         if (tokenType == TokenType.PREVIEW) {
-            return "$urlHost/ui/${token.projectId}/filePreview/local/0/${token.repoName}${token.fullPath}"
+            val target = "$urlHost/ui/${token.projectId}/filePreview/local/0/${token.repoName}${token.fullPath}"
+            val shortLink = shortLinkService.create(
+                ShortLinkCreateRequest(
+                    target,
+                    userId,
+                    token.expireDate?.let { LocalDateTime.parse(it) } ?: LocalDateTime.now()
+                        .plusDays(driveProperties.shortLinkExpireDuration.toDays())))
+            return shortLink.shortUrl
         }
         val builder = StringBuilder(UrlFormatter.formatHost(urlHost))
             .append("/fs-server")

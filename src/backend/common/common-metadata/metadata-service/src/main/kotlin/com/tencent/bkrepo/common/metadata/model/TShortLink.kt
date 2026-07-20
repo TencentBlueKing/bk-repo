@@ -22,7 +22,7 @@ data class TShortLink(
     @Indexed(unique = true, background = true)
     val code: String,
     val target: String,
-    @Indexed(expireAfterSeconds = 0, background = true)
+    @Indexed(expireAfter = "0s", background = true)
     val expiredDate: LocalDateTime,
     val createdBy: String,
     val createdDate: LocalDateTime,
