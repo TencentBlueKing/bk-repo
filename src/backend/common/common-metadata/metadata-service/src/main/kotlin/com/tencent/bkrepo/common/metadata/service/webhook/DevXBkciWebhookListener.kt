@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryVisibility
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChannelSetting
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyConfiguration
@@ -85,7 +86,7 @@ class DevXBkciWebhookListener(
     override fun onDevXEnabled(payload: BkCiDevXEnabledPayload) {
         // 创建远程制品库集群仓库
         if (devXProperties.remoteBkRepoUrl.isNotEmpty()) {
-            createRemoteRepo(payload.projectCode, LSYNC)
+            createRemoteRepo(payload.projectCode, LSYNC, RepositoryVisibility.SYSTEM)
             createRemoteRepo(payload.projectCode, "$PIPELINE$DEVX_SUFFIX")
             createRemoteRepo(payload.projectCode, "$CUSTOM$DEVX_SUFFIX")
             createRemoteRepo(payload.projectCode, "$REPORT$DEVX_SUFFIX")
@@ -96,7 +97,7 @@ class DevXBkciWebhookListener(
         createLocalProject(payload)
 
         // 创建本地仓库
-        createLocalCompositeRepo(payload.projectCode, LSYNC, LSYNC, true)
+        createLocalCompositeRepo(payload.projectCode, LSYNC, LSYNC, true, RepositoryVisibility.SYSTEM)
         createLocalCompositeRepo(payload.projectCode, PIPELINE, "$PIPELINE$DEVX_SUFFIX", true)
         createLocalCompositeRepo(payload.projectCode, CUSTOM, "$CUSTOM$DEVX_SUFFIX", true)
         createLocalCompositeRepo(payload.projectCode, REPORT, "$REPORT$DEVX_SUFFIX", false)
@@ -106,14 +107,19 @@ class DevXBkciWebhookListener(
     /**
      * 在远程制品库集群创建仓库
      */
-    private fun createRemoteRepo(projectId: String, repoName: String) {
+    private fun createRemoteRepo(
+        projectId: String,
+        repoName: String,
+        visibility: RepositoryVisibility = RepositoryVisibility.PROJECT
+    ) {
         val url = "${devXProperties.remoteBkRepoUrl}/repository/api/repo/create"
         val body = UserRepoCreateRequest(
             projectId = projectId,
             name = repoName,
             type = RepositoryType.GENERIC,
             category = RepositoryCategory.COMPOSITE,
-            display = false
+            display = false,
+            visibility = visibility
         ).toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaType())
         val req = Request.Builder().url(url).post(body).build()
         client.newCall(req).execute().use { res ->
@@ -177,6 +183,7 @@ class DevXBkciWebhookListener(
         repoName: String,
         remoteRepoName: String,
         display: Boolean,
+        visibility: RepositoryVisibility = RepositoryVisibility.PROJECT,
         retry: Int = 3
     ) {
         val configuration = if (devXProperties.remoteBkRepoUrl.isNotEmpty()) {
@@ -200,7 +207,8 @@ class DevXBkciWebhookListener(
             category = RepositoryCategory.COMPOSITE,
             public = false,
             configuration = configuration,
-            display = display
+            display = display,
+            visibility = visibility
         )
 
         try {
@@ -212,7 +220,14 @@ class DevXBkciWebhookListener(
             } else if (e is ErrorCodeException && e.messageCode == ArtifactMessageCode.PROJECT_NOT_FOUND) {
                 if (retry > 0) {
                     Thread.sleep(TimeUnit.SECONDS.toMillis(3))
-                    createLocalCompositeRepo(projectId, repoName, remoteRepoName, display, retry - 1)
+                    createLocalCompositeRepo(
+                        projectId = projectId,
+                        repoName = repoName,
+                        remoteRepoName = remoteRepoName,
+                        display = display,
+                        visibility = visibility,
+                        retry = retry - 1
+                    )
                 }
             } else {
                 logger.error("create repo[$projectId/$repoName] failed", e)
