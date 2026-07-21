@@ -265,6 +265,8 @@
     import previewBasicFileDialog from './previewBasicFileDialog'
     import { Base64 } from 'js-base64'
     import { isOutDisplayType, isText } from '@repository/utils/file'
+    import ElectronProtocolCheck from '@repository/utils/ElectronProtocolCheck'
+    import cookies from 'js-cookie'
 
     export default {
         name: 'RepoGeneric',
@@ -463,7 +465,8 @@
                 'refreshSupportFileNameExtList',
                 'getMultiFolderNumOfFolder',
                 'getPermissionUrl',
-                'getProjectShareEnabled'
+                'getProjectShareEnabled',
+                'shareArtifactory'
             ]),
             updateTableFixedBodyTop () {
                 const el = document.querySelector('.bk-table-fixed-body-wrapper')
@@ -1128,7 +1131,7 @@
                     fullPath
                 })
             },
-            handlerDownload (row) {
+            downloadFromWeb (row) {
                 const transPath = encodeURIComponent(row.fullPath)
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
                 fetch(window.BK_SUBPATH + 'web' + url, {
@@ -1192,6 +1195,34 @@
                         })
                     }
                 })
+            },
+            // 客户端下载，传递类似bkartifacts://download/XXXX
+            buildExeDownloadUrl (row) {
+                return BK_ARTIFACT_SCHEME + 'download/${this.projectId}/${this.repoName}' + encodeURIComponent(row.fullPath)
+            },
+            handlerDownload (row) {
+                try {
+                    const target = this.buildExeDownloadUrl(row)
+                    ElectronProtocolCheck(
+                        target,
+                        () => {
+                            // 成功回调：客户端已唤起
+                            console.log('callClient->success!')
+                        },
+                        () => {
+                            // 失败回调：未检测到客户端
+                            console.log('callClient->failed!')
+                            this.downloadFromWeb(row)
+                        },
+                        () => {
+                            // 不支持回调：浏览器环境不支持自定义协议
+                            console.log('callClient->unsupported!')
+                            this.downloadFromWeb(row)
+                        }
+                    )
+                } catch (e) {
+                    this.downloadFromWeb(row)
+                }
             },
             timerDownload (url, fullPath, name) {
                 if (this.timer) return
