@@ -22,7 +22,8 @@ data class TShortLink(
     @Indexed(unique = true, background = true)
     val code: String,
     val target: String,
-    @Indexed(expireAfter = "0s", background = true)
+    // expireAfter="0s" 在 Spring Data MongoDB 4.4 会因 Duration.ZERO 被忽略而不带 TTL（issue#4844），须用 expireAfterSeconds
+    @Indexed(expireAfterSeconds = 0, background = true)
     val expiredDate: LocalDateTime,
     val createdBy: String,
     val createdDate: LocalDateTime,
