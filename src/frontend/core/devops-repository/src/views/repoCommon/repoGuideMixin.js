@@ -37,6 +37,9 @@ export default {
         repoUrl () {
             return `${location.origin}${window.BK_SUBPATH}${this.repoType}/${this.projectId}/${this.repoName}`
         },
+        skillApiUrl () {
+            return `${this.repoUrl}/api/v1`
+        },
         userName () {
             return this.userInfo.username || '<USERNAME>'
         },
@@ -1076,14 +1079,18 @@ export default {
                     optionType: 'setCredentials',
                     main: [
                         {
-                            subTitle: '安装 clawhub v0.11.0',
+                            subTitle: 'API 认证',
                             codeList: [
-                                'npm i -g clawhub --registry https://registry.npmmirror.com'
+                                `# 使用上方 Personal Access Token，curl -u 用户名:Token 认证`,
+                                `# API 基址：${this.skillApiUrl}`,
+                                `curl -u ${this.userName}:${this.accessToken} `
+                                + `"${this.skillApiUrl}/skills?limit=10"`
                             ]
                         },
                         {
-                            subTitle: this.$t('setCredentials'),
+                            subTitle: 'clawhub（可选）',
                             codeList: [
+                                'npm i -g clawhub --registry https://registry.npmmirror.com',
                                 `clawhub login --registry ${this.repoUrl} --token ${this.accessToken}`,
                                 `clawhub whoami --registry ${this.repoUrl}`,
                                 `clawhub logout --registry ${this.repoUrl}`
@@ -1094,14 +1101,58 @@ export default {
                 {
                     title: this.$t('push'),
                     optionType: 'push',
+                    inputBoxList: [
+                        {
+                            key: 'dependInputValue1',
+                            label: 'slug',
+                            placeholder: this.$t('pleaseInput') + ' slug',
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE1'
+                        },
+                        {
+                            key: 'dependInputValue2',
+                            label: this.$t('artifactVersion'),
+                            placeholder: this.$t('packageVersionPlaceholder'),
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE2'
+                        },
+                        {
+                            key: 'dependInputValue3',
+                            label: 'Skill 目录',
+                            placeholder: this.$t('pleaseInput') + ' Skill 目录路径',
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE3'
+                        }
+                    ],
                     main: [
                         {
-                            subTitle: this.$t('pushGuideSubTitle'),
+                            subTitle: 'API 上传',
                             codeList: [
-                                'clawhub publish <SKILL_DIR> --slug <SKILL_SLUG> '
-                                + `--version <VERSION> --registry ${this.repoUrl}`,
-                                'clawhub skill publish <SKILL_DIR> --slug <SKILL_SLUG> '
-                                + `--version <VERSION> --registry ${this.repoUrl}`
+                                this.skillApiPublishCurl(
+                                    this.dependInputValue1 || '<SKILL_SLUG>',
+                                    this.dependInputValue2 || '<VERSION>',
+                                    this.dependInputValue3 || '<SKILL_DIR>'
+                                )
+                            ]
+                        },
+                        {
+                            subTitle: '对话上传',
+                            codeList: [
+                                this.skillChatPublishPrompt(
+                                    this.dependInputValue1 || '<SKILL_SLUG>',
+                                    this.dependInputValue2 || '<VERSION>',
+                                    this.dependInputValue3 || '<SKILL_DIR>'
+                                )
+                            ]
+                        },
+                        {
+                            subTitle: 'clawhub 上传（可选）',
+                            codeList: [
+                                `clawhub publish ${this.dependInputValue3 || '<SKILL_DIR>'} `
+                                + `--slug ${this.dependInputValue1 || '<SKILL_SLUG>'} `
+                                + `--version ${this.dependInputValue2 || '<VERSION>'} `
+                                + `--registry ${this.repoUrl}`,
+                                `clawhub skill publish ${this.dependInputValue3 || '<SKILL_DIR>'} `
+                                + `--slug ${this.dependInputValue1 || '<SKILL_SLUG>'} `
+                                + `--version ${this.dependInputValue2 || '<VERSION>'} `
+                                + `--registry ${this.repoUrl}`
                             ]
                         }
                     ]
@@ -1131,22 +1182,44 @@ export default {
                     ],
                     main: [
                         {
+                            subTitle: '直接下载 Zip',
+                            codeList: [
+                                this.skillDownloadCurl(
+                                    this.dependInputValue1 || '<SKILL_SLUG>',
+                                    this.dependInputValue2 || '<VERSION>'
+                                )
+                            ]
+                        },
+                        {
+                            subTitle: '手动安装说明',
+                            codeList: [
+                                this.skillManualInstallText(
+                                    this.dependInputValue1 || '<SKILL_SLUG>',
+                                    this.dependInputValue2 || '<VERSION>'
+                                )
+                            ]
+                        },
+                        {
+                            subTitle: '对话安装',
+                            codeList: [
+                                this.skillChatInstallPrompt(
+                                    this.dependInputValue1 || '<SKILL_SLUG>',
+                                    this.dependInputValue2 || '<VERSION>'
+                                )
+                            ]
+                        },
+                        {
                             subTitle: this.$t('search'),
                             codeList: [
-                                `clawhub search ${this.dependInputValue1 || '<KEYWORD>'} `
-                                + `--registry ${this.repoUrl}`
+                                this.skillApiSearchCurl(this.dependInputValue1 || '<KEYWORD>')
                             ]
                         },
                         {
                             subTitle: '查询列表',
-                            codeList: [
-                                `clawhub explore --registry ${this.repoUrl}`,
-                                `clawhub explore --limit 25 --sort newest --registry ${this.repoUrl}`,
-                                `clawhub explore --limit 25 --sort downloads --registry ${this.repoUrl}`
-                            ]
+                            codeList: this.skillApiListCurl()
                         },
                         {
-                            subTitle: '安装 Skill',
+                            subTitle: 'clawhub 安装（可选）',
                             codeList: [
                                 `clawhub install ${this.dependInputValue1 || '<SKILL_SLUG>'} `
                                 + `--version ${this.dependInputValue2 || '<VERSION>'} `
@@ -1157,7 +1230,17 @@ export default {
                             ]
                         },
                         {
-                            subTitle: '检查 Skill',
+                            subTitle: 'clawhub 查询（可选）',
+                            codeList: [
+                                `clawhub search ${this.dependInputValue1 || '<KEYWORD>'} `
+                                + `--registry ${this.repoUrl}`,
+                                `clawhub explore --registry ${this.repoUrl}`,
+                                `clawhub explore --limit 25 --sort newest --registry ${this.repoUrl}`,
+                                `clawhub explore --limit 25 --sort downloads --registry ${this.repoUrl}`
+                            ]
+                        },
+                        {
+                            subTitle: 'clawhub 检查（可选）',
                             codeList: [
                                 `clawhub inspect ${this.dependInputValue1 || '<SKILL_SLUG>'} `
                                 + `--registry ${this.repoUrl}`,
@@ -1179,7 +1262,25 @@ export default {
                 {
                     main: [
                         {
-                            subTitle: this.$t('useSubTips'),
+                            subTitle: '直接下载 Zip',
+                            codeList: [
+                                this.skillDownloadCurl(this.packageName, this.versionLabel)
+                            ]
+                        },
+                        {
+                            subTitle: '手动安装说明',
+                            codeList: [
+                                this.skillManualInstallText(this.packageName, this.versionLabel)
+                            ]
+                        },
+                        {
+                            subTitle: '对话安装',
+                            codeList: [
+                                this.skillChatInstallPrompt(this.packageName, this.versionLabel)
+                            ]
+                        },
+                        {
+                            subTitle: 'clawhub 安装（可选）',
                             codeList: [
                                 `clawhub install ${this.packageName} --version ${this.versionLabel} `
                                 + `--registry ${this.repoUrl}`
@@ -1770,6 +1871,90 @@ export default {
         }
     },
     methods: {
-        ...mapActions(['getDomain'])
+        ...mapActions(['getDomain']),
+        skillZipName (slug, version) {
+            return `${slug}-${version}.zip`
+        },
+        skillDownloadUrl (slug, version) {
+            return `${this.skillApiUrl}/download?slug=${encodeURIComponent(slug)}`
+                + `&version=${encodeURIComponent(version)}`
+        },
+        skillDownloadCurl (slug, version) {
+            const zip = this.skillZipName(slug, version)
+            return `curl -u ${this.userName}:${this.accessToken} -o "${zip}" `
+                + `"${this.skillDownloadUrl(slug, version)}"`
+        },
+        skillApiSearchCurl (keyword) {
+            return `curl -u ${this.userName}:${this.accessToken} `
+                + `"${this.skillApiUrl}/search?q=${encodeURIComponent(keyword)}&limit=10"`
+        },
+        skillApiListCurl () {
+            const auth = `curl -u ${this.userName}:${this.accessToken}`
+            return [
+                `${auth} "${this.skillApiUrl}/skills?limit=25"`,
+                `${auth} "${this.skillApiUrl}/skills?limit=25&sort=newest"`,
+                `${auth} "${this.skillApiUrl}/skills?limit=25&sort=downloads"`
+            ]
+        },
+        skillManualInstallText (slug, version) {
+            const zip = this.skillZipName(slug, version)
+            return [
+                '# Cursor:',
+                `unzip -o ${zip} -d ~/.cursor/skills/`,
+                '',
+                '# Claude Code:',
+                `unzip -o ${zip} -d ~/.claude/skills/`
+            ].join('\n')
+        },
+        skillChatInstallPrompt (slug, version) {
+            const zip = this.skillZipName(slug, version)
+            return [
+                `请帮我安装 Skill「${slug}」版本 ${version}。`,
+                '',
+                '请按顺序执行以下操作（需要时使用终端）：',
+                `1. 下载 zip：${this.skillDownloadCurl(slug, version)}`,
+                `2. 解压到 Cursor：unzip -o ${zip} -d ~/.cursor/skills/`,
+                `3. 解压到 Claude Code：unzip -o ${zip} -d ~/.claude/skills/`,
+                '4. 确认 skills 目录下存在 SKILL.md 后告知我安装完成'
+            ].join('\n')
+        },
+        skillPublishPayload (slug, version, displayName) {
+            return JSON.stringify({
+                slug,
+                displayName: displayName || slug,
+                version,
+                changelog: '',
+                tags: ['latest'],
+                acceptLicenseTerms: true
+            })
+        },
+        skillApiPublishCurl (slug, version, skillDir) {
+            const payload = this.skillPublishPayload(slug, version)
+            return [
+                `cd ${skillDir}`,
+                `curl -u ${this.userName}:${this.accessToken} -X POST "${this.skillApiUrl}/skills" \\`,
+                `  -F 'payload=${payload};type=application/json' \\`,
+                '  -F "files=@SKILL.md;filename=SKILL.md"',
+                '# 其他文件同理追加 -F "files=@<相对路径>;filename=<相对路径>"'
+            ].join('\n')
+        },
+        skillChatPublishPrompt (slug, version, skillDir) {
+            return [
+                '请帮我将本地 Skill 发布到仓库。',
+                '',
+                `- Skill 目录：${skillDir}`,
+                `- slug：${slug}`,
+                `- 版本：${version}`,
+                `- 仓库 API：${this.skillApiUrl}`,
+                `- 认证：curl -u ${this.userName}:${this.accessToken}`,
+                '',
+                '请执行：',
+                '1. 确认目录根路径存在 SKILL.md',
+                `2. 使用 multipart POST 上传到 ${this.skillApiUrl}/skills`,
+                '3. payload 含 slug、displayName、version、changelog、tags:["latest"]、acceptLicenseTerms:true',
+                '4. 将目录下所有文本文件作为 files 上传（filename 为相对路径）',
+                '5. 发布成功后告知我 slug 与版本'
+            ].join('\n')
+        }
     }
 }
