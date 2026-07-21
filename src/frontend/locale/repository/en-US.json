@@ -145,6 +145,8 @@
     "repoToken": "Access Token",
     "userManage": "User",
     "userCenter": "User Center",
+    "enterpriseSpace": "Enterprise Space",
+    "defaultTimeZone": "Default Time Zone",
     "userInfo": "User info",
     "repoHelp": "Repository help",
     "projectManage": "Project",

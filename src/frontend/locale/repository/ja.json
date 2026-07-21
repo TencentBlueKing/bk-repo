@@ -145,6 +145,8 @@
   "repoToken": "個人トークン",
   "userManage": "ユーザー管理",
   "userCenter": "個人センター",
+  "enterpriseSpace": "エンタープライズスペース",
+  "defaultTimeZone": "デフォルトタイムゾーン",
   "projectManage": "プロジェクト管理",
   "projectConfig": "プロジェクト設定",
   "nodeManage": "ノード管理",

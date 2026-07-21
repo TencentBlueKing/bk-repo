@@ -12,16 +12,33 @@
             <i class="devops-icon icon-down-shape ml5" />
         </div>
         <template slot="content">
+            <div class="user-account-info">
+                <div v-if="showEnterpriseSpace" class="user-account-row">
+                    <span class="user-account-label">{{ $t('enterpriseSpace') }}</span>
+                    <span class="user-account-value">{{ tenantId }}</span>
+                </div>
+                <div class="user-account-row">
+                    <span class="user-account-label">
+                        <Icon class="user-menu-icon" name="time" size="14" />
+                        {{ $t('defaultTimeZone') }}
+                    </span>
+                    <span class="user-account-value">{{ defaultTimeZone }}</span>
+                </div>
+            </div>
             <li class="bkci-dropdown-item" v-for="name in menuList" :key="name" @click="changeRoute(name)">
                 <router-link
-                    class="flex-align-center"
+                    class="user-menu-item"
                     :to="{ name }"
                     @click.stop.prevent="() => {}">
-                    <span class="user-menu-item">{{ $t(name) }}</span>
+                    <Icon class="user-menu-icon" :name="name" size="15" />
+                    <span class="user-menu-text">{{ $t(name) }}</span>
                 </router-link>
             </li>
-            <li class="bkci-dropdown-item" @click="logout" style="padding: 0px">
-                <span class="user-menu-item">{{ $t('logout') }}</span>
+            <li class="bkci-dropdown-item" @click="logout">
+                <span class="user-menu-item">
+                    <Icon class="user-menu-icon" name="repoLogout" size="15" />
+                    <span class="user-menu-text">{{ $t('logout') }}</span>
+                </span>
             </li>
         </template>
     </bk-popover>
@@ -43,6 +60,28 @@
                     'repoToken'
                     // 'repoHelp'
                 ]
+            },
+            // 多租户环境开关
+            isMultiTenant () {
+                return BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true'
+            },
+            tenantId () {
+                return this.userInfo.tenantId || ''
+            },
+            // 企业空间仅在多租户环境且存在租户时展示；时区任何部署都展示
+            showEnterpriseSpace () {
+                return this.isMultiTenant && Boolean(this.tenantId)
+            },
+            defaultTimeZone () {
+                // 与 /user/info 返回的 timeZone 口径保持一致（网关注入）；无值时浏览器兜底
+                if (this.userInfo.timeZone) {
+                    return this.userInfo.timeZone
+                }
+                try {
+                    return Intl.DateTimeFormat().resolvedOptions().timeZone || ''
+                } catch (e) {
+                    return ''
+                }
             }
         },
         watch: {
@@ -77,13 +116,41 @@
     width: 100%;
     text-align: center;
 }
+.user-account-info {
+    min-width: 200px;
+    padding: 6px 0;
+    background-color: #fff;
+    border-bottom: 1px solid #f0f1f5;
+    .user-account-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 32px;
+        padding: 0 16px;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+    .user-account-label {
+        display: flex;
+        align-items: center;
+        color: #979ba5;
+        margin-right: 24px;
+        .user-menu-icon {
+            margin-right: 6px;
+        }
+    }
+    .user-account-value {
+        color: #63656e;
+    }
+}
 .bkci-dropdown-item {
     display: flex;
     align-items: center;
     height: 32px;
     line-height: 33px;
     padding: 0;
-    width: 90px;
+    width: 100%;
+    min-width: 90px;
     color: #63656e;
     font-size: 12px;
     text-decoration: none;
@@ -99,12 +166,23 @@
     }
 }
 .user-menu-item {
-    color: #737987;
-    cursor: pointer;
+    display: flex;
+    align-items: center;
     width: 100%;
-    text-align: center;
+    height: 100%;
+    padding: 0 16px;
+    color: #63656e;
+    cursor: pointer;
     &:hover {
-        background-color: #EAF3FF;
+        color: #3a84ff;
+        background-color: #f5f7fb;
+    }
+    .user-menu-icon {
+        margin-right: 8px;
+        flex-shrink: 0;
+    }
+    .user-menu-text {
+        flex: 1;
     }
 }
 .bkrepo-user-container {
