@@ -141,6 +141,35 @@ class PackageDao : SimpleMongoDao<TPackage>() {
         this.updateFirst(query, update)
     }
 
+    /**
+     * 向指定 package 的 historyVersion 追加一批版本名（去重语义，等价 `$addToSet.$each`）。
+     *
+     * 屏蔽 Spring Data MongoDB `AddToSetBuilder.each(Object...)` 的 vararg 陷阱：
+     * Kotlin 侧必须用 spread(`*`) 展开成独立元素，否则整个 Collection 会被当作单个数组元素塞进
+     * `$each`，生产端 historyVersion 会被写入错误结构。此处已在 DAO 内一次性处理，业务方无需感知。
+     *
+     * @return true 表示 mongo 侧发生了实际写入（modifiedCount > 0）
+     */
+    fun appendHistoryVersions(packageId: String, names: Collection<String>): Boolean {
+        if (names.isEmpty()) return false
+        val query = Query(Criteria.where(ID).isEqualTo(packageId))
+        // toTypedArray() 产生独立数组副本，spread 展开为 vararg 独立元素，两个问题一次解决
+        val update = Update().addToSet(TPackage::historyVersion.name).each(*names.toTypedArray())
+        return this.updateFirst(query, update).modifiedCount > 0
+    }
+
+    /**
+     * 从指定 package 的 historyVersion 移除一批版本名（等价 `$pullAll`）。
+     *
+     * @return true 表示 mongo 侧发生了实际写入（modifiedCount > 0）
+     */
+    fun removeHistoryVersions(packageId: String, names: Collection<String>): Boolean {
+        if (names.isEmpty()) return false
+        val query = Query(Criteria.where(ID).isEqualTo(packageId))
+        val update = Update().pullAll(TPackage::historyVersion.name, names.toTypedArray())
+        return this.updateFirst(query, update).modifiedCount > 0
+    }
+
     companion object {
         private const val HISTORY_VERSION = "historyVersion"
     }
