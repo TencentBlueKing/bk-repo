@@ -337,6 +337,82 @@
   }
   ```
 
+## 按路径分页查询目录下节点
+
+- API: GET /drive/node/path/page/{projectId}/{repoName}/{fullPath}
+- API 名称: drive_list_nodes_by_path_page
+- 功能说明:
+  - 中文: 按目录完整路径分页查询直接子节点（非递归）
+  - English: list direct child nodes by directory fullPath with page number
+- 请求体
+此接口请求体为空
+- 请求字段说明
+
+  | 字段        | 类型     | 是否必须 | 默认值 | 说明                                                         | Description                |
+  | --------- | ------ | ---- | --- | ---------------------------------------------------------- | -------------------------- |
+  | projectId | string | 是    | 无   | 项目名称                                                       | project name               |
+  | repoName  | string | 是    | 无   | 仓库名称                                                       | repo name                  |
+  | fullPath  | string | 是    | 无   | 目录完整路径，作为 URL path 后缀；根目录使用末尾 `/`，例如 `/drive/node/path/page/{projectId}/{repoName}/` | directory full path        |
+  | pageNumber| int    | 否    | 1   | 页码，从 1 开始                                                  | page number (1-based)      |
+  | pageSize  | int    | 否    | 20  | 每页条数                                                       | page size                  |
+
+- 行为说明
+  - 仅返回指定目录的直接子节点，不递归
+  - `fullPath` 必须解析为目录；路径不存在、指向文件或软链时返回 `NODE_NOT_FOUND`
+  - 不支持 `snapSeq`，仅查询当前视图
+  - 服务端固定按 `name ASC` 返回
+  - 不记录操作日志
+
+- 响应体
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": {
+      "pageNumber": 1,
+      "pageSize": 20,
+      "totalRecords": 1,
+      "totalPages": 1,
+      "records": [
+        {
+          "id": "67d074a13d19772f4b813f90",
+          "createdBy": "admin",
+          "createdDate": "2026-03-12T09:00:00",
+          "lastModifiedBy": "admin",
+          "lastModifiedDate": "2026-03-12T09:00:00",
+          "mtime": 1741770000000000000,
+          "ctime": 1741770000000000000,
+          "atime": 1741770000000000000,
+          "projectId": "demo",
+          "repoName": "drive-local",
+          "ino": 1001,
+          "targetIno": null,
+          "realIno": 1001,
+          "parent": 2,
+          "name": "a.txt",
+          "size": 1024,
+          "mode": 33188,
+          "type": 1,
+          "nlink": 1,
+          "uid": 0,
+          "gid": 0,
+          "rdev": 0,
+          "flags": 0,
+          "symlinkTarget": null,
+          "deleted": null,
+          "metadata": null,
+          "fullPath": "/docs/a.txt"
+        }
+      ]
+    },
+    "traceId": null
+  }
+  ```
+
+- records 字段说明
+  - 除 `fullPath` 外，其余字段与 DriveNode 一致
+  - `fullPath`: 子节点完整路径（由请求目录路径与子节点 `name` 拼接）
+
 ## 游标查询增量变更节点
 
 - API: GET /drive/node/modified/page/{projectId}/{repoName}

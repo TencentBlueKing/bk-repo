@@ -152,6 +152,7 @@ class RouteConfiguration(
             "/node".nest {
                 POST("/batch/{projectId}/{repoName}", driveNodeOperationsHandler::batch)
                 GET("/page/{projectId}/{repoName}", driveNodeOperationsHandler::listNodesPage)
+                GET("/path/page/{projectId}/{repoName}/**", driveNodeOperationsHandler::listNodesByPathPage)
                 GET("/modified/page/{projectId}/{repoName}", driveNodeOperationsHandler::listModifiedNodesPage)
                 filter(artifactFileCleanupFilterFunction::filter)
                 PUT("/upload/{projectId}/{repoName}/**", driveNodeOperationsHandler::upload)

@@ -5,7 +5,10 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.fs.server.config.properties.drive.DriveProperties
 import com.tencent.bkrepo.fs.server.message.DriveMessageCode
 import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode
@@ -27,7 +30,9 @@ import com.tencent.bkrepo.fs.server.response.drive.CursorPage
 import com.tencent.bkrepo.fs.server.response.drive.DriveNode
 import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResponse
 import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResult
+import com.tencent.bkrepo.fs.server.response.drive.DrivePathNode
 import com.tencent.bkrepo.fs.server.response.drive.toDriveNode
+import com.tencent.bkrepo.fs.server.response.drive.toDrivePathNode
 import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper
 import com.tencent.bkrepo.fs.server.utils.DriveNodeRequestValidator
 import com.tencent.bkrepo.fs.server.utils.DriveServiceUtils
@@ -53,6 +58,7 @@ class DriveNodeService(
     private val driveSnapSeqService: DriveSnapSeqService,
     private val driveProperties: DriveProperties,
     private val driveNodeRequestValidator: DriveNodeRequestValidator,
+    private val drivePathResolveService: DrivePathResolveService,
 ) {
     private val nodeByInoCache: AsyncLoadingCache<NodeCacheKey, Optional<TDriveNode>> = Caffeine.newBuilder()
         .maximumSize(NODE_CACHE_MAX_SIZE)
@@ -102,6 +108,34 @@ class DriveNodeService(
             snapSeq = snapSeq,
         )
         return CursorPage.fromRecords(records, pageSize) { it.toDriveNode(snapSeq != null) }
+    }
+
+    suspend fun listNodesByPathPage(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        pageNumber: Int,
+        pageSize: Int,
+    ): Page<DrivePathNode> {
+        DriveServiceUtils.validateProjectRepo(projectId, repoName)
+        DriveServiceUtils.validatePage(pageNumber, pageSize, driveProperties.listCountLimit)
+        val normalizedPath = PathUtils.normalizeFullPath(fullPath)
+        val parentIno = drivePathResolveService.resolveDirectoryIno(projectId, repoName, normalizedPath)
+            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, normalizedPath)
+        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+        val (records, totalRecords) = driveNodeDao.nodePageByNumber(
+            projectId = projectId,
+            repoName = repoName,
+            parent = parentIno,
+            pageRequest = pageRequest,
+        )
+        return Pages.ofResponse(
+            pageRequest,
+            totalRecords,
+            records.map { node ->
+                node.toDriveNode().toDrivePathNode(PathUtils.combineFullPath(normalizedPath, node.name))
+            },
+        )
     }
 
     suspend fun listModifiedNodesPage(

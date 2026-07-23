@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode
 import com.tencent.bkrepo.common.metadata.util.drive.DriveNodeDaoHelper
 import org.springframework.context.annotation.Conditional
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -39,6 +40,22 @@ class RDriveNodeDao : DriveHashShardingMongoReactiveDao<TDriveNode>() {
         val criteria = listChildrenCriteria(projectId, repoName, parent, snapSeq)
         appendCursorCondition(criteria, TDriveNode::name.name, lastName, lastId)
         return findCursorPage(criteria, TDriveNode::name.name, pageSize)
+    }
+
+    suspend fun nodePageByNumber(
+        projectId: String,
+        repoName: String,
+        parent: Long,
+        pageRequest: PageRequest,
+    ): Pair<List<TDriveNode>, Long> {
+        val criteria = listChildrenCriteria(projectId, repoName, parent)
+        val query = Query(criteria)
+        val totalRecords = count(query)
+        val records = find(
+            query.with(pageRequest)
+                .with(Sort.by(Sort.Direction.ASC, TDriveNode::name.name)),
+        )
+        return Pair(records, totalRecords)
     }
 
     suspend fun modifiedNodePage(

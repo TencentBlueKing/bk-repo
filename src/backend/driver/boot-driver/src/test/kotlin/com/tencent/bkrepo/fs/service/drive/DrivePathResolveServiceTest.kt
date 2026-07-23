@@ -67,6 +67,57 @@ class DrivePathResolveServiceTest {
         assertNull(resolved)
     }
 
+    @Test
+    fun `resolveDirectoryIno returns root ino for root path`() = runBlocking {
+        val resolved = service.resolveDirectoryIno("p1", "drive-repo", "/")
+
+        assertEquals(DriveNodePathHelper.ROOT_INO, resolved)
+    }
+
+    @Test
+    fun `resolveDirectoryIno returns directory ino when path exists`() = runBlocking {
+        val projectId = "p1"
+        val repoName = "drive-repo"
+        val dirNode = directoryNode(projectId, repoName, DriveNodePathHelper.ROOT_INO, "docs", 10L)
+
+        whenever(
+            driveNodeDao.findSnapshotNode(projectId, repoName, DriveNodePathHelper.ROOT_INO, "docs", null),
+        ).thenReturn(dirNode)
+
+        val resolved = service.resolveDirectoryIno(projectId, repoName, "/docs")
+
+        assertEquals(10L, resolved)
+    }
+
+    @Test
+    fun `resolveDirectoryIno returns null when path is file`() = runBlocking {
+        val projectId = "p1"
+        val repoName = "drive-repo"
+        val fileNode = fileNode(projectId, repoName, DriveNodePathHelper.ROOT_INO, "a.txt", 20L)
+
+        whenever(
+            driveNodeDao.findSnapshotNode(projectId, repoName, DriveNodePathHelper.ROOT_INO, "a.txt", null),
+        ).thenReturn(fileNode)
+
+        val resolved = service.resolveDirectoryIno(projectId, repoName, "/a.txt")
+
+        assertNull(resolved)
+    }
+
+    @Test
+    fun `resolveDirectoryIno returns null when path missing`() = runBlocking {
+        val projectId = "p1"
+        val repoName = "drive-repo"
+
+        whenever(
+            driveNodeDao.findSnapshotNode(projectId, repoName, DriveNodePathHelper.ROOT_INO, "missing", null),
+        ).thenReturn(null)
+
+        val resolved = service.resolveDirectoryIno(projectId, repoName, "/missing")
+
+        assertNull(resolved)
+    }
+
     private fun directoryNode(
         projectId: String,
         repoName: String,

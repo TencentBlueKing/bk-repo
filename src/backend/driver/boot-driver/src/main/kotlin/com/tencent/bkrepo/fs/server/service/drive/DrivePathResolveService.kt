@@ -23,22 +23,27 @@ class DrivePathResolveService(
         if (fileName.isBlank()) {
             return null
         }
-        val parentIno = resolveParentIno(projectId, repoName, normalizedPath, snapSeq) ?: return null
+        val parentIno = resolveDirectoryIno(projectId, repoName, PathUtils.resolveParent(normalizedPath), snapSeq)
+            ?: return null
         return driveNodeDao.findSnapshotNode(projectId, repoName, parentIno, fileName, snapSeq)
             ?.takeIf { it.type == TYPE_FILE }
     }
 
-    private suspend fun resolveParentIno(
+    /**
+     * 将 fullPath 解析为目录 inode。根路径返回 [DriveNodeQueryHelper.ROOT_INO]。
+     * 路径不存在或指向非目录时返回 null。
+     */
+    suspend fun resolveDirectoryIno(
         projectId: String,
         repoName: String,
         fullPath: String,
-        snapSeq: Long?,
+        snapSeq: Long? = null,
     ): Long? {
-        val parentPath = PathUtils.resolveParent(fullPath)
-        if (PathUtils.isRoot(parentPath)) {
+        val normalizedPath = PathUtils.normalizeFullPath(fullPath)
+        if (PathUtils.isRoot(normalizedPath)) {
             return DriveNodeQueryHelper.ROOT_INO
         }
-        val segments = parentPath.removePrefix(PathUtils.ROOT)
+        val segments = normalizedPath.removePrefix(PathUtils.ROOT)
             .split(PathUtils.UNIX_SEPARATOR)
             .filter { it.isNotBlank() }
         var parentIno = DriveNodeQueryHelper.ROOT_INO
@@ -50,11 +55,10 @@ class DrivePathResolveService(
                 segment,
                 snapSeq,
             ) ?: return null
-            if (existing.type == TYPE_DIRECTORY) {
-                parentIno = existing.ino
-            } else {
+            if (existing.type != TYPE_DIRECTORY) {
                 return null
             }
+            parentIno = existing.ino
         }
         return parentIno
     }
