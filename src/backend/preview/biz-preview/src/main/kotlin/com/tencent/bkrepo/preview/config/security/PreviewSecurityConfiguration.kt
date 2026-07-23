@@ -19,12 +19,13 @@ import com.tencent.bkrepo.common.security.permission.PermissionCheckHandler
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Lazy
 import org.springframework.context.annotation.Primary
 
 /**
  * preview 微服务专用的安全配置：
- *  1. 注册 [PreviewTokenAuthHandler]：在 customizer 中关掉 common 默认的 TemporaryTokenAuthHandler，
- *     再插入 preview 自家的实现，把 PREVIEW token 完整范围校验链闭环在 preview 模块；
+ *  1. 关闭 common 默认 TemporaryTokenAuthHandler，改由 [PreviewTokenPostAuthInterceptor] +
+ *     [PreviewTokenAuthService] 在阶段二执行双阶段 token 鉴权；
  *  2. 注册带 [Primary] 的 [PreviewArtifactPermissionCheckHandler]：覆盖 common-artifact 默认的
  *     [com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionCheckHandler]，
  *     使得当请求已通过临时 token 鉴权时直接放行，不再走 ACL；
@@ -36,25 +37,23 @@ import org.springframework.context.annotation.Primary
 class PreviewSecurityConfiguration {
 
     /**
-     * 在 customizer 中关闭 common 默认的临时 token handler 注册，并替换为 preview 自家的实现。
-     *
-     * 时序保障：HttpAuthSecurityConfiguration.configHttpAuthSecurity 会先执行所有 customizer，
-     * 再根据 `temporaryTokenEnabled` 标志位决定是否注册默认 handler。因此这里把标志位置 false
-     * 后，common 端不会再添加默认 handler；同时本 customizer 直接调 addHttpAuthHandler 注入新实现。
+     * 阻止 common 端默认 TemporaryTokenAuthHandler 被注册。
+     * preview token 鉴权改由阶段二 [PreviewTokenPostAuthInterceptor] 触发。
      */
     @Bean
-    fun previewHttpAuthSecurityCustomizer(
+    fun previewHttpAuthSecurityCustomizer(): HttpAuthSecurityCustomizer {
+        return HttpAuthSecurityCustomizer { httpAuthSecurity ->
+            httpAuthSecurity.temporaryTokenEnabled = false
+        }
+    }
+
+    @Bean
+    @Lazy
+    fun previewTokenAuthService(
         authenticationManager: AuthenticationManager,
         temporaryTokenClient: ServiceTemporaryTokenClient,
         config: PreviewTokenAuthConfig,
-    ): HttpAuthSecurityCustomizer = HttpAuthSecurityCustomizer { httpAuthSecurity ->
-        // 阻止 common 端默认 TemporaryTokenAuthHandler 被注册
-        httpAuthSecurity.temporaryTokenEnabled = false
-        // 注入 preview 自己的临时 token handler
-        httpAuthSecurity.addHttpAuthHandler(
-            PreviewTokenAuthHandler(authenticationManager, temporaryTokenClient, config)
-        )
-    }
+    ): PreviewTokenAuthService = PreviewTokenAuthService(authenticationManager, temporaryTokenClient, config)
 
     /**
      * 通过 [Primary] 让 preview 自家的 PermissionCheckHandler 优先被注入到 PermissionAspect 中。

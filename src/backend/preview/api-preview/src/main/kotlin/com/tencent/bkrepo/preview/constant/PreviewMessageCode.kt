@@ -44,7 +44,7 @@ enum class PreviewMessageCode(private val key: String) : MessageCode {
 
     /**
      * 临时 token 越权：访问的 fullPath / projectId / repoName 不在 token 声明范围内。
-     * 由 PreviewTokenAuthHandler.validateTokenScope 触发。
+     * 由 PreviewTokenAuthService 触发。
      */
     PREVIEW_TEMPORARY_TOKEN_OUT_OF_SCOPE("preview.temporary-token.out-of-scope"),
 

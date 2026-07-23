@@ -8,6 +8,7 @@ import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchPayload
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeModifiedPageRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodePageRequest
+import com.tencent.bkrepo.fs.server.request.drive.DriveNodePathPageRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeUploadRequest
 import com.tencent.bkrepo.fs.server.service.drive.DriveNodeService
 import com.tencent.bkrepo.fs.server.service.drive.DriveOperateLogService
@@ -67,6 +68,19 @@ class DriveNodeOperationsHandler(
                     "lastId" to lastId,
                     "snapSeq" to snapSeq,
                 ).filterValues { it != null } as Map<String, Any>,
+            )
+            return ReactiveResponseBuilder.success(page)
+        }
+    }
+
+    suspend fun listNodesByPathPage(request: ServerRequest): ServerResponse {
+        with(DriveNodePathPageRequest(request)) {
+            val page = driveNodeService.listNodesByPathPage(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                pageNumber = pageNumber,
+                pageSize = pageSize,
             )
             return ReactiveResponseBuilder.success(page)
         }

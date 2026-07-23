@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode
 import com.tencent.bkrepo.common.metadata.util.drive.DriveNodeDaoHelper
 import org.springframework.context.annotation.Conditional
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -39,6 +40,22 @@ class RDriveNodeDao : DriveHashShardingMongoReactiveDao<TDriveNode>() {
         val criteria = listChildrenCriteria(projectId, repoName, parent, snapSeq)
         appendCursorCondition(criteria, TDriveNode::name.name, lastName, lastId)
         return findCursorPage(criteria, TDriveNode::name.name, pageSize)
+    }
+
+    suspend fun nodePageByNumber(
+        projectId: String,
+        repoName: String,
+        parent: Long,
+        pageRequest: PageRequest,
+    ): Pair<List<TDriveNode>, Long> {
+        val criteria = listChildrenCriteria(projectId, repoName, parent)
+        val query = Query(criteria)
+        val totalRecords = count(query)
+        val records = find(
+            query.with(pageRequest)
+                .with(Sort.by(Sort.Direction.ASC, TDriveNode::name.name)),
+        )
+        return Pair(records, totalRecords)
     }
 
     suspend fun modifiedNodePage(
@@ -84,6 +101,17 @@ class RDriveNodeDao : DriveHashShardingMongoReactiveDao<TDriveNode>() {
 
     suspend fun findCurrentNode(projectId: String, repoName: String, parent: Long, name: String): TDriveNode? {
         val query = Query(currentParentNameCriteria(projectId, repoName, parent, name))
+        return findOne(query)
+    }
+
+    suspend fun findSnapshotNode(
+        projectId: String,
+        repoName: String,
+        parent: Long,
+        name: String,
+        snapSeq: Long?,
+    ): TDriveNode? {
+        val query = Query(snapshotParentNameCriteria(projectId, repoName, parent, name, snapSeq))
         return findOne(query)
     }
 

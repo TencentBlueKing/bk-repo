@@ -46,6 +46,7 @@ import com.tencent.bkrepo.common.metadata.permission.ProxyPermissionManager
 import com.tencent.bkrepo.common.metadata.properties.BlockNodeProperties
 import com.tencent.bkrepo.common.metadata.properties.OperateProperties
 import com.tencent.bkrepo.common.metadata.properties.ProjectUsageStatisticsProperties
+import com.tencent.bkrepo.common.metadata.properties.ShortLinkProperties
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
@@ -85,6 +86,7 @@ import java.util.function.Consumer
     RepositoryProperties::class,
     EnableMultiTenantProperties::class,
     BlockNodeProperties::class,
+    ShortLinkProperties::class,
 )
 class MetadataAutoConfiguration {
 

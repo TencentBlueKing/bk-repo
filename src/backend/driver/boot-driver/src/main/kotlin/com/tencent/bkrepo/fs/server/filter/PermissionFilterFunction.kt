@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
 import com.tencent.bkrepo.fs.server.service.PermissionService
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.basicCredentials
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.bearerToken
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import org.slf4j.LoggerFactory
@@ -62,20 +63,31 @@ class PermissionFilterFunction(
         val repoName = request.pathVariable(REPO_NAME)
         val action = request.getAction()
         val platformKey = request.exchange().attributes[PLATFORM_KEY]
-        if (platformKey != null) {
-            val userId = request.exchange().attributes[USER_KEY].toString()
-            return if (permissionService.checkPermission(projectId, repoName, action, userId)) {
-                next(request)
-            } else {
-                logger.info("user[$userId] no $action permission in [$projectId/$repoName]")
-                ServerResponse.status(HttpStatus.FORBIDDEN).buildAndAwait()
-            }
+        if (platformKey != null || request.basicCredentials() != null) {
+            return checkRepoPermissionByUser(request, next, projectId, repoName, action)
         }
 
         val token = request.bearerToken()
         return if (checkToken(token, request, action)) {
             next(request)
         } else {
+            ServerResponse.status(HttpStatus.FORBIDDEN).buildAndAwait()
+        }
+    }
+
+    private suspend fun checkRepoPermissionByUser(
+        request: ServerRequest,
+        next: suspend (ServerRequest) -> ServerResponse,
+        projectId: String,
+        repoName: String,
+        action: PermissionAction,
+    ): ServerResponse {
+        val userId = request.exchange().attributes[USER_KEY]?.toString()
+            ?: return ServerResponse.status(HttpStatus.FORBIDDEN).buildAndAwait()
+        return if (permissionService.checkPermission(projectId, repoName, action, userId)) {
+            next(request)
+        } else {
+            logger.info("user[$userId] no $action permission in [$projectId/$repoName]")
             ServerResponse.status(HttpStatus.FORBIDDEN).buildAndAwait()
         }
     }
@@ -119,6 +131,7 @@ class PermissionFilterFunction(
         private val WRITE_REQUEST_URL_PATTERN_SET = arrayOf(
             "/drive/block/**",
             "/drive/node/upload/**",
+            "/drive/temporary/upload/**",
             "/drive/repository/**",
             "/drive/snapshot/create/**",
             "/drive/snapshot/update/**",
@@ -136,7 +149,9 @@ class PermissionFilterFunction(
         private val uncheckedUrlPrefixList = listOf(
             "/login", "/devx/login", "/user/login",
             "/service", "/token", "/ioa", "/client/metrics/push", "/drive/repository/init/",
-            "/drive/oplog/"
+            "/drive/oplog/",
+            "/drive/temporary/upload/", "/drive/temporary/download/",
+            "/drive/temporary/token/create", "/drive/temporary/url/create",
         )
     }
 }
