@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.job.service.impl
 
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.mongo.constant.ID
@@ -24,6 +25,7 @@ import java.util.function.Consumer
 @Service
 class MigrateBlockNodeCollectionServiceImpl(
     private val mongoTemplate: MongoTemplate,
+    private val routingRegistry: MongoRoutingRegistry? = null,
 ) : MigrateBlockNodeCollectionService {
 
     /**
@@ -77,17 +79,19 @@ class MigrateBlockNodeCollectionServiceImpl(
             count++
             val newCollection = newCollectionName(newCollectionNamePrefix, newShardingFields, newShardingCount, it)
             val buffer = blockNodeBuffer.getOrPut(newCollection) { ArrayList() }
-            if (!mongoTemplate.exists(Query(Criteria.where(ID).isEqualTo(it.id)), newCollection)) {
+            val writeTemplate = writeTemplate(it.projectId, newCollection)
+            if (!writeTemplate.exists(Query(Criteria.where(ID).isEqualTo(it.id)), newCollection)) {
                 buffer.add(it)
             }
             if (buffer.size >= BATCH_SIZE) {
-                mongoTemplate.insert(buffer, newCollection)
+                writeTemplate.insert(buffer, newCollection)
                 buffer.clear()
             }
         }
         blockNodeBuffer.forEach {
             if (it.value.isNotEmpty()) {
-                mongoTemplate.insert(it.value, it.key)
+                val projectId = it.value.first().projectId
+                writeTemplate(projectId, it.key).insert(it.value, it.key)
                 it.value.clear()
             }
         }
@@ -117,14 +121,15 @@ class MigrateBlockNodeCollectionServiceImpl(
             oldCount++
             val newCollection = newCollectionName(newCollectionNamePrefix, newShardingFields, newShardingCount, old)
             val query = Query.query(Criteria.where(ID).isEqualTo(old.id))
-            val new = mongoTemplate.findOne(query, TBlockNode::class.java, newCollection)
+            val writeTemplate = writeTemplate(old.projectId, newCollection)
+            val new = writeTemplate.findOne(query, TBlockNode::class.java, newCollection)
             // 数据在新表中有而旧表中没有的情况暂不处理，避免遍历新表导致耗时过久，迁移过程中需停止BlockNode删除任务
             if (new == null) {
                 logger.info("block node[${old.id}] missed, will be inserted, collection[$newCollection]")
-                mongoTemplate.save(old, newCollection)
+                writeTemplate.save(old, newCollection)
             } else if (new != old) {
                 logger.info("block node[${old.id}] changed, will be updated, collection[$newCollection]")
-                mongoTemplate.save(old, newCollection)
+                writeTemplate.save(old, newCollection)
             }
         }
         val elapsed = System.currentTimeMillis() - start
@@ -191,6 +196,10 @@ class MigrateBlockNodeCollectionServiceImpl(
         logger.info("get all start ids elapsed ${System.currentTimeMillis() - start}ms")
         return oldCollectionStartIdMap
     }
+
+    private fun writeTemplate(projectId: String, collectionName: String): MongoTemplate =
+        routingRegistry?.resolveWriteRoute(collectionName, projectId, mongoTemplate)?.primary
+            ?: mongoTemplate
 
     private fun newCollectionName(
         newCollectionNamePrefix: String,

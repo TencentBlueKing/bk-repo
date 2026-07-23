@@ -30,10 +30,12 @@ package com.tencent.bkrepo.job.batch.task.clean
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.model.TRepository
+import com.tencent.bkrepo.common.metadata.routing.NodeMongoOperations
+import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.mongo.routing.MigrationGate
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FULL_PATH
-import com.tencent.bkrepo.job.LAST_MODIFIED_BY
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SHARDING_COUNT
@@ -42,8 +44,8 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.DeletedRepositoryCleanupJobProperties
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -59,6 +61,9 @@ import kotlin.reflect.KClass
 @Component
 class DeletedRepositoryCleanupJob(
     private val properties: DeletedRepositoryCleanupJobProperties,
+    private val nodeMongoOperations: NodeMongoOperations,
+    @Autowired(required = false)
+    private val migrationGate: MigrationGate? = null,
 ) : DefaultContextMongoDbJob<DeletedRepositoryCleanupJob.Repository>(properties) {
 
 
@@ -70,14 +75,13 @@ class DeletedRepositoryCleanupJob(
     ) {
         companion object {
             fun from(row: Map<String, Any?>) = Repository(
-                id = row[ID].toString(),
-                projectId = row[PROJECT].toString(),
-                name = row[Repository::name.name].toString(),
-                deleted = TimeUtils.parseMongoDateTimeStr(row[DELETED_DATE].toString()),
+                id = row[ID]?.toString() ?: "",
+                projectId = row[PROJECT]?.toString() ?: "",
+                name = row[Repository::name.name]?.toString() ?: "",
+                deleted = row[DELETED_DATE]?.let { TimeUtils.parseMongoDateTimeStr(it.toString()) },
             )
         }
     }
-
 
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
@@ -94,11 +98,18 @@ class DeletedRepositoryCleanupJob(
     }
 
     override fun run(row: Repository, collectionName: String, context: JobContext) {
+        // spec §3.18.3 迁移期间冻结物理删除
+        if (migrationGate?.isPhysicalDeleteFrozen(row.projectId) == true) {
+            logger.info("freeze-physical-delete active, skip ${row.projectId}/${row.name}")
+            return
+        }
         // 仓库被标记为已删除，且该仓库下不存在任何节点时，删除仓库
         val nodeCollectionName = COLLECTION_NODE_PREFIX +
             MongoShardingUtils.shardingSequence(row.projectId, SHARDING_COUNT)
         deleteNode(row.projectId, row.name, nodeCollectionName)
-        if (mongoTemplate.count(buildNodeQuery(row.projectId, row.name), nodeCollectionName) == 0L) {
+        if (routedMongoTemplate(row.projectId).count(
+                buildNodeQuery(row.projectId, row.name), nodeCollectionName
+            ) == 0L) {
             val repoQuery = Query.query(Criteria.where(ID).isEqualTo(row.id))
             mongoTemplate.remove(repoQuery, collectionName)
             logger.info("Clean up deleted repository[${row.projectId}/${row.name}] for no nodes remaining!")
@@ -112,6 +123,8 @@ class DeletedRepositoryCleanupJob(
 
     override fun mapToEntity(row: Map<String, Any?>) = Repository.from(row)
 
+    override fun extractRoutingProjectId(entity: Repository): String = entity.projectId
+
     /**
      * 再次刪除非deleted的节点
      */
@@ -124,10 +137,8 @@ class DeletedRepositoryCleanupJob(
                 Criteria.where(FULL_PATH).isEqualTo(PathUtils.ROOT)
             )
         val query = Query(criteria)
-        val update = Update()
-            .set(LAST_MODIFIED_BY, SYSTEM_USER)
-            .set(DELETED_DATE, LocalDateTime.now())
-        mongoTemplate.updateMulti(query, update, collectionName)
+        val update = NodeQueryHelper.touchLastModified(Update().set(DELETED_DATE, LocalDateTime.now()))
+        nodeMongoOperations.updateMulti(projectId, query, update, collectionName)
     }
 
     private fun buildNodeQuery(projectId: String, repoName: String): Query {

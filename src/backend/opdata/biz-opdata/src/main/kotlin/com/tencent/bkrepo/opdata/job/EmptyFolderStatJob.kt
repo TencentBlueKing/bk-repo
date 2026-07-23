@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.collection.concurrent.ConcurrentHashSet
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.path.PathUtils.combinePath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveAncestor
+import com.tencent.bkrepo.common.metadata.routing.NodeShardReadSupport
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.opdata.config.OpEmptyFolderStatJobProperties
@@ -52,7 +53,8 @@ import java.util.concurrent.ConcurrentHashMap
 @Service
 class EmptyFolderStatJob(
     private val mongoTemplate: MongoTemplate,
-    opJobProperties: OpEmptyFolderStatJobProperties
+    opJobProperties: OpEmptyFolderStatJobProperties,
+    private val nodeShardReadSupport: NodeShardReadSupport? = null,
 ) : BaseJob<EmptyFolderMetric>(mongoTemplate, opJobProperties) {
 
     fun statFolderSize(projectId: String, repoName: String, path: String = StringPool.SLASH): List<EmptyFolderMetric> {
@@ -79,7 +81,8 @@ class EmptyFolderStatJob(
         val query = Query(
             Criteria.where(FIELD_NAME_ID).isEqualTo(ObjectId(objectId))
         )
-        mongoTemplate.remove(query, Map::class.java, collectionName)
+        val template = nodeShardReadSupport?.readTemplate(projectId, collectionName) ?: mongoTemplate
+        template.remove(query, Map::class.java, collectionName)
     }
 
     override fun statAction(
@@ -97,7 +100,9 @@ class EmptyFolderStatJob(
             NodeDetail::path.name, NodeDetail::name.name, FIELD_NAME_DELETED,
             NodeDetail::fullPath.name, NodeDetail::folder.name, FIELD_NAME_ID
         )
-        val nodes = mongoTemplate.find(query, Map::class.java, collectionName)
+        val projectId = context.extraInfo[OPDATA_PROJECT_ID]!!
+        val template = nodeShardReadSupport?.readTemplate(projectId, collectionName) ?: mongoTemplate
+        val nodes = template.find(query, Map::class.java, collectionName)
         nodes.forEach {
             val deleted = it[FIELD_NAME_DELETED]
             if (deleted != null) return@forEach

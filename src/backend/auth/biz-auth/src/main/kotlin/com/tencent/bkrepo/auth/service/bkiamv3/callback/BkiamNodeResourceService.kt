@@ -36,6 +36,7 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.buildId
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.splitId
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.metadata.routing.NodeShardReadSupport
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -55,8 +56,10 @@ import org.springframework.stereotype.Component
 @Component
 class BkiamNodeResourceService(
     private val nodeService: NodeService,
-    private val mongoTemplate: MongoTemplate
-    ): BkiamResourceBaseService {
+    private val mongoTemplate: MongoTemplate,
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private val nodeShardReadSupport: NodeShardReadSupport? = null,
+) : BkiamResourceBaseService {
     override fun resourceType(): ResourceType {
         return ResourceType.NODE
     }
@@ -92,17 +95,25 @@ class BkiamNodeResourceService(
         idList.forEach {
             val (id, index) = splitId(it)
             val nodeQuery = Query.query(Criteria.where(ID).isEqualTo(id))
-            val data = mongoTemplate.find<Map<String, Any?>>(nodeQuery, "$NODE_COLLECTION_NAME$index")
-            if (data.isEmpty()) return@forEach
+            val data = findNodeDoc(nodeQuery, "$NODE_COLLECTION_NAME$index") ?: return@forEach
             val entity = InstanceInfoDTO()
             entity.id = it
-            entity.displayName = data.first()[NodeInfo::fullPath.name].toString()
+            entity.displayName = data[NodeInfo::fullPath.name].toString()
             result.add(entity)
         }
         return result
     }
 
-    private fun getRepoNameById(id: String?): Pair<String, String>?{
+    private fun findNodeDoc(query: Query, collectionName: String): Map<*, *>? {
+        return nodeShardReadSupport?.findOnAllNodeInstances(collectionName, query, Map::class.java)
+            ?.let {
+                @Suppress("UNCHECKED_CAST")
+                it as Map<*, *>
+            }
+            ?: mongoTemplate.find<Map<String, Any?>>(query, collectionName).firstOrNull()
+    }
+
+    private fun getRepoNameById(id: String?): Pair<String, String>? {
         if (id == null) return null
         val nodeQuery = Query.query(Criteria.where(ID).isEqualTo(id))
         val data = mongoTemplate.find<Map<String, Any?>>(nodeQuery, REPO_COLLECTION_NAME)

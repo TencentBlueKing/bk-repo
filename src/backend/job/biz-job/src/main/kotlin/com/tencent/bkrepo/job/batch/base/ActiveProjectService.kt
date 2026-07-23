@@ -34,9 +34,11 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.metadata.model.TOperateLog
 import com.tencent.bkrepo.job.IGNORE_PROJECT_PREFIX_LIST
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -53,6 +55,10 @@ class ActiveProjectService(
     private val redisTemplate: RedisTemplate<String, String>,
     private val lockOperation: LockOperation
 ) : BaseService(redisTemplate, lockOperation) {
+
+    @Suppress("LateinitUsage")
+    @Autowired(required = false)
+    private var routingRegistry: MongoRoutingRegistry? = null
 
     private var activeProjects = mutableSetOf<String>()
 
@@ -95,8 +101,9 @@ class ActiveProjectService(
 
         months.forEach {
             val collectionName = COLLECTION_NAME_PREFIX + it
+            val template = routingRegistry?.routeRead(collectionName, null) ?: mongoTemplate
             val query = Query(criteria)
-            val data = mongoTemplate.findDistinct(query, field, collectionName, String::class.java)
+            val data = template.findDistinct(query, field, collectionName, String::class.java)
             tempList.addAll(data)
         }
         return tempList

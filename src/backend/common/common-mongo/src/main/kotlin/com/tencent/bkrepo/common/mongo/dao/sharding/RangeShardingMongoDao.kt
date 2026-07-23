@@ -57,7 +57,7 @@ abstract class RangeShardingMongoDao<E> : ShardingMongoDao<E>() {
         val list = mutableListOf<T>()
         val collectionNames = determineCollectionNames(query)
         collectionNames.forEach {
-            val result = determineMongoTemplate().findOne(query, clazz, it)
+            val result = determineReadMongoTemplate(it, query).findOne(query, clazz, it)
             result?.apply { list.add(result) }
         }
 
@@ -102,7 +102,7 @@ abstract class RangeShardingMongoDao<E> : ShardingMongoDao<E>() {
                 skip = -diff
             } else {
                 queryWithoutPage.skip(skip).limit(limit)
-                val result = determineMongoTemplate().find(queryWithoutPage, clazz, it)
+                val result = determineReadMongoTemplate(it, queryWithoutPage).find(queryWithoutPage, clazz, it)
                 list.addAll(result)
                 skip = 0
                 limit -= result.size
@@ -119,8 +119,7 @@ abstract class RangeShardingMongoDao<E> : ShardingMongoDao<E>() {
         if (shardingValue is Document && shardingValue.size > 1) {
             throw IllegalArgumentException("Remove only works on particular table!")
         }
-        val collectionName = determineCollectionName(query)
-        return determineMongoTemplate().remove(query, collectionName)
+        return super.remove(query)
     }
 
     override fun count(query: Query): Long {
@@ -131,8 +130,7 @@ abstract class RangeShardingMongoDao<E> : ShardingMongoDao<E>() {
     }
 
     override fun exists(query: Query): Boolean {
-        val collectionName = determineCollectionName(query)
-        return determineMongoTemplate().exists(query, collectionName)
+        return super.exists(query)
     }
 
     override fun <O> aggregate(aggregation: Aggregation, outputType: Class<O>): AggregationResults<O> {
@@ -155,7 +153,7 @@ abstract class RangeShardingMongoDao<E> : ShardingMongoDao<E>() {
         val latch = CountDownLatch(collectionNames.size)
         collectionNames.forEach {
             executors.submit {
-                countMap[it] = determineMongoTemplate().count(query, it)
+                countMap[it] = determineReadMongoTemplate(it, query).count(query, it)
                 latch.countDown()
             }
         }

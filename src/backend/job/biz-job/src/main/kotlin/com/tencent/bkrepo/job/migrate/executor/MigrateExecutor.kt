@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.migrate.executor
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
@@ -64,6 +65,7 @@ class MigrateExecutor(
     private val transferDataExecutor: TransferDataExecutor,
     private val repositoryService: RepositoryService,
     mongoTemplate: MongoTemplate,
+    private val routingRegistry: MongoRoutingRegistry? = null,
 ) : BaseTaskExecutor(
     properties,
     migrateRepoStorageTaskDao,
@@ -95,7 +97,7 @@ class MigrateExecutor(
         val repoName = task.repoName
         val taskId = task.id!!
         waitBeforeMigrate(projectId, repoName)
-        val iterator = NodeIterator(task, mongoTemplate)
+        val iterator = NodeIterator(task, mongoTemplate, routingRegistry = routingRegistry)
         val totalCount = iterator.totalCount
         val migratedNumberQueue = MigratedTaskNumberPriorityQueue(task.migratedCount, task.lastMigratedNodeId)
         var migratedCount = task.migratedCount
