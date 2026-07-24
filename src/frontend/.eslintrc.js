@@ -25,7 +25,15 @@ module.exports = {
         SHOW_ANALYST_MENU: true,
         DOC_URL: true,
         API_BASE_URL: true,
-        BK_REPO_ENABLE_MULTI_TENANT_MODE: true
+        BK_REPO_ENABLE_MULTI_TENANT_MODE: true,
+        BK_ARTIFACT_SCHEME: true,
+        BK_ARTIFACT_LOCAL_PORT: true,
+        BK_ARTIFACT_CLIENT_ACK_INTERVAL: true,
+        BK_ARTIFACT_CLIENT_ACK_TIMEOUT_WARM: true,
+        BK_ARTIFACT_CLIENT_PING_WAIT_COLD: true,
+        BK_ARTIFACT_CLIENT_DOWNLOAD_ENABLED: true,
+        BK_ARTIFACT_MIN_CLIENT_VERSION: true,
+        BK_ARTIFACT_CLIENT_INSTALL_URL: true
     },
     // add your custom rules hered
     rules: {
