@@ -131,6 +131,22 @@ spec:
               value: {{ default "[::]" .Values.gateway.extIp | quote }}
             - name: BK_REPO_SUBPATH
               value: {{ include "bkrepo.webSubPath" . }}
+            - name: BK_REPO_ARTIFACT_SCHEME
+              value: {{ dig "artifactClient" "scheme" "bkartifacts://" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_LOCAL_PORT
+              value: {{ dig "artifactClient" "localPort" "39282" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_CLIENT_ACK_INTERVAL
+              value: {{ dig "artifactClient" "ackInterval" "200" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_CLIENT_ACK_TIMEOUT_WARM
+              value: {{ dig "artifactClient" "ackTimeoutWarm" "15000" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_CLIENT_PING_WAIT_COLD
+              value: {{ dig "artifactClient" "pingWaitCold" "10000" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_CLIENT_DOWNLOAD_ENABLED
+              value: {{ dig "artifactClient" "downloadEnabled" "false" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_MIN_CLIENT_VERSION
+              value: {{ dig "artifactClient" "minClientVersion" "" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_CLIENT_INSTALL_URL
+              value: {{ dig "artifactClient" "installUrl" "" .Values.gateway | quote }}
           ports:
             - name: http
               containerPort: 80

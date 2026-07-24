@@ -21,6 +21,16 @@
         window.BK_SUBPATH = BK_SUBPATH === '/' ? '/' : BK_SUBPATH
         window.BK_STATIC_URL = BK_SUBPATH === '/' ? '/ui/' : BK_SUBPATH + 'ui/'
 
+        // 拉起制品客户端下载
+        var BK_ARTIFACT_SCHEME = '__BK_REPO_ARTIFACT_SCHEME__' || 'bkartifacts://'
+        var BK_ARTIFACT_LOCAL_PORT = '__BK_REPO_ARTIFACT_LOCAL_PORT__' || '39282'
+        var BK_ARTIFACT_CLIENT_ACK_INTERVAL = '__BK_REPO_ARTIFACT_CLIENT_ACK_INTERVAL__' || '200'
+        var BK_ARTIFACT_CLIENT_ACK_TIMEOUT_WARM = '__BK_REPO_ARTIFACT_CLIENT_ACK_TIMEOUT_WARM__' || '15000'
+        var BK_ARTIFACT_CLIENT_PING_WAIT_COLD = '__BK_REPO_ARTIFACT_CLIENT_PING_WAIT_COLD__' || '10000'
+        var BK_ARTIFACT_CLIENT_DOWNLOAD_ENABLED = '__BK_REPO_ARTIFACT_CLIENT_DOWNLOAD_ENABLED__' || 'false'
+        var BK_ARTIFACT_MIN_CLIENT_VERSION = '__BK_REPO_ARTIFACT_MIN_CLIENT_VERSION__' || ''
+        var BK_ARTIFACT_CLIENT_INSTALL_URL = '__BK_REPO_ARTIFACT_CLIENT_INSTALL_URL__' || ''
+
         // 请求svg图标
         const ajax = new XMLHttpRequest()
         const url = window.BK_STATIC_URL + 'sprite.svg'
