@@ -23,9 +23,7 @@ object CheckUrl {
         if (url.isBlank()) {
             throw IllegalArgumentException("Url is null.")
         }
-        if (config.schemes.isEmpty() || config.rules.isEmpty() || config.mode.isBlank() ||
-            config.mode !in modeValues
-        ) {
+        if (isConfigIllegal(config)) {
             throw IllegalArgumentException("Config is illegal.")
         }
         if (url.startsWith('/')) {
@@ -47,6 +45,11 @@ object CheckUrl {
         if (!validator.validateUrl(config.rules, urlParsed.host)) {
             throw MalformedURLException("URL does not meet the conditions.")
         }
+    }
+
+    private fun isConfigIllegal(config: UrlCheckConfig): Boolean {
+        return config.schemes.isEmpty() || config.rules.isEmpty() ||
+            config.mode.isBlank() || config.mode !in modeValues
     }
 
     private fun isHostnameValid(hostname: String): Boolean = domainPattern.containsMatchIn(hostname)
