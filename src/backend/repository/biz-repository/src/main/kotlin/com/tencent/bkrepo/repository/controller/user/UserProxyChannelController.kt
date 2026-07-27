@@ -33,8 +33,10 @@ package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bkrepo.auth.constant.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.util.checkurl.SecUrlValidator
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
 import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -61,7 +63,8 @@ import java.util.Base64
 @RestController
 @RequestMapping("/api/proxy-channel")
 class UserProxyChannelController(
-    private val proxyChannelService: ProxyChannelService
+    private val proxyChannelService: ProxyChannelService,
+    private val repositoryProperties: RepositoryProperties,
 ) {
     private val restTemplate = RestTemplate()
 
@@ -98,6 +101,9 @@ class UserProxyChannelController(
         @RequestBody checkParam: CheckParam
     ): Response<Boolean> {
         with(checkParam) {
+            if (!SecUrlValidator.isValid(url, repositoryProperties.proxyChannelUrl)) {
+                return ResponseBuilder.success(false)
+            }
             val headers = HttpHeaders()
             if (userName != null && password != null) {
                 val useInfo = userName + StringPool.COLON + RsaUtils.decrypt(password)

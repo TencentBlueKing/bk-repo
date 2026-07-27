@@ -27,8 +27,10 @@
 
 package com.tencent.bkrepo.common.metadata.service.repo.impl
 
+import com.tencent.bkrepo.common.api.util.checkurl.SecUrlValidator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.repo.RProxyChannelDao
 import com.tencent.bkrepo.common.metadata.service.repo.RProxyChannelService
 import com.tencent.bkrepo.common.metadata.util.ProxyChannelQueryHelper.convert
@@ -48,18 +50,21 @@ import java.time.LocalDateTime
 @Service
 @Conditional(ReactiveCondition::class)
 class RProxyChannelServiceImpl(
-    private val proxyChannelDao: RProxyChannelDao
+    private val proxyChannelDao: RProxyChannelDao,
+    private val repositoryProperties: RepositoryProperties,
 ) : RProxyChannelService {
 
     override suspend fun createProxy(userId: String, request: ProxyChannelCreateRequest) {
         with(request) {
-            val tProxyChannel = convertToTProxyChannel(userId)
+            val validatedUrl = SecUrlValidator.validateOrThrow(url, repositoryProperties.proxyChannelUrl, "url")
+            val tProxyChannel = copy(url = validatedUrl).convertToTProxyChannel(userId)
             proxyChannelDao.insert(tProxyChannel)
         }
     }
 
     override suspend fun updateProxy(userId: String, request: ProxyChannelUpdateRequest) {
         with(request) {
+            val validatedUrl = SecUrlValidator.validateOrThrow(url, repositoryProperties.proxyChannelUrl, "url")
             val pw = encryptPassword(password)
             val tProxyChannel = proxyChannelDao.findByUniqueParams(
                 projectId = projectId,
@@ -71,7 +76,7 @@ class RProxyChannelServiceImpl(
                 tProxyChannel.public = public
                 tProxyChannel.lastModifiedDate = LocalDateTime.now()
                 tProxyChannel.lastModifiedBy = userId
-                tProxyChannel.url = url
+                tProxyChannel.url = validatedUrl
                 tProxyChannel.username = username
                 tProxyChannel.password = pw
                 proxyChannelDao.save(tProxyChannel)

@@ -61,15 +61,12 @@ import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.util.ClusterQueryHelper
-import com.tencent.secapi.checkurl.CheckUrl
-import com.tencent.secapi.checkurl.Config
+import com.tencent.bkrepo.common.api.util.checkurl.SecUrlValidator
 import com.tencent.bkrepo.replication.util.HttpUtils
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 import java.io.ByteArrayInputStream
-import java.net.MalformedURLException
-import java.util.ArrayList
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.random.Random
@@ -320,32 +317,7 @@ class ClusterNodeServiceImpl(
     }
 
     private fun checkClusterNodeUrl(rawUrl: String, fieldName: String) {
-        if ('\r' in rawUrl || '\n' in rawUrl) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, fieldName)
-        }
-        val formatted = try {
-            UrlFormatter.formatUrl(rawUrl.trim())
-        } catch (_: IllegalArgumentException) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, fieldName)
-        }
-        val p = replicationProperties.clusterNodeUrl
-        val cfg = Config().apply {
-            schemes = ArrayList(p.schemes)
-            if (p.rules.isEmpty()) {
-                mode = "regex"
-                rules = ArrayList(listOf(".*"))
-            } else {
-                mode = p.mode
-                rules = ArrayList(p.rules)
-            }
-        }
-        try {
-            CheckUrl.checkUrl(formatted, cfg)
-        } catch (_: IllegalArgumentException) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, fieldName)
-        } catch (_: MalformedURLException) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, fieldName)
-        }
+        SecUrlValidator.validateOrThrow(rawUrl, replicationProperties.clusterNodeUrl, fieldName)
     }
 
     private fun checkCenterNodeExist(): Boolean {
