@@ -346,6 +346,16 @@ gateway:
   appToken:
   ## 不支持ipv6网络栈时需要配置
   extIP:
+  ## 制品客户端网页拉起下载（gateway 渲染 frontend#ui#index.html 时注入）
+  artifactClient:
+    scheme: "bkartifacts://"
+    localPort: "39282"
+    ackInterval: "200"
+    ackTimeoutWarm: "15000"
+    pingWaitCold: "10000"
+    downloadEnabled: "false"
+    minClientVersion: ""
+    installUrl: ""
   ## bkrepo gateway service配置
   service:
     type: ClusterIP
