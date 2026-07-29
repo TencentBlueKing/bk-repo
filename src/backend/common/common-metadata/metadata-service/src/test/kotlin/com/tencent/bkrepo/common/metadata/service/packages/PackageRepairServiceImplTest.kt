@@ -14,7 +14,6 @@ import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
 import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
-import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.packages.impl.PackageRepairServiceImpl
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import org.bson.BsonValue
