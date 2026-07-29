@@ -14,6 +14,7 @@ import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
 import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.packages.impl.PackageRepairServiceImpl
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import org.bson.BsonValue
@@ -43,13 +44,16 @@ class PackageRepairServiceImplTest {
 
     private lateinit var packageDao: PackageDao
     private lateinit var packageVersionDao: PackageVersionDao
+    private lateinit var packageService: PackageService
     private lateinit var service: PackageRepairServiceImpl
 
     @BeforeEach
     fun setUp() {
         packageDao = mock()
         packageVersionDao = mock()
-        service = PackageRepairServiceImpl(packageDao, packageVersionDao)
+        // packageService 仅供老入口 repairHistoryVersion 使用，本测试只验证新入口，无需 stub
+        packageService = mock()
+        service = PackageRepairServiceImpl(packageService, packageDao, packageVersionDao)
         // 默认 latest 修复走的 updateFirst 返回成功；
         // historyVersion 的追加/移除走 DAO 语义方法，默认返回 true 表示有写入。
         whenever(packageDao.updateFirst(any(), any())).thenReturn(updateResult(modified = 1))

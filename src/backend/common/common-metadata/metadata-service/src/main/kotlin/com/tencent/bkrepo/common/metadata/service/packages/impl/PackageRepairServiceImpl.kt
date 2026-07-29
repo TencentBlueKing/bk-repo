@@ -9,8 +9,10 @@ import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
 import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.common.metadata.service.packages.PackageRepairService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.util.PackageQueryHelper
 import com.tencent.bkrepo.repository.pojo.packages.PackageMetadataRepairResult
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
@@ -27,6 +29,7 @@ import kotlin.system.measureNanoTime
 @Service
 @Conditional(SyncCondition::class)
 class PackageRepairServiceImpl(
+    private val packageService: PackageService,
     private val packageDao: PackageDao,
     private val packageVersionDao: PackageVersionDao
 ) : PackageRepairService {
@@ -58,8 +61,8 @@ class PackageRepairServiceImpl(
                 val repoName = it.repoName
                 val key = it.key
                 try {
-                    // 只修 historyVersion，不动 latest，保持全库入口的原始语义
-                    doRepairPackageHistoryVersion(it)
+                    // 全库入口沿用改造前的实现，仅做 historyVersion 并集补差，与新入口的分批链路互不影响
+                    legacyRepairPackageHistoryVersion(it)
                     logger.info("Success to repair history version for [$key] in repo [$projectId/$repoName].")
                     successCount += 1
                 } catch (exception: RuntimeException) {
@@ -181,6 +184,23 @@ class PackageRepairServiceImpl(
             failed = failedItems.size,
             failedItems = failedItems
         )
+    }
+
+    /**
+     * 全库入口 [repairHistoryVersion] 专用的老实现，逐字保留改造前语义：
+     * 一次性拉取包的全部版本名，与现有 historyVersion 做并集后整文档回写。
+     * 仅做补差、不做删差；不涉及 latest 字段；不进行分批。
+     *
+     * 与新入口 [repairPackageMetadata] 使用的 [doRepairPackageHistoryVersion] 完全解耦，
+     * 避免新需求的分批链路演进影响到原有全库任务的行为。
+     */
+    private fun legacyRepairPackageHistoryVersion(tPackage: TPackage) {
+        with(tPackage) {
+            val allVersion = packageService.listAllVersion(projectId, repoName, key, VersionListOption())
+                .map { it.name }
+            historyVersion = historyVersion.toMutableSet().apply { addAll(allVersion) }
+            packageDao.save(this)
+        }
     }
 
     /**
