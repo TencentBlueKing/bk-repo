@@ -90,6 +90,108 @@ export function normalizeMarkdownText (text, decodeBase64) {
     return text
 }
 
+/**
+ * Decode preview-service CODE payload (always Base64). Falls back to raw text on failure.
+ */
+export function normalizeCodeText (text, decodeBase64) {
+    if (!text) {
+        return ''
+    }
+    if (typeof decodeBase64 !== 'function') {
+        return text
+    }
+    try {
+        const decoded = decodeBase64(text.trim())
+        return decoded == null ? text : decoded
+    } catch (e) {
+        return text
+    }
+}
+
+const MONACO_LANGUAGE_BY_SUFFIX = {
+    java: 'java',
+    py: 'python',
+    python: 'python',
+    go: 'go',
+    js: 'javascript',
+    html: 'html',
+    css: 'css',
+    sh: 'shell',
+    yaml: 'yaml',
+    yml: 'yaml',
+    json: 'json',
+    sql: 'sql',
+    cpp: 'cpp',
+    h: 'c',
+    c: 'c',
+    cs: 'csharp',
+    rb: 'ruby',
+    php: 'php',
+    lua: 'lua',
+    aspx: 'plaintext',
+    jsp: 'plaintext',
+    ftl: 'plaintext'
+}
+
+function extractFileSuffix (filePath) {
+    if (!filePath) {
+        return ''
+    }
+    const normalized = String(filePath).replace(/\\/g, '/')
+    const baseName = normalized.includes('/') ? normalized.slice(normalized.lastIndexOf('/') + 1) : normalized
+    const dotIndex = baseName.lastIndexOf('.')
+    if (dotIndex < 0 || dotIndex === baseName.length - 1) {
+        return baseName.toLowerCase()
+    }
+    return baseName.slice(dotIndex + 1).toLowerCase()
+}
+
+/**
+ * Map a file path / suffix to a Monaco language id for CODE preview.
+ */
+export function resolveMonacoLanguage (filePath) {
+    const suffix = extractFileSuffix(filePath)
+    return MONACO_LANGUAGE_BY_SUFFIX[suffix] || 'plaintext'
+}
+
+/**
+ * Resolve md/jsx display mode from request params.
+ * Query `view` wins over extraParam.view; default is preview.
+ */
+export function resolvePreviewViewMode ({ query, extraParam } = {}) {
+    const fromQuery = normalizeViewMode(query && query.view)
+    if (fromQuery) {
+        return fromQuery
+    }
+    const fromExtra = readViewModeFromExtraParam(extraParam)
+    if (fromExtra) {
+        return fromExtra
+    }
+    return 'preview'
+}
+
+function normalizeViewMode (value) {
+    if (value === 'source' || value === 'preview') {
+        return value
+    }
+    return null
+}
+
+function readViewModeFromExtraParam (extraParam) {
+    if (!extraParam || extraParam === '0') {
+        return null
+    }
+    try {
+        const decoded = typeof extraParam === 'string' && extraParam.includes('%')
+            ? decodeURIComponent(extraParam)
+            : extraParam
+        const payload = typeof decoded === 'string' ? JSON.parse(decoded) : decoded
+        return normalizeViewMode(payload && payload.view)
+    } catch (e) {
+        return null
+    }
+}
+
 const ESM_CDN_PREFIX = 'https://esm.sh/'
 
 function toEsmCdnUrl (specifier) {

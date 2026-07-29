@@ -2,11 +2,13 @@ import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 import { Base64 } from 'js-base64'
 import { appendPreviewTokenToUrl } from '@repository/utils/previewOfficeFile'
-import { isJsx, isMarkdown } from '@repository/utils/file'
+import { isCode, isJsx, isMarkdown } from '@repository/utils/file'
 import {
     buildJsxSandboxSrcdoc as buildJsxSandboxSrcdocCore,
+    normalizeCodeText as normalizeCodeTextCore,
     normalizeMarkdownText as normalizeMarkdownTextCore,
     normalizePreviewPath,
+    resolveMonacoLanguage,
     resolveRelativePath,
     rewriteMarkdownImageUrls
 } from '@repository/utils/markdownJsxPreviewCore'
@@ -14,6 +16,7 @@ import {
 export {
     normalizePreviewPath,
     parsePreviewContext,
+    resolvePreviewViewMode,
     resolveRelativePath,
     rewriteMarkdownImageUrls
 } from '@repository/utils/markdownJsxPreviewCore'
@@ -47,6 +50,10 @@ export function normalizeMarkdownText (text) {
     return normalizeMarkdownTextCore(text, (value) => Base64.decode(value))
 }
 
+export function normalizeCodeText (text) {
+    return normalizeCodeTextCore(text, (value) => Base64.decode(value))
+}
+
 export function renderMarkdownToSafeHtml (markdown, { resolveAssetUrl, highlight } = {}) {
     marked.setOptions({
         gfm: true,
@@ -75,7 +82,16 @@ export function buildJsxSandboxSrcdoc (jsxSource) {
 }
 
 export function getMonacoLanguage (filePath) {
-    return isMarkdown(filePath) ? 'markdown' : 'javascriptreact'
+    if (isMarkdown(filePath)) {
+        return 'markdown'
+    }
+    if (isJsx(filePath)) {
+        return 'javascriptreact'
+    }
+    if (isCode(filePath)) {
+        return resolveMonacoLanguage(filePath)
+    }
+    return 'plaintext'
 }
 
 export function getPreviewFileKind (filePath) {
@@ -84,6 +100,9 @@ export function getPreviewFileKind (filePath) {
     }
     if (isJsx(filePath)) {
         return 'jsx'
+    }
+    if (isCode(filePath)) {
+        return 'code'
     }
     return null
 }
