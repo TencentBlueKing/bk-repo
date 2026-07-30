@@ -242,48 +242,93 @@
         <canway-dialog
             v-model="clientDownloadDialog.visible"
             :title="$t('download')"
-            width="520"
-            :height-num="300"
+            width="600"
+            :height-num="clientDownloadDialogHeight"
             @cancel="onClientDownloadDialogCancel">
             <bk-alert
                 v-if="clientDownloadDialog.mode === 'install'"
                 type="info"
-                title="未检测到 BKArtifacts 客户端"
+                title="未检测到制品库客户端"
                 style="margin-bottom: 10px; margin-top: -20px">
             </bk-alert>
-            <p v-if="clientDownloadDialog.mode === 'install'" class="client-download-install-sub">
-                请先安装并启动客户端；若已安装可尝试直接唤起
-            </p>
             <bk-alert
-                v-else-if="clientDownloadDialog.mode === 'upgrade'"
+                v-if="clientDownloadDialog.mode === 'upgrade'"
                 type="warning"
                 :title="clientDownloadDialog.message"
                 style="margin-bottom: 10px; margin-top: -20px">
             </bk-alert>
             <bk-alert
-                v-else-if="clientDownloadDialog.mode === 'failed'"
+                v-if="clientDownloadDialog.mode === 'uncertain'"
+                type="warning"
+                :title="clientDownloadDialog.message"
+                style="margin-bottom: 10px; margin-top: -20px">
+            </bk-alert>
+            <div
+                v-if="clientDownloadDialog.mode === 'uncertain' && clientDownloadDialog.waiting"
+                class="client-download-uncertain-poll">
+                <Icon name="loading" size="16" class="client-download-waiting-icon" />
+                <span>正在确认客户端入队状态…</span>
+            </div>
+            <bk-alert
+                v-if="clientDownloadDialog.mode === 'failed'"
                 type="error"
                 :title="clientDownloadDialog.message"
                 style="margin-bottom: 10px; margin-top: -20px">
             </bk-alert>
-            <div v-else class="client-download-waiting-body">
+            <p
+                v-if="clientDownloadDialog.mode === 'install'"
+                class="client-download-install-sub">
+                请先安装并启动客户端；若已安装可尝试直接唤起
+            </p>
+            <div v-if="clientDownloadDialog.mode === 'waiting'" class="client-download-waiting-body">
                 <div class="client-download-waiting">
                     <Icon name="loading" size="20" class="client-download-waiting-icon" />
                     <span class="client-download-waiting-text">{{ clientDownloadWaitingTitle }}</span>
                 </div>
                 <p class="client-download-waiting-sub">{{ clientDownloadWaitingSub }}</p>
             </div>
-            <p
-                v-if="clientDownloadDialog.webFallback"
-                class="client-download-web-fallback"
-                @click="onClientDownloadWebFallback">
-                无法使用客户端？改用浏览器下载
-            </p>
+            <div
+                v-if="showClientInstallPicker"
+                class="client-download-panel"
+                :class="{ 'client-download-panel--waiting': clientDownloadDialog.mode === 'waiting' }">
+                <h3
+                    v-if="clientDownloadDialog.mode === 'waiting'"
+                    class="client-download-install-hint">
+                    尚未安装客户端？
+                </h3>
+                <template v-else>
+                    <h3 class="client-download-panel-title">制品库客户端</h3>
+                    <p class="client-download-panel-desc">
+                        桌面端制品库，支持预约下载与下载加速，支持 Windows 应用的版本体验。
+                    </p>
+                </template>
+                <div class="client-download-platform-cards">
+                    <div
+                        v-for="item in clientInstallPlatforms"
+                        :key="item.platform"
+                        class="client-download-platform-card"
+                        @click="onClientDownloadInstallPlatform(item.platform)">
+                        <i class="devops-icon icon-download client-download-platform-download-icon"></i>
+                        <i
+                            class="devops-icon client-download-platform-os-icon"
+                            :class="item.icon">
+                        </i>
+                        <span class="client-download-platform-label">{{ item.label }}</span>
+                        <span v-if="item.arch" class="client-download-platform-arch">{{ item.arch }}</span>
+                    </div>
+                </div>
+            </div>
+            <div v-if="clientDownloadDialog.webFallback" class="client-download-web-fallback-wrap">
+                <p class="client-download-web-fallback" @click="onClientDownloadWebFallback">
+                    无法使用客户端？改用浏览器下载
+                </p>
+                <p class="client-download-web-fallback-note">
+                    大文件、多文件或目录通过浏览器下载可能较慢、不完整，且有数量上限。
+                </p>
+            </div>
             <template #footer>
                 <template v-if="clientDownloadDialog.mode === 'install'">
-                    <bk-button theme="default" @click="onClientDownloadInstall">下载安装包</bk-button>
                     <bk-button
-                        class="ml10"
                         theme="primary"
                         :loading="clientDownloadDialog.waiting"
                         @click="onClientDownloadLaunch">
@@ -291,19 +336,27 @@
                     </bk-button>
                 </template>
                 <template v-else-if="clientDownloadDialog.mode === 'upgrade'">
-                    <bk-button theme="default" @click="onClientDownloadRetry">重试</bk-button>
-                    <bk-button class="ml10" theme="primary" @click="onClientDownloadInstall">下载新版本</bk-button>
+                    <bk-button theme="primary" @click="onClientDownloadRetry">重试</bk-button>
                 </template>
                 <template v-else-if="clientDownloadDialog.mode === 'failed'">
                     <bk-button theme="default" @click="onClientDownloadDialogCancel">关闭</bk-button>
-                    <bk-button
-                        v-if="clientDownloadDialog.showInstall"
-                        class="ml10"
-                        theme="default"
-                        @click="onClientDownloadInstall">
-                        下载安装包
+                    <bk-button class="ml10" theme="default" @click="onClientDownloadDismissDone">
+                        客户端已开始下载
                     </bk-button>
                     <bk-button class="ml10" theme="primary" @click="onClientDownloadRetry">重试</bk-button>
+                </template>
+                <template v-else-if="clientDownloadDialog.mode === 'uncertain'">
+                    <bk-button theme="default" @click="onClientDownloadDialogCancel">关闭</bk-button>
+                    <bk-button class="ml10" theme="default" @click="onClientDownloadDismissDone">
+                        客户端已开始下载
+                    </bk-button>
+                    <bk-button
+                        class="ml10"
+                        theme="primary"
+                        :loading="clientDownloadDialog.waiting"
+                        @click="onClientDownloadRetry">
+                        重试
+                    </bk-button>
                 </template>
                 <template v-else>
                     <bk-button theme="default" @click="onClientDownloadDialogCancel">取消</bk-button>
@@ -346,10 +399,14 @@
         CLIENT_DOWNLOAD_CANCELLED,
         CLIENT_DOWNLOAD_FAILED,
         CLIENT_DOWNLOAD_HANDLED,
+        CLIENT_DOWNLOAD_UNCERTAIN,
         abortActiveClientDownload,
+        canResumeClientDownloadPoll,
+        getClientInstallNotConfiguredMessage,
         getClientInstallUrl,
         isClientDownloadUpgradeReason,
         prepareClientDownload,
+        resumeClientDownloadPoll,
         shouldShowInstallOnClientDownloadFail,
         startClientDownloadWait
     } from '@repository/utils/clientDownload'
@@ -413,6 +470,7 @@
                     visible: false,
                     mode: 'install',
                     message: '',
+                    reason: '',
                     waiting: false,
                     coldStart: false,
                     loopbackUncertain: false,
@@ -485,13 +543,38 @@
                     : '正在将下载任务发送至客户端…'
             },
             clientDownloadWaitingSub () {
-                if (this.clientDownloadDialog.loopbackUncertain && this.clientDownloadDialog.coldStart) {
-                    return '如弹出系统对话框，请选择「打开」。若传输列表已有任务，可点「客户端已开始下载」'
+                if (this.clientDownloadDialog.coldStart) {
+                    return '如弹出系统对话框，请选择「打开」；若未安装，请先下载客户端'
                 }
-                return this.clientDownloadDialog.coldStart
-                    ? '如弹出系统对话框，请选择「打开」'
-                    : '请在客户端传输列表查看进度'
-            }
+                return '请在客户端传输列表查看进度；如浏览器弹出打开提示，请点击「打开」'
+            },
+            clientDownloadDialogHeight () {
+                const dialog = this.clientDownloadDialog
+                if (dialog.mode === 'waiting' && this.showClientInstallPicker) {
+                    return 440
+                }
+                if (dialog.mode === 'waiting' || dialog.mode === 'uncertain') {
+                    return 300
+                }
+                return 420
+            },
+            clientInstallPlatforms () {
+                return [
+                    { platform: 'windows', label: 'Windows', icon: 'icon-windows' },
+                    { platform: 'macos-x64', label: 'macOS', arch: 'x64', icon: 'icon-macos' },
+                    { platform: 'macos-arm64', label: 'macOS', arch: 'arm64', icon: 'icon-macos' }
+                ]
+            },
+            showClientInstallPicker () {
+                const dialog = this.clientDownloadDialog
+                if (dialog.mode === 'waiting') {
+                    return dialog.coldStart || dialog.loopbackUncertain
+                }
+                if (dialog.mode === 'install' || dialog.mode === 'upgrade') {
+                    return true
+                }
+                return dialog.mode === 'failed' && dialog.showInstall
+            },
         },
         watch: {
             projectId () {
@@ -1351,6 +1434,7 @@
                     visible: true,
                     mode,
                     message,
+                    reason: '',
                     waiting: false,
                     coldStart,
                     loopbackUncertain,
@@ -1365,7 +1449,7 @@
                 this.clientDownloadDialog.pending = null
                 this.clientDownloadDialog.webFallback = null
             },
-            handleClientDownloadResult (result) {
+            handleClientDownloadResult (result, { autoResumePoll = false } = {}) {
                 if (result.status === CLIENT_DOWNLOAD_HANDLED) {
                     this.$bkMessage({
                         theme: 'info',
@@ -1379,11 +1463,22 @@
                     this.finishClientDownload()
                     return
                 }
+                if (result.status === CLIENT_DOWNLOAD_UNCERTAIN) {
+                    this.clientDownloadDialog.mode = 'uncertain'
+                    this.clientDownloadDialog.message = result.message
+                    this.clientDownloadDialog.reason = result.reason
+                    this.clientDownloadDialog.waiting = false
+                    if (autoResumePoll) {
+                        void this.runClientDownloadResumePoll()
+                    }
+                    return
+                }
                 if (result.status === CLIENT_DOWNLOAD_FAILED) {
                     this.clientDownloadDialog.mode = isClientDownloadUpgradeReason(result.reason)
                         ? 'upgrade'
                         : 'failed'
                     this.clientDownloadDialog.message = result.message
+                    this.clientDownloadDialog.reason = result.reason
                     this.clientDownloadDialog.showInstall = shouldShowInstallOnClientDownloadFail(result.reason)
                     this.clientDownloadDialog.waiting = false
                 }
@@ -1393,7 +1488,22 @@
                 this.clientDownloadDialog.coldStart = !pending.running
                 this.clientDownloadDialog.waiting = true
                 try {
-                    this.handleClientDownloadResult(await startClientDownloadWait(pending))
+                    this.handleClientDownloadResult(
+                        await startClientDownloadWait(pending),
+                        { autoResumePoll: true }
+                    )
+                } finally {
+                    this.clientDownloadDialog.waiting = false
+                }
+            },
+            async runClientDownloadResumePoll () {
+                const pending = this.clientDownloadDialog.pending
+                if (!pending || this.clientDownloadDialog.waiting) {
+                    return
+                }
+                this.clientDownloadDialog.waiting = true
+                try {
+                    this.handleClientDownloadResult(await resumeClientDownloadPoll(pending))
                 } finally {
                     this.clientDownloadDialog.waiting = false
                 }
@@ -1509,12 +1619,12 @@
                 abortActiveClientDownload()
                 this.finishClientDownload()
             },
-            onClientDownloadInstall () {
-                const installUrl = getClientInstallUrl()
+            onClientDownloadInstallPlatform (platform) {
+                const installUrl = getClientInstallUrl(platform)
                 if (!installUrl) {
                     this.$bkMessage({
                         theme: 'warning',
-                        message: '未配置客户端安装地址，请联系管理员'
+                        message: getClientInstallNotConfiguredMessage(platform)
                     })
                     return
                 }
@@ -1528,8 +1638,12 @@
                 await this.runClientDownloadWait(pending)
             },
             async onClientDownloadRetry () {
-                const { pending, webFallback } = this.clientDownloadDialog
+                const { pending, webFallback, mode, reason } = this.clientDownloadDialog
                 if (!pending) return
+                if ((mode === 'uncertain' || mode === 'failed') && canResumeClientDownloadPoll(reason)) {
+                    await this.runClientDownloadResumePoll()
+                    return
+                }
                 await this.beginClientDownload({
                     row: pending.row,
                     paths: pending.paths,
@@ -1537,7 +1651,7 @@
                 })
             },
             onClientDownloadWebFallback () {
-                if (this.clientDownloadDialog.mode === 'waiting') {
+                if (['waiting', 'uncertain'].includes(this.clientDownloadDialog.mode)) {
                     abortActiveClientDownload()
                 }
                 const fallback = this.clientDownloadDialog.webFallback
@@ -2025,14 +2139,124 @@
 }
 
 .client-download-install-sub {
-    margin: 0 0 8px;
+    margin: 0 0 12px;
     font-size: 14px;
     color: #63656e;
     line-height: 22px;
 }
 
+.client-download-panel {
+    padding: 16px;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #f0f5ff 0%, #f7f9ff 100%);
+}
+
+.client-download-panel-title {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #313238;
+    line-height: 24px;
+}
+
+.client-download-panel-desc {
+    margin: 0 0 16px;
+    font-size: 12px;
+    color: #979ba5;
+    line-height: 20px;
+}
+
+.client-download-platform-cards {
+    display: flex;
+    gap: 16px;
+}
+
+.client-download-platform-card {
+    position: relative;
+    flex: 1;
+    min-height: 112px;
+    border: 1px solid #e1ecff;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.client-download-platform-card:hover {
+    border-color: #3a84ff;
+    box-shadow: 0 4px 12px rgba(58, 132, 255, 0.15);
+    transform: translateY(-1px);
+}
+
+.client-download-platform-download-icon {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 14px;
+    color: #c4c6cc;
+}
+
+.client-download-platform-card:hover .client-download-platform-download-icon {
+    color: #3a84ff;
+}
+
+.client-download-platform-os-icon {
+    font-size: 32px;
+    line-height: 1;
+    margin-bottom: 10px;
+    color: #3a84ff;
+}
+
+.client-download-platform-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #3a84ff;
+    line-height: 22px;
+}
+
+.client-download-platform-arch {
+    margin-top: 2px;
+    font-size: 12px;
+    color: #979ba5;
+    line-height: 18px;
+}
+
+.client-download-install-hint {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #63656e;
+    line-height: 22px;
+}
+
+.client-download-uncertain-poll {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #63656e;
+}
+
+.client-download-uncertain-poll .client-download-waiting-icon {
+    margin-right: 8px;
+}
+
+.client-download-panel--waiting {
+    margin-top: 16px;
+    padding: 16px;
+}
+
+.client-download-panel--waiting .client-download-platform-cards {
+    margin-top: 0;
+}
+
 .client-download-waiting-body {
-    min-height: 120px;
+    min-height: 88px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2068,16 +2292,27 @@
     width: 100%;
 }
 
-.client-download-web-fallback {
+.client-download-web-fallback-wrap {
     margin: 16px 0 0;
+    text-align: center;
+}
+
+.client-download-web-fallback {
+    margin: 0;
     font-size: 12px;
     color: #c4c6cc;
-    text-align: center;
     cursor: pointer;
 }
 
 .client-download-web-fallback:hover {
     color: #979ba5;
+}
+
+.client-download-web-fallback-note {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: #ea3636;
+    line-height: 18px;
 }
 
 @keyframes client-download-rotate {
