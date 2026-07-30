@@ -9,7 +9,8 @@ import {
     normalizeMarkdownText,
     normalizeCodeText,
     resolveMonacoLanguage,
-    resolvePreviewViewMode
+    resolvePreviewViewMode,
+    buildJsxSandboxSrcdoc
 } from './markdownJsxPreviewCore.js'
 
 test('resolveRelativePath resolves sibling and parent paths', () => {
@@ -58,6 +59,26 @@ test('prepareJsxSource keeps package imports and mounts default export', () => {
     assert.match(source, /from "https:\/\/esm\.sh\/lucide-react"/)
     assert.match(source, /const __PREVIEW_COMPONENT__ = function Hello/)
     assert.match(source, /createRoot/)
+    assert.match(source, /React\.createElement\(__PREVIEW_COMPONENT__\)/)
+    assert.equal((source.match(/import\s+React\b/g) || []).length, 1)
+})
+
+test('prepareJsxSource injects React when user JSX omits the import', () => {
+    const source = prepareJsxSource(
+        'export default function DeltaForceHome () { return <div>Hi</div> }'
+    )
+    assert.match(source, /^import React from 'https:\/\/esm\.sh\/react';/m)
+    assert.match(source, /const __PREVIEW_COMPONENT__ = function DeltaForceHome/)
+    assert.match(source, /React\.createElement\(__PREVIEW_COMPONENT__\)/)
+})
+
+test('prepareJsxSource injects React when only named hooks are imported', () => {
+    const source = prepareJsxSource(
+        'import { useState } from "react"\nexport default function App () { const [n] = useState(0); return <div>{n}</div> }'
+    )
+    assert.match(source, /import React from 'https:\/\/esm\.sh\/react';/)
+    assert.match(source, /from "https:\/\/esm\.sh\/react"/)
+    assert.equal((source.match(/import\s+React\b/g) || []).length, 1)
 })
 
 test('prepareJsxSource rejects require', () => {
@@ -148,4 +169,16 @@ test('resolvePreviewViewMode reads view from extraParam payload', () => {
         }),
         'preview'
     )
+})
+
+test('buildJsxSandboxSrcdoc shims fragment navigation and sandbox APIs', () => {
+    const srcdoc = buildJsxSandboxSrcdoc(
+        'export default function App () { return <a href="#modes">modes</a> }',
+        '/ui/libs/'
+    )
+    assert.match(srcdoc, /a\[href\^="#"]/)
+    assert.match(srcdoc, /scrollIntoView/)
+    assert.match(srcdoc, /defineProperty\(document, 'cookie'/)
+    assert.match(srcdoc, /defineProperty\(navigator, 'serviceWorker'/)
+    assert.match(srcdoc, /__isSandboxCapabilityError/)
 })

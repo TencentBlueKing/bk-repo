@@ -31,13 +31,13 @@ import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
 import org.springframework.util.AntPathMatcher
 import org.springframework.web.reactive.HandlerMapping
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.queryParamOrNull
+import org.springframework.web.util.UriUtils
 import org.springframework.web.util.pattern.PathPattern
+import java.nio.charset.StandardCharsets
 
 open class NodeRequest(
     open val projectId: String,
@@ -74,7 +74,7 @@ open class NodeRequest(
                 (request.attribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE).get() as PathPattern).patternString,
                 request.path()
             )
-            val decodeUrl = URLDecoder.decode(encodeUrl, StandardCharsets.UTF_8.name())
+            val decodeUrl = UriUtils.decode(encodeUrl, StandardCharsets.UTF_8.name())
             return PathUtils.normalizeFullPath(decodeUrl)
         }
     }

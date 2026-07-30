@@ -8,11 +8,17 @@ import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchPayload
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeModifiedPageRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodePageRequest
+import com.tencent.bkrepo.fs.server.request.drive.DriveNodePreviewUrlRequest
+import com.tencent.bkrepo.fs.server.request.drive.DriveNodeSearchCountPayload
+import com.tencent.bkrepo.fs.server.request.drive.DriveNodeSearchCountRequest
+import com.tencent.bkrepo.fs.server.request.drive.DriveNodeSearchPayload
+import com.tencent.bkrepo.fs.server.request.drive.DriveNodeSearchRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeUploadRequest
+import com.tencent.bkrepo.fs.server.resolveBkRepoMetadata
+import com.tencent.bkrepo.fs.server.service.drive.DriveNodePreviewUrlService
 import com.tencent.bkrepo.fs.server.service.drive.DriveNodeService
 import com.tencent.bkrepo.fs.server.service.drive.DriveOperateLogService
 import com.tencent.bkrepo.fs.server.service.drive.DriveUploadService
-import com.tencent.bkrepo.fs.server.resolveBkRepoMetadata
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.springframework.stereotype.Component
@@ -22,13 +28,14 @@ import org.springframework.web.reactive.function.server.ServerResponse
 /**
  * Drive 节点操作处理器
  *
- * 处理节点分页、增量变更查询与完整文件上传
+ * 处理节点分页、增量变更查询、预览 URL 生成与完整文件上传
  */
 @Component
 class DriveNodeOperationsHandler(
     private val driveNodeService: DriveNodeService,
     private val driveOperateLogService: DriveOperateLogService,
     private val driveUploadService: DriveUploadService,
+    private val driveNodePreviewUrlService: DriveNodePreviewUrlService,
 ) {
     suspend fun batch(request: ServerRequest): ServerResponse {
         val userId = ReactiveSecurityUtils.getUser()
@@ -99,6 +106,50 @@ class DriveNodeOperationsHandler(
                 ),
             )
             return ReactiveResponseBuilder.success(page)
+        }
+    }
+
+    suspend fun search(request: ServerRequest): ServerResponse {
+        val payload = request.readBodyOrNull(DriveNodeSearchPayload::class.java) ?: DriveNodeSearchPayload()
+        with(DriveNodeSearchRequest(request, payload)) {
+            val page = driveNodeService.search(
+                projectId = projectId,
+                repoName = repoName,
+                pageSize = pageSize,
+                name = name,
+                metadata = metadata,
+                lastModifiedDate = lastModifiedDate,
+                lastId = lastId,
+                direction = direction,
+            )
+            return ReactiveResponseBuilder.success(page)
+        }
+    }
+
+    suspend fun searchCount(request: ServerRequest): ServerResponse {
+        val payload = request.readBodyOrNull(DriveNodeSearchCountPayload::class.java) ?: DriveNodeSearchCountPayload()
+        with(DriveNodeSearchCountRequest(request, payload)) {
+            val count = driveNodeService.searchCount(
+                projectId = projectId,
+                repoName = repoName,
+                name = name,
+                metadata = metadata,
+                distinctByMetadataKeys = distinctByMetadataKeys,
+                groupByMetadataKey = groupByMetadataKey,
+            )
+            return ReactiveResponseBuilder.success(count)
+        }
+    }
+
+    suspend fun previewUrl(request: ServerRequest): ServerResponse {
+        with(DriveNodePreviewUrlRequest(request)) {
+            val url = driveNodePreviewUrlService.buildPreviewUrl(
+                projectId = projectId,
+                repoName = repoName,
+                ino = ino,
+                type = type,
+            )
+            return ReactiveResponseBuilder.success(url)
         }
     }
 

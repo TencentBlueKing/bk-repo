@@ -35,6 +35,8 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -146,5 +148,20 @@ class PathUtilsTest {
         assertEquals("/", PathUtils.getCommonParentPath(listOf("/a/file1", "/file2")))
         assertEquals("/a/b/", PathUtils.getCommonParentPath(listOf("/a/b/file1")))
         assertEquals("/a/", PathUtils.getCommonParentPath(listOf("/a/b", "/a/b")))
+    }
+
+    @Test
+    fun testIsSubPath() {
+        assertTrue(PathUtils.isSubPath("/data/report", "/data/report"))
+        assertTrue(PathUtils.isSubPath("/data/report/a.pdf", "/data/report"))
+        assertTrue(PathUtils.isSubPath("/data/report/subdir/x", "/data/report"))
+        assertTrue(PathUtils.isSubPath("/data/report/a.pdf", "/data/report/"))
+        assertTrue(PathUtils.isSubPath("/anything", ROOT))
+        assertTrue(PathUtils.isSubPath("/data/report", "data/report"))
+
+        assertFalse(PathUtils.isSubPath("/data/report-secret/passwd.txt", "/data/report"))
+        assertFalse(PathUtils.isSubPath("/data/report2/private.bin", "/data/report"))
+        assertFalse(PathUtils.isSubPath("/data/report_backup/key", "/data/report"))
+        assertFalse(PathUtils.isSubPath("/data/other", "/data/report"))
     }
 }

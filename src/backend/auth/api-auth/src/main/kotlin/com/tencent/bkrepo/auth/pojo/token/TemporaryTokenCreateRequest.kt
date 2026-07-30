@@ -54,4 +54,6 @@ data class TemporaryTokenCreateRequest(
     val type: TokenType,
     @get:Schema(title = "创建人")
     val createdBy: String? = null,
+    @get:Schema(title = "快照序列号，为空表示只读最新数据")
+    val snapSeq: Long? = null,
 )
