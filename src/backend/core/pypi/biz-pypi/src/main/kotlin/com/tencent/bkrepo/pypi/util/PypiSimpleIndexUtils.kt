@@ -26,23 +26,13 @@
 
 package com.tencent.bkrepo.pypi.util
 
-import com.tencent.bkrepo.pypi.constants.NON_ALPHANUMERIC_SEQ_REGEX
 import com.tencent.bkrepo.pypi.constants.SIMPLE_INDEX_CACHE_DIR
 import com.tencent.bkrepo.pypi.constants.SIMPLE_INDEX_CACHE_PACKAGES_PREFIX
 
 object PypiSimpleIndexUtils {
 
-    private val nonAlphanumericSeqRegex = Regex(NON_ALPHANUMERIC_SEQ_REGEX)
-
-    /**
-     * PEP 503 包名规范化：连续 [-_.] 转为单个 `-`，并转小写
-     */
-    fun normalizePackageName(packageName: String): String {
-        return packageName.replace(nonAlphanumericSeqRegex, "-").lowercase()
-    }
-
     fun packageCacheFullPath(packageName: String): String {
-        return "$SIMPLE_INDEX_CACHE_PACKAGES_PREFIX${normalizePackageName(packageName)}.html"
+        return "$SIMPLE_INDEX_CACHE_PACKAGES_PREFIX$packageName.html"
     }
 
     fun isSimpleIndexCacheFolder(name: String): Boolean {

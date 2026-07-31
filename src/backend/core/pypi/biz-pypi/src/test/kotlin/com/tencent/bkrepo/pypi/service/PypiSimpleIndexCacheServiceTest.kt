@@ -90,7 +90,7 @@ class PypiSimpleIndexCacheServiceTest {
     }
 
     @Test
-    @DisplayName("获锁后写入规范化路径缓存")
+    @DisplayName("获锁后按原始包名写入缓存")
     fun tryStoreWritesWhenLockAcquired() {
         val lock = Any()
         val fullPath = PypiSimpleIndexUtils.packageCacheFullPath("My.Package")
@@ -140,8 +140,8 @@ class PypiSimpleIndexCacheServiceTest {
     }
 
     @Test
-    @DisplayName("invalidate 删除规范化路径缓存")
-    fun invalidateDeletesNormalizedPath() {
+    @DisplayName("invalidate 按原始包名删除缓存")
+    fun invalidateDeletesCachePath() {
         val fullPath = PypiSimpleIndexUtils.packageCacheFullPath("My_Package")
         every { nodeService.deleteNode(any()) } returns mockk(relaxed = true)
 
@@ -163,13 +163,15 @@ class PypiSimpleIndexCacheServiceTest {
     }
 
     @Test
-    @DisplayName("PEP503 规范化包名")
-    fun normalizePackageName() {
-        assertEquals("my-package", PypiSimpleIndexUtils.normalizePackageName("My_Package"))
-        assertEquals("my-package", PypiSimpleIndexUtils.normalizePackageName("my.package"))
+    @DisplayName("缓存路径使用原始包名")
+    fun packageCacheFullPathUsesRawName() {
         assertEquals(
-            "/.pypi-simple-index/packages/my-package.html",
+            "/.pypi-simple-index/packages/My_Package.html",
             PypiSimpleIndexUtils.packageCacheFullPath("My_Package")
+        )
+        assertEquals(
+            "/.pypi-simple-index/packages/My.Package.html",
+            PypiSimpleIndexUtils.packageCacheFullPath("My.Package")
         )
         assertTrue(PypiSimpleIndexUtils.isSimpleIndexCacheFolder(".pypi-simple-index"))
         assertFalse(PypiSimpleIndexUtils.isSimpleIndexCacheFolder("requests"))
