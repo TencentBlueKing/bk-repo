@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.pypi.artifact.PypiProperties
 import com.tencent.bkrepo.pypi.util.PypiSimpleIndexUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -47,6 +48,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import java.time.Duration
 import java.time.LocalDateTime
 
 @DisplayName("PyPI simple 单包索引文件缓存")
@@ -55,12 +57,18 @@ class PypiSimpleIndexCacheServiceTest {
     private val nodeService: NodeService = mockk(relaxed = true)
     private val storageManager: StorageManager = mockk(relaxed = true)
     private val lockOperation: LockOperation = mockk(relaxed = true)
+    private val pypiProperties = PypiProperties().apply {
+        enableSimpleIndexCache = true
+        simpleIndexCacheTtl = Duration.ofMinutes(1)
+    }
     private lateinit var service: PypiSimpleIndexCacheService
 
     @BeforeEach
     fun setUp() {
         clearMocks(nodeService, storageManager, lockOperation)
-        service = PypiSimpleIndexCacheService(nodeService, storageManager, lockOperation)
+        pypiProperties.enableSimpleIndexCache = true
+        pypiProperties.simpleIndexCacheTtl = Duration.ofMinutes(1)
+        service = PypiSimpleIndexCacheService(nodeService, storageManager, lockOperation, pypiProperties)
     }
 
     @Test
@@ -87,6 +95,32 @@ class PypiSimpleIndexCacheServiceTest {
 
         assertNull(service.load(PROJECT, REPO, "demo", null))
         verify(exactly = 0) { storageManager.loadFullArtifactInputStream(any(), any()) }
+    }
+
+    @Test
+    @DisplayName("缓存超过 TTL 时按 miss 处理")
+    fun loadReturnsNullWhenExpired() {
+        val fullPath = PypiSimpleIndexUtils.packageCacheFullPath("demo")
+        val node = nodeDetail(fullPath, lastModifiedDate = LocalDateTime.now().minusMinutes(2))
+        every { nodeService.getNodeDetail(any(), any()) } returns node
+
+        assertNull(service.load(PROJECT, REPO, "demo", null))
+        verify(exactly = 0) { storageManager.loadFullArtifactInputStream(any(), any()) }
+    }
+
+    @Test
+    @DisplayName("TTL 小于等于 0 时不过期")
+    fun loadIgnoresTtlWhenDisabled() {
+        pypiProperties.simpleIndexCacheTtl = Duration.ZERO
+        val html = "<html>cached</html>"
+        val fullPath = PypiSimpleIndexUtils.packageCacheFullPath("demo")
+        val node = nodeDetail(fullPath, lastModifiedDate = LocalDateTime.now().minusDays(30))
+        every { nodeService.getNodeDetail(any(), any()) } returns node
+        every {
+            storageManager.loadFullArtifactInputStream(node, null)
+        } returns ArtifactInputStream(html.byteInputStream(), Range.full(html.length.toLong()))
+
+        assertEquals(html, service.load(PROJECT, REPO, "demo", null))
     }
 
     @Test
@@ -163,6 +197,56 @@ class PypiSimpleIndexCacheServiceTest {
     }
 
     @Test
+    @DisplayName("load/store/invalidate 对同一原始包名使用相同路径")
+    fun loadStoreInvalidateShareSameRawPackagePath() {
+        val packageName = "My_Package"
+        val fullPath = PypiSimpleIndexUtils.packageCacheFullPath(packageName)
+        val lock = Any()
+        every { nodeService.getNodeDetail(any(), any()) } returns null
+        every { lockOperation.getLock(any()) } returns lock
+        every { lockOperation.acquireLock(any(), lock) } returns true
+        every { lockOperation.close(any(), lock) } returns Unit
+        every { storageManager.storeArtifactFile(any(), any(), any()) } returns nodeDetail(fullPath)
+        every { nodeService.deleteNode(any()) } returns mockk(relaxed = true)
+
+        assertNull(service.load(PROJECT, REPO, packageName, null))
+        assertTrue(service.tryStore(PROJECT, REPO, packageName, "<html>old</html>", "user", null))
+        service.invalidate(PROJECT, REPO, packageName)
+
+        verify {
+            nodeService.getNodeDetail(match { it.getArtifactFullPath() == fullPath }, any())
+            storageManager.storeArtifactFile(
+                match<NodeCreateRequest> { it.fullPath == fullPath },
+                any(),
+                null
+            )
+            nodeService.deleteNode(match<NodeDeleteRequest> { it.fullPath == fullPath })
+        }
+    }
+
+    @Test
+    @DisplayName("invalidate 后旧 HTML 仍可被 tryStore 写回，但过期后 load 按 miss")
+    fun staleStoreAfterInvalidateExpiresByTtl() {
+        val packageName = "demo"
+        val fullPath = PypiSimpleIndexUtils.packageCacheFullPath(packageName)
+        val lock = Any()
+        every { lockOperation.getLock(any()) } returns lock
+        every { lockOperation.acquireLock(any(), lock) } returns true
+        every { lockOperation.close(any(), lock) } returns Unit
+        every { storageManager.storeArtifactFile(any(), any(), any()) } returns nodeDetail(fullPath)
+        every { nodeService.deleteNode(any()) } returns mockk(relaxed = true)
+
+        service.invalidate(PROJECT, REPO, packageName)
+        assertTrue(service.tryStore(PROJECT, REPO, packageName, "<html>stale</html>", "user", null))
+
+        val expiredNode = nodeDetail(fullPath, lastModifiedDate = LocalDateTime.now().minusMinutes(2))
+        every { nodeService.getNodeDetail(any(), any()) } returns expiredNode
+
+        assertNull(service.load(PROJECT, REPO, packageName, null))
+        verify(exactly = 0) { storageManager.loadFullArtifactInputStream(any(), any()) }
+    }
+
+    @Test
     @DisplayName("缓存路径使用原始包名")
     fun packageCacheFullPathUsesRawName() {
         assertEquals(
@@ -177,14 +261,17 @@ class PypiSimpleIndexCacheServiceTest {
         assertFalse(PypiSimpleIndexUtils.isSimpleIndexCacheFolder("requests"))
     }
 
-    private fun nodeDetail(fullPath: String): NodeDetail {
+    private fun nodeDetail(
+        fullPath: String,
+        lastModifiedDate: LocalDateTime = LocalDateTime.now(),
+    ): NodeDetail {
         val name = fullPath.substringAfterLast('/')
         val path = fullPath.substringBeforeLast('/') + "/"
         val info = NodeInfo(
             createdBy = "system",
-            createdDate = LocalDateTime.now().toString(),
+            createdDate = lastModifiedDate.toString(),
             lastModifiedBy = "system",
-            lastModifiedDate = LocalDateTime.now().toString(),
+            lastModifiedDate = lastModifiedDate.toString(),
             folder = false,
             path = path,
             name = name,

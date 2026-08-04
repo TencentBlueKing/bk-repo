@@ -32,14 +32,18 @@ import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.pypi.artifact.PypiProperties
 import com.tencent.bkrepo.pypi.util.PypiSimpleIndexUtils
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.io.File
 import java.nio.charset.StandardCharsets
+import java.time.Duration
+import java.time.LocalDateTime
 
 /**
  * LOCAL PyPI `/simple/{package}/` HTML 文件缓存（仓库内节点）。
@@ -50,10 +54,11 @@ class PypiSimpleIndexCacheService(
     private val nodeService: NodeService,
     private val storageManager: StorageManager,
     private val lockOperation: LockOperation,
+    private val pypiProperties: PypiProperties,
 ) {
 
     /**
-     * 读取单包 simple HTML 缓存；不存在返回 null（不缓存 miss）。
+     * 读取单包 simple HTML 缓存；不存在或已过期返回 null（不缓存 miss）。
      */
     fun load(
         projectId: String,
@@ -64,6 +69,13 @@ class PypiSimpleIndexCacheService(
         val fullPath = PypiSimpleIndexUtils.packageCacheFullPath(packageName)
         val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath)) ?: return null
         if (node.folder) {
+            return null
+        }
+        if (isExpired(node)) {
+            logger.info(
+                "Pypi simple index cache expired[$projectId/$repoName$fullPath], " +
+                    "lastModifiedDate[${node.lastModifiedDate}], ttl[${pypiProperties.simpleIndexCacheTtl}]"
+            )
             return null
         }
         return storageManager.loadFullArtifactInputStream(node, storageCredentials)?.use { input ->
@@ -163,6 +175,24 @@ class PypiSimpleIndexCacheService(
             if (tempFile.exists()) {
                 tempFile.delete()
             }
+        }
+    }
+
+    private fun isExpired(node: NodeDetail): Boolean {
+        val ttl = pypiProperties.simpleIndexCacheTtl
+        if (ttl.isZero || ttl.isNegative) {
+            return false
+        }
+        return try {
+            val lastModified = LocalDateTime.parse(node.lastModifiedDate)
+            Duration.between(lastModified, LocalDateTime.now()) >= ttl
+        } catch (e: Exception) {
+            logger.warn(
+                "Failed to parse cache lastModifiedDate[${node.lastModifiedDate}] " +
+                    "for[${node.projectId}/${node.repoName}${node.fullPath}], treat as expired",
+                e
+            )
+            true
         }
     }
 
