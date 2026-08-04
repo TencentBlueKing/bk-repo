@@ -58,6 +58,7 @@
     import { Base64 } from 'js-base64'
     import { isCode, isExcel, isFormatType, isHtmlType, isJsx, isMarkdown, isPic, isText, isXmind } from '@repository/utils/file'
     import { createAssetResolver, parsePreviewContext, resolvePreviewViewMode } from '@repository/utils/markdownJsxPreview'
+    import { buildImageViewerOptions, isPurePreviewEnabled } from '@repository/utils/imagePreview'
     import { createOrUpdateXmindViewer, destroyXmindViewer } from '@repository/utils/xmindPreview'
     import SourcePreviewTabs from '@repository/components/FilePreview/SourcePreviewTabs'
     import Viewer from 'viewerjs'
@@ -334,7 +335,9 @@
                     this.imgUrl = URL.createObjectURL(res.data)
                     this.$nextTick(() => {
                         const viewer = new Viewer(document.getElementById('image'), {
-                            inline: true,
+                            ...buildImageViewerOptions({
+                                purePreview: isPurePreviewEnabled(this.$route.query)
+                            }),
                             viewed () {
                                 viewer.zoomTo(1)
                             }
