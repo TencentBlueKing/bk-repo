@@ -58,6 +58,7 @@
     import { Base64 } from 'js-base64'
     import { isCode, isExcel, isFormatType, isHtmlType, isJsx, isMarkdown, isPic, isText, isXmind } from '@repository/utils/file'
     import { createAssetResolver, parsePreviewContext, resolvePreviewViewMode } from '@repository/utils/markdownJsxPreview'
+    import { buildImageViewerOptions, isPurePreviewEnabled } from '@repository/utils/imagePreview'
     import { createOrUpdateXmindViewer, destroyXmindViewer } from '@repository/utils/xmindPreview'
     import SourcePreviewTabs from '@repository/components/FilePreview/SourcePreviewTabs'
     import Viewer from 'viewerjs'
@@ -333,12 +334,9 @@
                     this.imgShow = true
                     this.imgUrl = URL.createObjectURL(res.data)
                     this.$nextTick(() => {
-                        const viewer = new Viewer(document.getElementById('image'), {
-                            inline: true,
-                            viewed () {
-                                viewer.zoomTo(1)
-                            }
-                        })
+                        new Viewer(document.getElementById('image'), buildImageViewerOptions({
+                            purePreview: isPurePreviewEnabled(this.$route.query)
+                        }))
                     })
                 } else if (isMarkdown(this.filePath) || isJsx(this.filePath) || isCode(this.filePath)) {
                     const text = await res.data.text()

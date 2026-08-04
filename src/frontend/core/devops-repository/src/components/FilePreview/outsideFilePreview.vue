@@ -67,6 +67,7 @@
         isXmind
     } from '@repository/utils/file'
     import { createAssetResolver, parsePreviewContext, resolvePreviewViewMode } from '@repository/utils/markdownJsxPreview'
+    import { buildImageViewerOptions, isPurePreviewEnabled } from '@repository/utils/imagePreview'
     import { createOrUpdateXmindViewer, destroyXmindViewer } from '@repository/utils/xmindPreview'
     import SourcePreviewTabs from '@repository/components/FilePreview/SourcePreviewTabs'
     import Viewer from 'viewerjs'
@@ -239,12 +240,9 @@
                                 this.imgShow = true
                                 this.imgUrl = URL.createObjectURL(fileDate.data)
                                 this.$nextTick(() => {
-                                    const viewer = new Viewer(document.getElementById('image'), {
-                                        inline: true,
-                                        viewed () {
-                                            viewer.zoomTo(1)
-                                        }
-                                    })
+                                    new Viewer(document.getElementById('image'), buildImageViewerOptions({
+                                        purePreview: isPurePreviewEnabled(this.$route.query)
+                                    }))
                                 })
                             } else if (isMarkdown(res.data.data.suffix) || isJsx(res.data.data.suffix)) {
                                 const text = await fileDate.data.text()

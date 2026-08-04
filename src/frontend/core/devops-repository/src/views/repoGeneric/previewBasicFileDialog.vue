@@ -23,6 +23,7 @@
         getPreviewLocalOfficeFileInfo,
         getPreviewRemoteOfficeFileInfo
     } from '@repository/utils/previewOfficeFile'
+    import { buildImageViewerOptions } from '@repository/utils/imagePreview'
     import Viewer from 'viewerjs'
 
     export default {
@@ -114,12 +115,7 @@
                 this.previewDialog.isLoading = false
                 this.imgUrl = URL.createObjectURL(res.data)
                 this.$nextTick(() => {
-                    const viewer = new Viewer(document.getElementById('image'), {
-                        inline: true,
-                        viewed () {
-                            viewer.zoomTo(1)
-                        }
-                    })
+                    new Viewer(document.getElementById('image'), buildImageViewerOptions())
                 })
             }
         }
