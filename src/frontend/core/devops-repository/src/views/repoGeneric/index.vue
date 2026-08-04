@@ -323,7 +323,7 @@
                     无法使用客户端？改用浏览器下载
                 </p>
                 <p class="client-download-web-fallback-note">
-                    大文件、多文件或目录通过浏览器下载可能较慢、不完整，且有数量上限。
+                    下载目录请使用客户端，避免文件不全问题；大文件使用客户端下载更快。
                 </p>
             </div>
             <template #footer>
@@ -2311,7 +2311,7 @@
 .client-download-web-fallback-note {
     margin: 6px 0 0;
     font-size: 12px;
-    color: #ea3636;
+    color: #ff9c01;
     line-height: 18px;
 }
 
