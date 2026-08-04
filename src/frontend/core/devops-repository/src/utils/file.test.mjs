@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { isCode, isOutDisplayType, isText } from './file.js'
+import { isCode, isHtmlFile, isOutDisplayType, isText } from './file.js'
 
 test('isCode recognizes backend CODE suffixes', () => {
     assert.ok(isCode('src/Main.java'))
@@ -24,11 +24,24 @@ test('isCode recognizes backend CODE suffixes', () => {
     assert.equal(isCode('photo.png'), undefined)
     assert.equal(isCode('report.doc'), undefined)
     assert.equal(isCode('foo.path'), undefined)
+    assert.equal(isCode('index.html'), undefined)
+    assert.equal(isCode('page.htm'), undefined)
 })
 
-test('isOutDisplayType includes code files', () => {
+test('isHtmlFile recognizes html and htm', () => {
+    assert.equal(isHtmlFile('report.html'), 'html')
+    assert.equal(isHtmlFile('docs/page.HTM'), 'htm')
+    assert.equal(isHtmlFile('html'), 'html')
+    assert.equal(isHtmlFile('htm'), 'htm')
+    assert.equal(isHtmlFile('index.js'), undefined)
+    assert.equal(isHtmlFile('note.md'), undefined)
+})
+
+test('isOutDisplayType includes code and html files', () => {
     assert.ok(isOutDisplayType('Main.java'))
     assert.ok(isOutDisplayType('app.py'))
+    assert.ok(isOutDisplayType('report.html'))
+    assert.ok(isOutDisplayType('page.htm'))
 })
 
 test('isText still recognizes overlapping suffixes for non-community fallback', () => {
