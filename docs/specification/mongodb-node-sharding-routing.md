@@ -119,7 +119,8 @@ BK-REPO 当前所有元数据共享同一套 MongoDB 副本集，随着数据规
 - **不改变现有 256 分表策略**：分库是在分表之上叠加的路由层，不修改哈希分表逻辑。
 - **不做 MongoDB 原生 Sharding**：原生分片运维成本高且需迁移现有分表，作为长期演进方向，本次不涉及。
 - **不做 Metadata Gateway**：不把 node 元数据回流 repository（Feign），保持 common-metadata 直连。
-- **v1 不分库 `block_node_*` / `drive_node`**：大文件分块与 fs-driver 节点仍留 Default。
+- **`block_node_*` 可迁移**：与所属 `node_*` 项目绑定迁移（G-39）。
+- **v1 不分库 `drive_node`**：fs-driver 节点仍留 Default。
 - **模式一与模式二启动门禁独立**：集合族整体迁移（模式一）不要求 node 路由就绪（G-34）；node 项目级迁移（模式二）须 G-34 通过后方可启动迁移编排（§10.5、§14）。
 
 ### 1.3 数据一致性模型

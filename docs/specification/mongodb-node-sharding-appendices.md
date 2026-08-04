@@ -47,7 +47,7 @@
 | G-42 | 补偿消费后即时校验 | §25.2、M2 | 消费成功后 `_id`/关键字段 post-check |
 | G-43 | 散发查询连接隔离 | §3.7.1 | 独立池，防占满业务读写池 |
 | G-35 | `projectId` 唯一绑定 | §10.2 | 一 projectId 不得绑多个 Heavy |
-| G-38 | `block_node` / `drive_node` 范围 | §1.2 | v1 不分库，留 Default |
+| G-38 | `block_node` / `drive_node` 范围 | §1.2 | `block_node_*` 可随 node 迁移（G-39）；`drive_node` v1 留 Default |
 
 **M7 上线前必查**（与 §3.19.3、§25.5 灰度门禁一致）：G-01、G-02、G-03、G-05、G-07、G-08、G-10、G-14、G-16、G-17、G-18、G-19、**G-24、G-25、G-26、G-34**（共 **17** 项，模式二）。
 
@@ -959,34 +959,22 @@ spring.data.mongodb.multi-instance.rules.node:
 ```kotlin
 @Component
 class MigrationDdlGuard(
-    private val migrationGate: MigrationGate,
+    private val properties: MongoMultiInstanceProperties,
     private val registry: MongoRoutingRegistry,
 ) {
     /**
      * 在执行任何 DDL 操作（createIndex/dropIndex/compact 等）前调用
-     * @throws DdlBlockedException 如果目标实例在迁移中
+     * @throws IllegalStateException 如果目标实例受迁移 DDL 锁保护
      */
-    fun ensureDdlAllowed(instanceName: String, projectId: String? = null) {
-        val rule = registry.props.rules["node"] ?: return
-        if (!rule.migration.projectLocks.freezeDdl) return
-
-        val protectedInstances = rule.migration.projectLocks.freezeDdlInstances
-        if (instanceName in protectedInstances && migrationGate.isGcFrozen()) {
-            val blockedProjects = registry.allKnownProjectIds("node")
-                .filter { migrationGate.isProjectGcFrozen(it) }
-                .joinToString(",")
-            throw DdlBlockedException(
-                "DDL operation blocked on instance=$instanceName. " +
-                    "Active migrations: [$blockedProjects]. " +
-                    "Wait for all migrations to complete (CLEANED) or contact DBA."
-            )
-        }
-
-        if (projectId != null && migrationGate.isProjectGcFrozen(projectId)) {
-            throw DdlBlockedException(
-                "DDL blocked for project=$projectId (migration in progress)"
-            )
-        }
+    fun assertDdlAllowed(collectionName: String, instanceLabel: String = "default") {
+        val ruleName = registry.resolveRuleName(collectionName) ?: return
+        val rule = properties.rules[ruleName] ?: return
+        val locks = rule.migration.projectLocks
+        if (!locks.freezeDdl) return
+        if (locks.freezeDdlInstances.isNotEmpty() && instanceLabel !in locks.freezeDdlInstances) return
+        throw IllegalStateException(
+            "DDL blocked during migration: ensureIndex on $collectionName ($instanceLabel)"
+        )
     }
 }
 ```

@@ -567,7 +567,8 @@ I1 → I3(框架) → I4(P0改造) → I3.5(G-34) → I5(node迁移)
 | `shard-routing` | 保留互斥校验；配置入口不开放，仅 `project-routing` |
 | Reactive 路径 | `RNodeDao`、`ROperateLogServiceImpl` 与 sync 对称改造 |
 | 配置源 | Consul 为本区域路由权威（`project-routing`、`routing-state`、`scatter-query.*`）；DB 存编排进度与 Gate 参数 |
-| `block_node_*` / `drive_node` | v1 不分库，留 Default |
+| `block_node_*` | 可随 `node_*` 按项目迁移（与 node 绑定，G-39） |
+| `drive_node` | v1 不分库，留 Default |
 | 模式二启动 | G-34 全通过后方可 node 迁移；模式一集合族迁移不等 G-34 |
 | Heavy 上限 | ≤ 10（硬上限，§4.1） |
 | Tier-Biz | v1 支持 `business-routing`；M1 展开 + M6 编排 |

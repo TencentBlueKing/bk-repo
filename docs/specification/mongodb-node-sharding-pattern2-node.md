@@ -1147,7 +1147,7 @@ flowchart TD
 
 > **`$setOnInsert` 语义说明**：全量扫描与双写并发期间，存量文档可能已被双写路径写入 Heavy。
 > `$setOnInsert` 确保扫描遇到已存在文档时**不覆盖**，仅对尚未写入的文档执行插入。
-> 全量扫描结束后 Heavy 侧数据 = 存量 + 双写增量，与 CATCH_UP 方案达到相同一致性结果，且无 oplog 窗口依赖。
+> 全量扫描结束后 Heavy 侧数据 = 存量 + 双写增量；JOB_ONLY 无 oplog 窗口依赖。
 
 全部满足后才允许进入清理：
 
@@ -1312,12 +1312,12 @@ flowchart TD
     S1["阶段 1 新版本上线\nrouting-state=OFF\n行为不变"]
     S1_CHECK{"功能回归通过?\nHeavy 实例已部署?"}
     
-    S2_SYNC["阶段 2a 启动 MigrationSyncJob\n后台同步 业务无感\nhistoricalSyncStrategy=JOB_ONLY"]
+    S2_SYNC["阶段 2a Consul 先开启双写\n启动 MigrationSyncJob\nhistoricalSyncStrategy=JOB_ONLY"]
     S2_SKIP["阶段 2b 跳过历史迁移\nhistoricalSyncStrategy=NONE\n直接进入双写"]
     
-    S2_CHECK_SYNC{"同步状态 = READY?\n对账通过?"}
+    S2_CHECK_SYNC{"全量同步完成?\n对账通过?"}
 
-    S3["阶段 3 dual-write-projects\n项目在 project-routing 中"]
+    S3["阶段 3 DB phase=DUAL_WRITE\n等待切流门禁"]
     S3_CHECK{"100% 新实例?\n补偿队列清零?\n对账通过?"}
     S4["阶段 4 project-effective-at 到点\n项目单写 Heavy"]
     S4_CHECK{"稳定运行 1~2 个\nJob 周期?\nJob 扫描和写回正确?"}
@@ -1392,47 +1392,38 @@ flowchart TD
 | 实例类型 | 读（迁出项目，双写期） | 写 | 说明 |
 | --- | --- | --- | --- |
 | 旧实例（无路由代码） | — | — | **双写前必须摘流/更新完毕**，不得与双写并存 |
-| 新实例（项目 `status=DUAL_WRITE`） | **Default Primary** | Heavy Primary + Default Primary | 读走 Default，与 §1.3 一致 |
+| 新实例（项目 `status=DUAL_WRITE`） | **Default Primary** | Default Primary → Heavy Primary | 读走 Default，与 §1.3 一致 |
 | 新实例（项目未命中路由） | Default Primary | Default Primary | 未迁出项目行为不变 |
-| MigrationSyncJob | Default Secondary | Heavy Primary（upsert） | 仅在 `INITIAL_SYNC` / `CATCH_UP` 阶段运行 |
+| MigrationSyncJob | Default Secondary | Heavy Primary（`$setOnInsert` upsert） | 仅在 `INITIAL_SYNC` 阶段运行 |
 
-**CATCH_UP 与双写的时序**（修正：双写期不运行 Change Stream）
+**JOB_ONLY 与双写的时序**
 
-| 阶段 | Change Stream（CATCH_UP） | 旧实例写入 Default 如何到 Heavy |
+| 阶段 | 同步机制 | Default 写入如何到 Heavy |
 | --- | --- | --- |
-| `INITIAL_SYNC` → `CATCH_UP` → `READY` | ✅ 运行，Default → Heavy 追增量 | CATCH_UP 同步 |
-| `DUAL_WRITE` | ❌ **暂停**（§3.15.7） | 仅新实例双写 Heavy+Default；**无旧实例** |
-| `ROUTED` 后 | ❌ 停止 | 单写 Heavy |
+| `INITIAL_SYNC`（Consul 已开启双写） | `MigrationSyncJob` 全量扫描，`$setOnInsert` upsert | 业务双写同步写入；Job 只补齐尚未写入 Heavy 的历史文档 |
+| `DUAL_WRITE` | 无 Job / Change Stream | 业务双写 + 补偿队列 |
+| `ROUTED` 后 | 无 Job / Change Stream | 单写 Heavy |
 
-并存期数据流（**仅在 READY 前、双写开启前**可能存在旧实例 + CATCH_UP）：
+JOB_ONLY 数据流（先开启双写，再与全量扫描并发）：
 
 ```mermaid
 flowchart LR
-    OLD["旧实例写入\n（仅 READY 之前）"] --> DEFAULT_P["Default Primary"]
-    CATCH_UP["CATCH_UP\nChange Stream"] --> HEAVY_P["Heavy Primary"]
-    DEFAULT_P --> CATCH_UP
-
-    NEW["新实例双写期写入"] --> HEAVY_P2["Heavy Primary"]
-    NEW --> DEFAULT_P2["Default Primary"]
+    WRITE["业务写入"] --> DEFAULT_P["Default Primary（主路径）"]
+    DEFAULT_P --> HEAVY_P["Heavy Primary（副路径）"]
+    SCAN["MigrationSyncJob\n全量扫描 + $setOnInsert"] --> HEAVY_P
 
     subgraph JOB_ONLY
         direction TB
-        G1["READY 前：旧实例 → Default → CATCH_UP → Heavy"]
-        G2["DUAL_WRITE：100% 新实例，双写 Heavy + Default"]
-        G3["切流前：Default 与 Heavy 对账通过"]
-    end
-
-    subgraph NONE 模式
-        direction TB
-        N1["无 CATCH_UP；双写前须 100% 新实例"]
-        N2["DUAL_WRITE：新数据双写两侧"]
-        N3["历史数据仅在 Default，切流后读 Heavy 仅含双写期新数据"]
+        G1["Consul 双写先于 Job 开启"]
+        G2["INITIAL_SYNC：扫描与双写并发"]
+        G3["扫描完成、补偿清零、对账通过后切流"]
     end
 ```
 
-**JOB_ONLY**：Change Stream 仅在进入 `DUAL_WRITE` **之前**将 Default 变更同步到 Heavy；**进入 `DUAL_WRITE` 后 CATCH_UP 必须暂停**，一致性仅由双写 + 补偿队列保证。
+**JOB_ONLY**：不使用 Change Stream；Consul 双写先于 Job 开启。`INITIAL_SYNC` 中的全量扫描与双写并发，
+`$setOnInsert` 不覆盖并发双写写入 Heavy 的最新值。见 routing §1.6.2。
 
-**NONE 模式**：无 Change Stream；开启双写前须完成 100% 新实例部署，历史数据保留在 Default，切流后通过完整迁移或接受散发查询合并两侧。
+**NONE 模式**：无 Change Stream；历史数据留在 Default，切流前按策略完成处理。
 
 ### 3.11 回滚策略
 
@@ -1564,14 +1555,10 @@ fun cleanupCompensationOnRollback(projectId: String) {
 
 | 场景 | 自动恢复 | 处理 | 业务影响 |
 | --- | --- | --- | --- |
-| SyncJob 重启 | 是 | lastSyncedId / resumeToken 断点续传 | 无（迁移延迟） |
-| 全量同步期间源数据被修改 | 是 | CATCH_UP 阶段的 Change Stream 会捕获变更 | 无 |
+| SyncJob 重启 | 是 | `lastSyncedId` 断点续传 | 无（迁移延迟） |
+| 全量同步期间源数据被修改 | 是 | 业务双写同步写入 Heavy；Job 的 `$setOnInsert` 不覆盖新值 | 无 |
 | 单批 upsert 失败 | 是 | 记录失败 ID，限次重试 | 无（迁移延迟） |
 | upsert 重试仍失败 | 否 | 写入 sync_failed 表，人工排查 | 无（迁移阻断） |
-| Change Stream 短暂断开（oplog 窗口内） | 是 | resumeToken 恢复 | 无 |
-| Change Stream 超出 oplog 窗口 | 否 | 标记 INIT_FAILED，人工确认后重新全量同步 | 无（迁移回退） |
-| resumeToken 失效 | 否 | 标记 INIT_FAILED | 无（迁移回退） |
-| delete 事件无法确认归属 | 否 | 标记需对账，VERIFY 修复 | 无 |
 | 对账 count 不一致 | 是 | 扩大抽样，定位差异文档自动修复 | 无 |
 | 对账差异无法自动修复 | 否 | 写入 sync_failed 表，人工核查 | 无（迁移阻断） |
 | Heavy 实例迁移期间磁盘不足 | 否 | 暂停迁移，扩容后断点续传 | 无（迁移延迟） |
@@ -1624,17 +1611,16 @@ fun cleanupCompensationOnRollback(projectId: String) {
 | 迁移期间对涉及实例执行 DDL（createIndex/dropIndex） | 否 | `migration.project-locks.freeze-ddl=true` 拒绝外部 DDL；lazy ensureIndex（内部机制）豁免，INITIAL_SYNC 阶段自动建索引（§8.1 / §24.19 E-18） | DDL 阻塞所有读写 |
 | TTL 索引缺失或不一致 | 否 | INIT 阶段校验包含 TTL 索引（§3.9.2 索引校验扩展） | 过期文档清理遗漏 |
 | MongoDB 版本不一致（Default vs Heavy） | 否 | INIT 阶段校验目标实例版本 ≥ 4.4（推荐 6.0+）；pre-image 功能需显式启用 | 行为差异 |
-| Change Stream pre-image 未启用 | 是 | delete 事件降级查 Heavy 确认归属（已有）；建议全部 256 张 node_* 表启用（§3.9.3） | delete 补偿精准度降低 |
-| resumeToken 持久化到 MongoDB 失败 | 是 | 双重持久化：降级写本地文件，恢复扫描器定期重试入队（§24.21 E-20） | CATCH_UP 起点丢失 |
+| Change Stream / resumeToken | 不适用 | JOB_ONLY 不使用 Change Stream；无需 pre-image 或 resumeToken | 无 |
 | 业务查询无 projectId 但含其他条件（隐式散发读） | 否 | 代码审计识别所有不带 projectId 的查询；要求业务方改造或接受散发读性能退化 | 性能退化 |
 
 ### 3.13 后续大项目快速迁移 SOP
 
 1. 统计确认大项目 `projectId` 和所在分片编号（`HashShardingUtils.shardingSequenceFor`）。
-2. 配置新增目标实例，`routing-state=OFF` 或暂不加入 `project-routing`。
-3. 启动 `MigrationSyncJob(projectId, targetInstance)`，等待 `READY`。
-4. 推送 `dual-write-projects` + `project-routing`（`routing-state=ROUTED`），滚动发布或动态刷新配置。
-5. 对账通过、补偿任务清零后，推送 `routing-state=ROUTED`。
+2. 配置新增目标实例，并确认 `routing-state=ROUTED`。
+3. Consul 加入 `project-routing` + `dual-write-projects` 后，启动 `MigrationSyncJob(projectId, targetInstance)`。
+4. 等待全量扫描完成、对账通过且补偿任务清零。
+5. 移除 `dual-write-projects` 并设置 `project-effective-at`，切流到 Heavy。
 6. 观察 1~2 个 Job 周期，确认 Job 扫描条件和写回路由正确。
 7. 满足 `CLEANUP_READY` 条件后，分批清理 Default 上该项目数据。
 
@@ -1759,7 +1745,7 @@ flowchart TD
     L --> N["返回成功（不影响业务）"]
     M --> N
 
-    L -. "补偿调度器" .-> O["重试 update 操作\n若仍无匹配文档\n等待 INITIAL_SYNC/CATCH_UP 同步后再重试"]
+    L -. "补偿调度器" .-> O["重试 update 操作\n若仍无匹配文档\n等待 INITIAL_SYNC 完成后再重试"]
 ```
 
 **关键约束**：
@@ -1768,7 +1754,7 @@ flowchart TD
 | --- | --- |
 | Update 幂等性 | 同一 `update` 多次执行结果一致（`$set` 操作天然幂等；`$inc` 非幂等（补偿重试会导致计数偏移），补偿时需先查当前值再用 `$set` 绝对值更新；`$push` 等非幂等操作需业务层保证） |
 | 副路径 Query 一致 | 副路径 `update` 必须使用与主路径**完全相同的 Query 条件和 Update 表达式** |
-| 文档未同步场景 | 副路径 update 匹配 0 条时，说明文档尚在 INITIAL_SYNC / CATCH_UP 中，补偿任务需设置**依赖同步完成**的前置条件 |
+| 文档未同步场景 | 副路径 update 匹配 0 条时，说明文档尚在 INITIAL_SYNC 中，补偿任务需设置**依赖同步完成**的前置条件 |
 
 **补偿任务结构扩展**：
 
@@ -1791,7 +1777,7 @@ flowchart TD
 }
 ```
 
-`WAITING_SYNC` 状态：当副路径 update 匹配 0 条且项目仍在 INITIAL_SYNC / CATCH_UP 阶段时，补偿任务进入此状态，等待同步完成后再重试。
+`WAITING_SYNC` 状态：当副路径 update 匹配 0 条且项目仍在 INITIAL_SYNC 阶段时，补偿任务进入此状态，等待同步完成后再重试。
 
 #### 3.15.3 Delete 双写处理
 
@@ -1809,7 +1795,7 @@ flowchart TD
 
     I --> J{"副路径匹配文档数?"}
     J -- "> 0" --> K["返回成功"]
-    J -- "= 0（文档未同步）" --> L0{"项目仍在\nINITIAL_SYNC/CATCH_UP?"}
+    J -- "= 0（文档未同步）" --> L0{"项目仍在\nINITIAL_SYNC?"}
     L0 -- 是 --> L["忽略，返回成功\n副路径从未存在"]
     L0 -- 否 --> L1["写 VERIFY 标记\n对账阶段按 _id 确认\n副路径无残留"]
     L1 --> L2["返回成功"]
@@ -1823,7 +1809,7 @@ flowchart TD
 
 | 约束 | 说明 |
 | --- | --- |
-| Delete 副路径无匹配 + 仍在同步 | `INITIAL_SYNC` / `CATCH_UP` 阶段可忽略（副路径尚未有文档） |
+| Delete 副路径无匹配 + 仍在同步 | `INITIAL_SYNC` 阶段可忽略（副路径尚未有文档） |
 | Delete 副路径无匹配 + 同步已完成 | 写 `VERIFY` 标记，对账按 `_id` 确认副路径无僵尸文档；禁止静默忽略 |
 | Delete 副路径失败 → 补偿 | 文档可能在副路径但删除失败（网络/权限），需补偿确保最终一致 |
 | 补偿任务幂等 | `delete` 操作天然幂等，重复执行无副作用 |
@@ -1910,54 +1896,30 @@ class DualWriteCompensationScheduler {
 | 补偿 Update 与后续 Delete 竞争 | 否 | 按时间序消费补偿任务；Delete 先于 Update 时，Update 补偿匹配 0 条自动完成 | 无 |
 | 双写期主路径 Delete 成功、副路径 Update 补偿仍在队列 | 是 | Update 补偿匹配 0 条自动完成 | 无 |
 
-#### 3.15.7 双写期补偿与 CATCH_UP 的竞态风险
+#### 3.15.7 双写期补偿与 INITIAL_SYNC 的边界
 
-**核心风险**：双写期间，补偿任务（compensation）和 Change Stream 的 CATCH_UP 同步是两套独立机制，
-**没有因果顺序保证**。可能产生以下竞态场景：
-
-```text
-竞态场景 1：补偿 Update 与 CATCH_UP 交错
-────────────────────────────────────────
-T1: 业务发起 update(fullPath: /old → /new)，Default 主路径更新成功（副路径 Heavy 待补偿）
-T2: 补偿任务(TYPE=UPDATE, query={fullPath:/new}, update={$set:{size:100}}) 写入队列
-T3: CATCH_UP Change Stream 消费到 T1 之前的一条旧 update 事件，将旧数据同步到 Heavy
-    （此时 Heavy 上文档被覆盖为旧值）
-T4: 补偿任务消费，按 _id 执行 update — 基于 T2 时刻的 update 表达式
-T5: 结果不可预测：最终数据取决于 T3 和 T4 的时间序
-
-竞态场景 2：补偿 Insert 与 CATCH_UP Delete
-────────────────────────────────────────
-T1: 业务发起 insert，Default 主路径插入成功，补偿 INSERT 任务入队（副路径 Heavy）
-T2: 业务发起 delete（同一 _id），Default 主路径删除成功，补偿 DELETE 任务入队（副路径 Heavy）
-T3: CATCH_UP 收到 insert 事件，再次 upsert 到 Heavy
-T4: 补偿 DELETE 任务先消费 → Heavy 文档被删除
-T5: CATCH_UP 的 upsert 后执行 → 文档又被恢复（错误！）
-```
-
-**解决方案：双写期暂停 CATCH_UP，仅依赖补偿队列**
+**JOB_ONLY 不使用 Change Stream 或 CATCH_UP**。Consul 双写先于 `MigrationSyncJob` 开启；
+全量扫描仅以 `$setOnInsert` 补齐 Heavy 缺失的历史文档，不会覆盖并发双写或补偿写入的值。
+双写期一致性仅由同步双写和补偿队列保障，见 routing §1.6.2。
 
 ```mermaid
 flowchart TD
-    A["迁移阶段流转"] --> B{"进入 DUAL_WRITE?"}
-    B -- "是" --> C["暂停 CATCH_UP\nChange Stream 检查点持久化\n但不消费新事件"]
-    C --> D["双写期仅依赖\n补偿队列维持一致性"]
-    D --> E{"补偿队列清零?\n对账通过?"}
-    E -- "是" --> F["切流到 ROUTED\n关闭双写"]
-    E -- "否" --> D
-    
-    B -- "否（仍在 INITIAL_SYNC）" --> G["继续 CATCH_UP\n追增量"]
-    
-    style C fill:#fffbe6,stroke:#d4a017
-    style D fill:#e6f4ea,stroke:#34a853
+    A["Consul 先开启双写"] --> B["INITIAL_SYNC：Job 全量扫描\n$setOnInsert 补齐历史文档"]
+    B --> C["同步双写 + 补偿队列\n维持副路径最终一致"]
+    C --> D{"扫描完成、补偿清零\n对账通过?"}
+    D -- "是" --> E["切流到 ROUTED\n关闭双写"]
+    D -- "否" --> C
+
+    style B fill:#fffbe6,stroke:#d4a017
+    style C fill:#e6f4ea,stroke:#34a853
 ```
 
 **关键约束**：
 
 | 约束 | 说明 |
 | --- | --- |
-| **双写期 CATCH_UP 必须暂停** | 避免补偿任务与 Change Stream 事件产生竞态，确保数据一致性的唯一可控路径是补偿队列 |
-| **CATCH_UP 的 resumeToken 必须持久化** | 暂停时保存当前消费位点，以便回滚到 READY 阶段后重新恢复 CATCH_UP |
-| **CATCH_UP 暂停期间 oplog 窗口风险** | 如果双写期过长（> oplog 保留时间），CATCH_UP 可能无法恢复。双写期应设硬性时限（默认 < 24h） |
+| **无 Change Stream / resumeToken** | JOB_ONLY 不建立增量流消费，不存在暂停、恢复或 oplog 窗口问题 |
+| **全量扫描使用 `$setOnInsert`** | 只补齐 Heavy 尚未存在的历史文档，不得覆盖并发双写的最新值 |
 | **补偿队列同 _id 去重** | 入队时按 `_id` 检查：若已有同一 `_id` 的待消费任务则替换（而非追加），从根源消除乱序覆盖风险 |
 | **补偿 update 使用 `$max` 保护** | `lastModifiedDate` 从 `$set` 移到 `$max`：`{ $set: {...}, $max: { lastModifiedDate: <original> } }`，确保时间戳不降级，即使写路径遗漏更新 `lastModifiedDate` 也不会被旧补偿覆盖 |
 
@@ -2148,8 +2110,7 @@ fun retryUpdate(task: CompensationTask) {
 | UPDATE | Default Primary | 补偿任务（UPDATE，副路径 Heavy）+ 队列去重 + `$max` 保护 | 队列去重消除乱序；`$max` 防止 lastModifiedDate 降级 |
 | DELETE | Default Primary | 补偿任务（DELETE，副路径 Heavy） | Delete 操作天然幂等 |
 
-> **CATCH_UP 处理**：双写期暂停 Change Stream 消费，避免与补偿队列产生竞态。
-> 仅在回滚到 READY 阶段后恢复 CATCH_UP 继续追增量。
+> **JOB_ONLY**：无 Change Stream、CATCH_UP、READY 或 resumeToken；双写期只依赖同步双写与补偿队列。
 
 ### 3.16 ThreadLocal 跨异步边界传递安全性
 

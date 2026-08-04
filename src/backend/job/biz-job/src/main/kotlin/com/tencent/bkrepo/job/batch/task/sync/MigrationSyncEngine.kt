@@ -160,6 +160,8 @@ class MigrationSyncEngine(
                     "(cycle $nextCycle/$MAX_SYNC_CYCLES), will retry.",
             )
             updateCycleCount(ownerKey, nextCycle)
+            // 下一轮需从头重扫，成功 upsert 时会清对应 sync_failed
+            updateProgress(ownerKey, 0, null)
             return
         }
         updateState(task, MigrationSyncJobState.DUAL_WRITE)
@@ -180,7 +182,10 @@ class MigrationSyncEngine(
         var lastError: String? = null
         repeat(UPSERT_MAX_RETRY) { attempt ->
             runCatching { targetTemplate.upsert(insertQuery, update, collectionName) }
-                .onSuccess { return }
+                .onSuccess {
+                    clearSyncFailed(task.ruleName, docId.toHexString())
+                    return
+                }
                 .onFailure { e ->
                     lastError = e.message
                     if (attempt < UPSERT_MAX_RETRY - 1) {
@@ -215,6 +220,17 @@ class MigrationSyncEngine(
             defaultMongoTemplate.upsert(query, update, MongoRoutingCollections.SYNC_FAILED)
         }.onFailure {
             logger.error("Failed to record sync failure for doc[$docId]: ${it.message}")
+        }
+    }
+
+    private fun clearSyncFailed(ruleName: String, docId: String) {
+        runCatching {
+            defaultMongoTemplate.remove(
+                Query(MongoRoutingCollections.syncFailedDocCriteria(ruleName, docId)),
+                MongoRoutingCollections.SYNC_FAILED,
+            )
+        }.onFailure {
+            logger.warn("Failed to clear sync_failed for doc[$docId]: ${it.message}")
         }
     }
 

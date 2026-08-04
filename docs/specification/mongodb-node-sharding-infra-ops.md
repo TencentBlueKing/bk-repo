@@ -156,7 +156,8 @@ insert(entity) / save(entity)
 **关键行为**：
 
 - **Heavy 实例无需预先手动建索引**：首次项目数据写入 Heavy 时自动创建。
-- **INITIAL_SYNC 自动建索引**：`MigrationSyncJob` 全量同步的 `insert` 走 `ShardingMongoDao.insert(entity)`，首次写入时触发 Heavy 索引创建。索引在 INITIAL_SYNC 阶段即完成，DUAL_WRITE 前已就绪。
+- **Heavy 索引来源**：双写业务 DAO 首次写入 Heavy 时由 lazy `ensureIndex` 创建；运维也可预先创建。
+  `MigrationSyncJob` 使用原生 `MongoTemplate.upsert`，不经过 `ShardingMongoDao`。
 - **projectId 热加载后首次写入**：无重启，写入自动触发 Heavy 索引创建。
 - **性能**：Guava Cache（200 条，1 天过期）确保同分表同索引仅检查一次；cache hit 后零开销。
 - **幂等**：`ensureIndex` 是 MongoDB 幂等操作，索引已存在时几乎无开销。
@@ -754,11 +755,9 @@ spring:
               heavy1:
                 uri: mongodb://heavy1-primary:27017/bkrepo
             project-routing:
-              - projects: "projectA"
-                instance: heavy1
+              projectA: heavy1
             shard-routing:
-              - shards: "188"
-                instance: heavy1
+              "188": heavy1
           artifact-oplog:
             routing-type: none           # 整体迁移：集合名匹配前缀即自动路由，无需改 DAO
             collection-prefix: "artifact_oplog_"  # 匹配此前缀的集合全部路由到下方实例
@@ -810,7 +809,7 @@ data class MongoMultiInstanceProperties(
         val syncJob: SyncJobConfig = SyncJobConfig(),
         val none: NoneConfig = NoneConfig(),
         /** 僵尸副本在 Default 上存活超过该小时数则阻断迁移（G-17） */
-        val maxZombieHours: Int = 72,
+        val maxZombieHours: Int = 168,
         val projectLocks: ProjectLocksConfig = ProjectLocksConfig(),
         /** oplog 窗口下限（小时），INIT 校验用（G-32） */
         val minOplogHours: Int = 48,
@@ -973,7 +972,7 @@ class DefaultMongoRoutingRegistry(
     /**
      * 路由键提取结果缓存。
      * 对同一 Query 对象的 hashCode 做短期 LRU 缓存，减少高频反射开销。
-     * 缓存仅在单次请求内有效（使用 WeakHashMap + ThreadLocal），不跨请求共享。
+     * 这是进程内单例 LinkedHashMap LRU 示例；生产实现应考虑 ThreadLocal + WeakHashMap 隔离请求。
      */
     private val extractionCache = object : LinkedHashMap<Int, String?>(128, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, String?>?) = size > 256
@@ -988,12 +987,9 @@ class DefaultMongoRoutingRegistry(
         properties.rules[ruleName]?.projectRouting?.keys ?: emptySet()
 
     fun ruleNameByPrefix(collectionName: String): String? =
-        prefixIndex.firstOrNull { collectionName.startsWith(it.first) }?.second?.first
+        prefixIndex.firstOrNull { collectionName.startsWith(it.first) }?.second
 
     // 返回 instanceName → MongoTemplate，供 MongoBatchQueryHelper 按实例分组查询
-    fun allPrimaryTemplates(ruleName: String): Map<String, MongoTemplate> =
-        primaryTemplates[ruleName] ?: emptyMap()
-
     fun allPrimaryTemplates(ruleName: String): Map<String, MongoTemplate> =
         primaryTemplates[ruleName] ?: emptyMap()
 }
