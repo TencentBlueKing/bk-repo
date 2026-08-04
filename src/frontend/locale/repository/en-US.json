@@ -129,6 +129,7 @@
     "tokenSubTitle": "Replace the value of <PERSONAL_ACCESS_TOKEN>, please jump to manage access",
     "tokenExpireTip": "Please select a date. The default is never to expire",
     "tokenIs": "Token is：",
+    "basicAuthIs": "Basic authentication string is：",
     "tokenCopyTip": "Please ensure that you have copied the token above as we do not store it and it will not be retrievable later.",
     "neverExpires": "never",
     "expired": "expired",
