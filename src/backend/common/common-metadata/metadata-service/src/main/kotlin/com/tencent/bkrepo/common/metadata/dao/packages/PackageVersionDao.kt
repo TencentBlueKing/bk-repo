@@ -37,7 +37,9 @@ import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.common.metadata.util.PackageQueryHelper
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import org.bson.Document
 import org.springframework.context.annotation.Conditional
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -54,6 +56,47 @@ class PackageVersionDao : SimpleMongoDao<TPackageVersion>() {
 
     fun listByPackageId(packageId: String): List<TPackageVersion> {
         return this.find(PackageQueryHelper.versionListQuery(packageId))
+    }
+
+    /**
+     * 按 `_id` ASC 顺序分页返回指定 package 下的版本名，用 [lastId] 作为游标：
+     * - 首次传 `null`，从最小 `_id` 开始
+     * - 后续传上一批最后一个元素的 `_id`，实现「游标分页」，避免 `skip` 在大数据集下的性能退化
+     *
+     * 只投影 `_id` 与 `name` 两个字段，单批 payload 极小，适合 10w+ 版本包的分批修复场景。
+     * 返回 `Pair<id, name>` 列表，调用方可从最后一个元素取 id 作为下一批的游标。
+     */
+    fun pageVersionNamesAfterId(packageId: String, lastId: String?, batchSize: Int): List<Pair<String, String>> {
+        val criteria = where(TPackageVersion::packageId).isEqualTo(packageId)
+        if (lastId != null) {
+            criteria.and("_id").gt(org.bson.types.ObjectId(lastId))
+        }
+        val query = Query(criteria)
+            .with(Sort.by(Sort.Direction.ASC, "_id"))
+            .limit(batchSize)
+        query.fields().include("_id").include(TPackageVersion::name.name)
+        // 采用 Document 接收 projection 结果，避免反序列化为 TPackageVersion 时因缺少必填字段报错
+        return this.find(query, Document::class.java).map {
+            it.getObjectId("_id").toHexString() to it.getString(TPackageVersion::name.name)
+        }
+    }
+
+    /**
+     * 反查指定 name 集合中哪些在 `package_version` 里实际存在。
+     * 走 `(packageId, name)` 复合索引，一次查询即可，用于分批探测 `historyVersion` 中的脏数据：
+     * `batch - 返回值 = 该批的脏数据`。
+     *
+     * 只投影 `name` 字段，返回结果集大小上限为 `names.size`。
+     */
+    fun findExistingNames(packageId: String, names: Collection<String>): Set<String> {
+        if (names.isEmpty()) return emptySet()
+        val criteria = where(TPackageVersion::packageId).isEqualTo(packageId)
+            .and(TPackageVersion::name.name).`in`(names)
+        val query = Query(criteria)
+        query.fields().include(TPackageVersion::name.name)
+        // 同 pageVersionNamesAfterId：仅取 name 字段，反序列化到 Document 避免实体必填字段初始化报错
+        return this.find(query, Document::class.java)
+            .mapTo(HashSet(names.size)) { it.getString(TPackageVersion::name.name) }
     }
 
     fun findByTag(packageId: String, tag: String): TPackageVersion? {
