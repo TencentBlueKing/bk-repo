@@ -7,7 +7,6 @@
  *
  * A copy of the MIT License is included in this file.
  *
- *
  * Terms of the MIT License:
  * ---------------------------------------------------
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
@@ -25,48 +24,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.pypi.constants
+package com.tencent.bkrepo.pypi.util
 
-const val REPO_TYPE = "PYPI"
+import com.tencent.bkrepo.pypi.constants.SIMPLE_INDEX_CACHE_DIR
+import com.tencent.bkrepo.pypi.constants.SIMPLE_INDEX_CACHE_PACKAGES_PREFIX
 
-const val METADATA = "metadata"
-const val FIELD_NAME = "Name"
-const val FIELD_VERSION = "Version"
-const val NAME = "name"
-const val VERSION = "version"
-const val SUMMARY = "summary"
+object PypiSimpleIndexUtils {
 
-const val REQUIRES_PYTHON = "requires_python"
+    fun packageCacheFullPath(packageName: String): String {
+        return "$SIMPLE_INDEX_CACHE_PACKAGES_PREFIX$packageName.html"
+    }
 
-const val LINE_BREAK = "<br />"
-const val INDENT = "    "
-const val HTML_ENCODED_LESS_THAN = "&lt;"
-const val HTML_ENCODED_GREATER_THAN = "&gt;"
-const val REQUIRES_PYTHON_ATTR = "data-requires-python"
-
-const val NON_ALPHANUMERIC_SEQ_REGEX = "[-_.]+"
-
-const val PACKAGE_INDEX_TITLE = "Simple Index"
-const val VERSION_INDEX_TITLE = "Links for %s"
-const val SIMPLE_PAGE_CONTENT =
-"""<!DOCTYPE html>
-<html>
-  <head>
-    <meta name="pypi:repository-version" content="1.0">
-    <title>%s</title>
-  </head>
-  <body>
-    <h1>%s</h1>
-%s
-  </body>
-</html>"""
-
-const val REMOTE_HTML_CACHE_FULL_PATH = "remoteHtml.html"
-const val FLUSH_CACHE_EXPIRE = 60 * 24
-const val XML_RPC_URI = "RPC2"
-const val XML_RPC_OPERATION_OR = "or"
-
-/** LOCAL simple 单包索引文件缓存目录名（仓库根下隐藏前缀） */
-const val SIMPLE_INDEX_CACHE_DIR = ".pypi-simple-index"
-/** 单包 simple HTML 缓存路径前缀：/.pypi-simple-index/packages/{packageName}.html */
-const val SIMPLE_INDEX_CACHE_PACKAGES_PREFIX = "/$SIMPLE_INDEX_CACHE_DIR/packages/"
+    fun isSimpleIndexCacheFolder(name: String): Boolean {
+        return name == SIMPLE_INDEX_CACHE_DIR
+    }
+}
