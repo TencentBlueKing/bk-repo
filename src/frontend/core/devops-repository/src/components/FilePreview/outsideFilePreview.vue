@@ -240,14 +240,9 @@
                                 this.imgShow = true
                                 this.imgUrl = URL.createObjectURL(fileDate.data)
                                 this.$nextTick(() => {
-                                    const viewer = new Viewer(document.getElementById('image'), {
-                                        ...buildImageViewerOptions({
-                                            purePreview: isPurePreviewEnabled(this.$route.query)
-                                        }),
-                                        viewed () {
-                                            viewer.zoomTo(1)
-                                        }
-                                    })
+                                    new Viewer(document.getElementById('image'), buildImageViewerOptions({
+                                        purePreview: isPurePreviewEnabled(this.$route.query)
+                                    }))
                                 })
                             } else if (isMarkdown(res.data.data.suffix) || isJsx(res.data.data.suffix)) {
                                 const text = await fileDate.data.text()

@@ -334,14 +334,9 @@
                     this.imgShow = true
                     this.imgUrl = URL.createObjectURL(res.data)
                     this.$nextTick(() => {
-                        const viewer = new Viewer(document.getElementById('image'), {
-                            ...buildImageViewerOptions({
-                                purePreview: isPurePreviewEnabled(this.$route.query)
-                            }),
-                            viewed () {
-                                viewer.zoomTo(1)
-                            }
-                        })
+                        new Viewer(document.getElementById('image'), buildImageViewerOptions({
+                            purePreview: isPurePreviewEnabled(this.$route.query)
+                        }))
                     })
                 } else if (isMarkdown(this.filePath) || isJsx(this.filePath) || isCode(this.filePath)) {
                     const text = await res.data.text()

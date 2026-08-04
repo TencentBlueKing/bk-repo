@@ -23,16 +23,19 @@ test('isPurePreviewEnabled is false when missing or other values', () => {
 
 test('buildImageViewerOptions keeps default chrome when pure preview is off', () => {
     assert.deepEqual(buildImageViewerOptions(), {
-        inline: true
+        inline: true,
+        initialCoverage: 0.9
     })
     assert.deepEqual(buildImageViewerOptions({ purePreview: false }), {
-        inline: true
+        inline: true,
+        initialCoverage: 0.9
     })
 })
 
 test('buildImageViewerOptions hides viewer chrome in pure preview mode', () => {
     assert.deepEqual(buildImageViewerOptions({ purePreview: true }), {
         inline: true,
+        initialCoverage: 0.9,
         toolbar: false,
         button: false,
         title: false,

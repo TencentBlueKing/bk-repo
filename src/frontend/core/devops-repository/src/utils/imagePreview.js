@@ -14,10 +14,13 @@ export function isPurePreviewEnabled (query) {
  * Build Viewer.js options for inline image preview.
  * Pure mode hides toolbar, fullscreen button, title, navbar, and tooltip;
  * gestures (zoom / drag / keyboard) stay enabled.
+ * initialCoverage keeps the first paint within the container (avoid zoomTo(1)).
  */
 export function buildImageViewerOptions ({ purePreview = false } = {}) {
     const options = {
-        inline: true
+        inline: true,
+        // Fit image into ~90% of the viewer so large screenshots stay fully visible.
+        initialCoverage: 0.9
     }
     if (purePreview) {
         options.toolbar = false
