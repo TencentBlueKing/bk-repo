@@ -37,7 +37,7 @@ class CompensationHealthController(
 
     @GetMapping("/health")
     fun allHealth(): List<CompensationHealthResponse> =
-        listOf("node", "artifact-oplog").map { health(it) }
+        listOf("node", "block-node", "artifact-oplog").map { health(it) }
 
     @PostMapping("/trigger/{ruleName}")
     fun trigger(@PathVariable ruleName: String): CompensationHealthResponse {

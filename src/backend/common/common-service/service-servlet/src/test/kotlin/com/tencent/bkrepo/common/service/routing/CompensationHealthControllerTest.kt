@@ -72,12 +72,15 @@ class CompensationHealthControllerTest {
         whenever(healthChecker.check("node")).thenReturn(
             CompensationHealthChecker.CompensationHealthStatus("node", 0L, 0L, true),
         )
+        whenever(healthChecker.check("block-node")).thenReturn(
+            CompensationHealthChecker.CompensationHealthStatus("block-node", 0L, 0L, true),
+        )
         whenever(healthChecker.check("artifact-oplog")).thenReturn(
             CompensationHealthChecker.CompensationHealthStatus("artifact-oplog", 0L, 0L, true),
         )
         val responses = controller.allHealth()
-        assertEquals(2, responses.size)
-        assertEquals(setOf("node", "artifact-oplog"), responses.map { it.ruleName }.toSet())
+        assertEquals(3, responses.size)
+        assertEquals(setOf("node", "block-node", "artifact-oplog"), responses.map { it.ruleName }.toSet())
         assertTrue(responses.all { it.healthy })
     }
 }

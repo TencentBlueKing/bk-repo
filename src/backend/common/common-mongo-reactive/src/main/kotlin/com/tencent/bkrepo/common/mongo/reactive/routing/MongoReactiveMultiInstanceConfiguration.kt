@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.mongo.reactive.routing
 
 import com.tencent.bkrepo.common.mongo.routing.MongoMultiInstanceProperties
+import com.tencent.bkrepo.common.mongo.routing.MongoRoutingConfigValidator
 import io.micrometer.core.instrument.binder.mongodb.MongoMetricsConnectionPoolListener
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -23,5 +24,9 @@ class MongoReactiveMultiInstanceConfiguration(
 
     @Bean
     fun mongoReactiveRoutingRegistry(): MongoReactiveRoutingRegistry =
-        MongoReactiveRoutingRegistry(properties, poolMetricsListener.ifAvailable)
+        MongoReactiveRoutingRegistry(properties, poolMetricsListener.ifAvailable).also {
+            if (properties.rules.isNotEmpty()) {
+                MongoRoutingConfigValidator.validate(properties)
+            }
+        }
 }

@@ -59,7 +59,7 @@ class MongoRoutingMetrics(
     private val reconciliationLastPassed = AtomicLong(0)
 
     init {
-        listOf("node", "artifact-oplog").forEach { ruleName ->
+        listOf("node", "block-node", "artifact-oplog").forEach { ruleName ->
             routingHits.computeIfAbsent(ruleName) { AtomicLong(0) }
             routingQueries.computeIfAbsent(ruleName) { AtomicLong(0) }
             val tags = listOf(Tag.of("ruleName", ruleName))
