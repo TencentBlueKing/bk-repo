@@ -38,6 +38,7 @@
   |configuration|object|否|无|仓库配置，参考后文|repo configuration|
   |storageCredentialsKey|string|否|无|存储凭证key|storage credentials key|
   |quota|long|否|无|仓库配额|repo quota|
+  |displayName|string|否|无|仓库展示名称，为空时前端回退显示 name|repo display name|
 
 - 响应体
 
@@ -112,6 +113,7 @@
   |repoName|string|是|无|仓库名称|repo name|
   |public|boolean|否|无|是否公开。null则不修改|is public repo|
   |description|string|否|无|仓库描述。null则不修改|repo description|
+  |displayName|string|否|无|仓库展示名称。null则不修改，空字符串可清空|repo display name|
   |configuration|RepositoryConfiguration|否|无|仓库配置，参考后文。null则不修改|repo configuration|
 
 
@@ -212,6 +214,7 @@
   |---|---|---|---|
   |projectId|string|项目id|project id|
   |name|string|仓库名称|repo name|
+  |displayName|string|仓库展示名称，可为空|repo display name|
   |type|string|仓库类型|repo type|
   |category|string|仓库类别|repo category|
   |public|boolean|是否公开项目|is public repo|
@@ -314,6 +317,7 @@
   |---|---|---|---|
   |projectId|string|项目id|project id|
   |name|string|仓库名称|repo name|
+  |displayName|string|仓库展示名称，可为空|repo display name|
   |type|string|仓库类型|repo type|
   |category|string|仓库类别|repo category|
   |public|boolean|是否公开项目|is public repo|
@@ -374,6 +378,7 @@
   |---|---|---|---|
   |projectId|string|项目id|project id|
   |name|string|仓库名称|repo name|
+  |displayName|string|仓库展示名称，可为空|repo display name|
   |type|string|仓库类型|repo type|
   |category|string|仓库类别|repo category|
   |public|boolean|是否公开项目|is public repo|

@@ -6,10 +6,12 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.fs.server.config.properties.drive.DriveProperties
-import com.tencent.bkrepo.fs.server.message.DriveMessageCode
 import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode
 import com.tencent.bkrepo.common.metadata.model.drive.TDriveNode.Companion.TYPE_DIRECTORY
+import com.tencent.bkrepo.common.metadata.pojo.drive.DriveMetadataQueryRule
+import com.tencent.bkrepo.common.metadata.pojo.drive.DriveNameQueryRule
+import com.tencent.bkrepo.fs.server.config.properties.drive.DriveProperties
+import com.tencent.bkrepo.fs.server.message.DriveMessageCode
 import com.tencent.bkrepo.fs.server.repository.drive.RDriveNodeDao
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchOp
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchRequest
@@ -27,6 +29,8 @@ import com.tencent.bkrepo.fs.server.response.drive.CursorPage
 import com.tencent.bkrepo.fs.server.response.drive.DriveNode
 import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResponse
 import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResult
+import com.tencent.bkrepo.fs.server.response.drive.DriveNodeSearchCount
+import com.tencent.bkrepo.fs.server.response.drive.DriveNodeSearchCountGroup
 import com.tencent.bkrepo.fs.server.response.drive.toDriveNode
 import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper
 import com.tencent.bkrepo.fs.server.utils.DriveNodeRequestValidator
@@ -37,6 +41,7 @@ import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.mono
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -123,6 +128,93 @@ class DriveNodeService(
             lastId = lastId,
         )
         return CursorPage.fromRecords(records, pageSize) { it.toDriveNode() }
+    }
+
+    suspend fun search(
+        projectId: String,
+        repoName: String,
+        pageSize: Int,
+        name: DriveNameQueryRule? = null,
+        metadata: List<DriveMetadataQueryRule> = emptyList(),
+        lastModifiedDate: LocalDateTime? = null,
+        lastId: String? = null,
+        direction: Sort.Direction = Sort.Direction.DESC,
+    ): CursorPage<DriveNode> {
+        DriveServiceUtils.validateProjectRepo(projectId, repoName)
+        DriveServiceUtils.validatePageSize(pageSize, driveProperties.listCountLimit)
+        val records = driveNodeDao.searchPage(
+            projectId = projectId,
+            repoName = repoName,
+            pageSize = pageSize + 1,
+            name = name,
+            metadata = metadata,
+            lastModifiedDate = lastModifiedDate,
+            lastId = lastId,
+            direction = direction,
+        )
+        return CursorPage.fromRecords(records, pageSize) { it.toDriveNode() }
+    }
+
+    suspend fun searchCount(
+        projectId: String,
+        repoName: String,
+        name: DriveNameQueryRule? = null,
+        metadata: List<DriveMetadataQueryRule> = emptyList(),
+        distinctByMetadataKeys: List<String> = emptyList(),
+        groupByMetadataKey: String? = null,
+    ): DriveNodeSearchCount {
+        DriveServiceUtils.validateProjectRepo(projectId, repoName)
+        val groupByKey = groupByMetadataKey?.trim()?.takeIf { it.isNotEmpty() }
+        if (groupByKey != null) {
+            val groups = if (distinctByMetadataKeys.isNotEmpty()) {
+                driveNodeDao.searchDistinctSeriesGroupCount(
+                    projectId = projectId,
+                    repoName = repoName,
+                    name = name,
+                    metadata = metadata,
+                    distinctByMetadataKeys = distinctByMetadataKeys,
+                    latestVersionFilterKey = SERIES_LATEST_VERSION_FILTER_KEY,
+                    groupByMetadataKey = groupByKey,
+                )
+            } else {
+                driveNodeDao.searchGroupByMetadataCount(
+                    projectId = projectId,
+                    repoName = repoName,
+                    name = name,
+                    metadata = metadata,
+                    groupByMetadataKey = groupByKey,
+                )
+            }
+            return toSearchCount(groups)
+        }
+        val total = if (distinctByMetadataKeys.isNotEmpty()) {
+            driveNodeDao.searchDistinctSeriesCount(
+                projectId = projectId,
+                repoName = repoName,
+                name = name,
+                metadata = metadata,
+                distinctByMetadataKeys = distinctByMetadataKeys,
+                latestVersionFilterKey = SERIES_LATEST_VERSION_FILTER_KEY,
+            )
+        } else {
+            driveNodeDao.searchCount(
+                projectId = projectId,
+                repoName = repoName,
+                name = name,
+                metadata = metadata,
+            )
+        }
+        return DriveNodeSearchCount(total = total)
+    }
+
+    private fun toSearchCount(groups: List<RDriveNodeDao.MetadataGroupCount>): DriveNodeSearchCount {
+        val mapped = groups.map { group ->
+            DriveNodeSearchCountGroup(value = group.value, count = group.count)
+        }
+        return DriveNodeSearchCount(
+            total = mapped.sumOf { it.count },
+            groups = mapped,
+        )
     }
 
     suspend fun createNode(
@@ -575,6 +667,7 @@ class DriveNodeService(
         private const val SUCCESS_CODE = 0
         private const val NODE_CACHE_EXPIRE_SECONDS = 3L
         private const val NODE_CACHE_MAX_SIZE = 10_000L
+        private const val SERIES_LATEST_VERSION_FILTER_KEY = "IMATE_ARTIFACT_TYPE"
         private val logger = LoggerFactory.getLogger(DriveNodeService::class.java)
     }
 

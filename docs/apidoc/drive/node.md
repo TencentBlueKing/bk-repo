@@ -412,6 +412,209 @@
   - 若目标路径已存在同名目录，返回节点冲突错误
   - 上传操作会记录 `DRIVE_NODE_UPLOAD` 操作日志
 
+## 搜索仓库内文件
+
+- API: POST /drive/node/search/{projectId}/{repoName}
+- API 名称: drive_search_files
+- 功能说明:
+  - 中文: 整仓递归游标分页查询普通文件（排除目录、软链、已删除），支持文件名规则与多条元数据过滤
+  - English: cursor-page regular files across the whole drive repo with name/multi-metadata filters
+- 请求体
+  ```json
+  {
+    "pageSize": 20,
+    "name": {
+      "value": "*report*",
+      "operation": "MATCH_I"
+    },
+    "direction": "DESC",
+    "lastModifiedDate": "2026-07-27T10:00:00",
+    "lastId": "67d074a13d19772f4b813f90",
+    "metadata": [
+      {
+        "key": "worksCategory",
+        "value": ["image", "pdf"],
+        "operation": "IN"
+      },
+      {
+        "key": "author",
+        "value": "alice",
+        "operation": "EQ"
+      }
+    ]
+  }
+  ```
+- 请求字段说明
+
+  | 字段               | 类型     | 是否必须 | 默认值  | 说明                                                                 | Description                          |
+  | ---------------- | ------ | ---- | ---- | ------------------------------------------------------------------ | ------------------------------------ |
+  | projectId        | string | 是    | 无    | 路径参数：项目名称                                                          | project name                         |
+  | repoName         | string | 是    | 无    | 路径参数：仓库名称                                                          | repo name                            |
+  | pageSize         | int    | 否    | 20   | 每次查询条数                                                             | page size                            |
+  | name             | object | 否    | 无    | 文件名查询条件，语义对齐节点搜索 `name` 规则                                        | name query rule                      |
+  | name.value       | any    | 是    | 无    | 文件名匹配值；`MATCH/MATCH_I` 支持 `*` 通配符（如 `*report*` 表示包含）               | name value                           |
+  | name.operation   | string | 否    | EQ   | 操作类型，支持与节点搜索一致的 OperationType（如 EQ/IN/MATCH/MATCH_I 等）             | operation type                       |
+  | metadata         | array  | 否    | []   | 元数据过滤条件列表，多条规则按 AND 组合；单条语义对齐节点搜索 `metadata.{key}`（elemMatch） | metadata query rules                 |
+  | metadata[].key   | string | 是    | 无    | 元数据 key；作品集可传 `worksCategory`                                     | metadata key                         |
+  | metadata[].value | any    | 是    | 无    | 元数据 value；`IN/NIN` 时为数组                                           | metadata value                       |
+  | metadata[].operation | string | 否 | EQ | 操作类型，支持与节点搜索一致的 OperationType（如 EQ/IN/NIN/MATCH 等）                | operation type                       |
+  | direction        | string | 否    | DESC | 排序方向：`ASC` / `DESC`                                                | sort direction                       |
+  | lastModifiedDate | string | 否    | 无    | 上一页最后一条 `lastModifiedDate`（ISO-8601），首次不传；需与 `lastId` 成对        | last modifiedDate cursor             |
+  | lastId           | string | 否    | 无    | 上一页最后一条 `id`，需与 `lastModifiedDate` 成对                            | last id cursor                       |
+
+- 排序与续页规则
+  - 默认按 `lastModifiedDate DESC, id DESC` 返回；可通过 `direction` 改为 ASC
+  - 首次查询不传 `lastModifiedDate/lastId`
+  - 查询下一页时，使用上一页最后一条记录的 `lastModifiedDate/id` 作为游标
+
+- 响应体
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": {
+      "pageSize": 20,
+      "hasMore": false,
+      "records": [
+        {
+          "id": "67d074a13d19772f4b813f90",
+          "createdBy": "admin",
+          "createdDate": "2026-07-27T10:00:00.000",
+          "lastModifiedBy": "admin",
+          "lastModifiedDate": "2026-07-27T10:00:00.000",
+          "mtime": 1741770000000000000,
+          "ctime": 1741770000000000000,
+          "atime": 1741770000000000000,
+          "projectId": "demo",
+          "repoName": "drive-local",
+          "ino": 1001,
+          "targetIno": null,
+          "realIno": 1001,
+          "parent": 1,
+          "name": "a.png",
+          "size": 1024,
+          "mode": 33188,
+          "type": 1,
+          "nlink": 1,
+          "uid": 0,
+          "gid": 0,
+          "rdev": 0,
+          "flags": 0,
+          "symlinkTarget": null,
+          "metadata": [
+            { "key": "worksCategory", "value": "image", "system": false }
+          ]
+        }
+      ]
+    },
+    "traceId": null
+  }
+  ```
+
+## 统计仓库内文件数量
+
+- API: POST /drive/node/search/count/{projectId}/{repoName}
+- API 名称: drive_search_count
+- 功能说明:
+  - 中文: 按与文件搜索相同的过滤条件统计数量；未指定 `distinctByMetadataKeys` 时统计普通文件数，指定后按元数据键组合去重并取各系列最新版本计数（缺任一汇聚键的节点不计入）；可选 `groupByMetadataKey` 在过滤/去重后按该元数据值分桶，响应附带 `groups`（缺失或空白值以 `null` 表示）
+  - English: count with the same filters as search; without `distinctByMetadataKeys` counts regular files; with it counts distinct series by metadata key composite using each series' latest version (nodes missing any grouping key are excluded); optional `groupByMetadataKey` buckets after filter/distinct and returns `groups` (missing/blank values as `null`)
+- 请求体
+  ```json
+  {
+    "name": {
+      "value": "*img*",
+      "operation": "MATCH_I"
+    },
+    "metadata": [
+      {
+        "key": "worksCategory",
+        "value": "image",
+        "operation": "EQ"
+      }
+    ],
+    "distinctByMetadataKeys": [
+      "IMATE_AGENT_ID",
+      "IMATE_CONVERSATION_ID",
+      "IMATE_ARTIFACT_NAME"
+    ],
+    "groupByMetadataKey": "IMATE_ARTIFACT_TYPE"
+  }
+  ```
+- 请求字段说明
+
+  | 字段            | 类型     | 是否必须 | 默认值 | 说明                                                  | Description              |
+  | ------------- | ------ | ---- | --- | --------------------------------------------------- | ------------------------ |
+  | projectId     | string | 是    | 无   | 路径参数：项目名称                                           | project name             |
+  | repoName      | string | 是    | 无   | 路径参数：仓库名称                                           | repo name                |
+  | name          | object | 否    | 无   | 文件名查询条件，语义与 search 接口一致                            | name query rule          |
+  | metadata      | array  | 否    | []  | 元数据过滤条件列表，语义与 search 接口一致；`IMATE_ARTIFACT_TYPE` 在按系列去重时作用于各系列最新版本 | metadata query rules     |
+  | distinctByMetadataKeys | array | 否 | 无 | 按元数据键组合去重计数；缺省为文件总数 | distinct series grouping keys |
+  | groupByMetadataKey | string | 否 | 无 | 分桶元数据键；与 distinct 正交——无 distinct 时按文件分桶，有 distinct 时按各系列最新版本分桶 | metadata key for buckets |
+
+- 响应体
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": {
+      "total": 7,
+      "groups": [
+        { "value": "image", "count": 3 },
+        { "value": "pdf", "count": 3 },
+        { "value": null, "count": 1 }
+      ]
+    },
+    "traceId": null
+  }
+  ```
+
+  未指定 `groupByMetadataKey` 时 `groups` 为空数组；指定时 `total` 等于各桶 `count` 之和（含 `value: null`）。
+
+## 生成节点预览 URL
+
+- API: POST /drive/node/preview/url/{projectId}/{repoName}/{ino}?type=xxx
+- API 名称: drive_preview_url
+- 功能说明:
+  - 中文: 按调用方类型生成文件预览 URL；需对仓库有 READ 权限，且目标 ino 必须是已存在的普通文件
+  - English: build a preview URL by caller type; requires READ permission and an existing regular file inode
+- 路径/查询参数说明
+
+  | 字段        | 类型     | 是否必须 | 默认值 | 说明                                                                 | Description                                      |
+  | --------- | ------ | ---- | --- | ------------------------------------------------------------------ | ------------------------------------------------ |
+  | projectId | string | 是    | 无   | 路径参数：项目名称                                                         | project name                                     |
+  | repoName  | string | 是    | 无   | 路径参数：仓库名称                                                         | repo name                                        |
+  | ino       | long   | 是    | 无   | 路径参数：文件 inode                                                     | file inode                                       |
+  | type      | string | 否    | 无   | 预览调用方类型；仅精确匹配 `IMATE_AGENT` 时返回 Agent 自定义 URL；其它值或缺失时返回 Client URL | caller type; exact `IMATE_AGENT` or client fallback |
+
+- 行为说明
+  - 按 ino 查节点并反查 fullPath；节点不存在或目标为目录时返回节点不存在错误
+  - `type=IMATE_AGENT`：返回 `imate_artifact://{ino}?name={urlencoded}&type={type}`
+    - `name`：元数据 `IMATE_ARTIFACT_NAME`，缺省为文件 basename
+    - `type`：元数据 `IMATE_ARTIFACT_TYPE`（需为 image/pdf/html/code/table/slides/markdown/other），缺省或非法为 `other`
+  - 其它/缺失 `type`：返回 `{drive.domain}/ui/{projectId}/filePreview/local/0/{repoName}{fullPath}`
+  - Client URL 不签发临时 token、不生成短链；`drive.domain` 为空时报参数错误
+  - 无请求体
+
+- 响应体（IMATE_CLIENT 示例）
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": "https://bkrepo.example.com/ui/blueking/filePreview/local/0/drive/docs/readme.txt",
+    "traceId": null
+  }
+  ```
+
+- 响应体（IMATE_AGENT 示例）
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": "imate_artifact://100?name=%E5%91%A8%E6%8A%A5&type=table",
+    "traceId": null
+  }
+  ```
+
 ## DriveNode 返回字段说明
 
 | 字段        | 类型   | 说明                                                                 | Description                          |

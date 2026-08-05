@@ -34,6 +34,7 @@ import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.common.api.constant.DEVX_ACCESS_FROM_OFFICE
 import com.tencent.bkrepo.common.metadata.client.RAuthClient
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 import kotlinx.coroutines.reactor.awaitSingle
@@ -87,7 +88,45 @@ class PermissionService(
         return appId ?: throw AuthenticationException("AccessKey/SecretKey check failed.")
     }
 
+    suspend fun checkUserAccount(username: String, password: String): String {
+        val valid = rAuthClient.checkToken(username, password).awaitSingle().data
+        if (valid != true) {
+            throw AuthenticationException("User account check failed.")
+        }
+        return username
+    }
+
     suspend fun checkAdmin(uid: String): Boolean {
         return rAuthClient.detail(uid).awaitSingle().data?.admin == true
+    }
+
+    suspend fun checkNodePermission(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        action: PermissionAction,
+        uid: String,
+    ): Boolean {
+        val checkRequest = CheckPermissionRequest(
+            uid = uid,
+            resourceType = ResourceType.NODE.toString(),
+            action = action.toString(),
+            projectId = projectId,
+            repoName = repoName,
+            path = fullPath,
+        )
+        return doCheckPermission(checkRequest)
+    }
+
+    suspend fun checkNodePermissionOrThrow(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        action: PermissionAction,
+        uid: String,
+    ) {
+        if (!checkNodePermission(projectId, repoName, fullPath, action, uid)) {
+            throw PermissionException()
+        }
     }
 }

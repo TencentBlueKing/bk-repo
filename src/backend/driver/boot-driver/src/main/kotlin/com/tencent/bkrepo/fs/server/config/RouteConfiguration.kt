@@ -48,6 +48,7 @@ import com.tencent.bkrepo.fs.server.handler.drive.DriveOperateLogHandler
 import com.tencent.bkrepo.fs.server.handler.drive.DriveOperationHandler
 import com.tencent.bkrepo.fs.server.handler.drive.DriveRepositoryHandler
 import com.tencent.bkrepo.fs.server.handler.drive.DriveSnapshotHandler
+import com.tencent.bkrepo.fs.server.handler.drive.DriveTemporaryAccessHandler
 import com.tencent.bkrepo.fs.server.handler.service.FsNodeHandler
 import com.tencent.bkrepo.fs.server.metrics.ServerMetrics
 import org.slf4j.LoggerFactory
@@ -59,8 +60,8 @@ import org.springframework.web.reactive.HandlerMapping
 import org.springframework.web.reactive.function.server.CoRouterFunctionDsl
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.coRouter
+import org.springframework.web.util.UriUtils
 import org.springframework.web.util.pattern.PathPattern
-import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.cancellation.CancellationException
@@ -80,6 +81,7 @@ class RouteConfiguration(
     private val driveRepositoryHandler: DriveRepositoryHandler,
     private val driveSnapshotHandler: DriveSnapshotHandler,
     private val driveOperateLogHandler: DriveOperateLogHandler,
+    private val driveTemporaryAccessHandler: DriveTemporaryAccessHandler,
     private val authHandlerFilterFunction: AuthHandlerFilterFunction,
     private val serverMetrics: ServerMetrics,
     private val devXAccessFilter: DevXAccessFilter,
@@ -151,6 +153,9 @@ class RouteConfiguration(
                 POST("/batch/{projectId}/{repoName}", driveNodeOperationsHandler::batch)
                 GET("/page/{projectId}/{repoName}", driveNodeOperationsHandler::listNodesPage)
                 GET("/modified/page/{projectId}/{repoName}", driveNodeOperationsHandler::listModifiedNodesPage)
+                POST("/search/{projectId}/{repoName}", driveNodeOperationsHandler::search)
+                POST("/search/count/{projectId}/{repoName}", driveNodeOperationsHandler::searchCount)
+                POST("/preview/url/{projectId}/{repoName}/{ino}", driveNodeOperationsHandler::previewUrl)
                 filter(artifactFileCleanupFilterFunction::filter)
                 PUT("/upload/{projectId}/{repoName}/**", driveNodeOperationsHandler::upload)
                 addMetrics(serverMetrics.uploadingCount)
@@ -163,6 +168,17 @@ class RouteConfiguration(
             }
             "/oplog".nest {
                 GET("/page/{projectId}/{repoName}", driveOperateLogHandler::page)
+            }
+            "/temporary".nest {
+                POST("/token/create", driveTemporaryAccessHandler::createToken)
+                POST("/url/create", driveTemporaryAccessHandler::createUrl)
+                filter(artifactFileCleanupFilterFunction::filter)
+                PUT("/upload/{projectId}/{repoName}/**", driveTemporaryAccessHandler::upload)
+                addMetrics(serverMetrics.uploadingCount)
+            }
+            accept(APPLICATION_OCTET_STREAM).nest {
+                GET("/temporary/download/{projectId}/{repoName}/**", driveTemporaryAccessHandler::download)
+                addMetrics(serverMetrics.downloadingCount)
             }
         }
 
@@ -212,7 +228,7 @@ class RouteConfiguration(
                         .get() as PathPattern).patternString,
                     request.path()
                 )
-                val decodeUrl = URLDecoder.decode(encodeUrl, StandardCharsets.UTF_8.name())
+                val decodeUrl = UriUtils.decode(encodeUrl, StandardCharsets.UTF_8.name())
                 val artifactUri = PathUtils.normalizeFullPath(decodeUrl)
                 request.exchange().attributes[PROJECT_ID] = projectId
                 request.exchange().attributes[REPO_NAME] = repoName

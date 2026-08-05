@@ -6,7 +6,11 @@ import {
     prepareJsxSource,
     rewriteBareImports,
     rewriteMarkdownImageUrls,
-    normalizeMarkdownText
+    normalizeMarkdownText,
+    normalizeCodeText,
+    resolveMonacoLanguage,
+    resolvePreviewViewMode,
+    buildJsxSandboxSrcdoc
 } from './markdownJsxPreviewCore.js'
 
 test('resolveRelativePath resolves sibling and parent paths', () => {
@@ -55,6 +59,26 @@ test('prepareJsxSource keeps package imports and mounts default export', () => {
     assert.match(source, /from "https:\/\/esm\.sh\/lucide-react"/)
     assert.match(source, /const __PREVIEW_COMPONENT__ = function Hello/)
     assert.match(source, /createRoot/)
+    assert.match(source, /React\.createElement\(__PREVIEW_COMPONENT__\)/)
+    assert.equal((source.match(/import\s+React\b/g) || []).length, 1)
+})
+
+test('prepareJsxSource injects React when user JSX omits the import', () => {
+    const source = prepareJsxSource(
+        'export default function DeltaForceHome () { return <div>Hi</div> }'
+    )
+    assert.match(source, /^import React from 'https:\/\/esm\.sh\/react';/m)
+    assert.match(source, /const __PREVIEW_COMPONENT__ = function DeltaForceHome/)
+    assert.match(source, /React\.createElement\(__PREVIEW_COMPONENT__\)/)
+})
+
+test('prepareJsxSource injects React when only named hooks are imported', () => {
+    const source = prepareJsxSource(
+        'import { useState } from "react"\nexport default function App () { const [n] = useState(0); return <div>{n}</div> }'
+    )
+    assert.match(source, /import React from 'https:\/\/esm\.sh\/react';/)
+    assert.match(source, /from "https:\/\/esm\.sh\/react"/)
+    assert.equal((source.match(/import\s+React\b/g) || []).length, 1)
 })
 
 test('prepareJsxSource rejects require', () => {
@@ -83,4 +107,78 @@ test('rewriteMarkdownImageUrls rewrites double and single quoted src', () => {
         rewriteMarkdownImageUrls('<img src="https://example.com/c.png">', resolve),
         '<img src="https://example.com/c.png">'
     )
+})
+
+test('normalizeCodeText always base64-decodes code payload', () => {
+    const decode = (value) => Buffer.from(value, 'base64').toString('utf8')
+    const encoded = Buffer.from('public class Main {}', 'utf8').toString('base64')
+    assert.equal(normalizeCodeText(encoded, decode), 'public class Main {}')
+})
+
+test('normalizeCodeText falls back to raw text when decode fails', () => {
+    assert.equal(
+        normalizeCodeText('not-valid-base64!!!', () => {
+            throw new Error('decode failed')
+        }),
+        'not-valid-base64!!!'
+    )
+})
+
+test('resolveMonacoLanguage maps CODE suffixes to monaco language ids', () => {
+    assert.equal(resolveMonacoLanguage('Main.java'), 'java')
+    assert.equal(resolveMonacoLanguage('app.py'), 'python')
+    assert.equal(resolveMonacoLanguage('script.python'), 'python')
+    assert.equal(resolveMonacoLanguage('main.go'), 'go')
+    assert.equal(resolveMonacoLanguage('index.js'), 'javascript')
+    assert.equal(resolveMonacoLanguage('page.html'), 'html')
+    assert.equal(resolveMonacoLanguage('styles.css'), 'css')
+    assert.equal(resolveMonacoLanguage('run.sh'), 'shell')
+    assert.equal(resolveMonacoLanguage('conf.yaml'), 'yaml')
+    assert.equal(resolveMonacoLanguage('conf.yml'), 'yaml')
+    assert.equal(resolveMonacoLanguage('data.json'), 'json')
+    assert.equal(resolveMonacoLanguage('query.sql'), 'sql')
+    assert.equal(resolveMonacoLanguage('lib.cpp'), 'cpp')
+    assert.equal(resolveMonacoLanguage('lib.h'), 'c')
+    assert.equal(resolveMonacoLanguage('lib.c'), 'c')
+    assert.equal(resolveMonacoLanguage('App.cs'), 'csharp')
+    assert.equal(resolveMonacoLanguage('app.rb'), 'ruby')
+    assert.equal(resolveMonacoLanguage('index.php'), 'php')
+    assert.equal(resolveMonacoLanguage('mod.lua'), 'lua')
+    assert.equal(resolveMonacoLanguage('page.aspx'), 'plaintext')
+    assert.equal(resolveMonacoLanguage('page.jsp'), 'plaintext')
+    assert.equal(resolveMonacoLanguage('page.ftl'), 'plaintext')
+})
+
+test('resolvePreviewViewMode reads view from query and defaults to preview', () => {
+    assert.equal(resolvePreviewViewMode({ query: { view: 'source' } }), 'source')
+    assert.equal(resolvePreviewViewMode({ query: { view: 'preview' } }), 'preview')
+    assert.equal(resolvePreviewViewMode({ query: {} }), 'preview')
+    assert.equal(resolvePreviewViewMode({ query: { view: 'other' } }), 'preview')
+    assert.equal(resolvePreviewViewMode({}), 'preview')
+})
+
+test('resolvePreviewViewMode reads view from extraParam payload', () => {
+    assert.equal(
+        resolvePreviewViewMode({ extraParam: JSON.stringify({ view: 'source' }) }),
+        'source'
+    )
+    assert.equal(
+        resolvePreviewViewMode({
+            query: { view: 'preview' },
+            extraParam: JSON.stringify({ view: 'source' })
+        }),
+        'preview'
+    )
+})
+
+test('buildJsxSandboxSrcdoc shims fragment navigation and sandbox APIs', () => {
+    const srcdoc = buildJsxSandboxSrcdoc(
+        'export default function App () { return <a href="#modes">modes</a> }',
+        '/ui/libs/'
+    )
+    assert.match(srcdoc, /a\[href\^="#"]/)
+    assert.match(srcdoc, /scrollIntoView/)
+    assert.match(srcdoc, /defineProperty\(document, 'cookie'/)
+    assert.match(srcdoc, /defineProperty\(navigator, 'serviceWorker'/)
+    assert.match(srcdoc, /__isSandboxCapabilityError/)
 })

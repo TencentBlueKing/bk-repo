@@ -58,5 +58,9 @@ data class TTemporaryToken(
     var authorizedIpList: Set<String>,
     var expireDate: LocalDateTime? = null,
     var permits: Int? = null,
-    var type: TokenType
+    var type: TokenType,
+  /**
+   * 快照序列号，为空表示只读最新数据
+   */
+    var snapSeq: Long? = null,
 )

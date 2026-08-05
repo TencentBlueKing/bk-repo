@@ -259,11 +259,16 @@ object PathUtils {
     }
 
     /**
-     * 判断路径[path]是否为[parent]的子目录
+     * 判断路径[path]是否为[parent]或其子路径
+     *
+     * 要求路径层级边界匹配，避免 `/data/report` 误匹配 `/data/report-secret`。
      */
     fun isSubPath(path: String, parent: String): Boolean {
         val formatParent = parent.ensurePrefix(UNIX_SEPARATOR)
-        return path.startsWith(formatParent)
+        if (formatParent.endsWith(UNIX_SEPARATOR)) {
+            return path.startsWith(formatParent)
+        }
+        return path == formatParent || path.startsWith("$formatParent$UNIX_SEPARATOR")
     }
 
     /**

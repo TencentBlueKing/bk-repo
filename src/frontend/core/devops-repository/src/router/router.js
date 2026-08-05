@@ -67,22 +67,6 @@ const routes = [
         component: genericView
     },
     {
-        path: '/',
-        component: repoHome,
-        children: [
-            {
-                path: 'repoToken',
-                name: 'repoToken',
-                component: repoToken,
-                meta: {
-                    breadcrumb: [
-                        { name: 'repoToken', label: '个人令牌' }
-                    ]
-                }
-            }
-        ]
-    },
-    {
         path: '/:projectId',
         component: repoHome,
         redirect: { name: 'repositories' },
@@ -168,6 +152,16 @@ const routes = [
                 meta: {
                     breadcrumb: [
                         { name: 'projectConfig', label: '项目设置' }
+                    ]
+                }
+            },
+            {
+                path: 'repoToken',
+                name: 'repoToken',
+                component: repoToken,
+                meta: {
+                    breadcrumb: [
+                        { name: 'repoToken', label: '个人令牌' }
                     ]
                 }
             },

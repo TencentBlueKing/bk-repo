@@ -22,6 +22,7 @@
                 :file-path="richTextFilePath"
                 :source-text="richTextSource"
                 :resolve-asset-url="resolveAssetUrl"
+                :view-mode="richTextViewMode"
             />
         </div>
         <div v-if="xmindShow" ref="container" class="xmind-preview-container"></div>
@@ -55,8 +56,9 @@
     } from '@repository/utils/previewOfficeFile'
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
-    import { isExcel, isFormatType, isHtmlType, isJsx, isMarkdown, isPic, isText, isXmind } from '@repository/utils/file'
-    import { createAssetResolver, parsePreviewContext } from '@repository/utils/markdownJsxPreview'
+    import { isCode, isExcel, isFormatType, isHtmlType, isJsx, isMarkdown, isPic, isText, isXmind } from '@repository/utils/file'
+    import { createAssetResolver, parsePreviewContext, resolvePreviewViewMode } from '@repository/utils/markdownJsxPreview'
+    import { buildImageViewerOptions, isPurePreviewEnabled } from '@repository/utils/imagePreview'
     import { createOrUpdateXmindViewer, destroyXmindViewer } from '@repository/utils/xmindPreview'
     import SourcePreviewTabs from '@repository/components/FilePreview/SourcePreviewTabs'
     import Viewer from 'viewerjs'
@@ -158,6 +160,15 @@
                     extraParam: this.extraParam !== '0' ? Base64.decode(decodeURIComponent(this.extraParam)) : ''
                 })
                 return createAssetResolver(context)
+            },
+            richTextViewMode () {
+                const extraParam = this.extraParam !== '0'
+                    ? Base64.decode(decodeURIComponent(this.extraParam))
+                    : ''
+                return resolvePreviewViewMode({
+                    query: this.$route.query,
+                    extraParam
+                })
             }
         },
         async created () {
@@ -189,7 +200,17 @@
             } else {
                 this.dealWaterMark()
             }
-            if (isText(this.filePath)) {
+            if (isCode(this.filePath)) {
+                if (this.repoType === 'local') {
+                    customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
+                        this.dealDate(res)
+                    }).catch(() => this.showError())
+                } else {
+                    customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(res => {
+                        this.dealDate(res)
+                    }).catch(() => this.showError())
+                }
+            } else if (isText(this.filePath)) {
                 this.previewBasicFile({
                     projectId: this.projectId,
                     repoName: this.repoName,
@@ -305,7 +326,7 @@
             async dealDate (res) {
                 this.loading = false
                 let url
-                if (!isHtmlType(this.filePath) && !isPic(this.filePath) && !isJsx(this.filePath) && !isMarkdown(this.filePath) && !isXmind(this.filePath)) {
+                if (!isHtmlType(this.filePath) && !isPic(this.filePath) && !isJsx(this.filePath) && !isMarkdown(this.filePath) && !isXmind(this.filePath) && !isCode(this.filePath)) {
                     this.loadFile(URL.createObjectURL(res.data))
                     this.pdfShow = true
                     this.pageUrl = url
@@ -313,14 +334,11 @@
                     this.imgShow = true
                     this.imgUrl = URL.createObjectURL(res.data)
                     this.$nextTick(() => {
-                        const viewer = new Viewer(document.getElementById('image'), {
-                            inline: true,
-                            viewed () {
-                                viewer.zoomTo(1)
-                            }
-                        })
+                        new Viewer(document.getElementById('image'), buildImageViewerOptions({
+                            purePreview: isPurePreviewEnabled(this.$route.query)
+                        }))
                     })
-                } else if (isMarkdown(this.filePath) || isJsx(this.filePath)) {
+                } else if (isMarkdown(this.filePath) || isJsx(this.filePath) || isCode(this.filePath)) {
                     const text = await res.data.text()
                     this.richTextFilePath = this.filePath
                     this.richTextSource = text
@@ -411,8 +429,14 @@ canvas {
     background: white !important;
 }
 .rich-text-preview-container {
-    width: 100%;
-    height: 100%;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #fff;
+    padding: 0;
+    margin: 0;
 }
 .xmind-preview-container {
     position: fixed;

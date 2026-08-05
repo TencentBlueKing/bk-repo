@@ -65,3 +65,8 @@ const val REMOTE_HTML_CACHE_FULL_PATH = "remoteHtml.html"
 const val FLUSH_CACHE_EXPIRE = 60 * 24
 const val XML_RPC_URI = "RPC2"
 const val XML_RPC_OPERATION_OR = "or"
+
+/** LOCAL simple 单包索引文件缓存目录名（仓库根下隐藏前缀） */
+const val SIMPLE_INDEX_CACHE_DIR = ".pypi-simple-index"
+/** 单包 simple HTML 缓存路径前缀：/.pypi-simple-index/packages/{packageName}.html */
+const val SIMPLE_INDEX_CACHE_PACKAGES_PREFIX = "/$SIMPLE_INDEX_CACHE_DIR/packages/"

@@ -23,8 +23,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties
  *     enabled: true
  * ```
  *
- * @property enabled 紧急关停开关：false 时 [PreviewTokenAuthHandler] 直接短路返回匿名凭据，
- *                   回退到现有"仅网关登录态"模式；默认 true。
+ * @property enabled 紧急关停开关：false 时 [PreviewTokenAuthService] 跳过阶段二 token 鉴权，
+ *                   回退到现有登录态链路；默认 true。
  */
 @ConfigurationProperties(prefix = "preview.temporary-token")
 data class PreviewTokenAuthConfig(

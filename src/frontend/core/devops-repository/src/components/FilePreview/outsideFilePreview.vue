@@ -28,6 +28,7 @@
                 :file-path="richTextFilePath"
                 :source-text="richTextSource"
                 :resolve-asset-url="resolveAssetUrl"
+                :view-mode="richTextViewMode"
             />
         </div>
         <div v-if="xmindShow" ref="container" class="xmind-preview-container"></div>
@@ -55,6 +56,7 @@
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
     import {
+        isCode,
         isExcel,
         isHtmlType,
         isJsx,
@@ -64,7 +66,8 @@
         isText,
         isXmind
     } from '@repository/utils/file'
-    import { createAssetResolver, parsePreviewContext } from '@repository/utils/markdownJsxPreview'
+    import { createAssetResolver, parsePreviewContext, resolvePreviewViewMode } from '@repository/utils/markdownJsxPreview'
+    import { buildImageViewerOptions, isPurePreviewEnabled } from '@repository/utils/imagePreview'
     import { createOrUpdateXmindViewer, destroyXmindViewer } from '@repository/utils/xmindPreview'
     import SourcePreviewTabs from '@repository/components/FilePreview/SourcePreviewTabs'
     import Viewer from 'viewerjs'
@@ -158,6 +161,20 @@
             },
             resolveAssetUrl () {
                 return createAssetResolver(this.previewContext)
+            },
+            richTextViewMode () {
+                let extraParam = ''
+                try {
+                    extraParam = this.extraParam
+                        ? Base64.decode(decodeURIComponent(this.extraParam))
+                        : ''
+                } catch (e) {
+                    extraParam = ''
+                }
+                return resolvePreviewViewMode({
+                    query: this.$route.query,
+                    extraParam
+                })
             }
         },
         async created () {
@@ -202,6 +219,12 @@
                                 const url = URL.createObjectURL(fileDate.data)
                                 this.showFrame = true
                                 this.pageUrl = url
+                            } else if (isCode(res.data.data.suffix)) {
+                                const text = await fileDate.data.text()
+                                const suffix = res.data.data.suffix
+                                this.richTextFilePath = this.previewContext.filePath || `preview.${suffix}`
+                                this.richTextSource = text
+                                this.richTextShow = true
                             } else if (isText(res.data.data.suffix)) {
                                 this.previewBasic = true
                                 this.$nextTick(() => {
@@ -217,12 +240,9 @@
                                 this.imgShow = true
                                 this.imgUrl = URL.createObjectURL(fileDate.data)
                                 this.$nextTick(() => {
-                                    const viewer = new Viewer(document.getElementById('image'), {
-                                        inline: true,
-                                        viewed () {
-                                            viewer.zoomTo(1)
-                                        }
-                                    })
+                                    new Viewer(document.getElementById('image'), buildImageViewerOptions({
+                                        purePreview: isPurePreviewEnabled(this.$route.query)
+                                    }))
                                 })
                             } else if (isMarkdown(res.data.data.suffix) || isJsx(res.data.data.suffix)) {
                                 const text = await fileDate.data.text()
@@ -357,8 +377,14 @@ canvas {
     background: white !important;
 }
 .rich-text-preview-container {
-    width: 100%;
-    height: 100%;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #fff;
+    padding: 0;
+    margin: 0;
 }
 .xmind-preview-container {
     position: fixed;

@@ -81,6 +81,7 @@ class RepositoryServiceHelper(
                     quota = it.quota,
                     used = it.used,
                     oldCredentialsKey = it.oldCredentialsKey,
+                    displayName = it.displayName,
                     visibility = it.visibility,
                     owner = it.owner,
                 )
@@ -107,6 +108,7 @@ class RepositoryServiceHelper(
                     quota = it.quota,
                     used = it.used,
                     display = it.display,
+                    displayName = it.displayName,
                     visibility = it.visibility,
                     owner = it.owner,
                 )
@@ -278,6 +280,7 @@ class RepositoryServiceHelper(
                     quota = quota,
                     used = 0,
                     display = display,
+                    displayName = displayName,
                     visibility = visibility,
                     owner = owner,
                 )

@@ -239,6 +239,83 @@
         <compressed-file-table ref="compressedFileTable" :data="compressedData" @show-preview="handleShowPreview"></compressed-file-table>
         <loading ref="loading" @closeLoading="closeLoading"></loading>
         <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
+        <canway-dialog
+            v-model="clientDownloadDialog.visible"
+            :title="$t('download')"
+            width="520"
+            :height-num="300"
+            @cancel="onClientDownloadDialogCancel">
+            <bk-alert
+                v-if="clientDownloadDialog.mode === 'install'"
+                type="info"
+                title="未检测到 BKArtifacts 客户端"
+                style="margin-bottom: 10px; margin-top: -20px">
+            </bk-alert>
+            <p v-if="clientDownloadDialog.mode === 'install'" class="client-download-install-sub">
+                请先安装并启动客户端；若已安装可尝试直接唤起
+            </p>
+            <bk-alert
+                v-else-if="clientDownloadDialog.mode === 'upgrade'"
+                type="warning"
+                :title="clientDownloadDialog.message"
+                style="margin-bottom: 10px; margin-top: -20px">
+            </bk-alert>
+            <bk-alert
+                v-else-if="clientDownloadDialog.mode === 'failed'"
+                type="error"
+                :title="clientDownloadDialog.message"
+                style="margin-bottom: 10px; margin-top: -20px">
+            </bk-alert>
+            <div v-else class="client-download-waiting-body">
+                <div class="client-download-waiting">
+                    <Icon name="loading" size="20" class="client-download-waiting-icon" />
+                    <span class="client-download-waiting-text">{{ clientDownloadWaitingTitle }}</span>
+                </div>
+                <p class="client-download-waiting-sub">{{ clientDownloadWaitingSub }}</p>
+            </div>
+            <p
+                v-if="clientDownloadDialog.webFallback"
+                class="client-download-web-fallback"
+                @click="onClientDownloadWebFallback">
+                无法使用客户端？改用浏览器下载
+            </p>
+            <template #footer>
+                <template v-if="clientDownloadDialog.mode === 'install'">
+                    <bk-button theme="default" @click="onClientDownloadInstall">下载安装包</bk-button>
+                    <bk-button
+                        class="ml10"
+                        theme="primary"
+                        :loading="clientDownloadDialog.waiting"
+                        @click="onClientDownloadLaunch">
+                        尝试客户端下载
+                    </bk-button>
+                </template>
+                <template v-else-if="clientDownloadDialog.mode === 'upgrade'">
+                    <bk-button theme="default" @click="onClientDownloadRetry">重试</bk-button>
+                    <bk-button class="ml10" theme="primary" @click="onClientDownloadInstall">下载新版本</bk-button>
+                </template>
+                <template v-else-if="clientDownloadDialog.mode === 'failed'">
+                    <bk-button theme="default" @click="onClientDownloadDialogCancel">关闭</bk-button>
+                    <bk-button
+                        v-if="clientDownloadDialog.showInstall"
+                        class="ml10"
+                        theme="default"
+                        @click="onClientDownloadInstall">
+                        下载安装包
+                    </bk-button>
+                    <bk-button class="ml10" theme="primary" @click="onClientDownloadRetry">重试</bk-button>
+                </template>
+                <template v-else>
+                    <bk-button theme="default" @click="onClientDownloadDialogCancel">取消</bk-button>
+                    <bk-button
+                        class="ml10"
+                        theme="primary"
+                        @click="onClientDownloadDismissDone">
+                        客户端已开始下载
+                    </bk-button>
+                </template>
+            </template>
+        </canway-dialog>
     </div>
 </template>
 <script>
@@ -265,6 +342,17 @@
     import previewBasicFileDialog from './previewBasicFileDialog'
     import { Base64 } from 'js-base64'
     import { isOutDisplayType, isText } from '@repository/utils/file'
+    import {
+        CLIENT_DOWNLOAD_CANCELLED,
+        CLIENT_DOWNLOAD_FAILED,
+        CLIENT_DOWNLOAD_HANDLED,
+        abortActiveClientDownload,
+        getClientInstallUrl,
+        isClientDownloadUpgradeReason,
+        prepareClientDownload,
+        shouldShowInstallOnClientDownloadFail,
+        startClientDownloadWait
+    } from '@repository/utils/clientDownload'
 
     export default {
         name: 'RepoGeneric',
@@ -320,6 +408,18 @@
                 showData: {},
                 sortParams: [],
                 timer: null,
+                clientDownloading: false,
+                clientDownloadDialog: {
+                    visible: false,
+                    mode: 'install',
+                    message: '',
+                    waiting: false,
+                    coldStart: false,
+                    loopbackUncertain: false,
+                    showInstall: false,
+                    pending: null,
+                    webFallback: null
+                },
                 showMultiDelete: false,
                 selectedAll: false,
                 selectCount: 0,
@@ -378,6 +478,19 @@
             sortableRepo () {
                 // 仅允许LOCAL仓库排序
                 return this.localRepo ? 'custom' : false
+            },
+            clientDownloadWaitingTitle () {
+                return this.clientDownloadDialog.coldStart
+                    ? '正在唤起客户端…'
+                    : '正在将下载任务发送至客户端…'
+            },
+            clientDownloadWaitingSub () {
+                if (this.clientDownloadDialog.loopbackUncertain && this.clientDownloadDialog.coldStart) {
+                    return '如弹出系统对话框，请选择「打开」。若传输列表已有任务，可点「客户端已开始下载」'
+                }
+                return this.clientDownloadDialog.coldStart
+                    ? '如弹出系统对话框，请选择「打开」'
+                    : '请在客户端传输列表查看进度'
             }
         },
         watch: {
@@ -1128,70 +1241,209 @@
                     fullPath
                 })
             },
-            handlerDownload (row) {
+            buildDownloadFetchUrl (row) {
                 const transPath = encodeURIComponent(row.fullPath)
-                const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
-                fetch(window.BK_SUBPATH + 'web' + url, {
+                return `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
+            },
+            openDownloadUrl (url) {
+                window.open(
+                    window.BK_SUBPATH + 'web' + url + `&x-bkrepo-project-id=${this.projectId}`,
+                    '_self'
+                )
+            },
+            probeDownload (row) {
+                const url = this.buildDownloadFetchUrl(row)
+                return fetch(window.BK_SUBPATH + 'web' + url, {
                     credentials: 'include',
-                    headers: { Range: 'bytes=0-1' } // 限制范围
-                }).then(async response => {
-                    if (response.ok) {
-                        window.open(
-                            window.BK_SUBPATH + 'web' + url + `&x-bkrepo-project-id=${this.projectId}`,
-                            '_self'
-                        )
-                    } else if (response.status === 451) {
-                        const resJson = await response.json()
-                        this.$refs.loading.isShow = true
-                        this.$refs.loading.complete = false
-                        this.$refs.loading.title = ''
-                        this.$refs.loading.backUp = true
-                        this.$refs.loading.cancelMessage = this.$t('downloadLater')
-                        this.$refs.loading.subMessage = resJson.message
-                        this.$refs.loading.message = this.$t('backUpMessage', { 0: row.name })
-                        this.timerDownload(url, row.fullPath, row.name)
-                    } else if (response.status === 403) {
-                        this.getPermissionUrl({
-                            body: {
-                                projectId: this.projectId,
-                                action: 'READ',
-                                resourceType: 'NODE',
-                                uid: this.userInfo.name,
-                                repoName: this.repoName,
-                                path: row.fullPath
-                            }
-                        }).then(res => {
-                            if (res !== '') {
-                                this.showIamDenyDialog = true
-                                this.showData = {
-                                    projectId: this.projectId,
-                                    repoName: this.repoName,
-                                    path: row.fullPath,
-                                    action: 'READ',
-                                    url: res
-                                }
-                            } else {
-                                const message = this.$t('fileDownloadError', [this.$route.params.projectId])
-                                this.$bkMessage({
-                                    theme: 'error',
-                                    message
-                                })
-                            }
-                        })
-                    } else if (response.status === 429) {
-                        const resJson = await response.json()
-                        this.$bkMessage({
-                            theme: 'error',
-                            message: resJson.message
-                        })
+                    headers: { Range: 'bytes=0-1' }
+                }).then(response => ({ response, url }))
+            },
+            async resolveDownloadProbe (response, row, url) {
+                if (response.ok) {
+                    return true
+                }
+                if (response.status === 451) {
+                    const resJson = await response.json()
+                    this.$refs.loading.isShow = true
+                    this.$refs.loading.complete = false
+                    this.$refs.loading.title = ''
+                    this.$refs.loading.backUp = true
+                    this.$refs.loading.cancelMessage = this.$t('downloadLater')
+                    this.$refs.loading.subMessage = resJson.message
+                    this.$refs.loading.message = this.$t('backUpMessage', { 0: row.name })
+                    this.timerDownload(url, row.fullPath, row.name)
+                } else if (response.status === 403) {
+                    const res = await this.getPermissionUrl({
+                        body: {
+                            projectId: this.projectId,
+                            action: 'READ',
+                            resourceType: 'NODE',
+                            uid: this.userInfo.name,
+                            repoName: this.repoName,
+                            path: row.fullPath
+                        }
+                    })
+                    if (res !== '') {
+                        this.showIamDenyDialog = true
+                        this.showData = {
+                            projectId: this.projectId,
+                            repoName: this.repoName,
+                            path: row.fullPath,
+                            action: 'READ',
+                            url: res
+                        }
                     } else {
-                        const message = this.$t('fileError')
+                        const message = this.$t('fileDownloadError', [this.$route.params.projectId])
                         this.$bkMessage({
                             theme: 'error',
                             message
                         })
                     }
+                } else if (response.status === 429) {
+                    const resJson = await response.json()
+                    this.$bkMessage({
+                        theme: 'error',
+                        message: resJson.message
+                    })
+                } else {
+                    const message = this.$t('fileError')
+                    this.$bkMessage({
+                        theme: 'error',
+                        message
+                    })
+                }
+                return false
+            },
+            downloadFromWeb (row) {
+                this.probeDownload(row).then(async ({ response, url }) => {
+                    if (await this.resolveDownloadProbe(response, row, url)) {
+                        this.openDownloadUrl(url)
+                    }
                 })
+            },
+            clientDownloadContext () {
+                return {
+                    projectId: this.projectId,
+                    repoName: this.repoName,
+                    origin: window.location.origin,
+                    subPath: window.BK_SUBPATH
+                }
+            },
+            collectSelectedPaths () {
+                const key = this.userInfo.name + 'SelectedPaths'
+                const isCheckedPaths = sessionStorage.getItem(key).split('\'')
+                const paths = []
+                for (let i = 0; i < isCheckedPaths.length; i++) {
+                    if (isCheckedPaths[i].length > 0 && isCheckedPaths[i].startsWith(this.projectId + '/' + this.repoName)) {
+                        paths.push(isCheckedPaths[i].replace(this.projectId + '/' + this.repoName, ''))
+                    }
+                }
+                return paths
+            },
+            openClientDownloadDialog (mode, {
+                message = '',
+                pending = null,
+                webFallback = null,
+                coldStart = false,
+                loopbackUncertain = false
+            } = {}) {
+                this.clientDownloadDialog = {
+                    visible: true,
+                    mode,
+                    message,
+                    waiting: false,
+                    coldStart,
+                    loopbackUncertain,
+                    showInstall: false,
+                    pending,
+                    webFallback
+                }
+            },
+            finishClientDownload () {
+                this.clientDownloading = false
+                this.clientDownloadDialog.visible = false
+                this.clientDownloadDialog.pending = null
+                this.clientDownloadDialog.webFallback = null
+            },
+            handleClientDownloadResult (result) {
+                if (result.status === CLIENT_DOWNLOAD_HANDLED) {
+                    this.$bkMessage({
+                        theme: 'info',
+                        message: '已交由客户端下载',
+                        delay: 3000
+                    })
+                    this.finishClientDownload()
+                    return
+                }
+                if (result.status === CLIENT_DOWNLOAD_CANCELLED) {
+                    this.finishClientDownload()
+                    return
+                }
+                if (result.status === CLIENT_DOWNLOAD_FAILED) {
+                    this.clientDownloadDialog.mode = isClientDownloadUpgradeReason(result.reason)
+                        ? 'upgrade'
+                        : 'failed'
+                    this.clientDownloadDialog.message = result.message
+                    this.clientDownloadDialog.showInstall = shouldShowInstallOnClientDownloadFail(result.reason)
+                    this.clientDownloadDialog.waiting = false
+                }
+            },
+            async runClientDownloadWait (pending) {
+                this.clientDownloadDialog.mode = 'waiting'
+                this.clientDownloadDialog.coldStart = !pending.running
+                this.clientDownloadDialog.waiting = true
+                try {
+                    this.handleClientDownloadResult(await startClientDownloadWait(pending))
+                } finally {
+                    this.clientDownloadDialog.waiting = false
+                }
+            },
+            async beginClientDownload ({ row, paths, webFallback }) {
+                const prepared = await prepareClientDownload({
+                    row,
+                    paths,
+                    context: this.clientDownloadContext()
+                })
+                if (prepared.blocked) {
+                    this.openClientDownloadDialog('upgrade', {
+                        message: prepared.message,
+                        pending: { row, paths },
+                        webFallback
+                    })
+                    return
+                }
+                const shouldAutoWait = prepared.running || prepared.loopbackUncertain
+                this.openClientDownloadDialog(shouldAutoWait ? 'waiting' : 'install', {
+                    pending: prepared,
+                    webFallback,
+                    coldStart: !prepared.running,
+                    loopbackUncertain: prepared.loopbackUncertain
+                })
+                if (shouldAutoWait) {
+                    await this.runClientDownloadWait(prepared)
+                }
+            },
+            async handlerDownload (row) {
+                if (this.clientDownloading) return
+                if (BK_ARTIFACT_CLIENT_DOWNLOAD_ENABLED !== 'true') {
+                    this.downloadFromWeb(row)
+                    return
+                }
+                this.clientDownloading = true
+                try {
+                    const { response, url } = await this.probeDownload(row)
+                    if (!(await this.resolveDownloadProbe(response, row, url))) {
+                        this.clientDownloading = false
+                        return
+                    }
+                    await this.beginClientDownload({ row, webFallback: () => this.openDownloadUrl(url) })
+                } catch (e) {
+                    this.clientDownloading = false
+                    this.$bkMessage({
+                        theme: 'error',
+                        message: '客户端下载失败，请重试'
+                    })
+                }
             },
             timerDownload (url, fullPath, name) {
                 if (this.timer) return
@@ -1236,15 +1488,67 @@
                 }, 5000)
             },
             handlerMultiDownload () {
-                const key = this.userInfo.name + 'SelectedPaths'
-                const isCheckedPaths = sessionStorage.getItem(key).split('\'')
-                const paths = []
-                for (let i = 0; i < isCheckedPaths.length; i++) {
-                    if (isCheckedPaths[i].length > 0 && isCheckedPaths[i].startsWith(this.projectId + '/' + this.repoName)) {
-                        paths.push(isCheckedPaths[i].replace(this.projectId + '/' + this.repoName, ''))
-                    }
+                const paths = this.collectSelectedPaths()
+                if (!paths.length) return
+                if (this.clientDownloading) return
+                if (BK_ARTIFACT_CLIENT_DOWNLOAD_ENABLED !== 'true') {
+                    customizeDownloadFile(this.projectId, this.repoName, paths)
+                    return
                 }
-                customizeDownloadFile(this.projectId, this.repoName, paths)
+                this.clientDownloading = true
+                const webFallback = () => customizeDownloadFile(this.projectId, this.repoName, paths)
+                this.beginClientDownload({ paths, webFallback }).catch(() => {
+                    this.clientDownloading = false
+                    this.$bkMessage({
+                        theme: 'error',
+                        message: '客户端下载失败，请重试'
+                    })
+                })
+            },
+            onClientDownloadDialogCancel () {
+                abortActiveClientDownload()
+                this.finishClientDownload()
+            },
+            onClientDownloadInstall () {
+                const installUrl = getClientInstallUrl()
+                if (!installUrl) {
+                    this.$bkMessage({
+                        theme: 'warning',
+                        message: '未配置客户端安装地址，请联系管理员'
+                    })
+                    return
+                }
+                window.open(installUrl, '_blank')
+            },
+            async onClientDownloadLaunch () {
+                const pending = this.clientDownloadDialog.pending
+                if (!pending || this.clientDownloadDialog.waiting) {
+                    return
+                }
+                await this.runClientDownloadWait(pending)
+            },
+            async onClientDownloadRetry () {
+                const { pending, webFallback } = this.clientDownloadDialog
+                if (!pending) return
+                await this.beginClientDownload({
+                    row: pending.row,
+                    paths: pending.paths,
+                    webFallback
+                })
+            },
+            onClientDownloadWebFallback () {
+                if (this.clientDownloadDialog.mode === 'waiting') {
+                    abortActiveClientDownload()
+                }
+                const fallback = this.clientDownloadDialog.webFallback
+                this.finishClientDownload()
+                if (fallback) {
+                    fallback()
+                }
+            },
+            onClientDownloadDismissDone () {
+                abortActiveClientDownload()
+                this.finishClientDownload()
             },
             handlerForbid ({ name, fullPath, metadata: { forbidStatus } }) {
                 if (!forbidStatus) {
@@ -1718,5 +2022,71 @@
 
 ::v-deep .bk-table-row.selected-row {
     background-color: var(--bgHoverColor);
+}
+
+.client-download-install-sub {
+    margin: 0 0 8px;
+    font-size: 14px;
+    color: #63656e;
+    line-height: 22px;
+}
+
+.client-download-waiting-body {
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.client-download-waiting {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 10px;
+}
+
+.client-download-waiting-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: #313238;
+}
+
+.client-download-waiting-icon {
+    margin-right: 10px;
+    color: #3a84ff;
+    animation: client-download-rotate 1s linear infinite;
+}
+
+.client-download-waiting-sub {
+    margin: 20px 0 0;
+    font-size: 14px;
+    color: #979797;
+    white-space: pre-wrap;
+    text-align: center;
+    width: 100%;
+}
+
+.client-download-web-fallback {
+    margin: 16px 0 0;
+    font-size: 12px;
+    color: #c4c6cc;
+    text-align: center;
+    cursor: pointer;
+}
+
+.client-download-web-fallback:hover {
+    color: #979ba5;
+}
+
+@keyframes client-download-rotate {
+    0% {
+        transform: rotateZ(0);
+    }
+
+    100% {
+        transform: rotateZ(360deg);
+    }
 }
 </style>
