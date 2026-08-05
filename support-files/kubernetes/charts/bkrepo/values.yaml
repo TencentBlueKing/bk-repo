@@ -356,6 +356,10 @@ gateway:
     downloadEnabled: "false"
     minClientVersion: ""
     installUrl: ""
+    installUrlWindows: ""
+    installUrlMacos: ""
+    installUrlMacosX64: ""
+    installUrlMacosArm64: ""
   ## bkrepo gateway service配置
   service:
     type: ClusterIP

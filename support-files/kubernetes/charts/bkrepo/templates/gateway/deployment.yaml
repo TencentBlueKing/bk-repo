@@ -147,6 +147,14 @@ spec:
               value: {{ dig "artifactClient" "minClientVersion" "" .Values.gateway | quote }}
             - name: BK_REPO_ARTIFACT_CLIENT_INSTALL_URL
               value: {{ dig "artifactClient" "installUrl" "" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_CLIENT_INSTALL_URL_WINDOWS
+              value: {{ dig "artifactClient" "installUrlWindows" "" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_CLIENT_INSTALL_URL_MACOS
+              value: {{ dig "artifactClient" "installUrlMacos" "" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_CLIENT_INSTALL_URL_MACOS_X64
+              value: {{ dig "artifactClient" "installUrlMacosX64" "" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_CLIENT_INSTALL_URL_MACOS_ARM64
+              value: {{ dig "artifactClient" "installUrlMacosArm64" "" .Values.gateway | quote }}
           ports:
             - name: http
               containerPort: 80

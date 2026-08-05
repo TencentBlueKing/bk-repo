@@ -33,7 +33,11 @@ module.exports = {
         BK_ARTIFACT_CLIENT_PING_WAIT_COLD: true,
         BK_ARTIFACT_CLIENT_DOWNLOAD_ENABLED: true,
         BK_ARTIFACT_MIN_CLIENT_VERSION: true,
-        BK_ARTIFACT_CLIENT_INSTALL_URL: true
+        BK_ARTIFACT_CLIENT_INSTALL_URL: true,
+        BK_ARTIFACT_CLIENT_INSTALL_URL_WINDOWS: true,
+        BK_ARTIFACT_CLIENT_INSTALL_URL_MACOS: true,
+        BK_ARTIFACT_CLIENT_INSTALL_URL_MACOS_X64: true,
+        BK_ARTIFACT_CLIENT_INSTALL_URL_MACOS_ARM64: true
     },
     // add your custom rules hered
     rules: {

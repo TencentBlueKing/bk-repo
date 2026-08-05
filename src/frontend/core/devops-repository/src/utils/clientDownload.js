@@ -1,7 +1,8 @@
 const PING_TIMEOUT_MS = 400
 const DEFAULT_ACK_TIMEOUT_WARM_MS = 15000
 const DEFAULT_PING_WAIT_COLD_MS = 10000
-const CLIENT_DISPLAY_NAME = 'BKArtifacts 客户端'
+const DEFAULT_UNCERTAIN_POLL_MS = 30000
+const CLIENT_DISPLAY_NAME = '制品库客户端'
 
 const UPGRADE_FAIL_REASONS = ['version_too_low', 'client_unavailable']
 
@@ -57,6 +58,7 @@ async function probeClientPingResult (port) {
 export const CLIENT_DOWNLOAD_HANDLED = 'handled'
 export const CLIENT_DOWNLOAD_CANCELLED = 'cancelled'
 export const CLIENT_DOWNLOAD_FAILED = 'failed'
+export const CLIENT_DOWNLOAD_UNCERTAIN = 'uncertain'
 
 let activeWaitToken = null
 
@@ -212,6 +214,11 @@ function getClientRejectMessage (ping, batch) {
     return `当前${CLIENT_DISPLAY_NAME}版本过低或不支持网页拉起下载，请升级至最新版本后重试`
 }
 
+export function getUncertainReasonMessage () {
+    return `无法确认${CLIENT_DISPLAY_NAME}是否已入队。请查看客户端传输列表；`
+        + '若浏览器弹出打开提示，请点击「打开」'
+}
+
 function getFailedReasonMessage (reason, ping, batch) {
     if (reason === 'version_too_low') {
         return getClientRejectMessage(ping, batch)
@@ -231,24 +238,61 @@ function getFailedReasonMessage (reason, ping, batch) {
         return `未检测到支持网页拉起下载的${CLIENT_DISPLAY_NAME}，请安装或升级至最新版本后重试`
     case 'loopback_unreachable':
         return `无法连接本机${CLIENT_DISPLAY_NAME}。请确认已安装最新版本；`
-            + '若已安装，请在浏览器中允许网页访问本地网络（Private Network Access），'
-            + '或改用下方「浏览器下载」'
+            + '若已安装，请允许网页访问本地网络，或改用下方「浏览器下载」'
     case 'timeout':
-        if (isHttpsPrivateNetworkPage()) {
-            return `无法确认${CLIENT_DISPLAY_NAME}是否已完成下载。请查看客户端传输列表；`
-                + '若已有任务可关闭此窗口，否则请检查登录状态、浏览器本地网络权限，或改用浏览器下载'
-        }
         return `${CLIENT_DISPLAY_NAME}未完成下载任务，请确认已登录客户端后重试`
     default:
         return `${CLIENT_DISPLAY_NAME}无法完成下载，请重试`
     }
 }
 
-export function getClientInstallUrl () {
-    if (isConfigPlaceholder(BK_ARTIFACT_CLIENT_INSTALL_URL)) {
-        return ''
+export function canResumeClientDownloadPoll (reason) {
+    return reason === 'timeout'
+}
+
+function resolvePlatformInstallUrl (...candidates) {
+    for (const value of candidates) {
+        if (!isConfigPlaceholder(value)) {
+            return value
+        }
     }
-    return BK_ARTIFACT_CLIENT_INSTALL_URL
+    return ''
+}
+
+const CLIENT_INSTALL_PLATFORM_LABELS = {
+    windows: 'Windows',
+    'macos-x64': 'macOS x64',
+    'macos-arm64': 'macOS arm64'
+}
+
+export function getClientInstallUrl (platform) {
+    const key = String(platform || '').trim().toLowerCase()
+    if (key === 'windows') {
+        return resolvePlatformInstallUrl(
+            BK_ARTIFACT_CLIENT_INSTALL_URL_WINDOWS,
+            BK_ARTIFACT_CLIENT_INSTALL_URL
+        )
+    }
+    if (key === 'macos-x64') {
+        return resolvePlatformInstallUrl(
+            BK_ARTIFACT_CLIENT_INSTALL_URL_MACOS_X64,
+            BK_ARTIFACT_CLIENT_INSTALL_URL_MACOS,
+            BK_ARTIFACT_CLIENT_INSTALL_URL
+        )
+    }
+    if (key === 'macos-arm64') {
+        return resolvePlatformInstallUrl(
+            BK_ARTIFACT_CLIENT_INSTALL_URL_MACOS_ARM64,
+            BK_ARTIFACT_CLIENT_INSTALL_URL_MACOS,
+            BK_ARTIFACT_CLIENT_INSTALL_URL
+        )
+    }
+    return ''
+}
+
+export function getClientInstallNotConfiguredMessage (platform) {
+    const label = CLIENT_INSTALL_PLATFORM_LABELS[platform] || platform
+    return `未配置 ${label} 客户端安装地址，请联系管理员`
 }
 
 export function abortActiveClientDownload () {
@@ -300,6 +344,62 @@ function isClientHandledState (state) {
     return state === 'queued' || state === 'downloading'
 }
 
+function buildStatusUrl (port, rid) {
+    return `http://127.0.0.1:${port}/deeplink/status?rid=${encodeURIComponent(rid)}`
+}
+
+async function pollClientDownloadAck (rid, { port, waitToken, batch, ping, timeoutMs }) {
+    const interval = Number(BK_ARTIFACT_CLIENT_ACK_INTERVAL) || 200
+    const pollMs = timeoutMs || DEFAULT_UNCERTAIN_POLL_MS
+    const statusUrl = buildStatusUrl(port, rid)
+    const startedAt = Date.now()
+
+    while (true) {
+        if (waitToken && activeWaitToken !== waitToken) {
+            return { status: CLIENT_DOWNLOAD_CANCELLED }
+        }
+        if (Date.now() - startedAt > pollMs) {
+            return {
+                status: CLIENT_DOWNLOAD_UNCERTAIN,
+                message: getUncertainReasonMessage(),
+                reason: 'timeout'
+            }
+        }
+
+        const status = await probeClientStatus(statusUrl)
+        if (isClientHandledState(status?.state)) {
+            return { status: CLIENT_DOWNLOAD_HANDLED }
+        }
+        if (status?.state === 'failed') {
+            return {
+                status: CLIENT_DOWNLOAD_FAILED,
+                message: getFailedReasonMessage(status.reason, ping, batch),
+                reason: status.reason
+            }
+        }
+
+        await sleep(interval)
+    }
+}
+
+export async function resumeClientDownloadPoll (pending) {
+    activeWaitToken = {}
+    const waitToken = activeWaitToken
+    const port = Number(BK_ARTIFACT_LOCAL_PORT)
+    try {
+        return await pollClientDownloadAck(pending.rid, {
+            port,
+            waitToken,
+            batch: pending.batch,
+            ping: pending.ping
+        })
+    } finally {
+        if (activeWaitToken === waitToken) {
+            activeWaitToken = null
+        }
+    }
+}
+
 export function isClientDownloadUpgradeReason (reason) {
     return UPGRADE_FAIL_REASONS.includes(reason)
 }
@@ -308,11 +408,11 @@ export function shouldShowInstallOnClientDownloadFail (reason) {
     return reason === 'loopback_unreachable' || reason === 'client_unavailable'
 }
 
-async function waitClientDownload (rid, { port, waitToken, batch, ping, running }) {
+async function waitClientDownload (rid, { port, waitToken, batch, ping }) {
     const interval = Number(BK_ARTIFACT_CLIENT_ACK_INTERVAL) || 200
     const queuedTimeoutMs = getAckTimeoutMs()
     const pingWaitColdMs = getPingWaitColdMs()
-    const statusUrl = `http://127.0.0.1:${port}/deeplink/status?rid=${encodeURIComponent(rid)}`
+    const statusUrl = buildStatusUrl(port, rid)
     let lastPing = ping || null
     let queuedWaitStartedAt = lastPing ? Date.now() : null
     const startedAt = Date.now()
@@ -355,7 +455,7 @@ async function waitClientDownload (rid, { port, waitToken, batch, ping, running 
                 if (!isClientPingSupported(lastPing, batch)) {
                     return { outcome: 'failed', reason: 'version_too_low', ping: lastPing }
                 }
-                return { outcome: 'failed', reason: 'timeout', ping: lastPing }
+                return { outcome: 'uncertain', reason: 'timeout', ping: lastPing }
             }
 
             const status = await probeClientStatus(statusUrl)
@@ -404,25 +504,34 @@ export async function prepareClientDownload ({ row, paths, context }) {
     }
 }
 
-export async function startClientDownloadWait (pending) {
+export async function startClientDownloadWait (pending, { skipLaunch = false } = {}) {
     activeWaitToken = {}
     const waitToken = activeWaitToken
     const port = Number(BK_ARTIFACT_LOCAL_PORT)
 
-    launchClientScheme(pending.schemeUrl)
+    if (!skipLaunch) {
+        launchClientScheme(pending.schemeUrl)
+        pending.schemeLaunched = true
+    }
     try {
         const outcome = await waitClientDownload(pending.rid, {
             port,
             waitToken,
             batch: pending.batch,
-            ping: pending.ping,
-            running: pending.running
+            ping: pending.ping
         })
         if (outcome.outcome === 'handled') {
             return { status: CLIENT_DOWNLOAD_HANDLED }
         }
         if (outcome.outcome === 'cancelled') {
             return { status: CLIENT_DOWNLOAD_CANCELLED }
+        }
+        if (outcome.outcome === 'uncertain') {
+            return {
+                status: CLIENT_DOWNLOAD_UNCERTAIN,
+                message: getUncertainReasonMessage(),
+                reason: outcome.reason
+            }
         }
         return {
             status: CLIENT_DOWNLOAD_FAILED,
