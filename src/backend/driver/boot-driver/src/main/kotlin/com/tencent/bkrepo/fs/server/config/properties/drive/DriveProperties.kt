@@ -37,4 +37,9 @@ class DriveProperties {
      * 快照序列号缓存最大条目数，默认10000。
      */
     var snapSeqCacheMaximumSize: Long = 10_000L
+
+    /**
+     * Drive 临时访问链接默认 host，用于 createUrl 生成完整 URL。
+     */
+    var domain: String = ""
 }

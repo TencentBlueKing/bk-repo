@@ -308,13 +308,13 @@ class RepositoryServiceTest @Autowired constructor(
     @Test
     @DisplayName("测试更新composite类型仓库配置")
     fun `test update composite repo configuration`() {
-        val publicChannel = ProxyChannelSetting(public = true, name = "public1", url = "http://url1")
-        val publicChannel2 = ProxyChannelSetting(public = true, name = "public1", url = "http://url2")
+        val publicChannel = ProxyChannelSetting(public = true, name = "public1", url = "http://url1.test")
+        val publicChannel2 = ProxyChannelSetting(public = true, name = "public1", url = "http://url2.test")
 
-        val privateChannel1 = ProxyChannelSetting(public = false, name = "private1", url = "http://url1")
-        val privateChannel2 = ProxyChannelSetting(public = false, name = "private2", url = "http://url2")
-        val privateChannel3 = ProxyChannelSetting(public = false, name = "private3", url = "http://url3")
-        val privateChannel4 = ProxyChannelSetting(public = false, name = "private1", url = "http://url4")
+        val privateChannel1 = ProxyChannelSetting(public = false, name = "private1", url = "http://url1.test")
+        val privateChannel2 = ProxyChannelSetting(public = false, name = "private2", url = "http://url2.test")
+        val privateChannel3 = ProxyChannelSetting(public = false, name = "private3", url = "http://url3.test")
+        val privateChannel4 = ProxyChannelSetting(public = false, name = "private1", url = "http://url4.test")
 
         // 测试代理名字重复，抛出PARAMETER_INVALID
         var proxyConfiguration = ProxyConfiguration(channelList = listOf(publicChannel, publicChannel2))
@@ -349,10 +349,10 @@ class RepositoryServiceTest @Autowired constructor(
         var compositeConfiguration = (repoDetail!!.configuration as CompositeConfiguration)
         assertEquals(2, compositeConfiguration.proxy.channelList.size)
         assertEquals("public1", compositeConfiguration.proxy.channelList[0].name)
-        assertEquals("http://url1", compositeConfiguration.proxy.channelList[0].url)
+        assertEquals("http://url1.test", compositeConfiguration.proxy.channelList[0].url)
         assertEquals(true, compositeConfiguration.proxy.channelList[0].public)
         assertEquals("private2", compositeConfiguration.proxy.channelList[1].name)
-        assertEquals("http://url2", compositeConfiguration.proxy.channelList[1].url)
+        assertEquals("http://url2.test", compositeConfiguration.proxy.channelList[1].url)
         // 检查私有代理仓库是否创建
         var privateProxyRepo1 = proxyChannelService.queryProxyChannel(
             UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC, "public1"
@@ -383,9 +383,9 @@ class RepositoryServiceTest @Autowired constructor(
         compositeConfiguration = (repoDetail.configuration as CompositeConfiguration)
         assertEquals(2, compositeConfiguration.proxy.channelList.size)
         assertEquals("public1", compositeConfiguration.proxy.channelList[0].name)
-        assertEquals("http://url1", compositeConfiguration.proxy.channelList[0].url)
+        assertEquals("http://url1.test", compositeConfiguration.proxy.channelList[0].url)
         assertEquals("private3", compositeConfiguration.proxy.channelList[1].name)
-        assertEquals("http://url3", compositeConfiguration.proxy.channelList[1].url)
+        assertEquals("http://url3.test", compositeConfiguration.proxy.channelList[1].url)
         // 检查 private2删除，private3创建
         privateProxyRepo1 = proxyChannelService.queryProxyChannel(
             UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC, "public1"

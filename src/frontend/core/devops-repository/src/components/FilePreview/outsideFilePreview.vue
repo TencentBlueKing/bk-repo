@@ -23,6 +23,15 @@
         <div v-if="imgShow" style="width: 100%; height: 100%">
             <img id="image" :src="imgUrl" alt="Picture" style="display: none">
         </div>
+        <div v-if="richTextShow" class="rich-text-preview-container">
+            <source-preview-tabs
+                :file-path="richTextFilePath"
+                :source-text="richTextSource"
+                :resolve-asset-url="resolveAssetUrl"
+                :view-mode="richTextViewMode"
+            />
+        </div>
+        <div v-if="xmindShow" ref="container" class="xmind-preview-container"></div>
         <div v-if="hasError" class="empty-data-container flex-center" style="background-color: white; height: 100%">
             <div class="flex-column flex-center">
                 <img width="480" height="240" style="float: left;margin-right: 3px" :src="window.BK_SUBPATH + 'ui/440.svg'" />
@@ -46,7 +55,21 @@
     } from '@repository/utils/previewOfficeFile'
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
-    import { isExcel, isHtmlType, isOutDisplayType, isPic, isText } from '@repository/utils/file'
+    import {
+        isCode,
+        isExcel,
+        isHtmlType,
+        isJsx,
+        isMarkdown,
+        isOutDisplayType,
+        isPic,
+        isText,
+        isXmind
+    } from '@repository/utils/file'
+    import { createAssetResolver, parsePreviewContext, resolvePreviewViewMode } from '@repository/utils/markdownJsxPreview'
+    import { buildImageViewerOptions, isPurePreviewEnabled } from '@repository/utils/imagePreview'
+    import { createOrUpdateXmindViewer, destroyXmindViewer } from '@repository/utils/xmindPreview'
+    import SourcePreviewTabs from '@repository/components/FilePreview/SourcePreviewTabs'
     import Viewer from 'viewerjs'
 
     const PDFJS = require('pdfjs-dist')
@@ -76,7 +99,7 @@
 
     export default {
         name: 'OutsideFilePreview',
-        components: { VueOfficeExcel },
+        components: { VueOfficeExcel, SourcePreviewTabs },
         props: {
             extraParam: String
         },
@@ -112,6 +135,16 @@
                 imgShow: false,
                 imgUrl: '',
                 pdfShow: false,
+                richTextShow: false,
+                richTextSource: '',
+                richTextFilePath: '',
+                previewContext: {
+                    projectId: '',
+                    repoName: '',
+                    filePath: ''
+                },
+                xmindShow: false,
+                xmindViewer: null,
                 pdfPages: [], // 页数
                 pdfWidth: '', // 宽度
                 pdfSrc: '', // 地址
@@ -125,6 +158,23 @@
             },
             enableMultipleTypeFilePreview () {
                 return RELEASE_MODE === 'community' || RELEASE_MODE === 'tencent'
+            },
+            resolveAssetUrl () {
+                return createAssetResolver(this.previewContext)
+            },
+            richTextViewMode () {
+                let extraParam = ''
+                try {
+                    extraParam = this.extraParam
+                        ? Base64.decode(decodeURIComponent(this.extraParam))
+                        : ''
+                } catch (e) {
+                    extraParam = ''
+                }
+                return resolvePreviewViewMode({
+                    query: this.$route.query,
+                    extraParam
+                })
             }
         },
         async created () {
@@ -137,6 +187,7 @@
             }
             try {
                 const param = Base64.decode(decodeURIComponent(this.extraParam))
+                this.previewContext = parsePreviewContext({ extraParam: param })
                 await getPreviewRemoteOfficeFileInfo(Base64.encode(param)).then(res => {
                     // 需解析传递参数，如果传递参数里面携带，优先渲染传递的水印
                     const obj = JSON.parse(param)
@@ -158,7 +209,7 @@
                         this.initWaterMark(res.data.data.watermark)
                     }
                     if (isOutDisplayType(res.data.data.suffix)) {
-                        customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(fileDate => {
+                        customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(async fileDate => {
                             this.loading = false
                             if (isExcel(res.data.data.suffix)) {
                                 this.previewExcel = true
@@ -168,6 +219,12 @@
                                 const url = URL.createObjectURL(fileDate.data)
                                 this.showFrame = true
                                 this.pageUrl = url
+                            } else if (isCode(res.data.data.suffix)) {
+                                const text = await fileDate.data.text()
+                                const suffix = res.data.data.suffix
+                                this.richTextFilePath = this.previewContext.filePath || `preview.${suffix}`
+                                this.richTextSource = text
+                                this.richTextShow = true
                             } else if (isText(res.data.data.suffix)) {
                                 this.previewBasic = true
                                 this.$nextTick(() => {
@@ -183,12 +240,25 @@
                                 this.imgShow = true
                                 this.imgUrl = URL.createObjectURL(fileDate.data)
                                 this.$nextTick(() => {
-                                    const viewer = new Viewer(document.getElementById('image'), {
-                                        inline: true,
-                                        viewed () {
-                                            viewer.zoomTo(1)
-                                        }
-                                    })
+                                    new Viewer(document.getElementById('image'), buildImageViewerOptions({
+                                        purePreview: isPurePreviewEnabled(this.$route.query)
+                                    }))
+                                })
+                            } else if (isMarkdown(res.data.data.suffix) || isJsx(res.data.data.suffix)) {
+                                const text = await fileDate.data.text()
+                                const suffix = res.data.data.suffix
+                                this.richTextFilePath = this.previewContext.filePath || `preview.${suffix}`
+                                this.richTextSource = text
+                                this.richTextShow = true
+                            } else if (isXmind(res.data.data.suffix)) {
+                                this.xmindShow = true
+                                const target = await fileDate.data.arrayBuffer()
+                                this.$nextTick(() => {
+                                    this.xmindViewer = createOrUpdateXmindViewer(
+                                        this.xmindViewer,
+                                        this.$refs.container,
+                                        target
+                                    )
                                 })
                             } else {
                                 this.pdfShow = true
@@ -225,6 +295,13 @@
                 this.imgUrl = ''
                 this.hasError = false
                 this.csvShow = false
+                this.xmindShow = false
+                destroyXmindViewer(this.xmindViewer)
+                this.xmindViewer = null
+                this.pdfShow = false
+                this.richTextShow = false
+                this.richTextSource = ''
+                this.richTextFilePath = ''
                 this.excelOptions.xls = false
                 window.resetWaterMark()
             },
@@ -298,6 +375,26 @@ canvas {
     max-width: 100% !important;
     height: auto !important;
     background: white !important;
+}
+.rich-text-preview-container {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #fff;
+    padding: 0;
+    margin: 0;
+}
+.xmind-preview-container {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #fff;
+    /* above watermark overlay so pan/zoom gestures hit the embed iframe */
+    z-index: 10000000;
 }
 .preview-file-tips {
     margin-bottom: 10px;

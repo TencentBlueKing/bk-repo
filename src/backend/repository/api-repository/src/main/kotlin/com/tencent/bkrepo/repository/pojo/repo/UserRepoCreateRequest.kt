@@ -65,6 +65,8 @@ data class UserRepoCreateRequest(
     val pluginRequest: Boolean = false,
     @get:Schema(title = "是否展示", required = true)
     val display: Boolean = true,
+    @get:Schema(title = "仓库展示名称", required = false)
+    val displayName: String? = null,
     @get:Schema(title = "仓库可见性类型", required = false)
     val visibility: RepositoryVisibility = RepositoryVisibility.PROJECT,
     @get:Schema(title = "仓库所有者，PERSONAL 类型仓库必填", required = false)

@@ -66,12 +66,75 @@ const excelType = [
 ]
 
 const picType = [
-    'jpg', 'jpeg', 'png', 'gif', 'bmp', 'ico', 'jfif', 'webp'
+    'jpg', 'jpeg', 'png', 'gif', 'bmp', 'ico', 'jfif', 'webp', 'svg'
 ]
+
+const markdownType = [
+    'md'
+]
+
+const jsxType = [
+    'jsx'
+]
+
+const xmindType = [
+    'xmind'
+]
+
+// 与 preview 服务 FileType.CODES 对齐
+const codeType = [
+    'java',
+    'c',
+    'php',
+    'go',
+    'python',
+    'py',
+    'js',
+    'html',
+    'ftl',
+    'css',
+    'lua',
+    'sh',
+    'rb',
+    'yaml',
+    'yml',
+    'json',
+    'h',
+    'cpp',
+    'cs',
+    'aspx',
+    'jsp',
+    'sql'
+]
+
+function getFileSuffix (param) {
+    if (!param) {
+        return ''
+    }
+    const normalized = String(param).replace(/\\/g, '/')
+    const baseName = normalized.includes('/')
+        ? normalized.slice(normalized.lastIndexOf('/') + 1)
+        : normalized
+    const dotIndex = baseName.lastIndexOf('.')
+    if (dotIndex < 0) {
+        // 远程预览接口可能直接传 suffix（如 java）
+        return baseName.toLowerCase()
+    }
+    if (dotIndex === baseName.length - 1) {
+        return ''
+    }
+    return baseName.slice(dotIndex + 1).toLowerCase()
+}
 
 // 判断文本类型
 export function isText (param) {
     return textType.find(type => param.endsWith(type))
+}
+
+// 判断代码类型（走 preview onlinePreview + Monaco）
+export function isCode (param) {
+    const suffix = getFileSuffix(param)
+    return codeType.find(type => type === suffix)
 }
 
 // 判断预览可转换的类型（转换的为pdf或者html）
@@ -92,14 +155,26 @@ export function isExcel (param) {
     return excelType.find(type => param.endsWith(type))
 }
 
+export function isMarkdown (param) {
+    return markdownType.find(type => param.endsWith(type))
+}
+
+export function isJsx (param) {
+    return jsxType.find(type => param.endsWith(type))
+}
+
+export function isXmind (param) {
+    return xmindType.find(type => param.endsWith(type))
+}
+
 // 判断可预览的类型(不包括pic)
 export function isDisplayType (param) {
     const isExcel = excelType.find(type => param.endsWith(type))
-    return isText(param) || isFormatType(param) || isExcel
+    return isText(param) || isFormatType(param) || isExcel || isXmind(param)
 }
 
 // 判断可预览的类型(包括pic)
 export function isOutDisplayType (param) {
     const isExcel = excelType.find(type => param.endsWith(type))
-    return isText(param) || isFormatType(param) || isExcel || isPic(param)
+    return isText(param) || isCode(param) || isFormatType(param) || isExcel || isPic(param) || isMarkdown(param) || isJsx(param) || isXmind(param)
 }

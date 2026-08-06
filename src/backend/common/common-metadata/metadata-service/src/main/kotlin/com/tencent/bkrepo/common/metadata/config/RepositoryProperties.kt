@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.metadata.config
 
+import com.tencent.bkrepo.common.api.util.checkurl.UrlCheckProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.NestedConfigurationProperty
 import org.springframework.context.annotation.Configuration
@@ -107,6 +108,12 @@ class RepositoryProperties {
      * 删除前会先执行 count 查询，超过上限时直接拒绝
      */
     var maxDeleteNodeCount: Long = 0
+
+    /**
+     * 代理源 URL 校验（SecAPI CheckUrl）
+     */
+    @NestedConfigurationProperty
+    var proxyChannelUrl: UrlCheckProperties = UrlCheckProperties()
 
     /**
      * 获取指定项目使用的节点删除策略模式，优先使用项目级配置 [projectDeleteMode]，未配置时回退到全局 [deleteMode]

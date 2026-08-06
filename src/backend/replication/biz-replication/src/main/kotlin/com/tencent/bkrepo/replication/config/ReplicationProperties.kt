@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.config
 
+import com.tencent.bkrepo.common.api.util.checkurl.UrlCheckProperties
 import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.NestedConfigurationProperty
@@ -143,19 +144,5 @@ data class ReplicationProperties(
      * 集群节点对端 URL 校验（SecAPI CheckUrl）
      */
     @NestedConfigurationProperty
-    var clusterNodeUrl: ClusterNodeUrlCheckProperties = ClusterNodeUrlCheckProperties(),
-)
-
-data class ClusterNodeUrlCheckProperties(
-    var schemes: List<String> = listOf("http", "https"),
-
-    /**
-     * 允许的主机名规则，见 mode；空则仅校验协议与域名格式（等价于规则 .*）
-     */
-    var rules: List<String> = emptyList(),
-
-    /**
-     * equal | subhost | regex
-     */
-    var mode: String = "subhost",
+    var clusterNodeUrl: UrlCheckProperties = UrlCheckProperties(),
 )

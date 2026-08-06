@@ -2,6 +2,9 @@ const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
 const webpackBaseConfig = require('../../webpack.base')
+const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin')
+
+const frontendNodeModules = path.join(__dirname, '../../node_modules')
 
 module.exports = (env, argv) => {
     const isProd = argv.mode === 'production'
@@ -30,9 +33,11 @@ module.exports = (env, argv) => {
             patterns: [
                 { from: path.join(__dirname, './static'), to: dist },
                 { from: path.join(__dirname, '../../../../versionLogs'), to: `${dist}/versionLogs` },
-                { from: path.join(__dirname, './public'), to: dist }
+                { from: path.join(__dirname, './public'), to: dist },
+                { from: path.join(frontendNodeModules, '@babel/standalone/babel.min.js'), to: `${dist}/libs/babel.min.js` }
             ]
-        })
+        }),
+        new MonacoWebpackPlugin()
     ]
 
     config.devServer.historyApiFallback = {

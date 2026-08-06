@@ -25,8 +25,8 @@ class LocalDateTimeReadConverter : Converter<Date, LocalDateTime> {
             .atZone(zoneId)
             .toLocalDateTime()
         
-        if (logger.isDebugEnabled) {
-            logger.debug(
+        if (logger.isTraceEnabled) {
+            logger.trace(
                 "[LocalDateTimeReadConverter] Converting Date to LocalDateTime: " +
                         "source=$source, contextZoneId=${contextZoneId?.id}, defaultZoneId=${defaultZoneId.id}, " +
                         "finalZoneId=${zoneId.id}, result=$result",

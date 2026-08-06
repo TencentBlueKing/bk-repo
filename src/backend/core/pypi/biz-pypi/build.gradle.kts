@@ -33,9 +33,12 @@ dependencies {
     api(project(":common:common-artifact:artifact-service"))
     api(project(":core:pypi:api-pypi"))
     api(project(":common:common-job"))
+    api(project(":common:common-lock"))
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jsoup:jsoup:${Versions.Jsoup}")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("com.google.code.gson:gson")
+    testImplementation("io.mockk:mockk")
+    testImplementation("org.mockito.kotlin:mockito-kotlin")
 }

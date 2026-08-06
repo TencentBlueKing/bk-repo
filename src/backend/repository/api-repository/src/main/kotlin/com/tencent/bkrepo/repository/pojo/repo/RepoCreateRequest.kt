@@ -69,6 +69,8 @@ data class RepoCreateRequest(
     val operator: String = SYSTEM_USER,
     @get:Schema(title = "是否展示", required = true)
     val display: Boolean = true,
+    @get:Schema(title = "仓库展示名称", required = false)
+    val displayName: String? = null,
     @get:Schema(title = "操作来源,联邦仓库同步时源集群name", required = false)
     val source: String? = null,
     @get:Schema(title = "仓库可见性类型", required = false)

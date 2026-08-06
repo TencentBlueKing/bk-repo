@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.metadata.service.sign.SignConfigService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import org.springframework.stereotype.Service
 
@@ -88,7 +89,8 @@ class DefenderServiceImpl(
                         TaskMetadata(
                             "repoUrl",
                             "${signProperties.host}/generic/${node.projectId}/${signProperties.signedRepoName}"
-                        )
+                        ),
+                        TaskMetadata("ip", HttpContextHolder.getClientAddressFromAttribute())
                     )
                 )
                 val scanTask = scanService.scan(scanRequest, ScanTriggerType.MANUAL, SecurityUtils.getUserId())

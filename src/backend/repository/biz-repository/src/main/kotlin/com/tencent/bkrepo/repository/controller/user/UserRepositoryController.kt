@@ -175,6 +175,7 @@ class UserRepositoryController(
                 quota = quota,
                 pluginRequest = pluginRequest,
                 display = display,
+                displayName = displayName,
                 visibility = visibility,
                 owner = owner,
             )
@@ -390,7 +391,8 @@ class UserRepositoryController(
             description = request.description,
             configuration = request.configuration,
             operator = userId,
-            display = request.display
+            display = request.display,
+            displayName = request.displayName,
         )
         ActionAuditContext.current().setInstance(repoUpdateRequest)
         repositoryService.updateRepo(repoUpdateRequest)

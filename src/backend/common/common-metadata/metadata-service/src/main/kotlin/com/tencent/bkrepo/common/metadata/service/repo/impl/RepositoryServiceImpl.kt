@@ -298,6 +298,7 @@ class RepositoryServiceImpl(
             val oldConfiguration = repository.configuration.readJsonString<RepositoryConfiguration>()
             repository.public = public ?: repository.public
             repository.description = description ?: repository.description
+            repository.displayName = displayName ?: repository.displayName
             repository.lastModifiedBy = operator
             repository.lastModifiedDate = LocalDateTime.now()
             configuration?.let {
