@@ -40,12 +40,13 @@ class CargoPackageUploadOperation(
     override fun handleEvent(versions: MutableList<CrateIndex>): MutableList<CrateIndex> {
         with(request as CargoPackageUploadRequest) {
             logger.info(
-                "Index Will be refreshed for adding version $version of crate $name in repo $projectId|$repoName"
+                "Index will be refreshed for updating version $version of crate $name in repo $projectId|$repoName"
             )
-            // 添加新版本
+            // 版本不可重复，若同版本存在则替换，避免index出现重复vers记录
+            versions.removeIf { it.vers == version }
             versions.add(crateIndex)
             // 按 version 排序
-            return versions.distinct().sortedBy { it.vers }.toMutableList()
+            return versions.sortedBy { it.vers }.toMutableList()
         }
     }
 }

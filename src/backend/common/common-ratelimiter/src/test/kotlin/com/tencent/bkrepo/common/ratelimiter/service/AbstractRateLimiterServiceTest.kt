@@ -48,7 +48,7 @@ import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import com.tencent.bkrepo.common.ratelimiter.utils.RateLimiterBuilder
-import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.TestInstance
 import org.springframework.mock.web.MockHttpServletRequest
@@ -68,9 +68,6 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
     lateinit var rateLimiterConfigService: RateLimiterConfigService
 
     @MockitoBean
-    private lateinit var meterRegistry: MeterRegistry
-
-    @MockitoBean
     private lateinit var rateLimitRepository: RateLimitRepository
 
     fun init() {
@@ -79,7 +76,7 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
         scheduler.initialize()
         taskScheduler = scheduler
         rateLimiterProperties = RateLimiterProperties()
-        rateLimiterMetrics = RateLimiterMetrics(meterRegistry)
+        rateLimiterMetrics = RateLimiterMetrics(SimpleMeterRegistry())
         rateLimiterConfigService = RateLimiterConfigService(rateLimitRepository)
     }
 
@@ -195,6 +192,26 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
         val hashCode = rateLimiterProperties.rules.hashCode()
         (rateLimiterService as AbstractRateLimiterService).refreshRateLimitRule()
         Assertions.assertEquals(hashCode, (rateLimiterService as AbstractRateLimiterService).currentRuleHashCode)
+    }
+
+    open fun refreshRateLimitRuleChangeTest() {
+        val svc = rateLimiterService as AbstractRateLimiterService
+        val originalRules = rateLimiterProperties.rules
+
+        // 修改规则后，trie 应重建（hashCode 变更），新规则生效
+        val newLimit = originalRules.first().copy(limit = originalRules.first().limit + 1000)
+        rateLimiterProperties.rules = listOf(newLimit)
+        svc.refreshRateLimitRule()
+        Assertions.assertEquals(listOf(newLimit).hashCode(), svc.currentRuleHashCode)
+
+        // 再次刷新相同规则，hashCode 不变（no-op）
+        val unchangedHashCode = svc.currentRuleHashCode
+        svc.refreshRateLimitRule()
+        Assertions.assertEquals(unchangedHashCode, svc.currentRuleHashCode)
+
+        // 恢复
+        rateLimiterProperties.rules = originalRules
+        svc.refreshRateLimitRule()
     }
 
 

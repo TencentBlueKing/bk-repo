@@ -118,6 +118,15 @@ Return the proper image name
 {{- printf "%s:%s" $repositoryName $tag -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Return the effective JVM option.
+Service-level jvmOption takes precedence over common.jvmOption.
+*/}}
+{{- define "bkrepo.jvmOption" -}}
+{{- default .common.jvmOption .service.jvmOption -}}
+{{- end -}}
+
 {{/*
 Return the value of auth url
 */}}

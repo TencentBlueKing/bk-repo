@@ -110,6 +110,7 @@ class AccountServiceImpl constructor(
                 avatarUrl = request.avatarUrl,
                 scopeDesc = request.scopeDesc,
                 scope = request.scope,
+                limit = request.limit,
                 description = request.description,
                 createdDate = LocalDateTime.now(),
                 lastModifiedDate = LocalDateTime.now()
@@ -169,6 +170,11 @@ class AccountServiceImpl constructor(
             account.homepageUrl = homepageUrl ?: account.homepageUrl
             account.redirectUri = redirectUri ?: account.redirectUri
             account.scope = scope ?: account.scope
+            account.limit = when {
+                clearLimit -> null
+                limit != null -> limit
+                else -> account.limit
+            }
             account.scopeDesc = scopeDesc ?: account.scopeDesc
             account.description = description ?: account.description
             account.lastModifiedDate = LocalDateTime.now()
@@ -275,6 +281,7 @@ class AccountServiceImpl constructor(
             avatarUrl = tAccount.avatarUrl,
             scopeDesc = tAccount.scopeDesc,
             scope = tAccount.scope,
+            limit = tAccount.limit,
             description = tAccount.description,
             createdDate = tAccount.createdDate,
             lastModifiedDate = tAccount.lastModifiedDate
@@ -291,7 +298,8 @@ class AccountServiceImpl constructor(
     private fun findAccountAndCheckOwner(appId: String, userId: String): TAccount {
         val account = accountDao.findOneByAppId(appId)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
-        if (!account.owner.isNullOrBlank() && userId != account.owner) {
+        val isPlatformApp = isPlatformApp(account)
+        if (!isPlatformApp && !account.owner.isNullOrBlank() && userId != account.owner) {
             throw ErrorCodeException(AuthMessageCode.AUTH_OWNER_CHECK_FAILED)
         }
         val isUserAdmin = HttpContextHolder.getRequestOrNull()?.getAttribute(ADMIN_USER) as? Boolean ?: false
@@ -328,6 +336,7 @@ class AccountServiceImpl constructor(
                     )
                     account.credentials = newCredentials
                 }
+
                 typeChange < 0 -> {
                     val oldTypes = account.authorizationGrantTypes ?: setOf(AuthorizationGrantType.PLATFORM)
                     val deletedTypes = oldTypes.filterNot { authorizationGrantTypes.contains(it) }
@@ -358,6 +367,7 @@ class AccountServiceImpl constructor(
                     redirectUri = accountInfo.redirectUri,
                     avatarUrl = accountInfo.avatarUrl,
                     scope = scopeTypes,
+                    limit = accountInfo.limit,
                     scopeDesc = null,
                     description = accountInfo.description,
                     createdDate = LocalDateTime.now(),
@@ -371,6 +381,7 @@ class AccountServiceImpl constructor(
             existing.redirectUri = accountInfo.redirectUri ?: existing.redirectUri
             existing.avatarUrl = accountInfo.avatarUrl ?: existing.avatarUrl
             existing.scope = scopeTypes ?: existing.scope
+            existing.limit = accountInfo.limit
             existing.description = accountInfo.description ?: existing.description
             existing.lastModifiedDate = LocalDateTime.now()
             if (!accountInfo.credentials.isNullOrEmpty()) {

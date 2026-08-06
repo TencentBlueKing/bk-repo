@@ -161,7 +161,7 @@ class KubernetesDispatcher(
         )
         val k8sProps = executionCluster.kubernetesProperties
         val resReq = ResourceRequirements.calculate(scanner, k8sProps)
-        val jobActiveDeadlineSeconds = subtask.scanner.maxScanDuration(subtask.packageSize)
+        val jobActiveDeadlineSeconds = subtask.scanner.maxScanDuration(subtask.packageSize) / 1000L
         val body = v1Job {
             apiVersion = "batch/v1"
             kind = "Job"

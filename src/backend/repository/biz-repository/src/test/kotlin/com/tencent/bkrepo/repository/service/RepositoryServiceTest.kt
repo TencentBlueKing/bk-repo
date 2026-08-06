@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.constant.DownloadInterceptorType
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
@@ -41,11 +42,13 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyConf
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
+import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildDeletedQuery
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REGION
@@ -54,6 +57,7 @@ import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
@@ -84,7 +88,8 @@ class RepositoryServiceTest @Autowired constructor(
     private val repositoryService: RepositoryService,
     private val storageCredentialService: StorageCredentialService,
     private val repositoryProperties: RepositoryProperties,
-    private val proxyChannelService: ProxyChannelService
+    private val proxyChannelService: ProxyChannelService,
+    private val repositoryDao: RepositoryDao,
 ) : ServiceBaseTest() {
 
     @MockitoBean
@@ -257,6 +262,18 @@ class RepositoryServiceTest @Autowired constructor(
     }
 
     @Test
+    @DisplayName("测试createRepo场景下存储凭据仓库类型限制")
+    fun `should reject create repo when storage credentials repo type not allowed`() {
+        val request = createRequest(
+            name = "repo-drive-not-allowed",
+            storageCredentialsKey = UT_STORAGE_CREDENTIALS_KEY,
+            repoType = RepositoryType.DRIVE,
+        )
+        val exception = assertThrows<ErrorCodeException> { repositoryService.createRepo(request) }
+        assertEquals(RepositoryMessageCode.STORAGE_CREDENTIALS_REPO_TYPE_NOT_ALLOWED, exception.messageCode)
+    }
+
+    @Test
     @DisplayName("测试更新仓库信息")
     fun `test update repository info`() {
         repositoryService.createRepo(createRequest())
@@ -291,13 +308,13 @@ class RepositoryServiceTest @Autowired constructor(
     @Test
     @DisplayName("测试更新composite类型仓库配置")
     fun `test update composite repo configuration`() {
-        val publicChannel = ProxyChannelSetting(public = true, name = "public1", url = "http://url1")
-        val publicChannel2 = ProxyChannelSetting(public = true, name = "public1", url = "http://url2")
+        val publicChannel = ProxyChannelSetting(public = true, name = "public1", url = "http://url1.test")
+        val publicChannel2 = ProxyChannelSetting(public = true, name = "public1", url = "http://url2.test")
 
-        val privateChannel1 = ProxyChannelSetting(public = false, name = "private1", url = "http://url1")
-        val privateChannel2 = ProxyChannelSetting(public = false, name = "private2", url = "http://url2")
-        val privateChannel3 = ProxyChannelSetting(public = false, name = "private3", url = "http://url3")
-        val privateChannel4 = ProxyChannelSetting(public = false, name = "private1", url = "http://url4")
+        val privateChannel1 = ProxyChannelSetting(public = false, name = "private1", url = "http://url1.test")
+        val privateChannel2 = ProxyChannelSetting(public = false, name = "private2", url = "http://url2.test")
+        val privateChannel3 = ProxyChannelSetting(public = false, name = "private3", url = "http://url3.test")
+        val privateChannel4 = ProxyChannelSetting(public = false, name = "private1", url = "http://url4.test")
 
         // 测试代理名字重复，抛出PARAMETER_INVALID
         var proxyConfiguration = ProxyConfiguration(channelList = listOf(publicChannel, publicChannel2))
@@ -332,10 +349,10 @@ class RepositoryServiceTest @Autowired constructor(
         var compositeConfiguration = (repoDetail!!.configuration as CompositeConfiguration)
         assertEquals(2, compositeConfiguration.proxy.channelList.size)
         assertEquals("public1", compositeConfiguration.proxy.channelList[0].name)
-        assertEquals("http://url1", compositeConfiguration.proxy.channelList[0].url)
+        assertEquals("http://url1.test", compositeConfiguration.proxy.channelList[0].url)
         assertEquals(true, compositeConfiguration.proxy.channelList[0].public)
         assertEquals("private2", compositeConfiguration.proxy.channelList[1].name)
-        assertEquals("http://url2", compositeConfiguration.proxy.channelList[1].url)
+        assertEquals("http://url2.test", compositeConfiguration.proxy.channelList[1].url)
         // 检查私有代理仓库是否创建
         var privateProxyRepo1 = proxyChannelService.queryProxyChannel(
             UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC, "public1"
@@ -366,9 +383,9 @@ class RepositoryServiceTest @Autowired constructor(
         compositeConfiguration = (repoDetail.configuration as CompositeConfiguration)
         assertEquals(2, compositeConfiguration.proxy.channelList.size)
         assertEquals("public1", compositeConfiguration.proxy.channelList[0].name)
-        assertEquals("http://url1", compositeConfiguration.proxy.channelList[0].url)
+        assertEquals("http://url1.test", compositeConfiguration.proxy.channelList[0].url)
         assertEquals("private3", compositeConfiguration.proxy.channelList[1].name)
-        assertEquals("http://url3", compositeConfiguration.proxy.channelList[1].url)
+        assertEquals("http://url3.test", compositeConfiguration.proxy.channelList[1].url)
         // 检查 private2删除，private3创建
         privateProxyRepo1 = proxyChannelService.queryProxyChannel(
             UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC, "public1"
@@ -457,7 +474,76 @@ class RepositoryServiceTest @Autowired constructor(
         storageCredentialService.delete(newStorageKey)
     }
 
-    private fun createRequest(name: String = UT_REPO_NAME, storageCredentialsKey: String? = null): RepoCreateRequest {
+    @Test
+    @DisplayName("测试updateStorageCredentialsKey场景下存储凭据仓库类型限制")
+    fun `should reject update storage key when storage credentials repo type not allowed`() {
+        val restrictedStorageKey = "$UT_STORAGE_CREDENTIALS_KEY-restricted"
+        val restrictedCredentials = FileSystemCredentials().apply {
+            key = restrictedStorageKey
+            path = "test-restricted"
+            allowRepoTypes = setOf(RepositoryType.MAVEN.name)
+            notAllowRepoTypes = emptySet()
+        }
+        storageCredentialService.create(
+            UT_USER,
+            StorageCredentialsCreateRequest(restrictedStorageKey, restrictedCredentials, UT_REGION),
+        )
+        repositoryService.createRepo(
+            createRequest(
+                name = "test-update-restricted",
+                storageCredentialsKey = UT_STORAGE_CREDENTIALS_KEY
+            )
+        )
+
+        val exception = assertThrows<ErrorCodeException> {
+            repositoryService.updateStorageCredentialsKey(UT_PROJECT_ID, "test-update-restricted", restrictedStorageKey)
+        }
+        assertEquals(RepositoryMessageCode.STORAGE_CREDENTIALS_REPO_TYPE_NOT_ALLOWED, exception.messageCode)
+        val repo =
+            repositoryService.getRepoDetail(UT_PROJECT_ID, "test-update-restricted", RepositoryType.GENERIC.name)!!
+        assertEquals(UT_STORAGE_CREDENTIALS_KEY, repo.storageCredentials?.key)
+        assertNull(repo.oldCredentialsKey)
+        storageCredentialService.delete(restrictedStorageKey)
+    }
+
+    @Test
+    @DisplayName("测试DRIVE仓库仅在彻底清理删除记录后支持同名重建")
+    fun `should recreate drive repo only after deleted record cleaned up`() {
+        val driveStorageKey = "$UT_STORAGE_CREDENTIALS_KEY-drive"
+        val driveCredentials = FileSystemCredentials().apply {
+            key = driveStorageKey
+            path = "test-drive"
+            allowRepoTypes = setOf(RepositoryType.DRIVE.name)
+            notAllowRepoTypes = emptySet()
+        }
+        storageCredentialService.create(
+            UT_USER,
+            StorageCredentialsCreateRequest(driveStorageKey, driveCredentials, UT_REGION),
+        )
+        val repoName = "repo-drive-recreate"
+        val request =
+            createRequest(name = repoName, storageCredentialsKey = driveStorageKey, repoType = RepositoryType.DRIVE)
+        repositoryService.createRepo(request)
+        repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, repoName, operator = UT_USER))
+
+        val firstException = assertThrows<ErrorCodeException> { repositoryService.createRepo(request) }
+        assertEquals(ArtifactMessageCode.REPOSITORY_EXISTED, firstException.messageCode)
+
+        repositoryDao.remove(buildDeletedQuery(UT_PROJECT_ID, repoName))
+        val recreated = repositoryService.createRepo(request)
+        assertEquals(repoName, recreated.name)
+        assertEquals(RepositoryType.DRIVE, recreated.type)
+
+        repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, repoName, operator = UT_USER))
+        repositoryDao.remove(buildDeletedQuery(UT_PROJECT_ID, repoName))
+        storageCredentialService.delete(driveStorageKey)
+    }
+
+    private fun createRequest(
+        name: String = UT_REPO_NAME,
+        storageCredentialsKey: String? = null,
+        repoType: RepositoryType = RepositoryType.GENERIC,
+    ): RepoCreateRequest {
         val configuration = LocalConfiguration()
         val type = DownloadInterceptorType.WEB
         val rules = mapOf(
@@ -473,7 +559,7 @@ class RepositoryServiceTest @Autowired constructor(
         return RepoCreateRequest(
             projectId = UT_PROJECT_ID,
             name = name,
-            type = RepositoryType.GENERIC,
+            type = repoType,
             category = RepositoryCategory.LOCAL,
             public = true,
             description = "simple description",

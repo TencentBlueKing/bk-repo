@@ -30,7 +30,10 @@ package com.tencent.bkrepo.cargo.service
 import com.tencent.bkrepo.cargo.pojo.CargoDomainInfo
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoDeleteArtifactInfo
+import com.tencent.bkrepo.cargo.pojo.user.CargoDependencyInfo
+import com.tencent.bkrepo.cargo.pojo.user.CargoDependentInfo
 import com.tencent.bkrepo.cargo.pojo.user.PackageVersionInfo
+import com.tencent.bkrepo.common.api.pojo.Page
 
 interface CargoExtService {
 
@@ -40,6 +43,22 @@ interface CargoExtService {
         packageKey: String,
         version: String
     ): PackageVersionInfo
+
+    fun queryDeps(
+        userId: String,
+        artifactInfo: CargoArtifactInfo,
+        packageKey: String,
+        version: String
+    ): List<CargoDependencyInfo>
+
+    fun queryDependents(
+        userId: String,
+        artifactInfo: CargoArtifactInfo,
+        packageKey: String,
+        version: String,
+        pageNumber: Int,
+        pageSize: Int
+    ): Page<CargoDependentInfo>
 
 
     fun deletePackage(userId: String, artifactInfo: CargoDeleteArtifactInfo)

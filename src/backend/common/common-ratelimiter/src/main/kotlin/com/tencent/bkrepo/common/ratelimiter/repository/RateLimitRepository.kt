@@ -63,10 +63,24 @@ class RateLimitRepository : SimpleMongoDao<TRateLimit>() {
         )
     }
 
+    fun findByResourceAndLimitDimensionAndRequestPath(
+        resource: String,
+        limitDimension: String,
+        requestPath: String?
+    ): List<TRateLimit> {
+        return find(
+            Query(
+                Criteria.where(TRateLimit::resource.name).isEqualTo(resource)
+                    .and(TRateLimit::limitDimension.name).isEqualTo(limitDimension)
+                    .and(TRateLimit::requestPath.name).isEqualTo(requestPath)
+            )
+        )
+    }
+
     fun findByModuleNameAndLimitDimension(moduleName: String, limitDimension: String): List<TRateLimit> {
         return find(
             Query(
-                Criteria.where(TRateLimit::moduleName.name).regex("$moduleName")
+                Criteria.where(TRateLimit::moduleName.name).isEqualTo(moduleName)
                     .and(TRateLimit::limitDimension.name).isEqualTo(limitDimension)
             )
         )
@@ -75,13 +89,15 @@ class RateLimitRepository : SimpleMongoDao<TRateLimit>() {
     fun findByModuleNameAndLimitDimensionAndResource(
         resource: String,
         moduleName: List<String>,
-        limitDimension: String
+        limitDimension: String,
+        requestPath: String?
     ): TRateLimit? {
         return findOne(
             Query(
-                Criteria.where(TRateLimit::moduleName.name).isEqualTo("$moduleName")
+                Criteria.where(TRateLimit::moduleName.name).all(moduleName)
                     .and(TRateLimit::limitDimension.name).isEqualTo(limitDimension)
                     .and(TRateLimit::resource.name).isEqualTo(resource)
+                    .and(TRateLimit::requestPath.name).isEqualTo(requestPath)
             )
         )
     }

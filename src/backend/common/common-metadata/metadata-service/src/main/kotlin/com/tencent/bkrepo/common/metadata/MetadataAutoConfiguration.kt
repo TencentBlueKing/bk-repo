@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.properties.ArtifactEventProperties
 import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.config.DriveMongoConfiguration
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.listener.NodeUpdateAccessDateEventListener
 import com.tencent.bkrepo.common.metadata.permission.EdgePermissionManager
@@ -60,12 +61,21 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.FilterType
 import org.springframework.messaging.Message
 import java.util.function.Consumer
 
 @Configuration
 @ConditionalOnWebApplication
-@ComponentScan(basePackages = ["com.tencent.bkrepo.common.metadata"])
+@ComponentScan(
+    basePackages = ["com.tencent.bkrepo.common.metadata"],
+    excludeFilters = [
+        ComponentScan.Filter(
+            type = FilterType.ASSIGNABLE_TYPE,
+            classes = [DriveMongoConfiguration::class],
+        ),
+    ],
+)
 @EnableConfigurationProperties(
     StorageProperties::class,
     OperateProperties::class,

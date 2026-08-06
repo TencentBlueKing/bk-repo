@@ -36,6 +36,11 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
+import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
@@ -43,6 +48,7 @@ import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.common.metadata.dao.file.FileReferenceDao
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -68,6 +74,11 @@ import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.context.annotation.Import
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.isEqualTo
+import java.time.LocalDateTime
 
 @DisplayName("节点服务测试")
 @DataMongoTest
@@ -80,6 +91,9 @@ class NodeServiceTest @Autowired constructor(
     private val projectService: ProjectService,
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService,
+    private val repositoryProperties: RepositoryProperties,
+    private val nodeDao: NodeDao,
+    private val blockNodeService: BlockNodeService,
 ) : ServiceBaseTest() {
 
     private val option = NodeListOption(includeFolder = false, deep = false)
@@ -485,6 +499,47 @@ class NodeServiceTest @Autowired constructor(
     }
 
     @Test
+    @DisplayName("重命名分块上传节点，分块信息同步迁移")
+    fun testRenameSeparateNodeMovesBlocks() {
+        // 创建分块上传节点(sha256为FAKE_SHA256)及其分块
+        nodeService.createNode(
+            createRequest("/file", folder = false).copy(sha256 = FAKE_SHA256)
+        )
+        blockNodeService.createBlock(
+            TBlockNode(
+                createdBy = UT_USER,
+                createdDate = LocalDateTime.now(),
+                nodeFullPath = "/file",
+                startPos = 0,
+                sha256 = "blockSha256",
+                projectId = UT_PROJECT_ID,
+                repoName = UT_REPO_NAME,
+                size = 1
+            ),
+            null
+        )
+
+        nodeService.renameNode(
+            NodeRenameRequest(
+                projectId = UT_PROJECT_ID,
+                repoName = UT_REPO_NAME,
+                fullPath = "/file",
+                newFullPath = "/file2",
+                operator = UT_USER
+            )
+        )
+
+        val queryDate = LocalDateTime.now().minusMinutes(1).toString()
+        val fullRange = Range.full(Long.MAX_VALUE)
+        assertTrue(
+            blockNodeService.listBlocks(fullRange, UT_PROJECT_ID, UT_REPO_NAME, "/file2", queryDate).isNotEmpty()
+        )
+        assertTrue(
+            blockNodeService.listBlocks(fullRange, UT_PROJECT_ID, UT_REPO_NAME, "/file", queryDate).isEmpty()
+        )
+    }
+
+    @Test
     @DisplayName("重命名文件，遇同名文件抛异常")
     fun testRenameThrow() {
         nodeService.createNode(createRequest("/a/b/1.txt", false))
@@ -822,6 +877,59 @@ class NodeServiceTest @Autowired constructor(
         )
         nodeService.copyNode(copyRequest)
         assertEquals("value", nodeService.getNodeDetail(node("/b"))!!.metadata["key"])
+    }
+
+    @Test
+    @DisplayName("测试batchByIds模式删除节点数超过batchSize")
+    fun `should delete all nodes when node count exceeds batchSize with batchByIds mode`() {
+        val originalDeleteMode = repositoryProperties.deleteMode
+        val originalBatchSize = repositoryProperties.deleteBatchSize
+        try {
+            repositoryProperties.deleteMode = RepositoryProperties.DELETE_MODE_BATCH_BY_IDS
+            repositoryProperties.deleteBatchSize = 3
+
+            val nodeCount = 10
+            for (i in 1..nodeCount) {
+                nodeService.createNode(createRequest("/batch-delete/$i.txt", folder = false))
+            }
+
+            // 模拟删除发起后才创建的节点：将该节点 createdDate 改为未来时间，删除时不应被卷入
+            val newNodeFullPath = "/batch-delete/new.txt"
+            nodeService.createNode(createRequest(newNodeFullPath, folder = false))
+            setNodeCreatedDate(newNodeFullPath, LocalDateTime.now().plusHours(1))
+
+            val listOption = NodeListOption(includeFolder = false, deep = true)
+            assertEquals(nodeCount + 1, nodeService.listNode(node("/batch-delete"), listOption).size)
+
+            nodeService.deleteNode(
+                NodeDeleteRequest(
+                    projectId = UT_PROJECT_ID,
+                    repoName = UT_REPO_NAME,
+                    fullPath = "/batch-delete",
+                    operator = UT_USER
+                )
+            )
+
+            // createdDate <= deleteTime 的节点被删除，未来时间创建的节点保留
+            val remaining = nodeService.listNode(node("/batch-delete"), listOption)
+            assertEquals(1, remaining.size)
+            assertEquals(newNodeFullPath, remaining.first().fullPath)
+            assertTrue(nodeService.checkExist(node(newNodeFullPath)))
+            assertFalse(nodeService.checkExist(node("/batch-delete/1.txt")))
+        } finally {
+            repositoryProperties.deleteMode = originalDeleteMode
+            repositoryProperties.deleteBatchSize = originalBatchSize
+        }
+    }
+
+    private fun setNodeCreatedDate(fullPath: String, createdDate: LocalDateTime) {
+        val query = Query(
+            Criteria.where(TNode::projectId.name).isEqualTo(UT_PROJECT_ID)
+                .and(TNode::repoName.name).isEqualTo(UT_REPO_NAME)
+                .and(TNode::fullPath.name).isEqualTo(fullPath)
+                .and(TNode::deleted.name).isEqualTo(null)
+        )
+        nodeDao.updateFirst(query, Update().set(TNode::createdDate.name, createdDate))
     }
 
     private fun createRequest(

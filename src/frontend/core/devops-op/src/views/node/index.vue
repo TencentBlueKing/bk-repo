@@ -76,6 +76,15 @@
           @click="changeRouteQueryParams(true)"
         >查询</el-button>
       </el-form-item>
+      <el-form-item>
+        <el-button
+          v-if="!nodeQuery.useSha256"
+          :disabled="!nodeQuery.path || nodeQuery.path === '/'"
+          size="mini"
+          type="primary"
+          @click="returnToPreviousLevel()"
+        >返回上一级</el-button>
+      </el-form-item>
     </el-form>
     <el-table v-loading="loading" :data="nodes" style="width: 100%" :row-class-name="tableRowClassName">
       <el-table-column prop="name" label="文件名" width="430px">
@@ -289,6 +298,12 @@ export default {
       return queryStr ? arr.filter(obj => {
         return obj.name.toLowerCase().indexOf(queryStr.toLowerCase()) !== -1
       }) : arr
+    },
+    returnToPreviousLevel() {
+      const normalized = this.nodeQuery.path.replace(/\/+$/, '')
+      const lastIndex = normalized.lastIndexOf('/')
+      this.nodeQuery.path = (lastIndex <= 0 ? '/' : normalized.substring(0, lastIndex + 1))
+      this.changeRouteQueryParams(true)
     },
     changeRouteQueryParams(resetPage = false) {
       const query = {

@@ -78,8 +78,7 @@ class HuggingfaceRemoteRepository(
     private fun transferRevision(context: ArtifactDownloadContext) {
         val configuration = context.getRemoteConfiguration()
         val response = HfApi.head(
-            endpoint = configuration.url,
-            token = configuration.credentials.password.orEmpty(),
+            configuration = configuration,
             artifactUri = context.artifactInfo.getArtifactFullPath()
         )
         val commitId = response.headers[COMMIT_ID_HEADER.lowercase()]
@@ -94,8 +93,7 @@ class HuggingfaceRemoteRepository(
             val configuration = context.getRemoteConfiguration()
             val artifactInfo = context.artifactInfo as HuggingfaceArtifactInfo
             val response = HfApi.download(
-                endpoint = configuration.url,
-                token = configuration.credentials.password.orEmpty(),
+                configuration = configuration,
                 artifactUri = context.artifactInfo.getArtifactFullPath(),
                 type = artifactInfo.type,
             )
@@ -188,16 +186,14 @@ class HuggingfaceRemoteRepository(
             when (T::class) {
                 ModelInfo::class -> {
                     HfApi.modelInfo(
-                        endpoint = configuration.url,
-                        token = configuration.credentials.password.orEmpty(),
+                        configuration = configuration,
                         repoId = artifactInfo.getRepoId(),
                         revision = artifactInfo.getRevision(),
                     ).also { sha = it.sha }
                 }
                 DatasetInfo::class -> {
                     HfApi.datasetInfo(
-                        endpoint = configuration.url,
-                        token = configuration.credentials.password.orEmpty(),
+                        configuration = configuration,
                         repoId = artifactInfo.getRepoId(),
                         revision = artifactInfo.getRevision(),
                     ).also { sha = it.sha }

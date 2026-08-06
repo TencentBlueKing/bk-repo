@@ -82,8 +82,8 @@ class RNodeServiceImpl(
         return RNodeStatsSupport(this).computeSize(artifact, estimated)
     }
 
-    override suspend fun aggregateComputeSize(criteria: Criteria): Long {
-        return RNodeStatsSupport(this).aggregateComputeSize(criteria)
+    override suspend fun aggregateComputeSize(criteria: Criteria, useFullPathIndex: Boolean): Long {
+        return RNodeStatsSupport(this).aggregateComputeSize(criteria, useFullPathIndex)
     }
 
     @Transactional(rollbackFor = [Throwable::class])

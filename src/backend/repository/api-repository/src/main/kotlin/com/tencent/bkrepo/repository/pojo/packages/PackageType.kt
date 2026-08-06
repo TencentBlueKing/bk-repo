@@ -53,6 +53,7 @@ enum class PackageType(val schema: String, val versionSortProperty: String = ORD
     OHPM("ohpm"),
     CARGO("cargo"),
     HUGGINGFACE("huggingface", CREATED_DATE),
+    SKILL("skill"),
     ;
 
     companion object {

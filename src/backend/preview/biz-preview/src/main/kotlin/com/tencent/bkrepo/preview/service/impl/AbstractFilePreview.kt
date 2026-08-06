@@ -32,8 +32,10 @@
 package com.tencent.bkrepo.preview.service.impl
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.util.ProjectServiceHelper
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
 import com.tencent.bkrepo.preview.constant.PreviewMessageCode
@@ -74,13 +76,21 @@ abstract class AbstractFilePreview(
     @Autowired
     lateinit var enableMultiTenant: EnableMultiTenantProperties
 
+    @Autowired
+    lateinit var repositoryService: RepositoryService
+
     override fun filePreviewHandle(fileAttribute: FileAttribute) {
         // 下载文件, 存在临时目录
         val downloadResult = downloadFile(fileAttribute)
                 ?: throw PreviewNotFoundException(PreviewMessageCode.PREVIEW_FILE_NOT_FOUND, fileAttribute.fileName!!)
 
+        val drivePreview = isDrivePreview(fileAttribute)
         // 从缓存获取最终文件并且判断节点是否存在
-        var previewFileCacheInfo = if (config.cacheEnabled) getCacheAndCheckExist(fileAttribute) else null
+        var previewFileCacheInfo = if (config.cacheEnabled && !drivePreview) {
+            getCacheAndCheckExist(fileAttribute)
+        } else {
+            null
+        }
 
         if (previewFileCacheInfo == null) {
             // 文件校验，比如是否超过最大预览限制
@@ -102,7 +112,7 @@ abstract class AbstractFilePreview(
                 repoName = nodeDetail.repoName,
                 fullPath = nodeDetail.fullPath
             )
-            if (config.cacheEnabled) addCache(previewFileCacheInfo)
+            if (config.cacheEnabled && !drivePreview) addCache(previewFileCacheInfo)
         }
         // 删除临时文件
         if (config.isDeleteTmpFile) deleteTmpFile(fileAttribute)
@@ -270,6 +280,13 @@ abstract class AbstractFilePreview(
      */
     open fun processFileContent(fileAttribute: FileAttribute) {
         // Do nothing
+    }
+
+    private fun isDrivePreview(fileAttribute: FileAttribute): Boolean {
+        return repositoryService.getRepoDetail(
+            fileAttribute.projectId!!,
+            fileAttribute.repoName!!,
+        )?.type == RepositoryType.DRIVE
     }
 
     companion object {

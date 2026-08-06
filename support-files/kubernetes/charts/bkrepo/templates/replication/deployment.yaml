@@ -67,7 +67,7 @@ spec:
           {{- end }}
           env:
             - name: BK_REPO_JVM_OPTION
-              value: {{ .Values.common.jvmOption }}
+              value: {{ include "bkrepo.jvmOption" (dict "service" .Values.replication "common" .Values.common) | quote }}
             - name: BK_REPO_PROFILE
               value: {{ .Values.common.springProfile }}
             - name: BK_REPO_SERVICE_PREFIX

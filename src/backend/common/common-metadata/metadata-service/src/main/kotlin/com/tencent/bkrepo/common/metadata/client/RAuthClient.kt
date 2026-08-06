@@ -30,6 +30,8 @@ package com.tencent.bkrepo.common.metadata.client
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.ListPathResult
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.User
@@ -177,4 +179,24 @@ interface RAuthClient {
         @Parameter(name = "项目ID")
         @PathVariable repoName: String
     ): Mono<Response<String?>>
+
+    @PostMapping("/temporary/token/create")
+    fun createTemporaryToken(
+        @RequestBody request: TemporaryTokenCreateRequest
+    ): Mono<Response<List<TemporaryTokenInfo>>>
+
+    @GetMapping("/temporary/token/info/{token}")
+    fun getTemporaryTokenInfo(
+        @PathVariable token: String
+    ): Mono<Response<TemporaryTokenInfo?>>
+
+    @DeleteMapping("/temporary/token/delete/{token}")
+    fun deleteTemporaryToken(
+        @PathVariable token: String
+    ): Mono<Response<Void>>
+
+    @PostMapping("/temporary/token/permits/decrement/{token}")
+    fun decrementTemporaryTokenPermits(
+        @PathVariable token: String
+    ): Mono<Response<Void>>
 }

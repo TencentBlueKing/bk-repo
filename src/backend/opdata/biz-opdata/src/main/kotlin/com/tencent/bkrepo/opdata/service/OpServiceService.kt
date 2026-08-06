@@ -47,6 +47,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Service
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 /**
  * 微服务运营管理
@@ -68,14 +70,34 @@ class OpServiceService @Autowired constructor(
 
     /**
      * 获取服务的所有实例
+     *
+     * 为避免单个实例 actuator 接口卡顿导致整个列表长时间不返回，
+     * 这里对每个实例 detail 的获取设置了超时与异常降级：
+     * - 超时或异常时取消任务、记录告警，并返回不带 detail 的原始实例信息；
+     * - 正常情况下仍保留并行获取，列表整体耗时接近最慢实例的耗时（但有上限）。
      */
     fun instances(serviceName: String): List<InstanceInfo> {
         return registryClient.instances(serviceName).map { instance ->
-            executor.submit<InstanceInfo> {
+            instance to executor.submit<InstanceInfo> {
                 instance.copy(detail = instanceDetail(instance))
             }
-        }.map {
-            it.get()
+        }.map { (instance, future) ->
+            try {
+                future.get(INSTANCE_DETAIL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            } catch (e: TimeoutException) {
+                logger.warn(
+                    "get instance detail timeout after ${INSTANCE_DETAIL_TIMEOUT_SECONDS}s, " +
+                        "service: $serviceName, instance: ${instance.host}:${instance.port}"
+                )
+                future.cancel(true)
+                instance
+            } catch (e: Exception) {
+                logger.warn(
+                    "get instance detail failed, service: $serviceName, " +
+                        "instance: ${instance.host}:${instance.port}", e
+                )
+                instance
+            }
         }
     }
 
@@ -249,5 +271,12 @@ class OpServiceService @Autowired constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(OpServiceService::class.java)
+
+        /**
+         * 单个实例获取 detail 的整体超时时间（秒），超过则降级返回无 detail 的实例。
+         * 考虑到 detail 内部串行调用 5 个 actuator 接口，每个 callTimeout 10s，
+         * 这里设置为 15s 作为整体兜底，避免下游慢/卡导致列表接口长时间无响应。
+         */
+        private const val INSTANCE_DETAIL_TIMEOUT_SECONDS = 15L
     }
 }

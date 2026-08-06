@@ -41,6 +41,7 @@ class OkHttpConfiguration {
             .connectTimeout(DEFAULT_CONNECT_TIMEOUT, TimeUnit.MILLISECONDS)
             .readTimeout(DEFAULT_READ_TIMEOUT, TimeUnit.MILLISECONDS)
             .writeTimeout(DEFAULT_WRITE_TIMEOUT, TimeUnit.MILLISECONDS)
+            .callTimeout(DEFAULT_CALL_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()
     }
 
@@ -49,6 +50,7 @@ class OkHttpConfiguration {
         private const val DEFAULT_CONNECT_TIMEOUT = 5000L
         private const val DEFAULT_READ_TIMEOUT = 5000L
         private const val DEFAULT_WRITE_TIMEOUT = 5000L
+        private const val DEFAULT_CALL_TIMEOUT = 10000L
     }
 
 }

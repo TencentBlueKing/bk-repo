@@ -125,8 +125,8 @@ class EdgeNodeServiceImpl(
         return NodeStatsSupport(this).computeSizeBeforeClean(artifact, before)
     }
 
-    override fun aggregateComputeSize(criteria: Criteria): Long {
-        return NodeStatsSupport(this).aggregateComputeSize(criteria)
+    override fun aggregateComputeSize(criteria: Criteria, useFullPathIndex: Boolean): Long {
+        return NodeStatsSupport(this).aggregateComputeSize(criteria, useFullPathIndex)
     }
 
     override fun countFileNode(artifact: ArtifactInfo): Long {
@@ -162,10 +162,10 @@ class EdgeNodeServiceImpl(
     }
 
     override fun deleteByFullPathWithoutDecreaseVolume(
-        projectId: String, repoName: String, fullPath: String, operator: String, source: String?
+        projectId: String, repoName: String, fullPath: String, operator: String, source: String?, isFile: Boolean
     ) {
         return NodeDeleteSupport(this).deleteByFullPathWithoutDecreaseVolume(
-            projectId, repoName, fullPath, operator, source
+            projectId, repoName, fullPath, operator, source, isFile
         )
     }
 

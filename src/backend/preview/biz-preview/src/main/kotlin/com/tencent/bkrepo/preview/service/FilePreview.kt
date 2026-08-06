@@ -60,5 +60,6 @@ interface FilePreview {
         const val NOT_SUPPORTED_FILE_PAGE = "fileNotSupported"
         const val XLSX_FILE_PREVIEW_PAGE = "officeweb"
         const val CSV_FILE_PREVIEW_PAGE = "csv"
+        const val JSX_FILE_PREVIEW_PAGE = "jsx"
     }
 }

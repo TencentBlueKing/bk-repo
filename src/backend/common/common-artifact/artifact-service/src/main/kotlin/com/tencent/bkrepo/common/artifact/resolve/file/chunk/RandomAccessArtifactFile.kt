@@ -3,7 +3,7 @@ package com.tencent.bkrepo.common.artifact.resolve.file.chunk
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.hash.sha1
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactDataReceiver
+import com.tencent.bkrepo.common.artifact.resolve.file.receiver.ArtifactDataReceiver
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -46,7 +46,7 @@ class RandomAccessArtifactFile(
     init {
         val path = storageCredentials.upload.location.toPath()
         receiver = ArtifactDataReceiver(
-            storageProperties.receive, storageProperties.monitor, path, registry = registry
+            storageProperties.receive, monitor.monitorConfig, path, registry = registry
         )
         monitor.add(receiver)
         if (!monitor.healthy.get()) {

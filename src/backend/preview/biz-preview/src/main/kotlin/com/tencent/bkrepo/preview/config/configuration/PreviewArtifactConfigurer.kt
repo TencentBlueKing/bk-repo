@@ -45,7 +45,7 @@ class PreviewArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getRepositoryType() = RepositoryType.NONE
     override fun getRepositoryTypes(): List<RepositoryType> {
-        return mutableListOf(RepositoryType.GENERIC)
+        return mutableListOf(RepositoryType.GENERIC, RepositoryType.DRIVE)
     }
     override fun getLocalRepository() = SpringContextUtils.getBean<PreviewLocalRepository>()
     override fun getRemoteRepository() = SpringContextUtils.getBean<PreviewRemoteRepository>()

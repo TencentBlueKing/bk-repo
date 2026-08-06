@@ -50,9 +50,10 @@ abstract class HealthCheckSupport : AbstractStorageSupport() {
 
     override fun checkHealth(storageCredentials: StorageCredentials?) {
         val credentials = getCredentialsOrDefault(storageCredentials)
+        val monitorConfig = credentials.monitor?.toMonitorProperties() ?: storageProperties.monitor
         val future = healthCheckExecutor.submit(Callable { doCheckHealth(credentials) }.trace())
         try {
-            future.get(storageProperties.monitor.timeout.seconds, TimeUnit.SECONDS)
+            future.get(monitorConfig.timeout.seconds, TimeUnit.SECONDS)
         } catch (_: TimeoutException) {
             throw HealthCheckFailedException(StorageHealthMonitor.IO_TIMEOUT_MESSAGE)
         } catch (ignored: Exception) {
@@ -64,8 +65,9 @@ abstract class HealthCheckSupport : AbstractStorageSupport() {
      * 健康检查实现
      */
     open fun doCheckHealth(credentials: StorageCredentials) {
+        val monitorConfig = credentials.monitor?.toMonitorProperties() ?: storageProperties.monitor
         val filename = System.nanoTime().toString()
-        val size = storageProperties.monitor.dataSize.toBytes()
+        val size = monitorConfig.dataSize.toBytes()
         val inputStream = ZeroInputStream(size)
         fileStorage.store(HEALTH_CHECK_PATH, filename, inputStream, size, credentials)
         fileStorage.delete(HEALTH_CHECK_PATH, filename, credentials)

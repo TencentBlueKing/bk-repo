@@ -32,6 +32,7 @@ import com.google.common.base.CaseFormat.UPPER_CAMEL
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration.Companion.SERVICE_INSTANCE_ID
@@ -95,6 +96,9 @@ class MigrateRepoStorageService(
             val repo = repositoryService.getRepoDetail(projectId, repoName)!!
             if (repo.storageCredentials?.key == dstCredentialsKey) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "src key cant be same as dst key")
+            }
+            if (repo.type == RepositoryType.DRIVE) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "Unsupported repo type[${repo.type}]")
             }
 
             val task = migrateRepoStorageTaskDao.insert(

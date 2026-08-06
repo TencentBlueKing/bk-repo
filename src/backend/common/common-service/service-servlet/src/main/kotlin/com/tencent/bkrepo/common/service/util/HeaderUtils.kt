@@ -31,11 +31,9 @@
 
 package com.tencent.bkrepo.common.service.util
 
-import com.tencent.bkrepo.common.api.constant.StringPool.UTF_8
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
-import java.io.UnsupportedEncodingException
-import java.net.URLDecoder
+import org.springframework.web.util.UriUtils
 
 object HeaderUtils {
 
@@ -58,8 +56,8 @@ object HeaderUtils {
     fun getUrlDecodedHeader(name: String): String? {
         return getHeader(name)?.let {
             try {
-                URLDecoder.decode(it, UTF_8)
-            } catch (ignored: UnsupportedEncodingException) {
+                UriUtils.decode(it, Charsets.UTF_8)
+            } catch (ignored: IllegalArgumentException) {
                 it
             }
         }

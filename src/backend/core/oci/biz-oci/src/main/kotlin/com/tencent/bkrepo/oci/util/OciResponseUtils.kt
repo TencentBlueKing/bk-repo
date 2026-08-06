@@ -137,7 +137,8 @@ object OciResponseUtils {
         responseProperty: ResponseProperty
     ) {
         with(responseProperty) {
-            val location = getResponseLocationURI(location!!, domain)
+            val resolvedLocation = resolveLocationByRequestAlias(location!!)
+            val location = getResponseLocationURI(resolvedLocation, domain)
             response.status = status!!.value
             response.addHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
             digest?.let {
@@ -177,6 +178,22 @@ object OciResponseUtils {
         response: HttpServletResponse = HttpContextHolder.getResponse()
     ) {
         response.status = HttpStatus.ACCEPTED.value
+    }
+
+    private fun resolveLocationByRequestAlias(location: String): String {
+        val request = HttpContextHolder.getRequestOrNull() ?: return location
+        val projectEncoded = request.getAttribute(OciNameAliasCodec.REQUEST_ATTR_PROJECT_ID_ENCODED)
+            as? Boolean ?: false
+        val repoEncoded = request.getAttribute(OciNameAliasCodec.REQUEST_ATTR_REPO_NAME_ENCODED)
+            as? Boolean ?: false
+        if (!projectEncoded && !repoEncoded) {
+            return location
+        }
+        return OciNameAliasCodec.encodeOciPath(
+            path = location,
+            encodeProject = projectEncoded,
+            encodeRepo = repoEncoded
+        )
     }
 
     /**

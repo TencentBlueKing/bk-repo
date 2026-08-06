@@ -27,8 +27,10 @@
 
 package com.tencent.bkrepo.replication.config
 
+import com.tencent.bkrepo.common.api.util.checkurl.UrlCheckProperties
 import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.context.properties.NestedConfigurationProperty
 import org.springframework.util.unit.DataSize
 import java.time.Duration
 
@@ -137,4 +139,10 @@ data class ReplicationProperties(
      * 用于避免正在处理的事件立即重试
      */
     var eventRecordRetryInterval: Duration = Duration.ofMinutes(60),
-    )
+
+    /**
+     * 集群节点对端 URL 校验（SecAPI CheckUrl）
+     */
+    @NestedConfigurationProperty
+    var clusterNodeUrl: UrlCheckProperties = UrlCheckProperties(),
+)

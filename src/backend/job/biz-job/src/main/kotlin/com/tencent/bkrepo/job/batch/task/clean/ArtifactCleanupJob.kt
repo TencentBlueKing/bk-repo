@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.IGNORE_PROJECT_PREFIX_LIST
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
+import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.ArtifactCleanupJobProperties
@@ -62,6 +63,7 @@ import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestTemplate
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -78,12 +80,31 @@ class ArtifactCleanupJob(
     private val discoveryClient: DiscoveryClient,
     private val serviceAuthManager: ServiceAuthManager,
     private val quotaService: QuotaService,
+    private val activeProjectService: ActiveProjectService,
 ) : DefaultContextMongoDbJob<ArtifactCleanupJob.RepoData>(properties) {
 
     private val restTemplate = RestTemplate()
 
     @Value("\${service.prefix:}")
     private val servicePrefix: String = ""
+
+    // 每次 job 执行前缓存，避免每行重复计算和 Redis 请求
+    @Volatile
+    private var isWeekend: Boolean = false
+
+    @Volatile
+    private var cachedActiveProjects: Set<String> = emptySet()
+
+    override fun onRunCollectionStart(collectionName: String, context: JobContext) {
+        isWeekend = LocalDateTime.now().dayOfWeek.let {
+            it == DayOfWeek.SATURDAY || it == DayOfWeek.SUNDAY
+        }
+        cachedActiveProjects = activeProjectService.getActiveProjects()
+        logger.info(
+            "ArtifactCleanupJob collection[$collectionName] start, " +
+                "isWeekend=$isWeekend, activeProjects=${cachedActiveProjects.size}"
+        )
+    }
 
     override fun entityClass(): KClass<RepoData> {
         return RepoData::class
@@ -103,6 +124,8 @@ class ArtifactCleanupJob(
     override fun run(row: RepoData, collectionName: String, context: JobContext) {
         try {
             if (ignoreProjectOrRepoCheck(row.projectId)) return
+            // 非活跃项目仅在周末清理，提前判断避免后续不必要的 JSON 解析开销
+            if (!isWeekend && !cachedActiveProjects.contains(row.projectId)) return
             val config = row.configuration.readJsonString<RepositoryConfiguration>()
             val cleanupStrategyMap = config.getSetting<Map<String, Any>>(CLEAN_UP_STRATEGY) ?: return
             val cleanupStrategy = toCleanupStrategy(cleanupStrategyMap) ?: return

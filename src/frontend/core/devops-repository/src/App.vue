@@ -48,9 +48,8 @@
             if (!this.isSubSaas && this.ciMode) {
                 this.loadDevopsUtils(window.BK_STATIC_URL + '/devops-utils.js')
                 // 请求管理员信息
-                this.ajaxUserInfo().then((userInfo) => {
+                this.ajaxUserInfo().then(() => {
                     this.$store.commit('SET_CREATING', false)
-                    userInfo.admin && this.getClusterList()
                 })
             } else {
                 let urlProjectId = ''
@@ -123,7 +122,6 @@
                             }
                         })
                     }
-                    userInfo.admin && this.getClusterList()
                 })
             }
         },
@@ -132,7 +130,6 @@
                 'getProjectList',
                 'ajaxUserInfo',
                 'getRepoUserList',
-                'getClusterList',
                 'getPermissionDialogConfig'
             ])
         }

@@ -25,12 +25,13 @@
             <div class="log-version-right">
                 <div
                     class="markdowm-container"
-                    v-html="markdownToHtml" />
+                    v-html="DOMPurify.sanitize(markdownToHtml)" />
             </div>
         </div>
     </bk-dialog>
 </template>
 <script>
+    import DOMPurify from 'dompurify'
     import { marked } from 'marked'
     import cookies from 'js-cookie'
     import { getVersionContext } from '@/utils/versionLogs'
@@ -46,6 +47,7 @@
         },
         data () {
             return {
+                DOMPurify,
                 show: false,
                 versionLogs: [],
                 markdown: '',

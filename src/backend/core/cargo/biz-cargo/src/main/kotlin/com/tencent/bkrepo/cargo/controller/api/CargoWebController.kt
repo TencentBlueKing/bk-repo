@@ -55,6 +55,7 @@ import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -116,12 +117,14 @@ class CargoWebController(
     @DeleteMapping(YANK)
     fun yank(@ArtifactPathVariable artifactInfo: CargoArtifactInfo): ResponseEntity<Any> {
         cargoService.yank(artifactInfo)
+        TraceHeaderUtils.setResponseHeader()
         return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body("{\"ok\": true}")
     }
 
     @PutMapping(UNYANK)
     fun unYank(@ArtifactPathVariable artifactInfo: CargoArtifactInfo): ResponseEntity<Any> {
         cargoService.unYank(artifactInfo)
+        TraceHeaderUtils.setResponseHeader()
         return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body("{\"ok\": true}")
     }
 
@@ -132,6 +135,7 @@ class CargoWebController(
         @PathVariable("crateName") crateName: String,
     ): ResponseEntity<Any> {
         // TODO 添加的owner才有权限去上传或者yank 对应制品
+        TraceHeaderUtils.setResponseHeader()
         return ResponseEntity.ok("")
 
     }
@@ -141,6 +145,7 @@ class CargoWebController(
         @ArtifactPathVariable artifactInfo: CargoArtifactInfo,
         @RequestBody users: OwnerUserAddRequest,
     ): ResponseEntity<Any> {
+        TraceHeaderUtils.setResponseHeader()
         return ResponseEntity.ok("")
 
     }
@@ -150,6 +155,7 @@ class CargoWebController(
         @ArtifactPathVariable artifactInfo: CargoArtifactInfo,
         @RequestBody users: OwnerUserAddRequest,
     ): ResponseEntity<Any> {
+        TraceHeaderUtils.setResponseHeader()
         return ResponseEntity.ok("")
 
     }
@@ -160,6 +166,7 @@ class CargoWebController(
         @RequestParam q: String,
         @RequestParam("per_page") perPage: Int = 10
     ): ResponseEntity<CargoSearchResult> {
+        TraceHeaderUtils.setResponseHeader()
         return ResponseEntity.ok(cargoService.search(artifactInfo, q, perPage))
     }
 }

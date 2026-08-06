@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlRepoRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
+import com.tencent.bkrepo.common.ratelimiter.utils.ResourcePathUtils
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
@@ -64,32 +65,42 @@ class UrlRepoRateLimiterService(
         if (rateLimiterProperties.specialUrls.contains(StringPool.POUND)) {
             return false
         }
-        return !rateLimiterProperties.specialUrls.contains(request.getAttribute(BEST_MATCHING_PATTERN_ATTRIBUTE))
+        if (rateLimiterProperties.specialUrls.contains(request.getAttribute(BEST_MATCHING_PATTERN_ATTRIBUTE))) {
+            return false
+        }
+        return (rateLimitRule as? UrlRepoRateLimitRule)?.containsRequestPath(getRequestPath(request)) != true
     }
 
     override fun buildResource(request: HttpServletRequest): String {
-        val (projectId, repoName) = try {
-            getRepoInfoFromAttribute(request)
-        } catch (e: InvalidResourceException) {
-            getRepoInfoFromBody(request)
-        }
-        return if (repoName.isNullOrEmpty()) {
-            "/$projectId/"
-        } else {
-            "/$projectId/$repoName/"
-        }
+        val (projectId, repoNames) = resolveRepoInfo(request)
+        return buildRepoResourcePaths(projectId!!, repoNames).first
     }
 
     override fun buildExtraResource(request: HttpServletRequest): List<String> {
-        val (projectId, repoName) = try {
-            getRepoInfoFromAttribute(request)
+        val (projectId, repoNames) = resolveRepoInfo(request)
+        return buildRepoResourcePaths(projectId!!, repoNames).second
+    }
+
+    private fun resolveRepoInfo(request: HttpServletRequest): Pair<String?, List<String>> {
+        return try {
+            val (projectId, repoName) = getRepoInfoFromAttribute(request)
+            Pair(projectId, repoName?.let { listOf(it) } ?: emptyList())
         } catch (e: InvalidResourceException) {
             getRepoInfoFromBody(request)
         }
-        val result = mutableListOf<String>()
-        if (!repoName.isNullOrEmpty()) {
-            result.add("/$projectId/")
-        }
+    }
+
+    override fun buildRateLimitResource(request: HttpServletRequest): String {
+        return ResourcePathUtils.buildRequestPathResource(getRequestPath(request), buildResource(request))
+    }
+
+    override fun buildRateLimitExtraResource(request: HttpServletRequest): List<String> {
+        val requestPath = getRequestPath(request)
+        val result = buildExtraResource(request).map {
+            ResourcePathUtils.buildRequestPathResource(requestPath, it)
+        }.toMutableList()
+        result.add(buildResource(request))
+        result.addAll(buildExtraResource(request))
         return result
     }
 

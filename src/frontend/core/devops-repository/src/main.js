@@ -1,29 +1,48 @@
 import './webpack_public_path'
+
+// 第三方库
+import Vue from 'vue'
+import axios from 'axios'
+import cookies from 'js-cookie'
+import BkUserDisplayName from '@blueking/bk-user-display-name'
+import VueCompositionAPI from '@vue/composition-api'
+
+// 本地模块
 import App from '@/App'
 import createRouter from '@/router'
 import store from '@/store'
 import '@repository/utils/request'
-import Vue from 'vue'
-import axios from 'axios'
-import BkUserDisplayName from '@blueking/bk-user-display-name'
 
-import createLocale from '@locale'
+// 组件
 import CanwayDialog from '@repository/components/CanwayDialog'
 import EmptyData from '@repository/components/EmptyData'
 import Icon from '@repository/components/Icon'
-import { throttleMessage } from '@repository/utils'
-import cookies from 'js-cookie'
 
-const { i18n, setLocale } = createLocale(require.context('@locale/repository/', false, /\.json$/))
+// 工具函数
+import { throttleMessage, i18n, setLocale } from '@repository/utils'
+
+// 常量配置
+const THROTTLE_MESSAGE_DELAY = 3500
+const DISPLAY_NAME_CACHE_DURATION = 1000 * 60 * 5 // 5分钟
+const DEFAULT_LANGUAGE = 'zh-cn'
+
+/**
+ * 配置 Vue 2 + Composition API
+ * 让 @vue-office/excel 等通过 vue-demi 调用 ref/reactive/computed/defineComponent 等 API 时能正常工作。
+ * 注：vue-demi 在 v2 模式下会重新导出 @vue/composition-api 的 API，
+ *     所以只要 Vue.use(VueCompositionAPI) 成功安装，下游组件即可拿到完整 Composition API。
+ *     vue-demi 的 ESM/CJS 互操作问题通过 webpack resolve.alias 在打包层解决（见 webpack.base.js）。
+ */
+Vue.use(VueCompositionAPI)
 
 Vue.component('Icon', Icon)
 Vue.component('CanwayDialog', CanwayDialog)
 Vue.component('EmptyData', EmptyData)
 
+// 全局属性配置
 Vue.prototype.$setLocale = setLocale
-Vue.prototype.$bkMessage = throttleMessage(Vue.prototype.$bkMessage, 3500)
-// 全局存储当前国际化语言
-Vue.prototype.currentLanguage = cookies.get('blueking_language') || 'zh-cn'
+Vue.prototype.$bkMessage = throttleMessage(Vue.prototype.$bkMessage, THROTTLE_MESSAGE_DELAY)
+Vue.prototype.currentLanguage = cookies.get('blueking_language') || DEFAULT_LANGUAGE
 
 document.title = i18n.t('webTitle')
 
@@ -34,7 +53,7 @@ async function setDisplayNamePlugin () {
         BkUserDisplayName.configure({
             tenantId: data.data.tenantId,
             apiBaseUrl: API_BASE_URL,
-            cacheDuration: 1000 * 60 * 5,
+            cacheDuration: DISPLAY_NAME_CACHE_DURATION,
             emptyText: '--'
         })
     } catch (error) {

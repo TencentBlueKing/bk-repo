@@ -70,7 +70,7 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
     /**
      * 分片阈值，大于此值将采用分片上传/下载
      */
-    val multipartThreshold: Long = DataSize.ofMegabytes(MULTIPART_THRESHOLD_SIZE).toBytes()
+    val multipartThreshold: Long = DataSize.ofMegabytes(credentials.multipartThreshold).toBytes()
 
     /**
      * 分片下载最大分片数量
@@ -156,7 +156,6 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
 
     companion object {
         private const val MAX_PARTS = 10000
-        private const val MULTIPART_THRESHOLD_SIZE = 10L
         private const val MIN_PART_SIZE = 10L
     }
 }

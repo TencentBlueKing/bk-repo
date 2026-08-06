@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.ratelimiter.config
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.stereotype.Component
+import java.time.Duration
 
 @Component
 @ConfigurationProperties(prefix = "rate.limiter")
@@ -50,5 +51,8 @@ class RateLimiterProperties(
     // 项目访问白名单。 当开启白名单访问后，只有在白名单列表上的项目才允许访问
     var projectWhiteList: List<String> = emptyList(),
     // 针对开启访问白名单的场景下，部分url没有办法获取到项目信息时，直接放通
-    var specialUrlsIgnoreProjectWhiteList: List<String> = emptyList()
+    var specialUrlsIgnoreProjectWhiteList: List<String> = emptyList(),
+    // 分布式信号量崩溃恢复 TTL：Pod 异常未 release 的槽位超过此时间后自动清理。
+    // 与 ResourceLimit.duration 无关；应配置为服务最长请求耗时的合理上限（默认 30 分钟）。
+    var semaphoreSafetyTtl: Duration = Duration.ofMinutes(30),
 )

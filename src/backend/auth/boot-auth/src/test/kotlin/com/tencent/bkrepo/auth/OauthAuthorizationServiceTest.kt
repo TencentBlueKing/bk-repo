@@ -101,6 +101,7 @@ class OauthAuthorizationServiceTest {
             scope = scope,
             scopeDesc = null,
             avatarUrl = null,
+            limit = null,
             description = null
         )
     }

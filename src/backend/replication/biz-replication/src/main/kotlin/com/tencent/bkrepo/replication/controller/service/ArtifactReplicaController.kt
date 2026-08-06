@@ -909,6 +909,7 @@ class ArtifactReplicaController(
                         redirectUri = request.redirectUri,
                         avatarUrl = request.avatarUrl,
                         scope = request.scope,
+                        limit = request.limit,
                         description = request.description,
                         credentials = request.credentials
                     )

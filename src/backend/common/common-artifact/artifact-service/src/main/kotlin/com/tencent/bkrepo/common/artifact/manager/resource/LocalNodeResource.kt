@@ -32,8 +32,6 @@ import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.UncompressFileRequest
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
@@ -41,7 +39,6 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 
 /**
@@ -114,7 +111,7 @@ class LocalNodeResource(
         range: Range,
         storageCredentials: StorageCredentials?,
     ): ArtifactInputStream? {
-        val repositoryDetail = getRepoDetail(node)
+        val repositoryDetail = NodeResourceHelper.getRepoDetail(node)
         val oldCredentials = findStorageCredentialsByKey(repositoryDetail.oldCredentialsKey)
         if (storageCredentials != oldCredentials) {
             logger.info(
@@ -124,26 +121,6 @@ class LocalNodeResource(
             return storageService.load(node.sha256!!, range, oldCredentials)
         }
         return null
-    }
-
-    /**
-     * 获取RepoDetail
-     * */
-    private fun getRepoDetail(node: NodeInfo): RepositoryDetail {
-        with(node) {
-            // 如果当前上下文存在该node的repo信息则，返回上下文中的repo，大部分请求应该命中这
-            ArtifactContextHolder.getRepoDetail()?.let {
-                if (it.projectId == projectId && it.name == name) {
-                    return it
-                }
-            }
-            // 如果是异步或者请求上下文找不到，则通过查询，并进行缓存
-            val repositoryId = RepositoryId(
-                projectId = projectId,
-                repoName = repoName,
-            )
-            return ArtifactContextHolder.getRepoDetail(repositoryId)
-        }
     }
 
     /**

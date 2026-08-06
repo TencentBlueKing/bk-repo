@@ -1,1 +1,2 @@
 com.tencent.bkrepo.common.metadata.MetadataAutoConfiguration
+com.tencent.bkrepo.common.metadata.config.DriveMongoConfiguration

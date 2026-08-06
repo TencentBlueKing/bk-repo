@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.service.otel
 
+import com.tencent.bkrepo.common.mongo.observability.LowCardinalityMongoHandlerObservationConvention
 import com.mongodb.MongoClientSettings
 import com.mongodb.reactivestreams.client.internal.MongoClientImpl
 import io.micrometer.observation.ObservationRegistry
@@ -23,7 +24,9 @@ class OtelMongoConfiguration {
     fun mongoMetricsSynchronousContextProvider(registry: ObservationRegistry): MongoClientSettingsBuilderCustomizer {
         return MongoClientSettingsBuilderCustomizer { clientSettingsBuilder: MongoClientSettings.Builder? ->
             clientSettingsBuilder!!.contextProvider(ContextProviderFactory.create(registry))
-                .addCommandListener(MongoObservationCommandListener(registry))
+                .addCommandListener(
+                    MongoObservationCommandListener(registry, null, LowCardinalityMongoHandlerObservationConvention()),
+                )
         }
     }
 }

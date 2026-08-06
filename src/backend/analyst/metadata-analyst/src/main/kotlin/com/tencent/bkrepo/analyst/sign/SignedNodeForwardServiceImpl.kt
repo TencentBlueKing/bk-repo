@@ -225,7 +225,8 @@ class SignedNodeForwardServiceImpl(
                     TaskMetadata(
                         "repoUrl",
                         "${signProperties.host}/generic/${node.projectId}/${signProperties.signedRepoName}"
-                    )
+                    ),
+                    TaskMetadata("ip", HttpContextHolder.getClientAddressFromAttribute())
                 ),
             )
             val task = scanClient.scan(scanRequest).data ?: error("Request error")

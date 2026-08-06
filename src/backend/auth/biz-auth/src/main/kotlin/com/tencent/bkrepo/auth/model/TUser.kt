@@ -47,7 +47,8 @@ import java.time.LocalDateTime
     CompoundIndex(name = "tokens_iid_idx", def = "{'tokens._id': 1}", background = true),
     CompoundIndex(name = "roles_idx", def = "{'roles': 1}", background = true),
     CompoundIndex(name = "group_idx", def = "{'group': 1}", background = true),
-    CompoundIndex(name = "asstUsers_idx", def = "{'asstUsers': 1}", background = true)
+    CompoundIndex(name = "asstUsers_idx", def = "{'asstUsers': 1}", background = true),
+    CompoundIndex(name = "admin_idx", def = "{'admin': 1}", background = true)
 )
 data class TUser(
     val userId: String,

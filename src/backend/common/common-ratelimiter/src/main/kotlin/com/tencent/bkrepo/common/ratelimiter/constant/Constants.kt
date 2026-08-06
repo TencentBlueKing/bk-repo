@@ -31,17 +31,3 @@ const val TRY_LOCK_TIMEOUT = 10L
 const val KEY_PREFIX = "rateLimiter:"
 const val SLEEP_TIME = 10
 
-const val TAG_STATUS = "status"
-const val TAG_NAME = "name"
-
-const val RATE_LIMITER_TOTAL_COUNT = "rate.limiter.total.count"
-const val RATE_LIMITER_TOTAL_COUNT_DESC = "总请求数"
-
-const val RATE_LIMITER_PASSED_COUNT = "rate.limiter.passed.count"
-const val RATE_LIMITER_PASSED_COUNT_DESC = "通过请求数"
-
-const val RATE_LIMITER_LIMITED_COUNT = "rate.limiter.limited.count"
-const val RATE_LIMITER_LIMITED_COUNT_DESC = "限流请求数"
-
-const val RATE_LIMITER_EXCEPTION_COUNT = "rate.limiter.exception.count"
-const val RATE_LIMITER_EXCEPTION_COUNT_DESC = "异常请求数"

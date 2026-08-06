@@ -28,22 +28,25 @@
 package com.tencent.bkrepo.common.metrics.push.custom
 
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.metrics.push.custom.MetricsDataManager.removeEmptyMetrics
 import com.tencent.bkrepo.common.metrics.push.custom.base.MetricsItem
 import com.tencent.bkrepo.common.metrics.push.custom.base.PrometheusDrive
+import com.tencent.bkrepo.common.metrics.push.custom.base.PrometheusPushSource
 import io.prometheus.client.CollectorRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import java.time.Duration
+import java.util.LinkedHashMap
+import java.util.LinkedHashSet
 import java.util.concurrent.ConcurrentLinkedQueue
 
 class ScheduleMetricsExporter(
-    private val registry: CollectorRegistry,
     private val drive: PrometheusDrive,
     private val scheduler: ThreadPoolTaskScheduler,
     pushRate: Duration = Duration.ofSeconds(30),
+    private val labelIncludes: Map<String, List<String>> = emptyMap(),
 ) {
     var queue: ConcurrentLinkedQueue<MetricsItem> = ConcurrentLinkedQueue()
+    private val sourceExporters = drive.sources().associateWith { SourceExporter(it) }
 
     init {
         scheduler.scheduleAtFixedRate(this::exportMetricsData, pushRate)
@@ -54,13 +57,45 @@ class ScheduleMetricsExporter(
             return
         }
         logger.debug("start to export metric data to prometheus server")
-        val count = queue.size
-        for (i in 0 until count) {
-            val item: MetricsItem = queue.poll()
+        val items = normalizeMetricLabels(drainQueue())
+        sourceExporters.forEach { (source, exporter) ->
+            val sourceItems = items.filter { source.supports(it.name) }
+                .map { pruneLabelsForSource(it, source) }
+            exporter.export(sourceItems)
+        }
+    }
+
+    private fun pruneLabelsForSource(item: MetricsItem, source: PrometheusPushSource): MetricsItem {
+        val keepKeys = when {
+            source.labelIncludes.containsKey(item.name) -> source.labelIncludes[item.name]
+            labelIncludes.containsKey(item.name) -> labelIncludes[item.name]
+            else -> null
+        } ?: return item
+        if (ALL_LABELS in keepKeys) return item
+        return item.copy(labels = item.labels.filterKeys { it in keepKeys })
+    }
+
+    private inner class SourceExporter(private val source: PrometheusPushSource) {
+        private val registry = CollectorRegistry()
+        private val dataManager = MetricsDataManager()
+
+        fun export(items: List<MetricsItem>) {
+            dataManager.removeEmptyMetrics(registry)
+            if (items.isEmpty()) return
+            items.forEach(::setMetricsData)
+            // 上报前清除没有数据的指标
+            dataManager.removeEmptyMetrics(registry)
+            val metrics = registry.metricFamilySamples().iterator().toJsonString()
+            logger.debug("metrics: $metrics")
+            drive.push(source, registry)
+            dataManager.clearMetricsHistory()
+        }
+
+        private fun setMetricsData(item: MetricsItem) {
             try {
-                var data = MetricsDataManager.getMetricsData(item.name)
+                var data = dataManager.getMetricsData(item.name)
                 if (data == null) {
-                    data = MetricsDataManager.createMetricsData(
+                    data = dataManager.createMetricsData(
                         item.name, item.help, item.keepHistory, item.dataModel, item.labels, registry
                     )
                 }
@@ -70,15 +105,38 @@ class ScheduleMetricsExporter(
                 logger.warn("set metrics for item $item error: ${e.message}")
             }
         }
-        // 上报前清除没有数据的指标
-        removeEmptyMetrics(registry)
-        logger.debug("metrics: ${registry.metricFamilySamples().iterator().toJsonString()}")
-        drive.push(registry)
-        // 不管是否成功都清除，避免异常情况下占用内存过多
-        MetricsDataManager.clearMetricsHistory()
+    }
+
+    private fun drainQueue(): List<MetricsItem> {
+        val items = mutableListOf<MetricsItem>()
+        val count = queue.size
+        for (i in 0 until count) {
+            queue.poll()?.let(items::add)
+        }
+        return items
+    }
+
+    private fun normalizeMetricLabels(items: List<MetricsItem>): List<MetricsItem> {
+        val labelKeysByMetric = linkedMapOf<String, LinkedHashSet<String>>()
+        items.forEach { item ->
+            val keys = labelKeysByMetric.getOrPut(item.name) { LinkedHashSet() }
+            item.labels.keys.forEach(keys::add)
+        }
+        return items.map { item ->
+            val labelKeys = labelKeysByMetric[item.name] ?: return@map item
+            if (item.labels.keys == labelKeys) {
+                return@map item
+            }
+            val normalizedLabels = LinkedHashMap<String, String>(labelKeys.size)
+            labelKeys.forEach { key ->
+                normalizedLabels[key] = item.labels[key].orEmpty()
+            }
+            item.copy(labels = normalizedLabels)
+        }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ScheduleMetricsExporter::class.java)
+        private const val ALL_LABELS = "*"
     }
 }

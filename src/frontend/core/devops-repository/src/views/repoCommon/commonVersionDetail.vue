@@ -69,7 +69,7 @@
             </div>
         </bk-tab-panel>
         <bk-tab-panel v-if="detail.basic.readme" name="readme" :label="$t('readMe')">
-            <div class="version-detail-readme" v-html="readmeContent"></div>
+            <div class="version-detail-readme" v-html="DOMPurify.sanitize(readmeContent)"></div>
         </bk-tab-panel>
         <bk-tab-panel v-if="detail.metadata" name="metadata" :label="$t('metaData')">
             <div class="version-metadata display-block" :data-title="$t('metaData')">
@@ -168,6 +168,7 @@
     </bk-tab>
 </template>
 <script>
+    import DOMPurify from 'dompurify'
     import CodeArea from '@repository/components/CodeArea'
     import OperationList from '@repository/components/OperationList'
     import ScanTag from '@repository/views/repoScan/scanTag'
@@ -188,6 +189,7 @@
         mixins: [repoGuideMixin],
         data () {
             return {
+                DOMPurify,
                 tabName: 'basic',
                 isLoading: false,
                 detail: {
@@ -261,6 +263,9 @@
                     { clickEvent: () => this.$emit('forbid'), label: metadataMap.forbidStatus ? this.$t('liftBan') : this.$t('forbiddenUse') },
                     this.permission.delete && { clickEvent: () => this.$emit('delete'), label: this.$t('delete') }
                 ]
+            },
+            originProjectId () {
+                return this.$route.params.projectId || ''
             }
         },
         watch: {
@@ -287,7 +292,7 @@
             getDetail () {
                 this.isLoading = true
                 this.getVersionDetail({
-                    projectId: this.projectId,
+                    projectId: this.originProjectId,
                     repoType: this.repoType,
                     repoName: this.repoName,
                     packageKey: this.packageKey,

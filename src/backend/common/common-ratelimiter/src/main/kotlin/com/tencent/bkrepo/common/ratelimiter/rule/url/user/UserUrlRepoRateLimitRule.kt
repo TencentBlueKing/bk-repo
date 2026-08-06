@@ -46,6 +46,8 @@ class UserUrlRepoRateLimitRule(
     private val userLimitRules: ConcurrentHashMap<String, ResourceLimit> = ConcurrentHashMap()
 ) : RateLimitRule {
 
+    private val requestPaths = ConcurrentHashMap.newKeySet<String>()
+
     override fun isEmpty(): Boolean {
         return userUrlRepoLimitRules.isEmpty() && userLimitRules.isEmpty()
     }
@@ -78,6 +80,9 @@ class UserUrlRepoRateLimitRule(
             val userUrlRepoResourceLimitRule =
                 userUrlRepoLimitRules.getOrDefault(userId, UserUrlRepoResourceLimitRule())
             userUrlRepoResourceLimitRule.addUserUrlRepoResourceLimit(resourceLimit)
+            resourceLimit.requestPath?.takeIf { it.isNotBlank() }?.let {
+                requestPaths.add(normalizeRequestPath(it))
+            }
             userUrlRepoLimitRules.putIfAbsent(userId, userUrlRepoResourceLimitRule)
         }
     }
@@ -132,7 +137,15 @@ class UserUrlRepoRateLimitRule(
         return ResLimitInfo(realResource, resourceLimitCopy)
     }
 
+    fun containsRequestPath(requestPath: String): Boolean {
+        return requestPaths.contains(normalizeRequestPath(requestPath))
+    }
+
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(UserUrlRepoRateLimitRule::class.java)
+
+        private fun normalizeRequestPath(requestPath: String): String {
+            return ResourcePathUtils.normalizeUri(requestPath).trimEnd('/')
+        }
     }
 }

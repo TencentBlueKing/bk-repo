@@ -9,9 +9,21 @@ import java.time.LocalDateTime
 
 object UserUpdateHelper {
 
-    fun buildUnsetRoles(): Update {
-        val update = Update()
-        return update.unset("roles.$")
+    /**
+     * 从 user.roles 中移除指定 roleId。
+     *
+     * 历史实现使用 `update.unset("roles.$")`，但 MongoDB 对数组元素执行 \$unset
+     * 只会把目标位置置为 null，不会缩短数组，长期反复增删后会导致 roles 中堆积大量 null，
+     * 造成 user.roles 字段异常膨胀。这里改为 \$pull 真正删除元素，
+     * 并顺手把数组里残留的 null 也一并 pull 掉，让脏数据在写入路径上自愈。
+     *
+     * 等价 mongo 命令：
+     *   { \$pull: { roles: { \$in: [roleId, null] } } }
+     */
+    fun buildUnsetRoles(roleId: String): Update {
+        val cond = BasicDBObject()
+        cond["\$in"] = listOf(roleId, null)
+        return Update().pull(TUser::roles.name, cond)
     }
 
     fun buildUpdateUser(request: UpdateUserRequest): Update {
@@ -53,7 +65,7 @@ object UserUpdateHelper {
 
     fun buildAddRole(roleId: String): Update {
         val update = Update()
-        return update.push(TUser::roles.name, roleId)
+        return update.addToSet(TUser::roles.name, roleId)
     }
 
     fun buildPwdUpdate(newHashPwd: String): Update {

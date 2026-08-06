@@ -48,7 +48,9 @@ import java.util.UUID
  * 文件下载工具
  */
 @Component
-class DownloadUtils(private val httpUtils: HttpUtils) {
+class DownloadUtils(
+    private val httpUtils: HttpUtils
+) {
     companion object {
         private val logger = org.slf4j.LoggerFactory.getLogger(DownloadUtils::class.java)
         private const val URL_PARAM_FTP_USERNAME = "ftp.username"
@@ -101,6 +103,7 @@ class DownloadUtils(private val httpUtils: HttpUtils) {
 
     private fun downloadHttpFile(url: URL, realPath: String, result: DownloadResult) {
         try {
+            // SSRF 防护已下沉到 HttpUtils：初始 URL 及每次重定向前都会走一次 SSRF 校验
             val response = httpUtils.downloadHttpFile(url)
             saveFile(response.body, realPath)
             result.apply {

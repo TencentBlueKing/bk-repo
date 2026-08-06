@@ -249,6 +249,32 @@ class PermissionHelper constructor(
         }
     }
 
+    /**
+     * 仓库级整仓授权判定（严格模式下用于非 Generic 仓库的短路放行）。
+     *
+     * 基于 TPermission(resourceType=REPO, repos 包含当前 repoName) 的命中记录，
+     * 若 actions 包含 MANAGE 或当前请求 action（READ/WRITE/DOWNLOAD/UPDATE/DELETE）则放行。
+     *
+     * 与 [checkRepoReadAction] 的区别：本方法支持完整 action 集合，仅作为整仓授权判定使用。
+     */
+    fun checkRepoActionInPermission(context: CheckPermissionContext): Boolean {
+        with(context) {
+            if (repoName.isNullOrBlank()) return false
+            val permissions = permissionDao.listPermissionInRepo(projectId, repoName!!, userId, roles)
+            if (permissions.isEmpty()) return false
+            val hit = permissions.any { p ->
+                p.actions.contains(MANAGE.name) || p.actions.contains(action)
+            }
+            if (hit) {
+                logger.debug(
+                    "repo-level-strict allow: userId=$userId, projectId=$projectId, " +
+                            "repoName=$repoName, action=$action, reason=repo-level-strict"
+                )
+            }
+            return hit
+        }
+    }
+
     fun getOnePermission(
         projectId: String,
         repoName: String,
@@ -301,6 +327,44 @@ class PermissionHelper constructor(
             }
         }
         return repoList
+    }
+
+    /**
+     * 列出当前用户（含其角色）在指定项目下、对给定仓库集合中已显式授权的仓库子集。
+     * 用于 listPermissionRepo 中对严格模式仓库做可见性过滤。
+     *
+     * 实现：复用现有 `listByProjectIdAndUsers` / `listByProjectAndRoles`，
+     * 再在内存里与 [repos] 求交集。strictRepos 集合通常很小，
+     * 且 permission 表已按 (projectId, user/roles) 过滤，扫描量可控。
+     */
+    fun listGrantedRepos(
+        projectId: String,
+        userId: String,
+        roles: List<String>,
+        repos: Set<String>,
+    ): Set<String> {
+        if (repos.isEmpty()) return emptySet()
+        val granted = mutableSetOf<String>()
+        collectGrantedRepos(permissionDao.listByProjectIdAndUsers(projectId, userId), repos, granted)
+        if (roles.isNotEmpty()) {
+            collectGrantedRepos(permissionDao.listByProjectAndRoles(projectId, roles), repos, granted)
+        }
+        return granted
+    }
+
+    /**
+     * 从 [permissions] 中筛选出 actions 非空的记录，并把其 repos 与 [candidates] 的交集累加到 [target]。
+     * 抽出该辅助方法用于降低 [listGrantedRepos] 的嵌套层级。
+     */
+    private fun collectGrantedRepos(
+        permissions: List<TPermission>,
+        candidates: Set<String>,
+        target: MutableSet<String>,
+    ) {
+        permissions.asSequence()
+            .filter { it.actions.isNotEmpty() }
+            .flatMap { it.repos.asSequence() }
+            .filterTo(target) { it in candidates }
     }
 
     fun getUserCommonRoleProject(roles: List<String>): List<String> {

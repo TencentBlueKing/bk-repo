@@ -322,16 +322,20 @@ open class AbstractChartService : ArtifactService() {
 
     fun regenerateHelmIndexYaml(artifactInfo: HelmArtifactInfo): HelmIndexYamlMetadata {
         val indexYamlMetadata = HelmUtils.initIndexYamlMetadata()
-        var pageNum = 1
+        // 使用 keyset 分页代替 skip+limit，避免大 offset 导致全表扫描慢查询
+        var lastFullPath: String? = null
         while (true) {
             val queryModelBuilder = NodeQueryBuilder()
-                .select(PROJECT_ID, REPO_NAME, NODE_NAME, NODE_FULL_PATH,
-                        NODE_METADATA, NODE_SHA256, NODE_CREATE_DATE)
+                .select(
+                    PROJECT_ID, REPO_NAME, NODE_NAME, NODE_FULL_PATH,
+                    NODE_METADATA, NODE_SHA256, NODE_CREATE_DATE
+                )
                 .sortByAsc(NODE_FULL_PATH)
-                .page(pageNum, V2_PAGE_SIZE)
+                .page(1, V2_PAGE_SIZE)
                 .projectId(artifactInfo.projectId)
                 .repoName(artifactInfo.repoName)
                 .fullPath(TGZ_SUFFIX, OperationType.SUFFIX)
+            lastFullPath?.let { queryModelBuilder.fullPath(it, OperationType.GT) }
             val result = nodeSearchService.searchWithoutCount(queryModelBuilder.build())
             if (result.records.isEmpty()) break
             result.records.forEach {
@@ -344,7 +348,8 @@ open class AbstractChartService : ArtifactService() {
                     )
                 }
             }
-            pageNum++
+            lastFullPath = result.records.last()[NODE_FULL_PATH] as? String ?: break
+            if (result.records.size < V2_PAGE_SIZE) break
         }
         return indexYamlMetadata
     }

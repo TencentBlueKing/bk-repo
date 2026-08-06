@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
+import org.springframework.data.mongodb.core.aggregation.AggregationOptions
 import org.springframework.data.mongodb.core.aggregation.Aggregation.group
 import org.springframework.data.mongodb.core.aggregation.Aggregation.match
 import org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation
@@ -145,11 +146,14 @@ open class RNodeStatsSupport(
 
 
 
-    override suspend fun aggregateComputeSize(criteria: Criteria): Long {
+    override suspend fun aggregateComputeSize(criteria: Criteria, useFullPathIndex: Boolean): Long {
         val aggregation = newAggregation(
             match(criteria),
             group().sum(TNode::size.name).`as`(NodeSizeInfo::size.name)
         )
+        if (useFullPathIndex) {
+            aggregation.withOptions(AggregationOptions.builder().hint(TNode.FULL_PATH_IDX).build())
+        }
         val data = nodeDao.aggregate(aggregation, HashMap::class.java).firstOrNull()
         return data?.get(NodeSizeInfo::size.name) as? Long ?: 0
     }

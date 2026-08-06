@@ -33,6 +33,8 @@ package com.tencent.bkrepo.common.ratelimiter.metrics
 enum class MetricType {
     TOTAL, // 总请求数量
     PASSED, // 通过数量
-    LIMITED, //限流数量
-    EXCEPTION, //异常请求数量
+    LIMITED, // 限流数量
+    EXCEPTION, // 异常请求数量
+    REJECTED, // 拒绝数量（与LIMITED同义）
+    TIMEOUT, // 超时数量
 }

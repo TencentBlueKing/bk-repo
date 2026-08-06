@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.auth
 
+import com.tencent.bkrepo.auth.constant.GLOBAL_PREVIEW_ROLE_ID
+import com.tencent.bkrepo.auth.constant.GLOBAL_PREVIEW_ROLE_NAME
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.service.RoleService
@@ -132,6 +134,26 @@ class RoleServiceTest {
         val role = roleService.detail(roleId, projectId, repoName)
         role?.let {
             Assertions.assertEquals(it.id!!, id)
+        }
+    }
+
+    @DisplayName("删除全局预览角色被拒测试")
+    fun rejectDeleteGlobalPreviewRoleTest() {
+        val id = roleService.createRole(
+            CreateRoleRequest(
+                roleId = GLOBAL_PREVIEW_ROLE_ID,
+                name = GLOBAL_PREVIEW_ROLE_NAME,
+                type = RoleType.SERVICE,
+                admin = false,
+                description = "系统预置全局只读角色"
+            )
+        )
+        Assertions.assertNotNull(id)
+        try {
+            assertThrows<ErrorCodeException> { roleService.deleteRoleById(id!!) }
+        } finally {
+            // 清理：直接通过仓库底层删除以保留测试隔离性（生产中此角色不允许删除）
+            // 测试侧由 SpringBootTest 上下文自动清理，无需额外处理
         }
     }
 

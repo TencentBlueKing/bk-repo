@@ -62,6 +62,7 @@ $ helm uninstall bkrepo
 - npm
 - pypi
 - helm
+- huggingface
 
 |参数|描述|默认值 |
 |---|---|---|
@@ -251,6 +252,15 @@ $ helm uninstall bkrepo
 |---|---|---|
 | `helm.enabled` | 是否部署helm | `false` |
 | `helm.config`  | helm配置 | `{}` |
+
+### huggingface registry服务配置
+
+**以下为除Kubernetes组件通用配置之外的配置列表**
+
+|参数|描述|默认值 |
+|---|---|---|
+| `huggingface.enabled` | 是否部署huggingface | `false` |
+| `huggingface.config.domain` | huggingface domain地址 | `${gateway.host}/huggingface` |
 
 
 您可以通过`--set key=value[,key=value]`来指定参数进行安装。例如，

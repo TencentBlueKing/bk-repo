@@ -109,3 +109,42 @@ fun createPlatformDns(platforms: List<PlatformProperties>) = object : Dns {
         } ?: Dns.SYSTEM.lookup(hostname)
     }
 }
+
+/**
+ * 校验远程仓库 [url] 的 host 是否落在 [allowedHosts] 白名单内，用于防止 SSRF
+ * - [allowedHosts] 为空时直接放行，保持向后兼容
+ * - 元素以 `.` 开头按域后缀匹配，如 `.example.com` 命中 `a.example.com` 与 `example.com`
+ * - 其他情况按字符串精确匹配（域名或 IP 字面量）
+ *
+ * @throws ErrorCodeException host 不在白名单时抛出
+ */
+fun checkRemoteHostAllowed(url: String, allowedHosts: List<String>) {
+    if (allowedHosts.isEmpty()) return
+    val host = try {
+        url.toHttpUrl().host.lowercase()
+    } catch (e: IllegalArgumentException) {
+        throw ErrorCodeException(
+            status = HttpStatus.BAD_REQUEST,
+            messageCode = GenericMessageCode.REMOTE_HOST_NOT_ALLOWED,
+            params = arrayOf(url)
+        )
+    }
+    if (!hostMatches(host, allowedHosts)) {
+        throw ErrorCodeException(
+            status = HttpStatus.BAD_REQUEST,
+            messageCode = GenericMessageCode.REMOTE_HOST_NOT_ALLOWED,
+            params = arrayOf(host)
+        )
+    }
+}
+
+private fun hostMatches(host: String, patterns: List<String>): Boolean {
+    return patterns.any { raw ->
+        val pattern = raw.trim().lowercase()
+        when {
+            pattern.isEmpty() -> false
+            pattern.startsWith(".") -> host == pattern.substring(1) || host.endsWith(pattern)
+            else -> host == pattern
+        }
+    }
+}

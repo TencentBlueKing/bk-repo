@@ -80,6 +80,7 @@ class ServiceAccountController @Autowired constructor(
                 redirectUri = acc.redirectUri,
                 avatarUrl = acc.avatarUrl,
                 scope = acc.scope?.map { it.name }?.toSet(),
+                limit = acc.limit,
                 description = acc.description,
                 credentials = acc.credentials
             )
@@ -99,6 +100,7 @@ class ServiceAccountController @Autowired constructor(
                 redirectUri = acc.redirectUri,
                 avatarUrl = acc.avatarUrl,
                 scope = acc.scope?.map { it.name }?.toSet(),
+                limit = acc.limit,
                 description = acc.description,
                 credentials = acc.credentials
             )

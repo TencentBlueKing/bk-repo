@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.rule.url.user.UserUrlRepoRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
+import com.tencent.bkrepo.common.ratelimiter.utils.ResourcePathUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.data.redis.core.RedisTemplate
@@ -67,35 +68,56 @@ class UserUrlRepoRateLimiterService(
         if (rateLimiterProperties.specialUrls.contains(StringPool.POUND)) {
             return false
         }
-        return !rateLimiterProperties.specialUrls.contains(request.getAttribute(BEST_MATCHING_PATTERN_ATTRIBUTE))
+        if (rateLimiterProperties.specialUrls.contains(request.getAttribute(BEST_MATCHING_PATTERN_ATTRIBUTE))) {
+            return false
+        }
+        return (rateLimitRule as? UserUrlRepoRateLimitRule)?.containsRequestPath(getRequestPath(request)) != true
     }
 
     override fun buildResource(request: HttpServletRequest): String {
         val userId = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
-        val (projectId, repoName) = try {
-            getRepoInfoFromAttribute(request)
-        } catch (e: InvalidResourceException) {
-            getRepoInfoFromBody(request)
-        }
-        return if (repoName.isNullOrEmpty()) {
-            "$userId:/$projectId/"
-        } else {
-            "$userId:/$projectId/$repoName/"
-        }
+        val (projectId, repoNames) = resolveRepoInfo(request)
+        val (resource, _) = buildRepoResourcePaths(projectId!!, repoNames)
+        return "$userId:$resource"
     }
 
     override fun buildExtraResource(request: HttpServletRequest): List<String> {
         val userId = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
-        val (projectId, repoName) = try {
-            getRepoInfoFromAttribute(request)
+        val (projectId, repoNames) = resolveRepoInfo(request)
+        val (_, extras) = buildRepoResourcePaths(projectId!!, repoNames)
+        val result = extras.map { "$userId:$it" }.toMutableList()
+        result.add("$userId:")
+        return result
+    }
+
+    private fun resolveRepoInfo(request: HttpServletRequest): Pair<String?, List<String>> {
+        return try {
+            val (projectId, repoName) = getRepoInfoFromAttribute(request)
+            Pair(projectId, repoName?.let { listOf(it) } ?: emptyList())
         } catch (e: InvalidResourceException) {
             getRepoInfoFromBody(request)
         }
-        val result = mutableListOf<String>()
-        if (!repoName.isNullOrEmpty()) {
-            result.add("$userId:/$projectId/")
-        }
-        result.add("$userId:")
+    }
+
+    override fun buildRateLimitResource(request: HttpServletRequest): String {
+        val userId = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
+        val resource = buildResource(request).substringAfter(StringPool.COLON)
+        return "$userId:${ResourcePathUtils.buildRequestPathResource(getRequestPath(request), resource)}"
+    }
+
+    override fun buildRateLimitExtraResource(request: HttpServletRequest): List<String> {
+        val requestPath = getRequestPath(request)
+        val result = buildExtraResource(request).mapNotNull {
+            val userId = it.substringBefore(StringPool.COLON)
+            val resource = it.substringAfter(StringPool.COLON)
+            if (resource.isEmpty()) {
+                null
+            } else {
+                "$userId:${ResourcePathUtils.buildRequestPathResource(requestPath, resource)}"
+            }
+        }.toMutableList()
+        result.add(buildResource(request))
+        result.addAll(buildExtraResource(request))
         return result
     }
 

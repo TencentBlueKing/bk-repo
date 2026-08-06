@@ -52,6 +52,9 @@ pluginManagement {
             gradlePluginPortal()
         }
     }
+    plugins {
+        kotlin("plugin.lombok") version "2.0.21"
+    }
 }
 
 fun File.directories() = listFiles()?.filter { it.isDirectory && it.name != "build" }?.toList() ?: emptyList()
@@ -88,6 +91,7 @@ includeAll(":core:huggingface")
 includeAll(":core:git")
 includeAll(":core:lfs")
 includeAll(":core:svn")
+includeAll(":core:skill")
 includeAll(":opdata")
 includeAll(":replication")
 includeAll(":repository")

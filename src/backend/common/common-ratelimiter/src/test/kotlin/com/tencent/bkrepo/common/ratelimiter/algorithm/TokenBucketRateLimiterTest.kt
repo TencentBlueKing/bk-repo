@@ -68,9 +68,9 @@ class TokenBucketRateLimiterTest {
         val passed1 = ratelimiter.tryAcquire(1)
         Assertions.assertTrue(passed1)
         Thread.sleep(1000)
-        var successNum = 0
-        var failedNum = 0
-        var errorNum = 0
+        val successNum = java.util.concurrent.atomic.AtomicInteger(0)
+        val failedNum = java.util.concurrent.atomic.AtomicInteger(0)
+        val errorNum = java.util.concurrent.atomic.AtomicInteger(0)
         val readers = Runtime.getRuntime().availableProcessors()
         val countDownLatch = CountDownLatch(readers)
         val elapsedTime = measureTimeMillis {
@@ -79,12 +79,12 @@ class TokenBucketRateLimiterTest {
                     try {
                         val passed = ratelimiter.tryAcquire(1)
                         if (passed) {
-                            successNum++
+                            successNum.incrementAndGet()
                         } else {
-                            failedNum++
+                            failedNum.incrementAndGet()
                         }
                     } catch (e: Exception) {
-                        errorNum++
+                        errorNum.incrementAndGet()
                     }
                     countDownLatch.countDown()
                 }
@@ -92,6 +92,8 @@ class TokenBucketRateLimiterTest {
         }
         countDownLatch.await()
         println("elapse: ${HumanReadable.time(elapsedTime, TimeUnit.MILLISECONDS)}")
-        println("successNum $successNum, failedNum $failedNum. errorNum $errorNum")
+        println("successNum ${successNum.get()}, failedNum ${failedNum.get()}. errorNum ${errorNum.get()}")
+        Assertions.assertEquals(0, errorNum.get())
+        Assertions.assertEquals(readers, successNum.get() + failedNum.get())
     }
 }

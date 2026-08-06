@@ -74,6 +74,7 @@ class TemporaryTokenServiceImpl(
                     token = generateToken(),
                     permits = permits,
                     type = type,
+                    snapSeq = snapSeq,
                     createdBy = createdBy ?: SecurityUtils.getUserId(),
                     createdDate = LocalDateTime.now(),
                     lastModifiedBy = createdBy ?: SecurityUtils.getUserId(),
@@ -81,8 +82,10 @@ class TemporaryTokenServiceImpl(
                 )
                 temporaryTokenRepository.save(temporaryToken)
                 convert(temporaryToken)
-            }.also {
-                if (it.isNotEmpty()) publishEvent(EventType.TEMP_TOKEN_CREATED, request.projectId, request.projectId)
+            }.also { tokens ->
+                tokens.forEach { tokenInfo ->
+                    publishEvent(EventType.TEMP_TOKEN_CREATED, tokenInfo.token, request.projectId)
+                }
             }
         }
     }
@@ -153,7 +156,8 @@ class TemporaryTokenServiceImpl(
                     expireDate = it.expireDate?.format(DateTimeFormatter.ISO_DATE_TIME),
                     type = it.type,
                     permits = it.permits,
-                    createdBy = it.createdBy
+                    createdBy = it.createdBy,
+                    snapSeq = it.snapSeq,
                 )
             }
         }

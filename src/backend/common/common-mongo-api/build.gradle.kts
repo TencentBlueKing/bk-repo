@@ -4,4 +4,6 @@ dependencies {
     implementation("org.springframework.data:spring-data-mongodb")
     implementation("org.mongodb:mongodb-driver-core")
     implementation("org.apache.commons:commons-lang3")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

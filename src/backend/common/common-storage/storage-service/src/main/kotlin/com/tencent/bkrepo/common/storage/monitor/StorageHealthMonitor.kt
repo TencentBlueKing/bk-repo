@@ -30,7 +30,7 @@ package com.tencent.bkrepo.common.storage.monitor
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
 import com.tencent.bkrepo.common.api.util.HumanReadable.time
 import com.tencent.bkrepo.common.api.util.TraceUtils.trace
-import com.tencent.bkrepo.common.storage.config.StorageProperties
+import com.tencent.bkrepo.common.storage.config.MonitorProperties
 import com.tencent.bkrepo.common.storage.util.toPath
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
@@ -50,11 +50,11 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 
 /**
- * 存储监控状态监控类，目前只支持监控默认存储实例
- * @param storageProperties 存储配置
+ * 存储监控状态监控类
+ * @param monitorConfig 监控配置，支持运行时热更新
  */
 class StorageHealthMonitor(
-    storageProperties: StorageProperties,
+    @Volatile var monitorConfig: MonitorProperties,
     val path: String,
     private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 ) {
@@ -73,10 +73,6 @@ class StorageHealthMonitor(
      */
     var fallBackTime: Long = 0
 
-    /**
-     * 健康配置
-     */
-    private val monitorConfig = storageProperties.monitor
 
     /**
      * 观察者列表，当健康状况发生变化时会通知列表中的观察者
@@ -175,6 +171,11 @@ class StorageHealthMonitor(
     fun remove(observer: Observer?) {
         observerList.remove(observer)
     }
+
+    /**
+     * 当前是否存在检查失败，即连续失败次数大于 0
+     */
+    fun hasCheckFailed(): Boolean = checkFailedTimes.get() > 0
 
     /**
      * 获取降级存储路径

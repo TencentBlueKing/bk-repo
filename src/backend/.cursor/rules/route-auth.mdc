@@ -1,0 +1,22 @@
+---
+description: 路由缺少 projectId/repoName 时强制显式鉴权
+globs: 
+  - "**/config/*RouteConfiguration.kt"
+  - "**/handler/**/*Handler.kt"
+alwaysApply: true
+---
+
+## 鉴权规则
+
+当接口路由路径中不包含 `projectId` 和 `repoName` 这两个路径变量时，不能依赖通用路由鉴权过滤器，必须在 Handler/Service 中增加显式鉴权逻辑。
+
+### 必须满足
+
+1. 从请求体或查询参数解析出 `projectId`、`repoName` 后，调用权限服务进行校验（如 `PermissionService.checkPermission(...)`）。
+2. 写操作必须校验 `WRITE` 权限，读操作至少校验 `READ` 权限。
+3. 鉴权失败时返回拒绝（抛出 `PermissionException` 或等价处理）。
+
+### 禁止事项
+
+1. 路由未带 `projectId/repoName` 时，直接跳过权限校验。
+2. 仅依赖全局 `PermissionFilterFunction` 完成资源级权限校验。

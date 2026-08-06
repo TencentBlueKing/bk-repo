@@ -87,7 +87,7 @@ import org.springframework.test.context.TestPropertySource
         ComponentScan.Filter(
             type = FilterType.ASSIGNABLE_TYPE,
             value = [ExpireFileResolverConfig::class],
-        ),
+        )
     ],
 )
 @SpringBootConfiguration

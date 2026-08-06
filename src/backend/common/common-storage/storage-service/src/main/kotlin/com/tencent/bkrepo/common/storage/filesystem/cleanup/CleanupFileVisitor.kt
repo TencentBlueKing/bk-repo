@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import java.io.IOException
 import java.nio.file.DirectoryNotEmptyException
+import java.nio.file.FileSystemException
 import java.nio.file.FileVisitResult
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
@@ -167,7 +168,11 @@ class CleanupFileVisitor(
             // 目录或者文件已经由其他进程删除。
             logger.info("File [$file] already delete.")
         } else {
-            logger.error("Clean up file [$file] error.", exc)
+            if (exc is FileSystemException && exc.reason == INVALID_ARGUMENT) {
+                logger.warn("Clean up file [$file] error.", exc)
+            } else {
+                logger.error("Clean up file [$file] error.", exc)
+            }
             result.errorCount++
             if (Files.isRegularFile(file)) {
                 result.totalFile++
@@ -246,5 +251,6 @@ class CleanupFileVisitor(
         private val logger = LoggerFactory.getLogger(JOB_LOGGER_NAME)
         private const val permitsPerSecond = 30.0
         private const val NFS_TEMP_FILE_PREFIX = ".nfs"
+        private const val INVALID_ARGUMENT = "Invalid argument"
     }
 }

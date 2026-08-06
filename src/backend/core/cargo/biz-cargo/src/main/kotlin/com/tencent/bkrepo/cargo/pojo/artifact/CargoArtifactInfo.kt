@@ -54,6 +54,8 @@ open class CargoArtifactInfo(
 
         // cargo version detail
         const val CARGO_VERSION_DETAIL = "/version/detail/{projectId}/{repoName}"
+        const val CARGO_VERSION_DEPS = "/version/deps/{projectId}/{repoName}"
+        const val CARGO_VERSION_DEPTS = "/version/depts/{projectId}/{repoName}"
 
         // cargo delete
         const val CARGO_PACKAGE_DELETE_URL = "/package/delete/{projectId}/{repoName}"

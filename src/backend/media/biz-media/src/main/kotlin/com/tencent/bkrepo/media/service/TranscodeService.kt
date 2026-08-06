@@ -13,6 +13,10 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
+import com.tencent.bkrepo.common.metrics.constant.TAG_PROJECT_ID
+import com.tencent.bkrepo.common.metrics.constant.TAG_STATUS
+import com.tencent.bkrepo.common.metrics.constant.TRANSCODE_JOB_STATUS_CHANGE_COUNT
+import com.tencent.bkrepo.common.metrics.constant.TRANSCODE_JOB_STATUS_CHANGE_COUNT_DESC
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
 import com.tencent.bkrepo.media.config.MediaProperties
 import com.tencent.bkrepo.media.common.dao.MediaTranscodeJobDao
@@ -21,6 +25,8 @@ import com.tencent.bkrepo.media.common.pojo.transcode.MediaTranscodeJobStatus
 import com.tencent.bkrepo.media.stream.TranscodeConfig
 import com.tencent.bkrepo.media.stream.TranscodeParam
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.MeterRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.Duration
@@ -34,7 +40,8 @@ class TranscodeService(
     private val tokenService: TokenService,
     private val mediaProperties: MediaProperties,
     private val metadataService: MetadataService,
-    private val mediaTranscodeJobDao: MediaTranscodeJobDao
+    private val mediaTranscodeJobDao: MediaTranscodeJobDao,
+    private val meterRegistry: MeterRegistry,
 ) :
     ArtifactService() {
 
@@ -74,6 +81,12 @@ class TranscodeService(
                 updateTime = LocalDateTime.now()
             )
         )
+        Counter.builder(TRANSCODE_JOB_STATUS_CHANGE_COUNT)
+            .description(TRANSCODE_JOB_STATUS_CHANGE_COUNT_DESC)
+            .tag(TAG_PROJECT_ID, artifactInfo.projectId)
+            .tag(TAG_STATUS, MediaTranscodeJobStatus.WAITING.name)
+            .register(meterRegistry)
+            .increment()
     }
 
     /**

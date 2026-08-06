@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/admin/stream")
 @Principal(PrincipalType.ADMIN)
 class AdminStreamController(
-    private val streamManger: StreamManger,
+    private val streamManger: StreamManger
 ) {
     @PutMapping("/shutdown")
     fun shutdown() {

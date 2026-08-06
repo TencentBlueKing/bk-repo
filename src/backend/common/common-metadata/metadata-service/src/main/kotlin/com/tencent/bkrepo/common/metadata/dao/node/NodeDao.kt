@@ -96,6 +96,11 @@ class NodeDao : HashShardingMongoDao<TNode>() {
         return this.exists(NodeQueryHelper.nodeQuery(projectId, repoName, fullPath))
     }
 
+    fun findWithMetadataKeys(query: Query, option: NodeListOption, metadataKeys: List<String>): List<TNode> {
+        val aggregation = NodeQueryHelper.buildPartialMetadataAggregation(query, option, metadataKeys)
+        return aggregate(aggregation, classType).mappedResults
+    }
+
     fun checkFolder(projectId: String, repoName: String, fullPath: String): Boolean {
         if (PathUtils.isRoot(fullPath)) {
             return true

@@ -50,6 +50,19 @@ class RepoAuthConfigDao : SimpleMongoDao<TRepoAuthConfig>() {
         )
     }
 
+    /**
+     * 批量列出指定项目下访问控制模式为 [accessControlMode] 的仓库名集合。
+     * 用于 listPermissionRepo 时一次性识别严格模式仓库，避免 N+1 查询。
+     * 复合索引 (projectId, accessControlMode) 命中。
+     */
+    fun listRepoNamesByMode(projectId: String, accessControlMode: AccessControlMode): Set<String> {
+        val query = Query.query(
+            Criteria.where(TRepoAuthConfig::projectId.name).`is`(projectId)
+                .and(TRepoAuthConfig::accessControlMode.name).`is`(accessControlMode)
+        )
+        return this.find(query).mapTo(HashSet()) { it.repoName }
+    }
+
     fun upsertProjectRepo(
         projectId: String,
         repoName: String,

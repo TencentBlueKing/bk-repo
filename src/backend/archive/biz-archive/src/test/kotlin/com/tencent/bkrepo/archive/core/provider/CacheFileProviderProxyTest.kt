@@ -36,9 +36,14 @@ class CacheFileProviderProxyTest {
         }
         every { fp.key(any()) } returns "key"
         val cacheFp = CacheFileProviderProxy(fp, Duration.ofSeconds(0), cachePath)
-        cacheFp.get(1).subscribe()
+        cacheFp.get(1).block(Duration.ofSeconds(10))
         Assertions.assertFalse(Files.exists(tempFilePath))
         val cacheFilePath = cachePath.resolve("key")
+        // 等待异步缓存写入完成，避免 CI 环境下时序导致的 flaky 失败
+        val deadline = System.currentTimeMillis() + 5000
+        while (!Files.exists(cacheFilePath) && System.currentTimeMillis() < deadline) {
+            Thread.sleep(50)
+        }
         Assertions.assertTrue(Files.exists(cacheFilePath))
         Thread.sleep(2000)
         Assertions.assertFalse(Files.exists(cacheFilePath))

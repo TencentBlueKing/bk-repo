@@ -33,6 +33,7 @@ package com.tencent.bkrepo.auth.service.local
 
 import com.tencent.bkrepo.auth.config.AuthProperties
 import com.tencent.bkrepo.auth.dao.UserDao
+import com.tencent.bkrepo.auth.constant.GLOBAL_PREVIEW_ROLE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
 import com.tencent.bkrepo.auth.context.FederationWriteContext
@@ -139,11 +140,9 @@ class RoleServiceImpl constructor(
     }
 
     override fun listRoleByProjectPage(projectId: String, pageNumber: Int, pageSize: Int): List<Role> {
-        return roleRepository.findByTypeAndProjectIdAndAdminAndRoleIdNotIn(
-            RoleType.PROJECT,
+        // 联邦全量同步需包含 PROJECT_MANAGE/VIEWER 及 admin 角色，不可复用 UI 列表过滤
+        return roleRepository.findByProjectId(
             projectId,
-            false,
-            listOf(PROJECT_MANAGE_ID, PROJECT_VIEWER_ID),
             PageRequest.of(pageNumber - 1, pageSize),
         ).map { transfer(it) }
     }
@@ -160,6 +159,11 @@ class RoleServiceImpl constructor(
             logger.warn("delete role [$id] not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
         } else {
+            // 系统预置全局预览角色不允许删除
+            if (role.type == RoleType.SERVICE && role.roleId == GLOBAL_PREVIEW_ROLE_ID) {
+                logger.warn("reject delete builtin global preview role [$id]")
+                throw ErrorCodeException(AuthMessageCode.AUTH_BUILTIN_ROLE_NOT_DELETABLE)
+            }
             val users = listUserByRoleId(role.id!!)
             if (users.isNotEmpty()) {
                 userService.removeUserFromRoleBatch(users.map { it.userId }, id)

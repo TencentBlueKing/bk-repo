@@ -33,10 +33,15 @@ import java.time.LocalDateTime
 
 data class TNode(
     val id: String? = null,
+    val createdBy: String = "ut",
     val createdDate: LocalDateTime,
+    val lastModifiedBy: String = "ut",
+    val lastModifiedDate: LocalDateTime = createdDate,
     val folder: Boolean,
     val projectId: String,
     val repoName: String,
+    val path: String = "/",
+    val name: String = "",
     val fullPath: String,
     val size: Long,
     val sha256: String,

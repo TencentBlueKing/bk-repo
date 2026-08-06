@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.auth.pojo.account
 
+import com.tencent.bkrepo.auth.pojo.enums.AccountLimit
 import com.tencent.bkrepo.auth.pojo.token.CredentialSet
 
 /**
@@ -15,6 +16,7 @@ data class FederationAccountInfo(
     val redirectUri: String? = null,
     val avatarUrl: String? = null,
     val scope: Set<String>? = null,
+    val limit: AccountLimit? = null,
     val description: String? = null,
     val credentials: List<CredentialSet>? = null,
 )

@@ -190,7 +190,7 @@ open class NodeMoveCopySupport(
             if (existNode?.folder == false && overwrite) {
                 quotaService.checkRepoQuota(existNode.projectId, existNode.repoName, node.size - existNode.size)
                 nodeBaseService.deleteByFullPathWithoutDecreaseVolume(
-                    existNode.projectId, existNode.repoName, existNode.fullPath, operator
+                    existNode.projectId, existNode.repoName, existNode.fullPath, operator, isFile = true
                 )
                 quotaService.decreaseUsedVolume(existNode.projectId, existNode.repoName, existNode.size)
             }

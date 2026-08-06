@@ -47,7 +47,10 @@ interface RNodeStatsOperation {
 
     /**
      * 聚合查询节点大小
+     *
+     * @param criteria 查询条件
+     * @param useFullPathIndex 是否强制走 FULL_PATH_IDX 索引（需要 MongoDB 3.6+），默认 false 由优化器自动选择
      */
-    suspend fun aggregateComputeSize(criteria: Criteria): Long
+    suspend fun aggregateComputeSize(criteria: Criteria, useFullPathIndex: Boolean = false): Long
 
 }

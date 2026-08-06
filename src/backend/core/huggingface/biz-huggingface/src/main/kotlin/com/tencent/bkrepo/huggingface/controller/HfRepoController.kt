@@ -29,6 +29,8 @@ package com.tencent.bkrepo.huggingface.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.huggingface.pojo.RepoCreateRequest
 import com.tencent.bkrepo.huggingface.pojo.RepoDeleteRequest
 import com.tencent.bkrepo.huggingface.pojo.RepoMoveRequest
@@ -68,7 +70,7 @@ class HfRepoController(
         val repoCreateRequest = RepoCreateRequest(
             projectId = projectId,
             repoName = repoName,
-            repoId = "${request.organization}/${request.name}",
+            repoId = buildRepoId(request.organization, request.name),
             private = request.private,
             type = request.type
         )
@@ -124,10 +126,22 @@ class HfRepoController(
         val repoDeleteRequest = RepoDeleteRequest(
             projectId = projectId,
             repoName = repoName,
-            repoId = "${request.organization}/${request.name}",
+            repoId = buildRepoId(request.organization, request.name),
             type = request.type,
             revision = null,
         )
         hfRepoService.delete(repoDeleteRequest)
+    }
+
+    private fun buildRepoId(organization: String?, name: String): String {
+        val namespace = organization?.takeIf { it.isNotBlank() } ?: currentUserNamespace()
+        return "$namespace/$name"
+    }
+
+    private fun currentUserNamespace(): String {
+        if (SecurityUtils.isAnonymous()) {
+            throw AuthenticationException()
+        }
+        return SecurityUtils.getUserId()
     }
 }

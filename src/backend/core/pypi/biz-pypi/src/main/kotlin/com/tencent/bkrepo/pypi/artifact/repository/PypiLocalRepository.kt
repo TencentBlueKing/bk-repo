@@ -75,7 +75,9 @@ import com.tencent.bkrepo.pypi.constants.VERSION_INDEX_TITLE
 import com.tencent.bkrepo.pypi.exception.PypiSimpleNotFoundException
 import com.tencent.bkrepo.pypi.pojo.Basic
 import com.tencent.bkrepo.pypi.pojo.PypiArtifactVersionData
+import com.tencent.bkrepo.pypi.service.PypiSimpleIndexCacheService
 import com.tencent.bkrepo.pypi.util.HtmlUtils
+import com.tencent.bkrepo.pypi.util.PypiSimpleIndexUtils
 import com.tencent.bkrepo.pypi.util.PypiVersionUtils.toPypiPackagePojo
 import com.tencent.bkrepo.pypi.util.XmlUtils
 import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
@@ -103,7 +105,8 @@ import org.springframework.stereotype.Component
 @Component
 class PypiLocalRepository(
     private val stageService: StageService,
-    private val pypiProperties: PypiProperties
+    private val pypiProperties: PypiProperties,
+    private val simpleIndexCacheService: PypiSimpleIndexCacheService,
 ) : LocalRepository() {
 
     /**
@@ -158,6 +161,7 @@ class PypiLocalRepository(
             HttpContextHolder.getClientAddress()
         )
         store(nodeCreateRequest, artifactFile, context.storageCredentials)
+        invalidateSimpleIndexCache(context.projectId, context.repoName, name)
     }
 
     override fun onDownloadBefore(context: ArtifactDownloadContext) {
@@ -295,6 +299,7 @@ class PypiLocalRepository(
                 contentPath,
             )
         }
+        invalidateSimpleIndexCache(context.projectId, context.repoName, name)
     }
 
     /**
@@ -303,9 +308,40 @@ class PypiLocalRepository(
      */
     override fun query(context: ArtifactQueryContext): Any? {
         return when (val artifactInfo = context.artifactInfo) {
-            is PypiSimpleArtifactInfo -> getSimpleHtml(artifactInfo)
+            is PypiSimpleArtifactInfo -> querySimpleHtml(context, artifactInfo)
             else -> getVersionDetail(context)
         }
+    }
+
+    private fun querySimpleHtml(context: ArtifactQueryContext, artifactInfo: PypiSimpleArtifactInfo): String? {
+        val packageName = artifactInfo.packageName
+        if (packageName != null && pypiProperties.enableSimpleIndexCache) {
+            simpleIndexCacheService.load(
+                projectId = artifactInfo.projectId,
+                repoName = artifactInfo.repoName,
+                packageName = packageName,
+                storageCredentials = context.storageCredentials,
+            )?.let { return it }
+        }
+        val html = getSimpleHtml(artifactInfo)
+        if (packageName != null && html != null && pypiProperties.enableSimpleIndexCache) {
+            simpleIndexCacheService.tryStore(
+                projectId = artifactInfo.projectId,
+                repoName = artifactInfo.repoName,
+                packageName = packageName,
+                html = html,
+                userId = context.userId,
+                storageCredentials = context.storageCredentials,
+            )
+        }
+        return html
+    }
+
+    private fun invalidateSimpleIndexCache(projectId: String, repoName: String, packageName: String) {
+        if (!pypiProperties.enableSimpleIndexCache) {
+            return
+        }
+        simpleIndexCacheService.invalidate(projectId, repoName, packageName)
     }
 
     // TODO 产品页面需要重新设计，支持同个版本包含多个制品
@@ -359,14 +395,19 @@ class PypiLocalRepository(
                 val nodeList = nodeService.listNode(
                     ArtifactInfo(projectId, repoName, ROOT),
                     NodeListOption(includeFolder = true)
-                ).filter { it.folder }.takeIf { it.isNotEmpty() } ?: throw PypiSimpleNotFoundException(StringPool.SLASH)
-                // 过滤掉'根节点',
+                ).filter { it.folder && !PypiSimpleIndexUtils.isSimpleIndexCacheFolder(it.name) }
+                    .takeIf { it.isNotEmpty() } ?: throw PypiSimpleNotFoundException(StringPool.SLASH)
+                // 过滤掉'根节点'与 simple 索引缓存目录
                 return buildPypiPageContent(PACKAGE_INDEX_TITLE, buildPackageListContent(nodeList))
             }
             // 请求中带包名，返回对应包的文件列表。
-            val nodes = nodeService.listNode(
+            val nodes = nodeService.listNodeWithMetadataKeys(
                 ArtifactInfo(projectId, repoName, "/$packageName"),
-                NodeListOption(includeFolder = false, deep = true, includeMetadata = true)
+                NodeListOption(
+                    includeFolder = false,
+                    deep = true,
+                ),
+                listOf(VERSION, REQUIRES_PYTHON),
             )
             if (!nodes.isNullOrEmpty()) {
                 return buildPypiPageContent(

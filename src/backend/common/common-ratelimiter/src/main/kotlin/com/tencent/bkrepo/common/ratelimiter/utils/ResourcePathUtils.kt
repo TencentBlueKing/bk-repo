@@ -35,6 +35,15 @@ import java.net.URISyntaxException
 object ResourcePathUtils {
 
     /**
+     * 对 URI 进行归一化：解码 URL 编码（%2F → /）并合并连续斜杠，
+     * 使 ///proj//repo//a.zip 和 /proj/repo%2Fa.zip 等价于 /proj/repo/a.zip。
+     */
+    fun normalizeUri(uri: String): String {
+        val decoded = java.net.URLDecoder.decode(uri, "UTF-8")
+        return decoded.replace(Regex("[/]+"), "/")
+    }
+
+    /**
      * 分割路径，支持带template变量路径，并处理URL编码和连续斜杠
      */
     @Throws(InvalidResourceException::class)
@@ -42,10 +51,7 @@ object ResourcePathUtils {
         if (resourcePath.isBlank()) {
             return emptyList()
         }
-        // 解码URL编码的路径
-        val decodedPath = java.net.URLDecoder.decode(resourcePath, "UTF-8")
-        // 规范化路径，替换连续的/或%2F为单个/
-        val normalizedPath = decodedPath.replace(Regex("[/]+"), "/")
+        val normalizedPath = normalizeUri(resourcePath)
         if (!normalizedPath.startsWith("/")) {
             throw InvalidResourceException("invalid resource path: $resourcePath")
         }
@@ -99,5 +105,14 @@ object ResourcePathUtils {
      */
     fun buildUserPath(userId: String, resource: String): String {
         return "$userId:$resource"
+    }
+
+    fun buildRequestPathResource(requestPath: String?, resource: String): String {
+        if (requestPath.isNullOrBlank()) {
+            return resource
+        }
+        val normalizedRequestPath = normalizeUri(requestPath).trimEnd('/')
+        val normalizedResource = normalizeUri(resource)
+        return "$normalizedRequestPath$normalizedResource"
     }
 }

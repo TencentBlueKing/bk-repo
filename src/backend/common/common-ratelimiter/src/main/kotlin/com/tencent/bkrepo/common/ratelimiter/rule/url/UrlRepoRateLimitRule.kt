@@ -34,8 +34,10 @@ import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResLimitInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
+import com.tencent.bkrepo.common.ratelimiter.utils.ResourcePathUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 基于项目/仓库的URL限流配置规则实现
@@ -43,6 +45,7 @@ import org.slf4j.LoggerFactory
 class UrlRepoRateLimitRule : RateLimitRule {
 
     val urlRepoLimitRules: PathResourceLimitRule = PathResourceLimitRule(pathLengthCheck = true)
+    private val requestPaths = ConcurrentHashMap.newKeySet<String>()
 
     override fun isEmpty(): Boolean {
         return urlRepoLimitRules.isEmpty()
@@ -69,7 +72,16 @@ class UrlRepoRateLimitRule : RateLimitRule {
 
     override fun addRateLimitRule(resourceLimit: ResourceLimit) {
         filterResourceLimit(resourceLimit)
-        urlRepoLimitRules.addPathResourceLimit(resourceLimit, urlRepoDimensionList)
+        val rule = resourceLimit.copy(
+            resource = ResourcePathUtils.buildRequestPathResource(
+                resourceLimit.requestPath,
+                resourceLimit.resource
+            )
+        )
+        resourceLimit.requestPath?.takeIf { it.isNotBlank() }?.let {
+            requestPaths.add(normalizeRequestPath(it))
+        }
+        urlRepoLimitRules.addPathResourceLimit(rule, urlRepoDimensionList)
     }
 
     override fun addRateLimitRules(resourceLimit: List<ResourceLimit>) {
@@ -91,8 +103,16 @@ class UrlRepoRateLimitRule : RateLimitRule {
         }
     }
 
+    fun containsRequestPath(requestPath: String): Boolean {
+        return requestPaths.contains(normalizeRequestPath(requestPath))
+    }
+
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(UrlRepoRateLimitRule::class.java)
         private val urlRepoDimensionList = listOf(LimitDimension.URL_REPO.name)
+
+        private fun normalizeRequestPath(requestPath: String): String {
+            return ResourcePathUtils.normalizeUri(requestPath).trimEnd('/')
+        }
     }
 }

@@ -145,7 +145,7 @@ class BlobReplicaController(
      * 2:Upload the chunks (PATCH)
      * 3:Close the session (PUT)
      */
-    @PostMapping(BOLBS_UPLOAD_FIRST_STEP_URL)
+    @PostMapping(BOLBS_UPLOAD_FIRST_STEP_URL, "${BOLBS_UPLOAD_FIRST_STEP_URL}/")
     @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     fun startBlobUpload(
         @RequestParam sha256: String,

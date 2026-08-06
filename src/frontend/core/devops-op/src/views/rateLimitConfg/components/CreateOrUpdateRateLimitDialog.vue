@@ -4,6 +4,16 @@
       <el-form-item ref="project-form-item" label="资源标识" prop="resource" :rules="[{ required: true, message: '资源标识不能为空'}]">
         <el-input v-model="rateLimit.resource" type="text" size="small" width="50" :placeholder="resourceTip" @change="resourceChange()" />
       </el-form-item>
+      <el-form-item v-if="isUrlRepoDimension()" label="请求路径" prop="requestPath">
+        <el-input
+          v-model="rateLimit.requestPath"
+          type="text"
+          size="small"
+          width="50"
+          placeholder="不填表示该项目/仓库下全部请求"
+          @change="resourceChange()"
+        />
+      </el-form-item>
       <el-form-item
         ref="repo-form-item"
         label="限流维度"
@@ -34,6 +44,9 @@
       </el-form-item>
       <el-form-item label="限流周期(秒)" prop="duration" :rules="[{ required: true, message: '限流值不能为空'}]">
         <el-input-number v-model="rateLimit.duration" controls-position="right" :min="0" />
+      </el-form-item>
+      <el-form-item label="优先级" prop="priority">
+        <el-input-number v-model="rateLimit.priority" controls-position="right" :min="0" />
       </el-form-item>
       <el-form-item
         v-if="rateLimit.algo === 'TOKEN_BUCKET' || rateLimit.algo === 'LEAKY_BUCKET'"
@@ -136,6 +149,18 @@ export default {
         label: 'url维度请求频率',
         value: 'URL'
       }, {
+        value: 'URL_PREFIX_UPLOAD_RATE',
+        label: 'url前缀上传请求频率'
+      }, {
+        value: 'URL_PREFIX_DOWNLOAD_RATE',
+        label: 'url前缀下载请求频率'
+      }, {
+        value: 'URL_PREFIX_UPLOAD_BANDWIDTH',
+        label: 'url前缀上传带宽'
+      }, {
+        value: 'URL_PREFIX_DOWNLOAD_BANDWIDTH',
+        label: 'url前缀下载带宽'
+      }, {
         label: '项目/仓库维度请求频率',
         value: 'URL_REPO'
       }, {
@@ -162,6 +187,33 @@ export default {
       }, {
         value: 'DOWNLOAD_BANDWIDTH',
         label: '项目/仓库维度下载带宽'
+      }, {
+        value: 'USER_UPLOAD_BANDWIDTH',
+        label: '用户+项目/仓库维度上传带宽'
+      }, {
+        value: 'USER_DOWNLOAD_BANDWIDTH',
+        label: '用户+项目/仓库维度下载带宽'
+      }, {
+        value: 'URL_UPLOAD_BANDWIDTH',
+        label: 'url维度上传带宽'
+      }, {
+        value: 'URL_DOWNLOAD_BANDWIDTH',
+        label: 'url维度下载带宽'
+      }, {
+        value: 'SERVICE_INSTANCE_CONNECTION',
+        label: '服务实例并发连接数'
+      }, {
+        value: 'USER_CONCURRENT_CONNECTION',
+        label: '用户并发连接数'
+      }, {
+        value: 'IP',
+        label: 'IP请求频率'
+      }, {
+        value: 'URL_CONCURRENT_REQUEST',
+        label: 'url维度并发请求数'
+      }, {
+        value: 'USER_URL_CONCURRENT_REQUEST',
+        label: '用户+url维度并发请求数'
       }],
       algoOptions: [
         {
@@ -407,7 +459,11 @@ export default {
     resourceChange() {
       if (this.rateLimit.resource !== '' && !this.loading) {
         this.loading = true
-        getExistModule(this.rateLimit.resource, this.rateLimit.limitDimension).then((res) => {
+        getExistModule(
+          this.rateLimit.resource,
+          this.rateLimit.limitDimension,
+          this.rateLimit.requestPath
+        ).then((res) => {
           for (let i = 0; i < this.moduleNameOptions.length; i++) {
             const module = this.moduleNameOptions[i]
             if (res.data.indexOf(this.moduleNameOptions[i].value) > -1) {
@@ -453,10 +509,53 @@ export default {
         case 'DOWNLOAD_BANDWIDTH':
           this.resourceTip = msg + '/blueking/generic-local/ 或者/blueking/'
           break
+        case 'USER_UPLOAD_BANDWIDTH':
+          this.resourceTip = msg + 'user1:/blueking/generic-local/ 或者user1:/blueking/'
+          break
+        case 'USER_DOWNLOAD_BANDWIDTH':
+          this.resourceTip = msg + 'user1:/blueking/generic-local/ 或者user1:/blueking/'
+          break
+        case 'URL_UPLOAD_BANDWIDTH':
+          this.resourceTip = msg + '/{projectId}/{repoName}/**'
+          break
+        case 'URL_DOWNLOAD_BANDWIDTH':
+          this.resourceTip = msg + '/{projectId}/{repoName}/**'
+          break
+        case 'SERVICE_INSTANCE_CONNECTION':
+          this.resourceTip = msg + 'generic:127.0.0.1 或者generic'
+          break
+        case 'USER_CONCURRENT_CONNECTION':
+          this.resourceTip = msg + '/user/user1/ 或者/'
+          break
+        case 'IP':
+          this.resourceTip = msg + '/ip 或者/ip/127.0.0.1'
+          break
+        case 'URL_CONCURRENT_REQUEST':
+          this.resourceTip = msg + '/{projectId}/{repoName}/**'
+          break
+        case 'USER_URL_CONCURRENT_REQUEST':
+          this.resourceTip = msg + 'user1:/{projectId}/{repoName}/**'
+          break
+        case 'URL_PREFIX_UPLOAD_RATE':
+          this.resourceTip = msg + '/generic/blueking/generic-local/'
+          break
+        case 'URL_PREFIX_DOWNLOAD_RATE':
+          this.resourceTip = msg + '/generic/blueking/generic-local/'
+          break
+        case 'URL_PREFIX_UPLOAD_BANDWIDTH':
+          this.resourceTip = msg + '/generic/blueking/generic-local/'
+          break
+        case 'URL_PREFIX_DOWNLOAD_BANDWIDTH':
+          this.resourceTip = msg + '/generic/blueking/generic-local/'
+          break
       }
       if (this.rateLimit.resource !== '' && !this.loading) {
         this.loading = true
-        getExistModule(this.rateLimit.resource, this.rateLimit.limitDimension).then((res) => {
+        getExistModule(
+          this.rateLimit.resource,
+          this.rateLimit.limitDimension,
+          this.rateLimit.requestPath
+        ).then((res) => {
           for (let i = 0; i < this.moduleNameOptions.length; i++) {
             const module = this.moduleNameOptions[i]
             if (res.data.indexOf(this.moduleNameOptions[i].value) > -1) {
@@ -482,6 +581,11 @@ export default {
       this.$refs['form'].validate((valid) => {
         if (valid) {
           const rateLimit = this.rateLimit
+          if (!this.isUrlRepoDimension()) {
+            rateLimit.requestPath = null
+          } else if (!rateLimit.requestPath) {
+            rateLimit.requestPath = null
+          }
           for (let target in rateLimit.targets) {
             target = target.trim()
           }
@@ -526,6 +630,12 @@ export default {
         this.rateLimit = this.newRateLimit()
       } else {
         this.rateLimit = _.cloneDeep(this.updatingRateLimit)
+        if (this.rateLimit.requestPath === undefined) {
+          this.rateLimit.requestPath = ''
+        }
+        if (this.rateLimit.priority === undefined || this.rateLimit.priority === null) {
+          this.rateLimit.priority = 0
+        }
         if (this.rateLimit.moduleName && this.rateLimit.moduleName.some(moduleName => moduleName === 'docker')) {
           this.selectDockerAndOci = true
         }
@@ -545,9 +655,14 @@ export default {
         scope: 'LOCAL',
         moduleName: [],
         keepConnection: true,
+        priority: 0,
+        requestPath: '',
         targets: ['']
       }
       return rateLimit
+    },
+    isUrlRepoDimension() {
+      return ['URL_REPO', 'USER_URL_REPO'].includes(this.rateLimit.limitDimension)
     },
     changeModule() {
       const module = this.rateLimit.moduleName

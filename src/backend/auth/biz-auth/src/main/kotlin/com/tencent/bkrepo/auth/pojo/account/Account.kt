@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.auth.pojo.account
 
+import com.tencent.bkrepo.auth.pojo.enums.AccountLimit
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.token.CredentialSet
@@ -58,6 +59,8 @@ data class Account(
     var scope: Set<ResourceType>?,
     @get:Schema(title = "权限范围")
     var scopeDesc: List<ScopeRule>?,
+    @get:Schema(title = "账号限制")
+    var limit: AccountLimit?,
     @get:Schema(title = "描述信息")
     var description: String?,
     @get:Schema(title = "创建时间")

@@ -131,6 +131,30 @@ spec:
               value: {{ default "[::]" .Values.gateway.extIp | quote }}
             - name: BK_REPO_SUBPATH
               value: {{ include "bkrepo.webSubPath" . }}
+            - name: BK_REPO_ARTIFACT_SCHEME
+              value: {{ dig "artifactClient" "scheme" "bkartifacts://" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_LOCAL_PORT
+              value: {{ dig "artifactClient" "localPort" "39282" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_CLIENT_ACK_INTERVAL
+              value: {{ dig "artifactClient" "ackInterval" "200" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_CLIENT_ACK_TIMEOUT_WARM
+              value: {{ dig "artifactClient" "ackTimeoutWarm" "15000" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_CLIENT_PING_WAIT_COLD
+              value: {{ dig "artifactClient" "pingWaitCold" "10000" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_CLIENT_DOWNLOAD_ENABLED
+              value: {{ dig "artifactClient" "downloadEnabled" "false" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_MIN_CLIENT_VERSION
+              value: {{ dig "artifactClient" "minClientVersion" "" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_CLIENT_INSTALL_URL
+              value: {{ dig "artifactClient" "installUrl" "" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_CLIENT_INSTALL_URL_WINDOWS
+              value: {{ dig "artifactClient" "installUrlWindows" "" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_CLIENT_INSTALL_URL_MACOS
+              value: {{ dig "artifactClient" "installUrlMacos" "" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_CLIENT_INSTALL_URL_MACOS_X64
+              value: {{ dig "artifactClient" "installUrlMacosX64" "" .Values.gateway | quote }}
+            - name: BK_REPO_ARTIFACT_CLIENT_INSTALL_URL_MACOS_ARM64
+              value: {{ dig "artifactClient" "installUrlMacosArm64" "" .Values.gateway | quote }}
           ports:
             - name: http
               containerPort: 80

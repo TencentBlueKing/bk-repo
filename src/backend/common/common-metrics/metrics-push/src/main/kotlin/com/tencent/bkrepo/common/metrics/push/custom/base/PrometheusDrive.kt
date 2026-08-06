@@ -29,21 +29,60 @@ package com.tencent.bkrepo.common.metrics.push.custom.base
 
 import io.prometheus.client.CollectorRegistry
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 
 class PrometheusDrive(
-    private var pushDrive: PrometheusPush,
+    private val pushSources: List<PrometheusPushSource>,
     private var errMsg: String? = null
 ) {
-    fun push(registry: CollectorRegistry): Boolean {
-        val bRet = pushDrive.push(registry)
+    fun sources(): List<PrometheusPushSource> {
+        return pushSources
+    }
+
+    fun push(source: PrometheusPushSource, registry: CollectorRegistry): Boolean {
+        val bRet = source.push(registry)
         if (!bRet) {
-            errMsg = pushDrive.errMsg
-            logger.error("fail to push data, errmsg: $errMsg")
+            errMsg = source.errMsg
+            logger.error("fail to push data to source [${source.name}], errmsg: $errMsg")
         }
         return bRet
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(PrometheusDrive::class.java)
+    }
+}
+
+class PrometheusPushSource(
+    val name: String,
+    private val pushDrive: PrometheusPush,
+    private val metricIncludes: List<String> = emptyList(),
+    val labelIncludes: Map<String, List<String>> = emptyMap(),
+) {
+    val errMsg: String?
+        get() = pushDrive.errMsg
+
+    private val patternCache: MutableMap<String, Regex> = ConcurrentHashMap()
+
+    fun supports(metricName: String): Boolean {
+        if (metricIncludes.isEmpty()) return true
+        return metricIncludes.any { pattern ->
+            when {
+                pattern == "*" -> true
+                '*' !in pattern -> pattern == metricName
+                else -> {
+                    patternCache.getOrPut(pattern) { compileGlob(pattern) }.matches(metricName)
+                }
+            }
+        }
+    }
+
+    fun push(registry: CollectorRegistry): Boolean {
+        return pushDrive.push(registry)
+    }
+
+    private fun compileGlob(pattern: String): Regex {
+        val regex = pattern.split('*').joinToString(".*") { Regex.escape(it) }
+        return Regex("^$regex$")
     }
 }

@@ -57,6 +57,7 @@ enum class GenericMessageCode(private val businessCode: Int, private val key: St
     USER_SHARE_NOT_FOUND(18, "generic.user.share.notfound"),
     USER_SHARE_NO_PERMITS(19, "generic.user.share.no-permits"),
     USER_SHARE_EXPIRED(20, "generic.user.share.expired"),
+    REMOTE_HOST_NOT_ALLOWED(21, "generic.remote.host.not-allowed"),
     ;
 
     override fun getBusinessCode() = businessCode

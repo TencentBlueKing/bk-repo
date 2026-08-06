@@ -177,6 +177,9 @@ const val METADATA_KEY_PACKAGE_KEY = PACKAGE_KEY
 const val METADATA_KEY_PACKAGE_NAME = PACKAGE_NAME
 const val METADATA_KEY_PACKAGE_VERSION = PACKAGE_VERSION
 
+const val SHA256 = "sha256"
+const val MD5 = "md5"
+
 /**
  * 节点链接的目标项目
  */
@@ -204,3 +207,13 @@ const val FLAG_QUERY_CACHE = "queryCacheFlag"
  * 制品加解密key请求头
  */
 const val HEADER_CRYPT_KEY = "X-BKREPO-CRYPT-KEY"
+
+/**
+ * 单条元数据请求头前缀，完整格式为 X-BKREPO-META-&lt;key&gt;
+ */
+const val BKREPO_META_PREFIX = "X-BKREPO-META-"
+
+/**
+ * 批量元数据请求头，值为 base64(key1=value1&key2=value2)
+ */
+const val BKREPO_META = "X-BKREPO-META"

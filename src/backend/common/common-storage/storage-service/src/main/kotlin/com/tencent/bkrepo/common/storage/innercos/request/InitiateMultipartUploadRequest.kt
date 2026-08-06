@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.storage.innercos.request
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.storage.innercos.COS_FORBID_OVERWRITE
 import com.tencent.bkrepo.common.storage.innercos.PARAMETER_UPLOADS
 import com.tencent.bkrepo.common.storage.innercos.http.Headers
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
@@ -41,11 +42,15 @@ import okhttp3.RequestBody
 data class InitiateMultipartUploadRequest(
     val key: String,
     val storageClass: String? = null,
+    val overwrite: Boolean = true,
 ) : CosRequest(HttpMethod.POST, key) {
 
     init {
         parameters[PARAMETER_UPLOADS] = null
         storageClass?.let { headers[Headers.STORAGE_CLASS] = it }
+        if (!overwrite) {
+            headers[COS_FORBID_OVERWRITE] = "true"
+        }
     }
 
     override fun buildRequestBody(): RequestBody {

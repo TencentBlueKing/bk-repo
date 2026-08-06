@@ -286,6 +286,7 @@ class FederationReplicator(
                         redirectUri = acc.redirectUri,
                         avatarUrl = acc.avatarUrl,
                         scope = acc.scope,
+                        limit = acc.limit,
                         description = acc.description,
                         credentials = acc.credentials
                     )
@@ -808,6 +809,7 @@ class FederationReplicator(
                         redirectUri = acc.redirectUri,
                         avatarUrl = acc.avatarUrl,
                         scope = acc.scope,
+                        limit = acc.limit,
                         description = acc.description,
                         credentials = acc.credentials
                     )

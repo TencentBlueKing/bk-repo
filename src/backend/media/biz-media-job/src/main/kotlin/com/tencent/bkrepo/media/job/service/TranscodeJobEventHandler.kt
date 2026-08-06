@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.media.common.dao.MediaTranscodeJobDao
 import com.tencent.bkrepo.media.common.pojo.transcode.MediaTranscodeJobStatus
+import com.tencent.bkrepo.media.job.metrics.TranscodeMetrics
 import io.kubernetes.client.informer.ResourceEventHandler
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.ApiException
@@ -153,6 +154,7 @@ class TranscodeJobEventHandler @Autowired constructor(
                 return false
             }
             mediaTranscodeJobDao.updateStatus(projectId, repoName, fileName, MediaTranscodeJobStatus.DONE)
+            TranscodeMetrics.recordStatusChange(projectId, MediaTranscodeJobStatus.DONE)
             logger.info("checkTranscodeFileDone found: $projectId|$repoName|$fileName")
             return true
         } catch (e: Exception) {

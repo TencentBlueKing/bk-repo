@@ -38,7 +38,7 @@ import java.time.Duration
 class TrafficHandler(
     private val counters: List<Counter>,
     private val timer: Timer,
-    private val transferType: TransferType = TransferType.UPLOAD,
+    val transferType: TransferType = TransferType.UPLOAD,
 ) {
     /**
      * @param size 数据大小

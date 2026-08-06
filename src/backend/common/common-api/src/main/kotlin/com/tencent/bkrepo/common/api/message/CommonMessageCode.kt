@@ -62,11 +62,13 @@ enum class CommonMessageCode(private val key: String) : MessageCode {
     TOO_MANY_REQUESTS("too.many.requests"),
     PIPELINE_NOT_RUNNING("pipeline.not-running"),
     INVALID_CONFIG("system.config.invalid"),
+    QUERY_DATA_TOO_LARGE("query.data-too-large"),
     ACQUIRE_LOCK_FAILED("acquire.lock.failed"),
     RATE_LIMITER_OVERLOAD("rate.limiter.overload"),
     REQUEST_URL_NOT_FOUND("request.url.not-found"),
     PARAMETER_VALIDATION_FAILED("parameter.validation.failed"),
-    CLIENT_BROKEN("client.broken")
+    CLIENT_BROKEN("client.broken"),
+    PRECONDITION_FAILED("system.precondition.failed")
     ;
 
     override fun getBusinessCode() = ordinal + 1

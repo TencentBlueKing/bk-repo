@@ -59,28 +59,36 @@
                             :has-next="versionList.length < pagination.count"
                             @load="handlerPaginationChange({ current: pagination.current + 1 }, true)">
                             <div class="mb10 list-count">{{ $t('totalVersionCount', [pagination.count])}}</div>
-                            <div
-                                class="mb10 version-item flex-center"
-                                :class="{ 'selected': $version.name === version }"
-                                v-for="$version in versionList"
-                                :key="$version.name"
-                                @click="changeVersion($version)">
-                                <span class="text-overflow" style="max-width:150px;" :title="$version.name">{{ $version.name }}</span>
-                                <operation-list
-                                    class="version-operation"
-                                    :list="[
-                                        ...(!$version.metadata.forbidStatus ? [
-                                            permission.edit && {
-                                                label: $t('upgrade'), clickEvent: () => changeStageTagHandler($version),
-                                                disabled: ($version.stageTag || '').includes('@release')
-                                            },
-                                            repoType !== 'docker' && { label: $t('download'), clickEvent: () => downloadPackageHandler($version) },
-                                            showRepoScan && { label: $t('scanArtifact'), clickEvent: () => scanPackageHandler($version) }
-                                        ] : []),
-                                        { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
-                                        permission.delete && { label: $t('delete'), clickEvent: () => deleteVersionHandler($version) }
-                                    ]"></operation-list>
-                            </div>
+                            <empty-data
+                                v-if="!versionList.length"
+                                :is-loading="isLoading"
+                                :search="Boolean(versionInput)"
+                                ex-style="padding-top: 130px;">
+                            </empty-data>
+                            <template v-else>
+                                <div
+                                    class="mb10 version-item flex-center"
+                                    :class="{ 'selected': $version.name === version }"
+                                    v-for="$version in versionList"
+                                    :key="$version.name"
+                                    @click="changeVersion($version)">
+                                    <span class="text-overflow" style="max-width:150px;" :title="$version.name">{{ $version.name }}</span>
+                                    <operation-list
+                                        class="version-operation"
+                                        :list="[
+                                            ...(!$version.metadata.forbidStatus ? [
+                                                permission.edit && {
+                                                    label: $t('upgrade'), clickEvent: () => changeStageTagHandler($version),
+                                                    disabled: ($version.stageTag || '').includes('@release')
+                                                },
+                                                repoType !== 'docker' && { label: $t('download'), clickEvent: () => downloadPackageHandler($version) },
+                                                showRepoScan && { label: $t('scanArtifact'), clickEvent: () => scanPackageHandler($version) }
+                                            ] : []),
+                                            { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
+                                            permission.delete && { label: $t('delete'), clickEvent: () => deleteVersionHandler($version) }
+                                        ]"></operation-list>
+                                </div>
+                            </template>
                         </infinite-scroll>
                     </template>
                     <!-- Tag 列表视图 -->
@@ -109,6 +117,7 @@
             </aside>
             <div class="common-version-detail flex-1">
                 <version-detail
+                    v-if="showVersionDetail"
                     ref="versionDetail"
                     @tag="changeStageTagHandler()"
                     @scan="scanPackageHandler()"
@@ -116,6 +125,11 @@
                     @download="downloadPackageHandler()"
                     @delete="deleteVersionHandler()">
                 </version-detail>
+                <empty-data
+                    v-else
+                    :is-loading="isLoading"
+                    ex-style="margin-top: 130px;">
+                </empty-data>
             </div>
         </div>
 
@@ -207,6 +221,9 @@
             // 只有 huggingface 仓库显示 tag 列表
             showTagList () {
                 return this.repoType === 'huggingface'
+            },
+            showVersionDetail () {
+                return Boolean(this.version || this.versionList.length)
             },
             // Tag 列表，每个 tag 唯一对应一个 version，支持搜索过滤
             tagList () {
@@ -338,7 +355,12 @@
                     this.pagination.count = totalRecords
                     if (!this.versionInput) {
                         if (!this.versionList.length) {
-                            this.$router.back()
+                            if (this.version) {
+                                const query = { ...this.$route.query }
+                                delete query.version
+                                this.$router.replace({ query })
+                            }
+                            return
                         }
                         if (!this.version || !this.versionList.find(v => v.name === this.version)) {
                             this.$router.replace({

@@ -117,6 +117,8 @@ class FileHandlerService(
             type?.name == FileType.MARKDOWN.name -> FilePreview.MARKDOWN_FILE_PREVIEW_PAGE
             type?.name == FileType.XMIND.name -> FilePreview.XMIND_FILE_PREVIEW_PAGE
             type?.name == FileType.MEDIA.name -> FilePreview.MEDIA_FILE_PREVIEW_PAGE
+            type?.name == FileType.SVG.name -> FilePreview.SVG_FILE_PREVIEW_PAGE
+            type?.name == FileType.JSX.name -> FilePreview.JSX_FILE_PREVIEW_PAGE
             else -> FilePreview.NOT_SUPPORTED_FILE_PAGE
         }
     }

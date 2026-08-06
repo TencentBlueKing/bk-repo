@@ -62,7 +62,7 @@ warning () {
 }
 
 core_service=("helm" "oci" "rpm" "npm" "maven" "pypi" "conan" "nuget" "generic" "cargo" "s3" "huggingface" "lfs"
-             "git" "svn" "composer" "ddc")
+             "git" "svn" "composer" "ddc" "skill")
 
 build_backend () {
     log "构建${SERVICE}镜像..."

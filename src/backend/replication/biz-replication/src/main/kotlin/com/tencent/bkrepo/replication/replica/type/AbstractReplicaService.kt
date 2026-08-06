@@ -66,6 +66,7 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -633,6 +634,66 @@ abstract class AbstractReplicaService(
                 size = it.size
             )
             replicaPackageVersion(replicaExecutionContext, packageSummary, it)
+        }
+        // 兜底：本轮版本推送完成后，将目标端 package 的 latest 修正为源端 latest。
+        // 仅更新元数据，不重复走文件推送流程。
+        ensureRemoteLatestConsistent(replicaContext, packageSummary, versions)
+    }
+
+    /**
+     * 分发结束后兜底修正目标端 latest（仅更新 package 元数据，不涉及文件推送）。
+     *
+     * 触发条件：
+     * 1. 目标集群非 REMOTE 第三方 registry（第三方无 latest 字段概念）
+     * 2. 源端 packageSummary.latest 非空
+     * 3. 源端 latest 版本存在于本次分发的版本集合中（避免 latest 指向目标端不存在的版本）
+     *
+     * 实现方式：直接调用目标端 replicaPackageVersionCreatedRequest，
+     * 由于目标端 PackageServiceImpl.createPackageVersion 中会无条件 set(latest = versionName)，
+     * 因此该调用会将目标端 latest 修正为源端 latest 版本名，同时刷新 lastModified 等元数据。
+     */
+    private fun ensureRemoteLatestConsistent(
+        replicaContext: ReplicaContext,
+        packageSummary: PackageSummary,
+        versions: List<PackageVersion>,
+    ) {
+        if (replicaContext.remoteCluster.type == ClusterNodeType.REMOTE) return
+        val sourceLatest = packageSummary.latest
+        if (sourceLatest.isBlank()) return
+        val latestVersion = versions.firstOrNull { it.name == sourceLatest } ?: return
+        val remoteProjectId = replicaContext.remoteProjectId
+        val remoteRepoName = replicaContext.remoteRepoName
+        if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return
+        val client = replicaContext.artifactReplicaClient ?: return
+        try {
+            val request = PackageVersionCreateRequest(
+                projectId = remoteProjectId,
+                repoName = remoteRepoName,
+                packageName = packageSummary.name,
+                packageKey = packageSummary.key,
+                packageType = packageSummary.type,
+                packageDescription = packageSummary.description,
+                versionName = latestVersion.name,
+                size = latestVersion.size,
+                manifestPath = latestVersion.manifestPath,
+                artifactPath = latestVersion.contentPath,
+                stageTag = latestVersion.stageTag,
+                packageMetadata = latestVersion.packageMetadata,
+                extension = latestVersion.extension,
+                overwrite = true,
+                createdBy = latestVersion.createdBy
+            )
+            client.replicaPackageVersionCreatedRequest(request)
+            logger.info(
+                "Ensure remote latest consistent for [${packageSummary.key}], " +
+                    "sourceLatest=$sourceLatest"
+            )
+        } catch (e: Exception) {
+            logger.warn(
+                "Failed to ensure remote latest for [${packageSummary.key}], " +
+                    "sourceLatest=$sourceLatest",
+                e
+            )
         }
     }
 

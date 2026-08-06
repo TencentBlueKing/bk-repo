@@ -49,6 +49,13 @@ class GenericProperties {
      */
     var platforms: List<PlatformProperties> = emptyList()
     /**
+     * 远程仓库允许访问的 host/IP 白名单，用于防止 SSRF
+     * - 元素以 `.` 开头表示域后缀匹配，如 `.example.com` 匹配 `a.example.com` 和 `example.com`
+     * - 其他情况按字符串精确匹配（域名或 IP 字面量）
+     * - 为空表示不限制，保持向后兼容
+     */
+    var allowedRemoteHosts: List<String> = emptyList()
+    /**
      * 分块上传来源判断
      */
     var chunkedUploadClients: List<String> = listOf("bk-repo")

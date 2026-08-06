@@ -21,7 +21,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.FindAndModifyOptions
-import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -239,12 +238,8 @@ class MavenMetadataService(
         val safePageSize = if (request.pageSize < 0) 0 else request.pageSize
         val criteria = Criteria.where(TMavenMetadataRecord::projectId.name).`is`(request.projectId)
             .and(TMavenMetadataRecord::repoName.name).`is`(request.repoName)
-            .apply {
-                request.groupId?.let {
-                    and(TMavenMetadataRecord::groupId.name).regex(EscapeUtils.escapeRegexExceptWildcard(it), "i")
-                }
-            }
-        return aggregateByPage(criteria, TMavenMetadataRecord::groupId.name, safePageNumber, safePageSize)
+        appendPrefixRegex(criteria, TMavenMetadataRecord::groupId.name, request.groupId)
+        return distinctByPage(criteria, TMavenMetadataRecord::groupId.name, safePageNumber, safePageSize)
     }
 
     fun getArtifactByPage(request: MavenArtifactSearchRequest): Page<String> {
@@ -253,12 +248,8 @@ class MavenMetadataService(
         val criteria = Criteria.where(TMavenMetadataRecord::projectId.name).`is`(request.projectId)
             .and(TMavenMetadataRecord::repoName.name).`is`(request.repoName)
             .and(TMavenMetadataRecord::groupId.name).`is`(request.groupId)
-            .apply {
-                request.artifact?.let {
-                    and(TMavenMetadataRecord::artifactId.name).regex(EscapeUtils.escapeRegexExceptWildcard(it), "i")
-                }
-            }
-        return aggregateByPage(criteria, TMavenMetadataRecord::artifactId.name, safePageNumber, safePageSize)
+        appendPrefixRegex(criteria, TMavenMetadataRecord::artifactId.name, request.artifact)
+        return distinctByPage(criteria, TMavenMetadataRecord::artifactId.name, safePageNumber, safePageSize)
     }
 
     fun getVersionByPage(request: MavenVersionSearchRequest): Page<String> {
@@ -268,30 +259,34 @@ class MavenMetadataService(
             .and(TMavenMetadataRecord::repoName.name).`is`(request.repoName)
             .and(TMavenMetadataRecord::groupId.name).`is`(request.groupId)
             .and(TMavenMetadataRecord::artifactId.name).`is`(request.artifact)
-            .apply {
-                request.version?.let {
-                    and(TMavenMetadataRecord::version.name).regex(EscapeUtils.escapeRegexExceptWildcard(it), "i")
-                }
-            }
-        return aggregateByPage(criteria, TMavenMetadataRecord::version.name, safePageNumber, safePageSize)
+        appendPrefixRegex(criteria, TMavenMetadataRecord::version.name, request.version)
+        return distinctByPage(criteria, TMavenMetadataRecord::version.name, safePageNumber, safePageSize)
     }
 
-    private fun aggregateByPage(
+    private fun distinctByPage(
         criteria: Criteria,
         aggregateField: String,
         pageNumber: Int,
         pageSize: Int
     ): Page<String> {
-        val aggregation = Aggregation.newAggregation(
-            Aggregation.match(criteria),
-            Aggregation.group(aggregateField).first(aggregateField).`as`(aggregateField),
-            Aggregation.skip(((pageNumber - 1) * pageSize).toLong()),
-            Aggregation.limit(pageSize.toLong())
-        )
-        val results = mavenMetadataDao.determineMongoTemplate().aggregate(
-            aggregation, TMavenMetadataRecord::class.java, HashMap::class.java
-        ).mappedResults.map { it[aggregateField]?.toString() ?: "" }
-        return Page(pageNumber, pageSize, 0, results)
+
+        if (pageSize == 0) {
+            return Page(pageNumber, pageSize, 0, emptyList())
+        }
+        val query = Query(criteria)
+        val allDistinct = mavenMetadataDao.determineMongoTemplate()
+            .findDistinct(query, aggregateField, TMavenMetadataRecord::class.java, String::class.java)
+        val total = allDistinct.size.toLong()
+        val skip = (pageNumber - 1) * pageSize
+        val results = allDistinct.drop(skip).take(pageSize)
+        return Page(pageNumber, pageSize, total, results)
+    }
+
+    // 前缀匹配，区分大小写，可走 DISTINCT_SCAN 索引
+    private fun appendPrefixRegex(criteria: Criteria, fieldName: String, keyword: String?) {
+        val value = keyword?.trim().orEmpty()
+        if (value.isEmpty()) return
+        criteria.and(fieldName).regex("^${EscapeUtils.escapeRegex(value)}")
     }
 
     fun update(request: MavenMetadataRequest) {

@@ -33,7 +33,7 @@ package com.tencent.bkrepo.common.artifact.metrics
 
 import com.tencent.bkrepo.common.artifact.metrics.filter.LruMeterFilter
 import com.tencent.bkrepo.common.artifact.metrics.filter.RepositoryPinnedChecker
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactDataReceiver
+import com.tencent.bkrepo.common.artifact.resolve.file.receiver.AbsArtifactDataReceiver
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_ACCESS_TIME
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_ACCESS_TIME_DESC
@@ -47,6 +47,12 @@ import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_DOWNLOADING_TIME
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_DOWNLOADING_TIME_DESC
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_DOWNLOAD_FAILED_COUNT
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_DOWNLOAD_FAILED_COUNT_DESC
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_DOWNLOAD_TOTAL_COUNT
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_DOWNLOAD_TOTAL_COUNT_DESC
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOAD_FAILED_COUNT
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOAD_FAILED_COUNT_DESC
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOAD_TOTAL_COUNT
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOAD_TOTAL_COUNT_DESC
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_LIMIT_DOWNLOADING_SIZE
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_LIMIT_DOWNLOADING_SIZE_DESC
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_LIMIT_UPLOADING_SIZE
@@ -57,6 +63,8 @@ import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOADING_COUNT
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOADING_COUNT_DESC
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOADING_SIZE
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOADING_SIZE_DESC
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_TRANSFER_SPEED
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_TRANSFER_SPEED_DESC
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOADING_TIME
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOADING_TIME_DESC
 import com.tencent.bkrepo.common.metrics.constant.ASYNC_TASK_ACTIVE_COUNT
@@ -68,6 +76,7 @@ import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.DistributionSummary
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Tags
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.binder.MeterBinder
 import org.slf4j.LoggerFactory
@@ -177,7 +186,7 @@ class ArtifactMetrics(
          * 获取实时上传计数器
          * 用于计算上传实时流量
          * */
-        fun getUploadingCounters(receiver: ArtifactDataReceiver): List<Counter> {
+        fun getUploadingCounters(receiver: AbsArtifactDataReceiver): List<Counter> {
             val limitUploadingCounter = Counter.builder(ARTIFACT_LIMIT_UPLOADING_SIZE)
                 .description(ARTIFACT_LIMIT_UPLOADING_SIZE_DESC)
                 .tags(tagProvider.getTags(receiver, true))
@@ -196,7 +205,7 @@ class ArtifactMetrics(
          * 获取实时上传计时器
          * 用于计算上传IOPS和IO平均延迟
          * */
-        fun getUploadingTimer(receiver: ArtifactDataReceiver): Timer {
+        fun getUploadingTimer(receiver: AbsArtifactDataReceiver): Timer {
             return Timer.builder(ARTIFACT_UPLOADING_TIME)
                 .description(ARTIFACT_UPLOADING_TIME_DESC)
                 .tags(tagProvider.getTags(receiver))
@@ -234,12 +243,67 @@ class ArtifactMetrics(
         }
 
         /**
+         * 获取下载总量计数器
+         */
+        fun getDownloadTotalCounter(): Counter {
+            return Counter.builder(ARTIFACT_DOWNLOAD_TOTAL_COUNT)
+                .description(ARTIFACT_DOWNLOAD_TOTAL_COUNT_DESC)
+                .tags(tagProvider.getTags())
+                .register(meterRegistry)
+        }
+
+        /**
          * 获取下载失败计数器
          */
         fun getDownloadFailedCounter(): Counter {
             return Counter.builder(ARTIFACT_DOWNLOAD_FAILED_COUNT)
                 .description(ARTIFACT_DOWNLOAD_FAILED_COUNT_DESC)
                 .tags(tagProvider.getTags())
+                .register(meterRegistry)
+        }
+
+        /**
+         * 获取上传总量计数器
+         */
+        fun getUploadTotalCounter(): Counter {
+            return Counter.builder(ARTIFACT_UPLOAD_TOTAL_COUNT)
+                .description(ARTIFACT_UPLOAD_TOTAL_COUNT_DESC)
+                .tags(tagProvider.getTags())
+                .register(meterRegistry)
+        }
+
+        /**
+         * 获取上传失败计数器
+         */
+        fun getUploadFailedCounter(): Counter {
+            return Counter.builder(ARTIFACT_UPLOAD_FAILED_COUNT)
+                .description(ARTIFACT_UPLOAD_FAILED_COUNT_DESC)
+                .tags(tagProvider.getTags())
+                .register(meterRegistry)
+        }
+
+        /**
+         * 获取传输速率分布摘要（按文件大小、传输方式、介质分桶）
+         */
+        fun getTransferSpeedDistributionSummary(
+            direction: String,
+            sizeBucket: String,
+            transferMode: String,
+            medium: String,
+            storage: String,
+        ): DistributionSummary {
+            val tags = Tags.of(
+                "direction", direction,
+                "size_bucket", sizeBucket,
+                "transfer_mode", transferMode,
+                "medium", medium,
+                "storage", storage,
+            ).and(tagProvider.getTags())
+            return DistributionSummary.builder(ARTIFACT_TRANSFER_SPEED)
+                .description(ARTIFACT_TRANSFER_SPEED_DESC)
+                .baseUnit("bytes/second")
+                .tags(tags)
+                .serviceLevelObjectives(*TransferSpeedSlo.BOUNDARIES_BPS)
                 .register(meterRegistry)
         }
     }

@@ -224,7 +224,7 @@ class OauthAuthorizationServiceImpl(
             idToken = if (openId) idToken else null,
         )
         oauthTokenRepository.insert(tOauthToken)
-        publishEvent(EventType.OAUTH_TOKEN_CREATED, tOauthToken.accountId ?: "")
+        publishEvent(EventType.OAUTH_TOKEN_CREATED, tOauthToken.accessToken)
         return tOauthToken
     }
 
@@ -265,7 +265,7 @@ class OauthAuthorizationServiceImpl(
 
     override fun validateToken(accessToken: String): String? {
         val claims = JwtUtils.validateToken(
-            signingKey = RsaUtils.stringToPrivateKey(cryptoProperties.privateKeyStr2048PKCS8),
+            signingKey = RsaUtils.stringToPublicKey(cryptoProperties.publicKeyStr2048PKCS8),
             token = accessToken
         )
         return claims.body.subject

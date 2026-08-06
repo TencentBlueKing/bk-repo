@@ -45,69 +45,17 @@
         <el-input v-model="credential.avatarUrl" />
       </el-form-item>
       <el-form-item
-        label="权限类型"
-        prop="scope"
-        :rules="[{ required: authType.includes('AUTHORIZATION_CODE') , message: '请选择权限类型'}]"
+        label="账号限制"
+        prop="limit"
       >
-        <el-select v-model="scopeType" multiple placeholder="请选择" style="width: 400px" clearable :change="changeScope(scopeType)">
+        <el-select v-model="credential.limit" placeholder="请选择" style="width: 350px" clearable>
           <el-option
-            v-for="item in scopeOptions"
+            v-for="item in limitOptions"
             :key="item.value"
             :label="item.label"
             :value="item.value"
           />
         </el-select>
-      </el-form-item>
-      <el-form-item label="权限范围" />
-      <el-form-item
-        v-for="(item,index) in credential.scopeDesc"
-        :key="index"
-        prop="scopeDesc"
-      >
-        <span>操作类型：</span>
-        <el-select v-model="item.operation" placeholder="请选择" style="width: 130px" clearable>
-          <el-option
-            v-for="operationType in operationTypeOptions"
-            :key="operationType.value"
-            :label="operationType.label"
-            :value="operationType.value"
-          />
-        </el-select>
-        <span style="margin-left: 10px">字段名：</span>
-        <el-input
-          v-model="item.field"
-          placeholder="请输入"
-          style="height: 40px; width: 150px"
-          min="0"
-        />
-        <span v-if="item.operation !== 'NULL'&& item.operation !== 'NOT_NULL'" style="margin-left: 10px">值：</span>
-        <el-input
-          v-if="item.operation !== 'BEFORE'&& item.operation !== 'AFTER' && item.operation !== 'NULL'&& item.operation !== 'NOT_NULL'"
-          v-model="item.jsonObj"
-          :placeholder="item.operation === 'IN' || item.operation === 'NIN' ? '请输入数据按逗号分割（如1,2,3）': '请输入'"
-          style="height: 40px ; width: 300px;"
-          min="0"
-          :type="item.operation === 'LTE' || item.operation === 'LT'|| item.operation === 'GTE' || item.operation === 'TE'? 'number' : 'text'"
-          @input="updateInput()"
-        />
-        <el-date-picker
-          v-if="item.operation === 'BEFORE'||item.operation === 'AFTER'"
-          v-model="item.jsonObj"
-          type="datetime"
-          style="height: 40px ; width: 300px;"
-          placeholder="选择日期时间"
-        />
-        <i
-          class="el-icon-circle-close"
-          style="color: red"
-          @click.prevent="removeDomain(item)"
-        />
-        <i
-          v-if="index == credential.scopeDesc.length - 1"
-          class="el-icon-circle-plus-outline"
-          style="margin: 0px 20px"
-          @click.prevent="addDomain()"
-        />
       </el-form-item>
       <el-form-item label="描述" prop="description">
         <el-input v-model="credential.description" />
@@ -146,7 +94,6 @@ export default {
       showDialog: this.visible,
       credential: this.newCredential(),
       authType: [],
-      scopeType: [],
       authOptions: [{
         value: 'AUTHORIZATION_CODE',
         label: 'AUTHORIZATION_CODE'
@@ -154,70 +101,18 @@ export default {
         value: 'PLATFORM',
         label: 'PLATFORM'
       }],
-      scopeOptions: [{
-        value: 'SYSTEM',
-        label: 'SYSTEM'
+      limitOptions: [{
+        value: 'ALL',
+        label: 'ALL'
       }, {
-        value: 'PROJECT',
-        label: 'PROJECT'
+        value: 'MANAGE',
+        label: 'MANAGE'
       }, {
-        value: 'REPO',
-        label: 'REPO'
+        value: 'WRITE',
+        label: 'WRITE'
       }, {
-        value: 'NODE',
-        label: 'NODE'
-      }],
-      operationTypeOptions: [{
-        value: 'EQ',
-        label: 'EQ'
-      }, {
-        value: 'NE',
-        label: 'NE'
-      }, {
-        value: 'LTE',
-        label: 'LTE'
-      }, {
-        value: 'LT',
-        label: 'LT'
-      }, {
-        value: 'GTE',
-        label: 'GTE'
-      }, {
-        value: 'GT',
-        label: 'GT'
-      }, {
-        value: 'BEFORE',
-        label: 'BEFORE'
-      }, {
-        value: 'AFTER',
-        label: 'AFTER'
-      }, {
-        value: 'IN',
-        label: 'IN'
-      }, {
-        value: 'NIN',
-        label: 'NIN'
-      }, {
-        value: 'PREFIX',
-        label: 'PREFIX'
-      }, {
-        value: 'SUFFIX',
-        label: 'SUFFIX'
-      }, {
-        value: 'MATCH',
-        label: 'MATCH'
-      }, {
-        value: 'MATCH_I',
-        label: 'MATCH_I'
-      }, {
-        value: 'REGEX',
-        label: 'REGEX'
-      }, {
-        value: 'NULL',
-        label: 'NULL'
-      }, {
-        value: 'NOT_NULL',
-        label: 'NOT_NULL'
+        value: 'READONLY',
+        label: 'READONLY'
       }],
       rules: {
         avatarUrl: [
@@ -238,51 +133,17 @@ export default {
     updatingCredentials: function(newVal) {
       if (newVal) {
         this.authType = newVal.authorizationGrantTypes
-        this.scopeType = newVal.scope
       } else {
         this.authType = []
-        this.scopeType = []
       }
     }
   },
   methods: {
-    changeScope(scopeType) {
-      if (scopeType !== null && scopeType.length === 0) {
-        this.credential.scope = null
-      } else {
-        this.credential.scope = scopeType
-      }
-    },
     changeAuthType(authType) {
       if (authType.length === 0) {
         this.credential.authorizationGrantTypes = ['PLATFORM']
       } else {
         this.credential.authorizationGrantTypes = authType
-      }
-    },
-    buildStr(key, value) {
-      let str = value[0]
-      for (let i = 1; i < value.length; i++) {
-        str = str + ',' + value[i]
-      }
-      return str
-    },
-    updateInput() {
-      this.$forceUpdate()
-    },
-    addDomain() {
-      this.credential.scopeDesc.push({
-        field: '',
-        value: '',
-        operation: '',
-        jsonObj: ''
-      })
-    },
-    removeDomain(item) {
-      const index = this.credential.scopeDesc.indexOf(item)
-      if (index !== -1 && this.credential.scopeDesc.length !== 1) {
-        this.credential.scopeDesc.splice(index, 1)
-        this.$refs['form'].validateField(['scopeDesc'], null)
       }
     },
     validateUrl(rule, value, callback) {
@@ -305,7 +166,6 @@ export default {
     close() {
       this.showDialog = false
       this.authType = []
-      this.scopeType = []
       this.$refs['form'].resetFields()
       this.$emit('update:visible', false)
     },
@@ -313,20 +173,6 @@ export default {
       this.$refs['form'].validate((valid) => {
         if (valid) {
           const account = this.credential
-          if (account.scopeDesc.length === 1 && account.scopeDesc[0].operation === '') {
-            account.scopeDesc = null
-          } else {
-            for (let i = 0; i < account.scopeDesc.length; i++) {
-              if (account.scopeDesc[i].operation === 'IN' || account.scopeDesc[i].operation === 'NIN') {
-                account.scopeDesc[i].value = account.scopeDesc[i].jsonObj.split(',')
-              } else {
-                account.scopeDesc[i].value = account.scopeDesc[i].jsonObj
-              }
-              if (account.scopeDesc[i].operation === 'NULL' || account.scopeDesc[i].operation === 'NOT_NULL') {
-                account.scopeDesc[i].value = ''
-              }
-            }
-          }
           // 根据是否为创建模式发起不同请求
           let reqPromise
           let msg
@@ -363,19 +209,6 @@ export default {
         this.credential = this.newCredential()
       } else {
         this.credential = _.cloneDeep(this.updatingCredentials)
-        if (this.credential.scopeDesc !== null && this.credential.scopeDesc.length > 0) {
-          for (let i = 0; i < this.credential.scopeDesc.length; i++) {
-            if (this.credential.scopeDesc[i].operation === 'IN' || this.credential.scopeDesc[i].operation === 'NIN') {
-              this.credential.scopeDesc[i].jsonObj = this.buildStr(this.credential.scopeDesc[i].field, this.credential.scopeDesc[i].value)
-            } else {
-              this.credential.scopeDesc[i].jsonObj = this.credential.scopeDesc[i].value
-            }
-          }
-        } else {
-          this.credential.scopeDesc = []
-          this.addDomain()
-        }
-        this.scopeType = this.credential.scope
         this.authType = this.credential.authorizationGrantTypes
       }
       this.$nextTick(() => {
@@ -390,8 +223,7 @@ export default {
         homepageUrl: null,
         redirectUri: null,
         avatarUrl: null,
-        scope: null,
-        scopeDesc: [{ field: '', value: '', operation: '', jsonObj: '' }],
+        limit: null,
         description: null
       }
       return credential

@@ -34,7 +34,7 @@ import io.prometheus.client.CollectorRegistry
 import java.util.concurrent.ConcurrentHashMap
 
 
-object MetricsDataManager {
+class MetricsDataManager {
 
     private val metricsDataCache: ConcurrentHashMap<String, MetricsData> = ConcurrentHashMap()
 
@@ -47,14 +47,14 @@ object MetricsDataManager {
         help: String = "",
         keepHistory: Boolean = true,
         dataModel: DataModel = DataModel.DATAMODEL_GAUGE,
-        labels: MutableMap<String, String>,
+        labels: Map<String, String>,
         registry: CollectorRegistry
     ): MetricsData {
         val metricsData = MetricsDataBuilder(registry)
             .name(name)
             .help(help)
             .keepHistory(keepHistory)
-            .labels(labels)
+            .labels(labels.toMutableMap())
             .dataModel(dataModel)
             .buildMetricData()
         metricsDataCache[name] = metricsData

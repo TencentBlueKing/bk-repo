@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.opdata.registry.consul
 
+import com.google.gson.JsonParser
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -73,8 +74,31 @@ class ConsulRegistryClient constructor(
         return res.use {
             parseResAndThrowExceptionOnRequestFailed(res) { res ->
                 res.body!!.string().readJsonString<Map<String, List<String>>>().map {
-                    ServiceInfo(it.key, instances(it.key))
+                    val onlineNumber = getOnlineInstanceSize(it.key)
+                    val instances =  instances(it.key)
+                    ServiceInfo(it.key,
+                        onlineNumber,
+                        instances.size - onlineNumber,
+                        instances)
                 }
+            }
+        }
+    }
+
+    private fun getOnlineInstanceSize(serviceName: String) : Int {
+        val urlBuilder = urlBuilder()
+            .addPathSegments(CONSUL_LIST_SERVICE_HEALTH_PATH)
+            .addPathSegment(serviceName)
+            .addQueryParameter(
+                CONSUL_INSTANCE_ONLINE_PARAMETER, CONSUL_INSTANCE_ONLINE_PARAMETER_VALUE
+            )
+            .build()
+        val request = urlBuilder.requestBuilder().build()
+        val res = httpClient.newCall(request).execute()
+        return res.use {
+            parseResAndThrowExceptionOnRequestFailed(res) { response ->
+                val responseBody = response.body!!.string()
+                JsonParser.parseString(responseBody).asJsonArray.size()
             }
         }
     }
@@ -236,6 +260,8 @@ class ConsulRegistryClient constructor(
         private const val CONSUL_KEY_VALUE ="v1/kv"
         private const val CONSUL_LIST_SERVICES_PATH = "v1/catalog/services"
         private const val CONSUL_LIST_SERVICE_HEALTH_PATH = "v1/health/service"
+        private const val CONSUL_INSTANCE_ONLINE_PARAMETER = "passing"
+        private const val CONSUL_INSTANCE_ONLINE_PARAMETER_VALUE = "true"
         private const val CONSUL_DEREGISTER_PATH = "v1/agent/service/deregister"
         private const val CONSUL_MAINTENANCE_PATH = "v1/agent/service/maintenance"
     }

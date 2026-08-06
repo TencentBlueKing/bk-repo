@@ -32,6 +32,8 @@
 package com.tencent.bkrepo.cargo.utils
 
 import com.tencent.bkrepo.cargo.constants.CARGO_INDEX_PREFIX
+import com.tencent.bkrepo.cargo.constants.CARGO_METADATA_PREFIX
+import com.tencent.bkrepo.cargo.constants.CARGO_METADATA_SUFFIX
 import com.tencent.bkrepo.cargo.constants.CARGO_JSON_PREFIX
 import com.tencent.bkrepo.cargo.constants.CARGO_JSON_SUFFIX
 import com.tencent.bkrepo.cargo.constants.CARGO_NODE_PREFIX
@@ -49,6 +51,10 @@ object CargoUtils {
 
     fun getCargoJsonFullPath(name: String, version: String): String {
         return CARGO_JSON_PREFIX + name + StringPool.SLASH + getCrateFileName(name, version, CARGO_JSON_SUFFIX)
+    }
+
+    fun getCargoMetadataFullPath(name: String, version: String): String {
+        return CARGO_METADATA_PREFIX + name + StringPool.SLASH + getCrateFileName(name, version, CARGO_METADATA_SUFFIX)
     }
 
     fun getCargoIndexFullPath(name: String): String {

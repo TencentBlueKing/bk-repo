@@ -59,6 +59,14 @@ object TraceUtils {
         return ContextExecutorService.wrap(this, contextSnapshotFactory::captureAll)
     }
 
+    /**
+     * 在指定 Observation 上下文中执行 [action]。
+     *
+     * [spanName] 必须为**固定的、低基数**操作名（如 `"job.batch.execute"`），用于 tracing/metrics 聚合。
+     * 禁止将动态变量（如 MongoDB 集合名、Job 名称、用户 ID、URL 等）作为 span name，否则会导致
+     * span 类型数量随业务数据线性增长。动态信息应通过 [lowCardinalityKeyValues] 或
+     * [highCardinalityKeyValues] 传入 attribute。
+     */
     fun <T> newSpan(
         observationRegistry: ObservationRegistry,
         spanName: String,

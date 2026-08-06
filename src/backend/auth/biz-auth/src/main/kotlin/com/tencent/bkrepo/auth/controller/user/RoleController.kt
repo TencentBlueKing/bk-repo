@@ -41,6 +41,7 @@ import com.tencent.bkrepo.auth.pojo.role.UpdateRoleRequest
 import com.tencent.bkrepo.auth.pojo.user.UserResult
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
+import com.tencent.bkrepo.auth.util.RequestUtil.buildGlobalPreviewRoleRequest
 import com.tencent.bkrepo.auth.util.RequestUtil.buildProjectAdminRequest
 import com.tencent.bkrepo.auth.util.RequestUtil.buildRepoAdminRequest
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -88,6 +89,15 @@ class RoleController @Autowired constructor(
     fun createRepoManage(@PathVariable projectId: String, @PathVariable repoName: String): Response<String?> {
         preCheckProjectAdmin(projectId)
         val request = buildRepoAdminRequest(projectId, repoName)
+        val id = roleService.createRole(request)
+        return ResponseBuilder.success(id)
+    }
+
+    @Operation(summary = "创建/获取全局预览角色（系统预置）")
+    @PostMapping("/create/global/preview")
+    fun createGlobalPreviewRole(): Response<String?> {
+        preCheckUserAdmin()
+        val request = buildGlobalPreviewRoleRequest()
         val id = roleService.createRole(request)
         return ResponseBuilder.success(id)
     }
