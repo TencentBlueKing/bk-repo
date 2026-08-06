@@ -1,0 +1,49 @@
+action:
+  00:00--23:59:
+    execute:
+      notice_ways:
+      - name: mail
+    execute_failed:
+      notice_ways:
+      - name: mail
+    execute_success:
+      notice_ways:
+      - name: mail
+alert:
+  00:00--23:59:
+    fatal:
+      notice_ways:
+      - name: mail
+      - name: weixin
+      - name: rtx
+      - name: voice
+      - name: wxwork-bot
+        receivers:
+        - xxxxxxxxxxxx-xx
+    remind:
+      notice_ways:
+      - name: mail
+      - name: rtx
+      - name: wxwork-bot
+        receivers:
+        - xxxxxxxxxxxx-xx
+    warning:
+      notice_ways:
+      - name: mail
+      - name: weixin
+      - name: rtx
+      - name: wxwork-bot
+        receivers:
+        - xxxxxxxxxxxx-xx
+channels:
+- user
+- wxwork-bot
+duty_rules: []
+name: bkrepo告警
+users:
+- xxxx
+- xxxx
+- xxxx
+- xxxx
+- xxxx
+version: '2.0'
