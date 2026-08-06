@@ -56,7 +56,7 @@
     } from '@repository/utils/previewOfficeFile'
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
-    import { isCode, isExcel, isFormatType, isHtmlType, isJsx, isMarkdown, isPic, isText, isXmind } from '@repository/utils/file'
+    import { isCode, isExcel, isFormatType, isHtmlFile, isHtmlType, isJsx, isMarkdown, isPic, isText, isXmind } from '@repository/utils/file'
     import { createAssetResolver, parsePreviewContext, resolvePreviewViewMode } from '@repository/utils/markdownJsxPreview'
     import { buildImageViewerOptions, isPurePreviewEnabled } from '@repository/utils/imagePreview'
     import { createOrUpdateXmindViewer, destroyXmindViewer } from '@repository/utils/xmindPreview'
@@ -200,7 +200,7 @@
             } else {
                 this.dealWaterMark()
             }
-            if (isCode(this.filePath)) {
+            if (isCode(this.filePath) || isHtmlFile(this.filePath)) {
                 if (this.repoType === 'local') {
                     customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
                         this.dealDate(res)
@@ -326,7 +326,7 @@
             async dealDate (res) {
                 this.loading = false
                 let url
-                if (!isHtmlType(this.filePath) && !isPic(this.filePath) && !isJsx(this.filePath) && !isMarkdown(this.filePath) && !isXmind(this.filePath) && !isCode(this.filePath)) {
+                if (!isHtmlType(this.filePath) && !isPic(this.filePath) && !isJsx(this.filePath) && !isMarkdown(this.filePath) && !isXmind(this.filePath) && !isCode(this.filePath) && !isHtmlFile(this.filePath)) {
                     this.loadFile(URL.createObjectURL(res.data))
                     this.pdfShow = true
                     this.pageUrl = url
@@ -338,7 +338,7 @@
                             purePreview: isPurePreviewEnabled(this.$route.query)
                         }))
                     })
-                } else if (isMarkdown(this.filePath) || isJsx(this.filePath) || isCode(this.filePath)) {
+                } else if (isMarkdown(this.filePath) || isJsx(this.filePath) || isCode(this.filePath) || isHtmlFile(this.filePath)) {
                     const text = await res.data.text()
                     this.richTextFilePath = this.filePath
                     this.richTextSource = text

@@ -58,6 +58,7 @@
     import {
         isCode,
         isExcel,
+        isHtmlFile,
         isHtmlType,
         isJsx,
         isMarkdown,
@@ -219,7 +220,7 @@
                                 const url = URL.createObjectURL(fileDate.data)
                                 this.showFrame = true
                                 this.pageUrl = url
-                            } else if (isCode(res.data.data.suffix)) {
+                            } else if (isCode(res.data.data.suffix) || isHtmlFile(res.data.data.suffix)) {
                                 const text = await fileDate.data.text()
                                 const suffix = res.data.data.suffix
                                 this.richTextFilePath = this.previewContext.filePath || `preview.${suffix}`
