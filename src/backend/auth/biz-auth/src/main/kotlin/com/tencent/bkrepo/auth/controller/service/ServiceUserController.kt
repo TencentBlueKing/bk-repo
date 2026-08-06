@@ -34,6 +34,7 @@ package com.tencent.bkrepo.auth.controller.service
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
+import com.tencent.bkrepo.auth.pojo.user.FederationUserTokenRequest
 import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.pojo.user.UserFederationInfo
@@ -128,19 +129,19 @@ class ServiceUserController @Autowired constructor(
         return ResponseBuilder.success(userService.deleteById(uid))
     }
 
-    override fun upsertUserForFederation(request: CreateUserRequest, hashedPwd: String?): Response<Void> {
-        userService.upsertUserForFederation(request, hashedPwd)
+    override fun upsertUserForFederation(request: CreateUserRequest): Response<Void> {
+        userService.upsertUserForFederation(request)
         return ResponseBuilder.success()
     }
 
     override fun addUserTokenForFederation(
         uid: String,
         name: String,
-        hashedTokenId: String,
-        createdAt: String?,
-        expiredAt: String?
+        request: FederationUserTokenRequest
     ): Response<Void> {
-        userService.addUserTokenForFederation(uid, name, hashedTokenId, createdAt, expiredAt)
+        userService.addUserTokenForFederation(
+            uid, name, request.hashedTokenId, request.createdAt, request.expiredAt
+        )
         return ResponseBuilder.success()
     }
 

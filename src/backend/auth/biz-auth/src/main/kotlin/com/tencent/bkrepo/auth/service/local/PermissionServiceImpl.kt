@@ -588,7 +588,7 @@ open class PermissionServiceImpl constructor(
         projectId: String,
         data: Map<String, Any> = emptyMap()
     ) {
-        if (!authProperties.eventEnabled || FederationWriteContext.isFederationWrite()) return
+        if (!authProperties.federationEventEnabled || FederationWriteContext.isFederationWrite()) return
         val event = ArtifactEvent(
             type = type,
             projectId = projectId,

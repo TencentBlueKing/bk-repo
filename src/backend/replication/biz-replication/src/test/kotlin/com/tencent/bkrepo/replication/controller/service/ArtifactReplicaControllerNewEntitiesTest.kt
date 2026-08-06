@@ -10,7 +10,7 @@ import com.tencent.bkrepo.auth.api.ServiceRepoModeClient
 import com.tencent.bkrepo.auth.api.ServiceRoleClient
 import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
-import com.tencent.bkrepo.auth.pojo.account.AccountInfo
+import com.tencent.bkrepo.auth.pojo.account.FederationAccountInfo
 import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode
 import com.tencent.bkrepo.auth.pojo.externalPermission.ExternalPermission
 import com.tencent.bkrepo.auth.pojo.key.KeyInfo
@@ -57,7 +57,7 @@ import java.time.Instant
  *
  * 覆盖每个新实体的 UPSERT/DELETE 幂等策略：
  * - TRole: 不存在则 createRoleForFederation，存在则 updateRoleForFederation
- * - TAccount: 不存在则 createAccountForFederation，存在则 updateAccountForFederation
+ * - TAccount: UPSERT 走 upsertAccountForFederation，DELETE 走 deleteAccountForFederation
  * - TExternalPermission: 不存在则创建，存在则更新
  * - TTemporaryToken: 不存在则创建，已存在则跳过
  * - TOauthToken: 调用 createOauthTokenForFederation（幂等由服务层保证）
@@ -721,7 +721,7 @@ class ArtifactReplicaControllerNewEntitiesTest {
         admin = false
     )
 
-    private fun buildAccountInfo(appId: String) = AccountInfo(
+    private fun buildAccountInfo(appId: String) = FederationAccountInfo(
         id = "id-$appId",
         appId = appId,
         locked = false,

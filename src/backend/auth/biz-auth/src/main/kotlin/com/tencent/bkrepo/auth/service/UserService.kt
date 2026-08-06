@@ -108,8 +108,8 @@ interface UserService {
 
     fun listAdminUsers(): List<String>
 
-    /** 联邦同步专用：直接写入已 hash 的密码，跳过二次 hash */
-    fun upsertUserForFederation(request: CreateUserRequest, hashedPwd: String?)
+    /** 联邦同步专用：直接写入已 hash 的密码（request.pwd），跳过二次 hash */
+    fun upsertUserForFederation(request: CreateUserRequest)
 
     /** 联邦同步专用：直接写入已 hash 的 token id，跳过二次 hash */
     fun addUserTokenForFederation(

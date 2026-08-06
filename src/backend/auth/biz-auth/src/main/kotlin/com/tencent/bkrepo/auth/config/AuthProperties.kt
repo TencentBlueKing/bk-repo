@@ -31,5 +31,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("auth")
 data class AuthProperties(
-    var eventEnabled: Boolean = false
+    /** 是否发布权限/用户等变更事件，供联邦集群增量同步消费 */
+    var federationEventEnabled: Boolean = false
 )

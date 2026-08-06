@@ -2,7 +2,11 @@ package com.tencent.bkrepo.auth.pojo.account
 
 import com.tencent.bkrepo.auth.pojo.token.CredentialSet
 
-data class AccountInfo(
+/**
+ * 联邦同步专用账号 DTO，可携带真实 credentials。
+ * 禁止用于用户态/对外 API；用户态请使用 [com.tencent.bkrepo.auth.pojo.account.Account]。
+ */
+data class FederationAccountInfo(
     val id: String? = null,
     val appId: String,
     val locked: Boolean = false,
@@ -12,6 +16,5 @@ data class AccountInfo(
     val avatarUrl: String? = null,
     val scope: Set<String>? = null,
     val description: String? = null,
-    /** 联邦同步专用：携带真实 credentials，用户态接口不填充此字段 */
     val credentials: List<CredentialSet>? = null,
 )

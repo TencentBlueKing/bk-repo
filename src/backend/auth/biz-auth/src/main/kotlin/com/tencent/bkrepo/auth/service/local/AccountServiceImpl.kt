@@ -38,7 +38,7 @@ import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TAccount
 import com.tencent.bkrepo.auth.pojo.account.Account
-import com.tencent.bkrepo.auth.pojo.account.AccountInfo
+import com.tencent.bkrepo.auth.pojo.account.FederationAccountInfo
 import com.tencent.bkrepo.auth.pojo.account.CreateAccountRequest
 import com.tencent.bkrepo.auth.pojo.account.UpdateAccountRequest
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
@@ -338,7 +338,7 @@ class AccountServiceImpl constructor(
         }
     }
 
-    override fun upsertAccountForFederation(accountInfo: AccountInfo) {
+    override fun upsertAccountForFederation(accountInfo: FederationAccountInfo) {
         val grantTypes = accountInfo.authorizationGrantTypes
             .mapNotNull { runCatching { AuthorizationGrantType.valueOf(it) }.getOrNull() }.toSet()
             .ifEmpty { setOf(AuthorizationGrantType.PLATFORM) }
@@ -380,8 +380,18 @@ class AccountServiceImpl constructor(
         }
     }
 
+    override fun deleteAccountForFederation(appId: String): Boolean {
+        logger.info("delete account for federation, appId [$appId]")
+        val account = accountDao.findOneByAppId(appId)
+            ?: throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
+        oauthTokenRepository.deleteByAccountId(account.id!!)
+        accountDao.removeById(account.id)
+        publishEvent(EventType.ACCOUNT_DELETE, appId)
+        return true
+    }
+
     private fun publishEvent(type: EventType, resourceKey: String) {
-        if (!authProperties.eventEnabled || FederationWriteContext.isFederationWrite()) return
+        if (!authProperties.federationEventEnabled || FederationWriteContext.isFederationWrite()) return
         val event = ArtifactEvent(
             type = type,
             projectId = "",

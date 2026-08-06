@@ -67,6 +67,8 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.api.util.toXmlString
 import com.tencent.bkrepo.common.artifact.hash.HashAlgorithm
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.security.crypto.CryptoProperties
 import com.tencent.bkrepo.common.security.util.JwtUtils
@@ -398,7 +400,12 @@ class OauthAuthorizationServiceImpl(
     }
 
     override fun listActiveTokens(pageNumber: Int, pageSize: Int): List<OauthTokenInfo> {
-        return oauthTokenRepository.findAll(org.springframework.data.domain.PageRequest.of(pageNumber, pageSize))
+        val pageable = PageRequest.of(
+            pageNumber,
+            pageSize,
+            Sort.by(Sort.Direction.ASC, "_id")
+        )
+        return oauthTokenRepository.findAll(pageable)
             .content.map { token ->
                 OauthTokenInfo(
                     accessToken = token.accessToken,
@@ -435,7 +442,7 @@ class OauthAuthorizationServiceImpl(
     }
 
     private fun publishEvent(type: EventType, resourceKey: String) {
-        if (!authProperties.eventEnabled || FederationWriteContext.isFederationWrite()) return
+        if (!authProperties.federationEventEnabled || FederationWriteContext.isFederationWrite()) return
         val event = ArtifactEvent(
             type = type,
             projectId = "",

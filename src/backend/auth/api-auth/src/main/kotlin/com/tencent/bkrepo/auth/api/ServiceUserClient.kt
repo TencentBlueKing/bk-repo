@@ -34,6 +34,7 @@ package com.tencent.bkrepo.auth.api
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_USER_PREFIX
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
+import com.tencent.bkrepo.auth.pojo.user.FederationUserTokenRequest
 import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.pojo.user.UserFederationInfo
@@ -163,8 +164,7 @@ interface ServiceUserClient {
     @Operation(summary = "创建或更新用户（联邦同步，密码已hash，直接存储）")
     @PostMapping("/federation/upsert")
     fun upsertUserForFederation(
-        @RequestBody request: CreateUserRequest,
-        @RequestParam hashedPwd: String?
+        @RequestBody request: CreateUserRequest
     ): Response<Void>
 
     @Operation(summary = "联邦同步：新增用户 token（hashed id 直接写入）")
@@ -172,9 +172,7 @@ interface ServiceUserClient {
     fun addUserTokenForFederation(
         @PathVariable uid: String,
         @PathVariable name: String,
-        @RequestParam hashedTokenId: String,
-        @RequestParam(required = false) createdAt: String?,
-        @RequestParam(required = false) expiredAt: String?
+        @RequestBody request: FederationUserTokenRequest
     ): Response<Void>
 
     @Operation(summary = "联邦同步：删除用户 token")

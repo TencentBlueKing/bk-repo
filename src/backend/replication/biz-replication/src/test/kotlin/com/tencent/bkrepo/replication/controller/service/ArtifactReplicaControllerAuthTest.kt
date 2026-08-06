@@ -83,11 +83,11 @@ class ArtifactReplicaControllerAuthTest {
             admin = false,
             email = "new@example.com"
         )
-        every { userResource.upsertUserForFederation(any(), any()) } returns ok()
+        every { userResource.upsertUserForFederation(any()) } returns ok()
 
         controller.replicaUserRequest(request)
 
-        verify(exactly = 1) { userResource.upsertUserForFederation(any(), any()) }
+        verify(exactly = 1) { userResource.upsertUserForFederation(any()) }
     }
 
     @Test
@@ -100,7 +100,7 @@ class ArtifactReplicaControllerAuthTest {
             email = "a@example.com"
         )
         val createSlot = slot<CreateUserRequest>()
-        every { userResource.upsertUserForFederation(capture(createSlot), any()) } returns ok()
+        every { userResource.upsertUserForFederation(capture(createSlot)) } returns ok()
 
         controller.replicaUserRequest(request)
 
@@ -118,7 +118,7 @@ class ArtifactReplicaControllerAuthTest {
             tenantId = "tenant-b"
         )
         val createSlot = slot<CreateUserRequest>()
-        every { userResource.upsertUserForFederation(capture(createSlot), any()) } returns ok()
+        every { userResource.upsertUserForFederation(capture(createSlot)) } returns ok()
 
         controller.replicaUserRequest(request)
 
@@ -133,12 +133,12 @@ class ArtifactReplicaControllerAuthTest {
             userId = "user-p",
             pwd = "hashed-secret"
         )
-        val pwdSlot = slot<String?>()
-        every { userResource.upsertUserForFederation(any(), captureNullable(pwdSlot)) } returns ok()
+        val createSlot = slot<CreateUserRequest>()
+        every { userResource.upsertUserForFederation(capture(createSlot)) } returns ok()
 
         controller.replicaUserRequest(request)
 
-        assertEquals("hashed-secret", pwdSlot.captured)
+        assertEquals("hashed-secret", createSlot.captured.pwd)
     }
 
     @Test
@@ -152,13 +152,13 @@ class ArtifactReplicaControllerAuthTest {
         controller.replicaUserRequest(request)
 
         verify(exactly = 1) { userResource.deleteUser("to-delete") }
-        verify(exactly = 0) { userResource.upsertUserForFederation(any(), any()) }
+        verify(exactly = 0) { userResource.upsertUserForFederation(any()) }
     }
 
     @Test
     fun `replicaUserRequest - FederationReplicaContext should be cleared after execution`() {
         val request = UserReplicaRequest(action = ReplicaAction.UPSERT, userId = "u1")
-        every { userResource.upsertUserForFederation(any(), any()) } returns ok()
+        every { userResource.upsertUserForFederation(any()) } returns ok()
 
         controller.replicaUserRequest(request)
 
@@ -168,7 +168,7 @@ class ArtifactReplicaControllerAuthTest {
     @Test
     fun `replicaUserRequest - FederationReplicaContext cleared even when exception occurs`() {
         val request = UserReplicaRequest(action = ReplicaAction.UPSERT, userId = "u-err")
-        every { userResource.upsertUserForFederation(any(), any()) } throws RuntimeException("db error")
+        every { userResource.upsertUserForFederation(any()) } throws RuntimeException("db error")
 
         try {
             controller.replicaUserRequest(request)

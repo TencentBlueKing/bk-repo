@@ -473,7 +473,7 @@ class UserServiceImpl constructor(
         projectId: String = "",
         data: Map<String, Any> = emptyMap()
     ) {
-        if (!authProperties.eventEnabled || FederationWriteContext.isFederationWrite()) return
+        if (!authProperties.federationEventEnabled || FederationWriteContext.isFederationWrite()) return
         val event = ArtifactEvent(
             type = type,
             projectId = projectId,
@@ -486,7 +486,8 @@ class UserServiceImpl constructor(
         messageSupplier.delegateToSupplier(event, topic = BINDING_OUT_NAME)
     }
 
-    override fun upsertUserForFederation(request: CreateUserRequest, hashedPwd: String?) {
+    override fun upsertUserForFederation(request: CreateUserRequest) {
+        val hashedPwd = request.pwd
         val existing = userDao.findFirstByUserId(request.userId)
         val tenantIdFromHeader = userHelper.getTenantId()
         val tenantId = if (tenantIdFromHeader.isNullOrEmpty()) request.tenantId else tenantIdFromHeader

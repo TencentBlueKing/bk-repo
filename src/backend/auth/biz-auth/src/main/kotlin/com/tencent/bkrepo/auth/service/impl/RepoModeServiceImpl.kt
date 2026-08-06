@@ -106,7 +106,7 @@ class RepoModeServiceImpl(
     }
 
     private fun publishEvent(projectId: String, repoName: String) {
-        if (!authProperties.eventEnabled || FederationWriteContext.isFederationWrite()) return
+        if (!authProperties.federationEventEnabled || FederationWriteContext.isFederationWrite()) return
         val event = ArtifactEvent(
             type = EventType.REPO_AUTH_CONFIG_UPDATED,
             projectId = projectId,

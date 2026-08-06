@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.auth.api
 
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ACCOUNT_PREFIX
-import com.tencent.bkrepo.auth.pojo.account.AccountInfo
+import com.tencent.bkrepo.auth.pojo.account.FederationAccountInfo
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -85,25 +85,13 @@ interface ServiceAccountClient {
 
     @Operation(summary = "查询所有账号（联邦同步）")
     @GetMapping("/federation/list")
-    fun listAccountsForFederation(): Response<List<AccountInfo>>
+    fun listAccountsForFederation(): Response<List<FederationAccountInfo>>
 
     @Operation(summary = "按 appId 查询单个账号（联邦同步）")
     @GetMapping("/federation/detail/{appId}")
     fun getAccountForFederation(
         @PathVariable appId: String
-    ): Response<AccountInfo?>
-
-    @Operation(summary = "创建账号（联邦同步）")
-    @PostMapping("/federation/create")
-    fun createAccountForFederation(
-        @RequestBody accountInfo: AccountInfo
-    ): Response<Boolean>
-
-    @Operation(summary = "更新账号（联邦同步）")
-    @PostMapping("/federation/update")
-    fun updateAccountForFederation(
-        @RequestBody accountInfo: AccountInfo
-    ): Response<Boolean>
+    ): Response<FederationAccountInfo?>
 
     @Operation(summary = "删除账号（联邦同步）")
     @DeleteMapping("/federation/delete/{appId}")
@@ -114,6 +102,6 @@ interface ServiceAccountClient {
     @Operation(summary = "创建或更新账号（联邦同步，含真实credentials）")
     @PostMapping("/federation/upsert")
     fun upsertAccountForFederation(
-        @RequestBody accountInfo: AccountInfo
+        @RequestBody accountInfo: FederationAccountInfo
     ): Response<Void>
 }

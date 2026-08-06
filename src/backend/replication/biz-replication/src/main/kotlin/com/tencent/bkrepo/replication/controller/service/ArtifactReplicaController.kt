@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.replication.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceAccountClient
-import com.tencent.bkrepo.auth.pojo.account.AccountInfo
+import com.tencent.bkrepo.auth.pojo.account.FederationAccountInfo
 import com.tencent.bkrepo.auth.api.ServiceExternalPermissionClient
 import com.tencent.bkrepo.auth.api.ServiceKeyClient
 import com.tencent.bkrepo.auth.api.ServiceOauthAuthorizationClient
@@ -51,6 +51,7 @@ import com.tencent.bkrepo.auth.pojo.role.RoleInfo
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.FederationUserTokenRequest
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -782,14 +783,14 @@ class ArtifactReplicaController(
                         CreateUserRequest(
                             userId = request.userId,
                             name = request.name,
+                            pwd = request.pwd,
                             admin = request.admin,
                             asstUsers = request.asstUsers,
                             group = request.group,
                             email = request.email,
                             phone = request.phone,
                             tenantId = request.tenantId,
-                        ),
-                        hashedPwd = request.pwd
+                        )
                     )
                 }
 
@@ -900,7 +901,7 @@ class ArtifactReplicaController(
         try {
             when (request.action) {
                 ReplicaAction.UPSERT -> {
-                    val accountInfo = AccountInfo(
+                    val accountInfo = FederationAccountInfo(
                         appId = request.appId,
                         locked = request.locked,
                         authorizationGrantTypes = request.authorizationGrantTypes,
@@ -1203,9 +1204,11 @@ class ArtifactReplicaController(
                     userResource.addUserTokenForFederation(
                         uid = request.userId,
                         name = request.tokenName,
-                        hashedTokenId = request.hashedTokenId,
-                        createdAt = request.createdAt.ifEmpty { null },
-                        expiredAt = request.expiredAt
+                        request = FederationUserTokenRequest(
+                            hashedTokenId = request.hashedTokenId,
+                            createdAt = request.createdAt.ifEmpty { null },
+                            expiredAt = request.expiredAt
+                        )
                     )
                 }
                 ReplicaAction.DELETE -> {

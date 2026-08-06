@@ -10,7 +10,7 @@ import com.tencent.bkrepo.auth.api.ServiceRepoModeClient
 import com.tencent.bkrepo.auth.api.ServiceRoleClient
 import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
-import com.tencent.bkrepo.auth.pojo.account.AccountInfo
+import com.tencent.bkrepo.auth.pojo.account.FederationAccountInfo
 import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode
 import com.tencent.bkrepo.auth.pojo.externalPermission.ExternalPermission
 import com.tencent.bkrepo.auth.pojo.key.KeyInfo
@@ -594,7 +594,7 @@ class FederationReplicatorNewEntitiesTest {
         description = description
     )
 
-    private fun buildAccountInfo(appId: String, locked: Boolean = false) = AccountInfo(
+    private fun buildAccountInfo(appId: String, locked: Boolean = false) = FederationAccountInfo(
         id = "id-$appId",
         appId = appId,
         locked = locked,

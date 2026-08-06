@@ -64,8 +64,19 @@ class AuthConfig : WebMvcConfigurer {
             .addPathPatterns(httpAuthSecurity.getIncludedPatterns())
             .excludePathPatterns(httpAuthSecurity.getExcludedPatterns())
             .order(0)
+        // 仅匹配联邦写相关路径，避免扫过全部 /service/**
         registry.addInterceptor(FederationWriteInterceptor())
-            .addPathPatterns("/service/**")
+            .addPathPatterns(
+                "/service/**/federation/**",
+                "/service/permission/upsertForFederation",
+                "/service/permission/create",
+                "/service/permission/delete/**",
+                "/service/permission/personalPath/**",
+                "/service/key/**",
+                "/service/mode/repo/**",
+                "/service/user/update/**",
+                "/service/user/delete/**",
+            )
             .order(1)
         super.addInterceptors(registry)
     }

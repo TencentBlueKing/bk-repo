@@ -144,7 +144,7 @@ class KeyServiceImpl(
     }
 
     private fun publishEvent(type: EventType, resourceKey: String, keyUserId: String) {
-        if (!authProperties.eventEnabled || FederationWriteContext.isFederationWrite()) return
+        if (!authProperties.federationEventEnabled || FederationWriteContext.isFederationWrite()) return
         val event = ArtifactEvent(
             type = type,
             projectId = "",
