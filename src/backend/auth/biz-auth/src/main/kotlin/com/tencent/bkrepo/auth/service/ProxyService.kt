@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.auth.service
 
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyCreateRequest
+import com.tencent.bkrepo.auth.pojo.proxy.FederationProxyInfo
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyKey
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyListOption
@@ -44,6 +45,11 @@ interface ProxyService {
      * 创建Proxy
      */
     fun create(request: ProxyCreateRequest): ProxyInfo
+
+    /**
+     * 联邦同步：按指定 name/secretKey 写入
+     */
+    fun upsertForFederation(info: FederationProxyInfo): Boolean
 
     /**
      * 查询Proxy信息

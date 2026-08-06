@@ -10,4 +10,6 @@ data class ProxyReplicaRequest(
     val syncRateLimit: Long = -1L,
     val syncTimeRange: String = "0-24",
     val cacheExpireDays: Int = 7,
+    /** AES 加密后的 secretKey，与本端存储格式一致 */
+    val secretKey: String? = null,
 )

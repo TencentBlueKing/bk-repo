@@ -33,6 +33,7 @@ import com.tencent.bkrepo.auth.dao.ProxyDao
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TProxy
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.proxy.FederationProxyInfo
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyCreateRequest
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyKey
@@ -104,6 +105,47 @@ class ProxyServiceImpl(
         val result = proxyDao.insert(tProxy).convert()
         publishEvent(EventType.PROXY_CREATED, result.name, request.projectId)
         return result
+    }
+
+    override fun upsertForFederation(info: FederationProxyInfo): Boolean {
+        val existing = proxyDao.findByProjectIdAndName(info.projectId, info.name)
+        val userId = runCatching { SecurityUtils.getUserId() }.getOrDefault("")
+        if (existing == null) {
+            proxyDao.insert(
+                TProxy(
+                    name = info.name,
+                    displayName = info.displayName,
+                    projectId = info.projectId,
+                    clusterName = info.clusterName,
+                    domain = UrlFormatter.formatHost(info.domain),
+                    ip = StringPool.UNKNOWN,
+                    secretKey = info.secretKey,
+                    sessionKey = StringPool.EMPTY,
+                    ticket = secureRandom.nextInt(),
+                    ticketCreateInstant = Instant.now(),
+                    syncRateLimit = info.syncRateLimit,
+                    syncTimeRange = info.syncTimeRange,
+                    cacheExpireDays = info.cacheExpireDays,
+                    createdBy = userId,
+                    createdDate = LocalDateTime.now(),
+                    lastModifiedBy = userId,
+                    lastModifiedDate = LocalDateTime.now(),
+                    status = ProxyStatus.OFFLINE
+                )
+            )
+        } else {
+            existing.displayName = info.displayName
+            existing.clusterName = info.clusterName
+            existing.domain = UrlFormatter.formatHost(info.domain)
+            existing.secretKey = info.secretKey
+            existing.syncRateLimit = info.syncRateLimit
+            existing.syncTimeRange = info.syncTimeRange
+            existing.cacheExpireDays = info.cacheExpireDays
+            existing.lastModifiedBy = userId
+            existing.lastModifiedDate = LocalDateTime.now()
+            proxyDao.save(existing)
+        }
+        return true
     }
 
     override fun getInfo(projectId: String, name: String): ProxyInfo {

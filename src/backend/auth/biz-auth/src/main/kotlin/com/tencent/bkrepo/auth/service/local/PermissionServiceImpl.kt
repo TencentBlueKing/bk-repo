@@ -185,7 +185,12 @@ open class PermissionServiceImpl constructor(
         logger.info("update repo permission request : [$request]")
         with(request) {
             permHelper.checkPermissionExist(permissionId)
-            return permHelper.updatePermissionById(permissionId, TPermission::repos.name, repos)
+            val result = permHelper.updatePermissionById(permissionId, TPermission::repos.name, repos)
+            if (result) {
+                val projectId = permissionDao.findFirstById(permissionId)?.projectId.orEmpty()
+                publishEvent(EventType.PERMISSION_UPDATED, permissionId, projectId)
+            }
+            return result
         }
     }
 
@@ -251,6 +256,7 @@ open class PermissionServiceImpl constructor(
                     val removeRoleUserList = serviceUsers.filter { !userId.contains(it) }
                     userHelper.addUserToRoleBatchCommon(addRoleUserList, globalPreviewRoleId!!)
                     permHelper.removeUserFromRoleBatchCommon(removeRoleUserList, globalPreviewRoleId)
+                    publishEvent(EventType.PERMISSION_UPDATED, permissionId, "")
                     return true
                 }
 
@@ -660,10 +666,20 @@ open class PermissionServiceImpl constructor(
     override fun updatePermissionDeployInRepo(request: UpdatePermissionDeployInRepoRequest): Boolean {
         logger.info("update permission deploy in repo, create [$request]")
         permHelper.checkPermissionExist(request.permissionId)
-        return permHelper.updatePermissionById(request.permissionId, TPermission::includePattern.name, request.path)
-                && permHelper.updatePermissionById(request.permissionId, TPermission::users.name, request.users)
-                && permHelper.updatePermissionById(request.permissionId, TPermission::permName.name, request.name)
-                && permHelper.updatePermissionById(request.permissionId, TPermission::roles.name, request.roles)
+        val result = permHelper.updatePermissionById(
+            request.permissionId, TPermission::includePattern.name, request.path
+        ) && permHelper.updatePermissionById(
+            request.permissionId, TPermission::users.name, request.users
+        ) && permHelper.updatePermissionById(
+            request.permissionId, TPermission::permName.name, request.name
+        ) && permHelper.updatePermissionById(
+            request.permissionId, TPermission::roles.name, request.roles
+        )
+        if (result) {
+            val projectId = permissionDao.findFirstById(request.permissionId)?.projectId.orEmpty()
+            publishEvent(EventType.PERMISSION_UPDATED, request.permissionId, projectId)
+        }
+        return result
     }
 
     override fun getOrCreatePersonalPath(projectId: String, repoName: String, userId: String): String {

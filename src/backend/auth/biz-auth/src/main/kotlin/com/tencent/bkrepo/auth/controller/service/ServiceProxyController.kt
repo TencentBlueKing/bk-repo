@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.auth.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceProxyClient
+import com.tencent.bkrepo.auth.pojo.proxy.FederationProxyInfo
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyCreateRequest
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyKey
@@ -52,6 +53,10 @@ class ServiceProxyController(
         // pageSize 设为较大值用于联邦全量同步，实际单项目 proxy 数量应远小于此上限
         val page = proxyService.page(projectId, ProxyListOption(pageNumber = 0, pageSize = Int.MAX_VALUE))
         return ResponseBuilder.success(page.records)
+    }
+
+    override fun upsertProxyForFederation(info: FederationProxyInfo): Response<Boolean> {
+        return ResponseBuilder.success(proxyService.upsertForFederation(info))
     }
 
     override fun createProxyForFederation(proxyInfo: ProxyInfo): Response<Boolean> {

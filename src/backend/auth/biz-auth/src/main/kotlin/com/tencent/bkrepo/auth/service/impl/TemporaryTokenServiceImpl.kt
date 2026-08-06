@@ -71,7 +71,7 @@ class TemporaryTokenServiceImpl(
                     expireDate = computeExpireDate(request.expireSeconds),
                     authorizedUserList = request.authorizedUserSet,
                     authorizedIpList = request.authorizedIpSet,
-                    token = generateToken(),
+                    token = request.token?.takeIf { t -> t.isNotBlank() } ?: generateToken(),
                     permits = permits,
                     type = type,
                     snapSeq = snapSeq,
@@ -103,8 +103,16 @@ class TemporaryTokenServiceImpl(
     }
 
     override fun decrementPermits(token: String) {
+        val before = temporaryTokenRepository.findByToken(token)
         temporaryTokenRepository.decrementPermits(token)
         logger.info("Decrement permits of token ${MaskPartString().desensitize(token)} success.")
+        val after = temporaryTokenRepository.findByToken(token)
+        when {
+            after == null && before != null ->
+                publishEvent(EventType.TEMP_TOKEN_DELETED, token, before.projectId)
+            after != null ->
+                publishEvent(EventType.TEMP_TOKEN_UPDATED, token, after.projectId)
+        }
     }
 
     /**

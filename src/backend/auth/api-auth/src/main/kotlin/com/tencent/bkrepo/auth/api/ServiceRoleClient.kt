@@ -84,6 +84,10 @@ interface ServiceRoleClient {
         @RequestParam(defaultValue = "500") pageSize: Int,
     ): Response<List<RoleInfo>>
 
+    @Operation(summary = "查询系统级角色（SERVICE，联邦同步）")
+    @GetMapping("/federation/list/system")
+    fun listSystemRoles(): Response<List<RoleInfo>>
+
     @Operation(summary = "按 id 查询单个角色（联邦同步）")
     @GetMapping("/federation/detail/{id}")
     fun getRoleByIdForFederation(

@@ -89,6 +89,10 @@ class ServiceRoleController @Autowired constructor(
         return ResponseBuilder.success(roles.map { it.toRoleInfo() })
     }
 
+    override fun listSystemRoles(): Response<List<RoleInfo>> {
+        return ResponseBuilder.success(roleService.listSystemRoles().map { it.toRoleInfo() })
+    }
+
     override fun getRoleByIdForFederation(id: String): Response<RoleInfo?> {
         val role = roleService.detail(id)
         return ResponseBuilder.success(role?.toRoleInfo())
@@ -130,9 +134,12 @@ class ServiceRoleController @Autowired constructor(
     }
 
     override fun updateRoleForFederation(roleInfo: RoleInfo): Response<Boolean> {
-        val projectId = roleInfo.projectId ?: return ResponseBuilder.success(false)
-        val existingRole = roleService.detail(roleInfo.roleId, projectId)
-            ?: return ResponseBuilder.success(false)
+        val existingRole = if (roleInfo.projectId.isNullOrEmpty()) {
+            roleService.detail(roleInfo.id ?: return ResponseBuilder.success(false))
+                ?: roleService.listSystemRoles().find { it.roleId == roleInfo.roleId }
+        } else {
+            roleService.detail(roleInfo.roleId, roleInfo.projectId!!)
+        } ?: return ResponseBuilder.success(false)
         val request = UpdateRoleRequest(
             name = roleInfo.name,
             description = roleInfo.description,

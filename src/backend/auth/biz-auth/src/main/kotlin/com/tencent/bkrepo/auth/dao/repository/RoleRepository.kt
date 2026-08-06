@@ -97,5 +97,7 @@ interface RoleRepository : MongoRepository<TRole, String> {
 
     fun findByProjectId(projectId: String, pageable: Pageable): List<TRole>
 
+    fun findByType(type: RoleType): List<TRole>
+
     fun findFirstByTypeAndRoleId(type: RoleType, roleId: String): TRole?
 }

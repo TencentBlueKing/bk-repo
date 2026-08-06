@@ -147,6 +147,10 @@ class RoleServiceImpl constructor(
         ).map { transfer(it) }
     }
 
+    override fun listSystemRoles(): List<Role> {
+        return roleRepository.findByType(RoleType.SERVICE).map { transfer(it) }
+    }
+
     override fun listRoleBySource(source: RoleSource): List<Role> {
         logger.debug("list role by role ,[$source]")
         return roleRepository.findBySource(source).map { transfer(it) }
@@ -183,6 +187,7 @@ class RoleServiceImpl constructor(
             type = tRole.type,
             name = tRole.name,
             projectId = tRole.projectId,
+            repoName = tRole.repoName,
             admin = tRole.admin,
             users = users,
             description = tRole.description,

@@ -15,9 +15,11 @@ import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode
 import com.tencent.bkrepo.auth.pojo.externalPermission.ExternalPermission
 import com.tencent.bkrepo.auth.pojo.key.KeyInfo
 import com.tencent.bkrepo.auth.pojo.oauth.OauthTokenInfo
+import com.tencent.bkrepo.auth.pojo.proxy.FederationProxyInfo
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatus
 import com.tencent.bkrepo.auth.pojo.role.RoleInfo
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -345,7 +347,7 @@ class ArtifactReplicaControllerNewEntitiesTest {
     }
 
     @Test
-    fun `replicaTemporaryTokenRequest UPSERT - token already exists should skip`() {
+    fun `replicaTemporaryTokenRequest UPSERT - token already exists should delete then create`() {
         val existing = buildTemporaryToken("tok-exists")
         val request = TemporaryTokenReplicaRequest(
             action = ReplicaAction.UPSERT,
@@ -360,14 +362,17 @@ class ArtifactReplicaControllerNewEntitiesTest {
             createdBy = "admin"
         )
         every { localTemporaryTokenClient.getTokenInfo("tok-exists") } returns ok(existing)
+        every { localTemporaryTokenClient.deleteToken("tok-exists") } returns ok()
+        every { localTemporaryTokenClient.createToken(any()) } returns ok(listOf(existing))
 
         controller.replicaTemporaryTokenRequest(request)
 
-        verify(exactly = 0) { localTemporaryTokenClient.createToken(any()) }
+        verify(exactly = 1) { localTemporaryTokenClient.deleteToken("tok-exists") }
+        verify(exactly = 1) { localTemporaryTokenClient.createToken(any()) }
     }
 
     @Test
-    fun `replicaTemporaryTokenRequest UPSERT - already expired expireDate should skip`() {
+    fun `replicaTemporaryTokenRequest UPSERT - expired expireDate falls back to default and creates`() {
         val request = TemporaryTokenReplicaRequest(
             action = ReplicaAction.UPSERT,
             token = "tok-expired",
@@ -376,17 +381,21 @@ class ArtifactReplicaControllerNewEntitiesTest {
             fullPath = "/file.zip",
             authorizedUserList = emptySet(),
             authorizedIpList = emptySet(),
-            // 过去时间，remaining < 0
+            // 过去时间，remaining < 0 → 按不存在走默认 1 天
             expireDate = java.time.LocalDateTime.now().minusHours(1)
                 .format(java.time.format.DateTimeFormatter.ISO_DATE_TIME),
             type = "DOWNLOAD",
             createdBy = "admin"
         )
         every { localTemporaryTokenClient.getTokenInfo("tok-expired") } returns ok(null)
+        every { localTemporaryTokenClient.createToken(any()) } returns
+            ok(listOf(buildTemporaryToken("tok-expired")))
 
         controller.replicaTemporaryTokenRequest(request)
 
-        verify(exactly = 0) { localTemporaryTokenClient.createToken(any()) }
+        val slot = slot<TemporaryTokenCreateRequest>()
+        verify(exactly = 1) { localTemporaryTokenClient.createToken(capture(slot)) }
+        assertEquals("tok-expired", slot.captured.token)
     }
 
     @Test
@@ -501,7 +510,7 @@ class ArtifactReplicaControllerNewEntitiesTest {
     // ==================== replicaProxyRequest ====================
 
     @Test
-    fun `replicaProxyRequest UPSERT - proxy not exists should createProxyForFederation`() {
+    fun `replicaProxyRequest UPSERT - should upsertProxyForFederation`() {
         val request = ProxyReplicaRequest(
             action = ReplicaAction.UPSERT,
             name = "new-proxy",
@@ -510,37 +519,39 @@ class ArtifactReplicaControllerNewEntitiesTest {
             domain = "proxy.example.com",
             syncRateLimit = 0L,
             syncTimeRange = "00:00-23:59",
-            cacheExpireDays = 7
+            cacheExpireDays = 7,
+            secretKey = "encrypted-secret"
         )
-        every { localProxyClient.listProxyByProject(PROJECT_ID) } returns ok(emptyList())
-        every { localProxyClient.createProxyForFederation(any()) } returns ok(true)
+        every { localProxyClient.upsertProxyForFederation(any()) } returns ok(true)
 
         controller.replicaProxyRequest(request)
 
-        verify(exactly = 1) { localProxyClient.createProxyForFederation(any()) }
-        verify(exactly = 0) { localProxyClient.updateProxyForFederation(any()) }
+        verify(exactly = 1) { localProxyClient.upsertProxyForFederation(any()) }
     }
 
     @Test
-    fun `replicaProxyRequest UPSERT - proxy exists should updateProxyForFederation`() {
-        val existing = buildProxyInfo("edge-proxy", PROJECT_ID)
+    fun `replicaProxyRequest UPSERT - should pass secretKey to upsertProxyForFederation`() {
         val request = ProxyReplicaRequest(
             action = ReplicaAction.UPSERT,
             name = "edge-proxy",
             displayName = "Edge Proxy Updated",
             projectId = PROJECT_ID,
+            clusterName = "cluster-a",
             domain = "new-proxy.example.com",
             syncRateLimit = 5 * 1024 * 1024L,
             syncTimeRange = "02:00-04:00",
-            cacheExpireDays = 14
+            cacheExpireDays = 14,
+            secretKey = "encrypted-secret-2"
         )
-        every { localProxyClient.listProxyByProject(PROJECT_ID) } returns ok(listOf(existing))
-        every { localProxyClient.updateProxyForFederation(any()) } returns ok(true)
+        val slot = slot<FederationProxyInfo>()
+        every { localProxyClient.upsertProxyForFederation(capture(slot)) } returns ok(true)
 
         controller.replicaProxyRequest(request)
 
-        verify(exactly = 0) { localProxyClient.createProxyForFederation(any()) }
-        verify(exactly = 1) { localProxyClient.updateProxyForFederation(any()) }
+        verify(exactly = 1) { localProxyClient.upsertProxyForFederation(any()) }
+        assertEquals("edge-proxy", slot.captured.name)
+        assertEquals("encrypted-secret-2", slot.captured.secretKey)
+        assertEquals(PROJECT_ID, slot.captured.projectId)
     }
 
     @Test

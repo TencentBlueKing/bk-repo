@@ -441,6 +441,7 @@ class OauthAuthorizationServiceImpl(
 
     override fun deleteTokenByAccessToken(accessToken: String) {
         oauthTokenRepository.deleteByAccessToken(accessToken)
+        publishEvent(EventType.OAUTH_TOKEN_DELETED, accessToken)
     }
 
     private fun publishEvent(type: EventType, resourceKey: String) {

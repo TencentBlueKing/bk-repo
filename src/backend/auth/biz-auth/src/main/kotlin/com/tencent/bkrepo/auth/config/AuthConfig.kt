@@ -76,6 +76,7 @@ class AuthConfig : WebMvcConfigurer {
                 "/service/mode/repo/**",
                 "/service/user/update/**",
                 "/service/user/delete/**",
+                "/service/temporary/token/**",
             )
             .order(1)
         super.addInterceptors(registry)

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.auth.api
 
+import com.tencent.bkrepo.auth.pojo.proxy.FederationProxyInfo
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyKey
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
@@ -58,6 +59,12 @@ interface ServiceProxyClient {
     fun listProxyByProject(
         @PathVariable projectId: String
     ): Response<List<ProxyInfo>>
+
+    @Operation(summary = "创建或更新Proxy（联邦同步，含 secretKey）")
+    @PostMapping("/federation/upsert")
+    fun upsertProxyForFederation(
+        @RequestBody info: FederationProxyInfo
+    ): Response<Boolean>
 
     @Operation(summary = "创建Proxy（联邦同步）")
     @PostMapping("/federation/create")

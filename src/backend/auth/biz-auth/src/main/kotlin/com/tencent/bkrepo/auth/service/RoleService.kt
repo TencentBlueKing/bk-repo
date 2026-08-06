@@ -47,6 +47,9 @@ interface RoleService {
 
     fun listRoleByProjectPage(projectId: String, pageNumber: Int, pageSize: Int): List<Role>
 
+    /** 系统级角色（SERVICE / projectId 为空），联邦全量同步 */
+    fun listSystemRoles(): List<Role>
+
     fun listRoleBySource(source: RoleSource): List<Role>
 
     fun detail(id: String): Role?

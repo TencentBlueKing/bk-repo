@@ -133,17 +133,14 @@ class FederationPermissionEventConsumer(
                 federationReplicator.replicaUserChangeTo(client, event.resourceKey, false, clusterName)
             EventType.USER_DELETED ->
                 federationReplicator.replicaUserChangeTo(client, event.resourceKey, true, clusterName)
-            EventType.ROLE_CREATED, EventType.ROLE_UPDATED -> {
-                // RoleServiceImpl 中 projectId 为 null 时用 ?: "" 兜底，空字符串无法定位项目，跳过
-                val projectId = event.projectId.ifEmpty { null }
-                    ?: return logger.warn("Skip ROLE_CREATED/UPDATED event[${event.resourceKey}]: projectId is empty")
-                federationReplicator.replicaRoleChangeTo(client, event.resourceKey, projectId, false, clusterName)
-            }
-            EventType.ROLE_DELETED -> {
-                val projectId = event.projectId.ifEmpty { null }
-                    ?: return logger.warn("Skip ROLE_DELETED event[${event.resourceKey}]: projectId is empty")
-                federationReplicator.replicaRoleChangeTo(client, event.resourceKey, projectId, true, clusterName)
-            }
+            EventType.ROLE_CREATED, EventType.ROLE_UPDATED ->
+                federationReplicator.replicaRoleChangeTo(
+                    client, event.resourceKey, event.projectId.ifEmpty { null }, false, clusterName
+                )
+            EventType.ROLE_DELETED ->
+                federationReplicator.replicaRoleChangeTo(
+                    client, event.resourceKey, event.projectId.ifEmpty { null }, true, clusterName
+                )
             EventType.PERMISSION_CREATED, EventType.PERMISSION_UPDATED -> {
                 federationReplicator.replicaPermissionChangeTo(
                     client, event.resourceKey, event.projectId.ifEmpty { null }, false, null, null, clusterName
@@ -179,7 +176,7 @@ class FederationPermissionEventConsumer(
                 val userId = event.data["userId"]?.toString() ?: return
                 federationReplicator.replicaUserTokenChangeTo(client, userId, event.resourceKey, true, clusterName)
             }
-            EventType.TEMP_TOKEN_CREATED ->
+            EventType.TEMP_TOKEN_CREATED, EventType.TEMP_TOKEN_UPDATED ->
                 federationReplicator.replicaTemporaryTokenChangeTo(client, event.resourceKey, false, clusterName)
             EventType.TEMP_TOKEN_DELETED ->
                 federationReplicator.replicaTemporaryTokenChangeTo(client, event.resourceKey, true, clusterName)
@@ -244,7 +241,7 @@ class FederationPermissionEventConsumer(
         val PROJECT_TYPES: Set<EventType> = setOf(
             EventType.ROLE_CREATED, EventType.ROLE_UPDATED, EventType.ROLE_DELETED,
             EventType.PERMISSION_CREATED, EventType.PERMISSION_UPDATED, EventType.PERMISSION_DELETED,
-            EventType.TEMP_TOKEN_CREATED, EventType.TEMP_TOKEN_DELETED,
+            EventType.TEMP_TOKEN_CREATED, EventType.TEMP_TOKEN_UPDATED, EventType.TEMP_TOKEN_DELETED,
             EventType.PROXY_CREATED, EventType.PROXY_UPDATED, EventType.PROXY_DELETED,
             EventType.REPO_AUTH_CONFIG_UPDATED,
             EventType.EXT_PERMISSION_CREAT, EventType.EXT_PERMISSION_UPDATE, EventType.EXT_PERMISSION_DELETE,

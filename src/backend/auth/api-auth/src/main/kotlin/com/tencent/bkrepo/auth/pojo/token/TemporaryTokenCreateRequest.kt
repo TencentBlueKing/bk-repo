@@ -56,4 +56,6 @@ data class TemporaryTokenCreateRequest(
     val createdBy: String? = null,
     @get:Schema(title = "快照序列号，为空表示只读最新数据")
     val snapSeq: Long? = null,
+    @get:Schema(title = "指定 token 值（联邦同步用，为空则自动生成）")
+    val token: String? = null,
 )

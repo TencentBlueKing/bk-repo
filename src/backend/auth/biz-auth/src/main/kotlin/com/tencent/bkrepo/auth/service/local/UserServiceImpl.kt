@@ -448,7 +448,9 @@ class UserServiceImpl constructor(
         val hashNewPwd = DataDigestUtils.md5FromStr(newPwd)
         val user = userDao.getByUserIdAndPassword(userId, hashOldPwd)
         user?.let {
-            return userDao.updatePasswordByUserId(userId, hashNewPwd)
+            val result = userDao.updatePasswordByUserId(userId, hashNewPwd)
+            if (result) publishEvent(EventType.USER_UPDATED, userId)
+            return result
         }
         throw ErrorCodeException(CommonMessageCode.MODIFY_PASSWORD_FAILED, "modify password failed!")
     }
@@ -456,7 +458,9 @@ class UserServiceImpl constructor(
     override fun resetPassword(userId: String): Boolean {
         // todo 鉴权
         val newHashPwd = DataDigestUtils.md5FromStr(DEFAULT_PASSWORD)
-        return userDao.updatePasswordByUserId(userId, newHashPwd)
+        val result = userDao.updatePasswordByUserId(userId, newHashPwd)
+        if (result) publishEvent(EventType.USER_UPDATED, userId)
+        return result
     }
 
     override fun repeatUid(userId: String): Boolean {

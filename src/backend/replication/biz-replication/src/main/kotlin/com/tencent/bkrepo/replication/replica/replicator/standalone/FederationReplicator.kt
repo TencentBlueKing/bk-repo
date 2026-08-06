@@ -38,6 +38,8 @@ import com.tencent.bkrepo.auth.api.ServiceRepoModeClient
 import com.tencent.bkrepo.auth.api.ServiceRoleClient
 import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
+import com.tencent.bkrepo.auth.pojo.token.Token
+import com.tencent.bkrepo.auth.pojo.user.UserFederationInfo
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -158,45 +160,7 @@ class FederationReplicator(
                 break
             }
             if (users.isEmpty()) break
-            users.forEach { user ->
-                try {
-                    client.replicaUserRequest(
-                        UserReplicaRequest(
-                            userId = user.userId,
-                            name = user.name,
-                            pwd = user.hashedPwd,
-                            admin = user.admin,
-                            asstUsers = user.asstUsers,
-                            group = user.group,
-                            email = user.email,
-                            phone = user.phone,
-                            tenantId = user.tenantId,
-                            locked = user.locked
-                        )
-                    )
-                    user.tokens.forEach { token ->
-                        val tokenName = token.name ?: return@forEach
-                        try {
-                            client.replicaUserTokenRequest(
-                                UserTokenReplicaRequest(
-                                    userId = user.userId,
-                                    tokenName = tokenName,
-                                    hashedTokenId = token.id,
-                                    createdAt = token.createdAt.toString(),
-                                    expiredAt = token.expiredAt?.toString()
-                                )
-                            )
-                            tokenCount++
-                        } catch (e: Exception) {
-                            logger.warn(
-                                "Failed to sync user token [$tokenName] of [${user.userId}]: ${e.message}"
-                            )
-                        }
-                    }
-                } catch (e: Exception) {
-                    logger.warn("Failed to sync user [${user.userId}] to federation cluster: ${e.message}")
-                }
-            }
+            users.forEach { user -> tokenCount += syncUserWithTokens(client, user) }
             totalCount += users.size
             if (users.size < PAGE_SIZE) break
             pageNumber++
@@ -204,6 +168,48 @@ class FederationReplicator(
         logger.info(
             "Synced $totalCount users and $tokenCount user tokens to federated cluster [$clusterName]"
         )
+    }
+
+    private fun syncUserWithTokens(client: ArtifactReplicaClient, user: UserFederationInfo): Int {
+        return try {
+            client.replicaUserRequest(
+                UserReplicaRequest(
+                    userId = user.userId,
+                    name = user.name,
+                    pwd = user.hashedPwd,
+                    admin = user.admin,
+                    asstUsers = user.asstUsers,
+                    group = user.group,
+                    email = user.email,
+                    phone = user.phone,
+                    tenantId = user.tenantId,
+                    locked = user.locked
+                )
+            )
+            user.tokens.count { token -> syncUserToken(client, user.userId, token) }
+        } catch (e: Exception) {
+            logger.warn("Failed to sync user [${user.userId}] to federation cluster: ${e.message}")
+            0
+        }
+    }
+
+    private fun syncUserToken(client: ArtifactReplicaClient, userId: String, token: Token): Boolean {
+        val tokenName = token.name ?: return false
+        return try {
+            client.replicaUserTokenRequest(
+                UserTokenReplicaRequest(
+                    userId = userId,
+                    tokenName = tokenName,
+                    hashedTokenId = token.id,
+                    createdAt = token.createdAt.toString(),
+                    expiredAt = token.expiredAt?.toString()
+                )
+            )
+            true
+        } catch (e: Exception) {
+            logger.warn("Failed to sync user token [$tokenName] of [$userId]: ${e.message}")
+            false
+        }
     }
 
     /**
@@ -320,6 +326,37 @@ class FederationReplicator(
         logger.info("Synced $totalCount roles to federated cluster [$clusterName]")
     }
 
+    fun replicaSystemRolesTo(client: ArtifactReplicaClient, clusterName: String) {
+        val roles = try {
+            localRoleClient.listSystemRoles().data ?: return
+        } catch (e: Exception) {
+            logger.warn("Failed to list system roles for federation sync: ${e.message}")
+            return
+        }
+        roles.forEach { role ->
+            try {
+                client.replicaRoleRequest(
+                    RoleReplicaRequest(
+                        id = role.id,
+                        roleId = role.roleId,
+                        name = role.name,
+                        type = role.type,
+                        projectId = role.projectId,
+                        repoName = role.repoName,
+                        admin = role.admin,
+                        users = role.users,
+                        description = role.description,
+                        source = role.source,
+                        deptInfoList = role.deptInfoList
+                    )
+                )
+            } catch (e: Exception) {
+                logger.warn("Failed to sync system role [${role.roleId}]: ${e.message}")
+            }
+        }
+        logger.info("Synced ${roles.size} system roles to federated cluster [$clusterName]")
+    }
+
     fun replicaAccounts(context: ReplicaContext) {
         replicaAccountsTo(context.artifactReplicaClient!!, context.remoteCluster.name)
     }
@@ -417,7 +454,8 @@ class FederationReplicator(
                             expireDate = token.expireDate,
                             permits = token.permits,
                             type = token.type.name,
-                            createdBy = token.createdBy
+                            createdBy = token.createdBy,
+                            snapSeq = token.snapSeq
                         )
                     )
                 } catch (e: Exception) {
@@ -461,7 +499,8 @@ class FederationReplicator(
                         expireDate = tokenInfo.expireDate,
                         permits = tokenInfo.permits,
                         type = tokenInfo.type.name,
-                        createdBy = tokenInfo.createdBy
+                        createdBy = tokenInfo.createdBy,
+                        snapSeq = tokenInfo.snapSeq
                     )
                 )
             }
@@ -559,6 +598,9 @@ class FederationReplicator(
         }
         proxies.forEach { proxy ->
             try {
+                val secretKey = runCatching {
+                    localProxyClient.getEncryptedKey(proxy.projectId, proxy.name).data?.encSecretKey
+                }.getOrNull()
                 client.replicaProxyRequest(
                     ProxyReplicaRequest(
                         name = proxy.name,
@@ -568,7 +610,8 @@ class FederationReplicator(
                         domain = proxy.domain,
                         syncRateLimit = proxy.syncRateLimit,
                         syncTimeRange = proxy.syncTimeRange,
-                        cacheExpireDays = proxy.cacheExpireDays
+                        cacheExpireDays = proxy.cacheExpireDays,
+                        secretKey = secretKey
                     )
                 )
             } catch (e: Exception) {
@@ -725,7 +768,7 @@ class FederationReplicator(
     fun replicaRoleChangeTo(
         client: ArtifactReplicaClient,
         roleId: String,
-        projectId: String,
+        projectId: String?,
         deleted: Boolean,
         clusterName: String
     ) {
@@ -744,7 +787,7 @@ class FederationReplicator(
                         roleId = role.roleId,
                         name = role.name,
                         type = role.type,
-                        projectId = role.projectId,
+                        projectId = role.projectId ?: projectId,
                         repoName = role.repoName,
                         admin = role.admin,
                         users = role.users,
@@ -755,14 +798,10 @@ class FederationReplicator(
                 )
             }
             logger.info(
-                "Incremental role[$roleId] in project[$projectId] (deleted=$deleted) " +
-                    "synced to cluster[$clusterName]"
+                "Incremental role[$roleId] (deleted=$deleted) synced to cluster[$clusterName]"
             )
         } catch (e: Exception) {
-            logger.warn(
-                "Failed to sync role[$roleId] in project[$projectId] " +
-                    "to cluster[$clusterName]: ${e.message}"
-            )
+            logger.warn("Failed to sync role[$roleId] to cluster[$clusterName]: ${e.message}")
         }
     }
 
@@ -1071,6 +1110,9 @@ class FederationReplicator(
                     logger.warn("Proxy[$proxyName] in project[$projectId] not found for incremental federation sync")
                     return
                 }
+                val secretKey = runCatching {
+                    localProxyClient.getEncryptedKey(projectId, proxyName).data?.encSecretKey
+                }.getOrNull()
                 client.replicaProxyRequest(
                     ProxyReplicaRequest(
                         action = ReplicaAction.UPSERT,
@@ -1081,7 +1123,8 @@ class FederationReplicator(
                         domain = proxy.domain,
                         syncRateLimit = proxy.syncRateLimit,
                         syncTimeRange = proxy.syncTimeRange,
-                        cacheExpireDays = proxy.cacheExpireDays
+                        cacheExpireDays = proxy.cacheExpireDays,
+                        secretKey = secretKey
                     )
                 )
             }

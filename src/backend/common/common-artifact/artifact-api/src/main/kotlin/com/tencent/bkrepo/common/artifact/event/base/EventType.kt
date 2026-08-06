@@ -216,6 +216,7 @@ enum class EventType(val msgKey: String) {
 
     // TEMPORARY TOKEN
     TEMP_TOKEN_CREATED("artifact.event.temp-token-created"),
+    TEMP_TOKEN_UPDATED("artifact.event.temp-token-updated"),
     TEMP_TOKEN_DELETED("artifact.event.temp-token-deleted"),
 
     // PROXY

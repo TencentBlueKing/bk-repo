@@ -12,4 +12,5 @@ data class TemporaryTokenReplicaRequest(
     val permits: Int? = null,
     val type: String = "DOWNLOAD",
     val createdBy: String = "",
+    val snapSeq: Long? = null,
 )

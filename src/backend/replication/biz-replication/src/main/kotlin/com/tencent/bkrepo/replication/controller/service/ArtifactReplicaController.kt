@@ -45,8 +45,7 @@ import com.tencent.bkrepo.auth.pojo.key.KeyInfo
 import com.tencent.bkrepo.auth.pojo.oauth.OauthTokenInfo
 import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.PersonalPathInfo
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
-import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatus
+import com.tencent.bkrepo.auth.pojo.proxy.FederationProxyInfo
 import com.tencent.bkrepo.auth.pojo.role.RoleInfo
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
@@ -858,14 +857,21 @@ class ArtifactReplicaController(
     override fun replicaRoleRequest(request: RoleReplicaRequest): Response<Void> {
         FederationReplicaContext.markAsFederationWrite()
         try {
-            val projectId = request.projectId ?: return ResponseBuilder.success()
             when (request.action) {
                 ReplicaAction.UPSERT -> {
-                    val existing = runCatching {
-                        localRoleClient.listRoleByProject(projectId).data
-                            ?.find { it.roleId == request.roleId }
-                    }.getOrNull()
+                    val existing = if (request.projectId.isNullOrEmpty()) {
+                        runCatching {
+                            localRoleClient.listSystemRoles().data
+                                ?.find { it.roleId == request.roleId }
+                        }.getOrNull()
+                    } else {
+                        runCatching {
+                            localRoleClient.listRoleByProject(request.projectId!!).data
+                                ?.find { it.roleId == request.roleId }
+                        }.getOrNull()
+                    }
                     val roleInfo = RoleInfo(
+                        id = existing?.id ?: request.id,
                         roleId = request.roleId,
                         name = request.name,
                         type = request.type,
@@ -992,14 +998,22 @@ class ArtifactReplicaController(
                     val existing = runCatching {
                         localTemporaryTokenClient.getTokenInfo(request.token).data
                     }.getOrNull()
-                    if (existing != null) return ResponseBuilder.success()
+                    if (existing != null) {
+                        localTemporaryTokenClient.deleteToken(request.token)
+                    }
                     val expireSeconds = request.expireDate?.let { dateStr ->
                         runCatching {
                             val expireTime = LocalDateTime.parse(dateStr, DateTimeFormatter.ISO_DATE_TIME)
                             val remaining = java.time.Duration.between(LocalDateTime.now(), expireTime).seconds
-                            if (remaining > 0) remaining else return ResponseBuilder.success()
+                            if (remaining > 0) remaining else null
                         }.getOrNull()
+                    } ?: if (existing != null) {
+                        // 更新 permits 时沿用原过期语义：无 expireDate 则不过期
+                        null
+                    } else {
+                        java.time.Duration.ofDays(1).seconds
                     }
+                    if (expireSeconds != null && expireSeconds <= 0) return ResponseBuilder.success()
                     localTemporaryTokenClient.createToken(
                         TemporaryTokenCreateRequest(
                             projectId = request.projectId,
@@ -1007,10 +1021,12 @@ class ArtifactReplicaController(
                             fullPathSet = setOf(request.fullPath),
                             authorizedUserSet = request.authorizedUserList,
                             authorizedIpSet = request.authorizedIpList,
-                            expireSeconds = expireSeconds ?: java.time.Duration.ofDays(1).seconds,
+                            expireSeconds = expireSeconds ?: 0,
                             permits = request.permits,
                             type = TokenType.valueOf(request.type),
-                            createdBy = request.createdBy
+                            createdBy = request.createdBy,
+                            snapSeq = request.snapSeq,
+                            token = request.token
                         )
                     )
                 }
@@ -1092,27 +1108,27 @@ class ArtifactReplicaController(
         try {
             when (request.action) {
                 ReplicaAction.UPSERT -> {
-                    val existing = runCatching {
-                        localProxyClient.listProxyByProject(request.projectId).data
-                            ?.find { it.name == request.name }
-                    }.getOrNull()
-                    val proxyInfo = ProxyInfo(
-                        name = request.name,
-                        displayName = request.displayName,
-                        projectId = request.projectId,
-                        clusterName = request.clusterName,
-                        domain = request.domain,
-                        ip = "",
-                        status = ProxyStatus.OFFLINE,
-                        syncRateLimit = request.syncRateLimit,
-                        syncTimeRange = request.syncTimeRange,
-                        cacheExpireDays = request.cacheExpireDays
-                    )
-                    if (existing == null) {
-                        localProxyClient.createProxyForFederation(proxyInfo)
-                    } else {
-                        localProxyClient.updateProxyForFederation(proxyInfo)
+                    val secretKey = request.secretKey
+                    if (secretKey.isNullOrBlank()) {
+                        logger.warn(
+                            "Skipping proxy UPSERT without secretKey: " +
+                                "project=${request.projectId} name=${request.name}"
+                        )
+                        return ResponseBuilder.success()
                     }
+                    localProxyClient.upsertProxyForFederation(
+                        FederationProxyInfo(
+                            name = request.name,
+                            displayName = request.displayName,
+                            projectId = request.projectId,
+                            clusterName = request.clusterName,
+                            domain = request.domain,
+                            syncRateLimit = request.syncRateLimit,
+                            syncTimeRange = request.syncTimeRange,
+                            cacheExpireDays = request.cacheExpireDays,
+                            secretKey = secretKey
+                        )
+                    )
                 }
 
                 ReplicaAction.DELETE -> {
