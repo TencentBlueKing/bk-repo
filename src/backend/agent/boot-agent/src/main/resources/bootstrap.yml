@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: agent
+server:
+  port: 25915

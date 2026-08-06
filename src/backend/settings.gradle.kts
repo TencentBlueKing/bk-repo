@@ -68,6 +68,7 @@ fun includeAll(module: String) {
 }
 
 include(":boot-assembly")
+includeAll(":agent")
 includeAll(":auth")
 includeAll(":common")
 includeAll(":common:common-storage")

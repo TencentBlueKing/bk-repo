@@ -93,6 +93,7 @@ const val ARCHIVE_SERVICE_NAME = "\${service.prefix:}archive\${service.suffix:}"
 const val OPDATA_SERVICE_NAME = "\${service.prefix:}opdata\${service.suffix:}"
 const val GENERIC_SERVICE_NAME = "\${service.prefix:}generic\${service.suffix:}"
 const val ROUTER_CONTROLLER_SERVICE_NAME = "\${service.prefix:}router-controller\${service.suffix:}"
+const val AGENT_SERVICE_NAME = "\${service.prefix:}agent\${service.suffix:}"
 
 /**
  * 认证相关

@@ -86,6 +86,12 @@ allprojects {
             dependency("net.minidev:json-smart:2.5.2")
             // spring-cloud-starter-config:4.2.0依赖版本5.4.1有cve漏洞，升级框架后可以移除
             dependency("org.apache.httpcomponents.client5:httpclient5:5.4.4")
+            dependencySet("io.agentscope:${Versions.AgentScope}") {
+                entry("agentscope-core")
+                entry("agentscope-harness")
+                entry("agentscope-extensions-model-openai")
+                entry("agentscope-extensions-redis")
+            }
         }
     }
 
