@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.service.exception
 
+import com.fasterxml.jackson.databind.exc.InvalidFormatException
 import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.HttpStatus
@@ -201,6 +202,12 @@ class GlobalExceptionHandler : AbstractExceptionHandler() {
         val userId = request?.getAttribute(USER_KEY) ?: ANONYMOUS_USER
         logger.warn("User[$userId] async request[${request?.requestURI}] not usable: ${exception.message}")
         return null
+    }
+
+    @ExceptionHandler(InvalidFormatException::class)
+    fun handleException(exception: InvalidFormatException): Response<Void> {
+        val errorCodeException = ErrorCodeException(CommonMessageCode.REQUEST_CONTENT_INVALID)
+        return response(errorCodeException)
     }
 
     @ExceptionHandler(Exception::class)
