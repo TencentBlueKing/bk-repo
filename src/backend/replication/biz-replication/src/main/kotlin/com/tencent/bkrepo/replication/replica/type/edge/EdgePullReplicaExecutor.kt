@@ -228,7 +228,8 @@ class EdgePullReplicaExecutor(
         createdBy = nodeDetail.createdBy,
         createdDate = LocalDateTime.parse(nodeDetail.createdDate),
         lastModifiedBy = nodeDetail.lastModifiedBy,
-        lastModifiedDate = LocalDateTime.parse(nodeDetail.lastModifiedDate)
+        lastModifiedDate = LocalDateTime.parse(nodeDetail.lastModifiedDate),
+        lastAccessDate = nodeDetail.lastAccessDate?.let { LocalDateTime.parse(it) },
     )
 
     companion object {
