@@ -622,6 +622,8 @@ WebHook服务提供测试事件，方便用户添加WebHook后测试连通性
 | -------------- | ------ | ---------------- |
 | eventType      | String | 触发事件类型     |
 | user           | Object | 触发事件用户信息 |
+| projectId      | String | 项目 ID          |
+| repoName       | String | 仓库名称         |
 | packageVersion | Object | 包版本信息       |
 
 示例
@@ -637,6 +639,8 @@ WebHook服务提供测试事件，方便用户添加WebHook后测试连通性
     "locked" : false,
     "admin" : false
   },
+  "projectId" : "project",
+  "repoName" : "repo",
   "packageVersion" : {
     "createdBy" : "string",
     "createdDate" : "2021-09-15T14:48:40.73",

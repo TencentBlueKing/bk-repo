@@ -34,6 +34,8 @@ import com.tencent.bkrepo.webhook.pojo.payload.CommonEventPayload
 
 data class VersionCreatedEventPayload(
     override val user: UserInfo,
+    val projectId: String,
+    val repoName: String,
     val packageKey: String,
     val packageVersion: PackageVersion
 ) : CommonEventPayload(

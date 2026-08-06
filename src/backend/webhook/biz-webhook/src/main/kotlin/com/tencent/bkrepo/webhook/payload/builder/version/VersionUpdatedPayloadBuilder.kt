@@ -48,6 +48,8 @@ class VersionUpdatedPayloadBuilder(
         val packageKey = event.data["packageKey"].toString()
         return VersionUpdatedEventPayload(
             user = getUser(event.userId),
+            projectId = event.projectId,
+            repoName = event.repoName,
             packageKey = packageKey,
             packageVersion = getPackageVersion(
                 projectId = event.projectId,
