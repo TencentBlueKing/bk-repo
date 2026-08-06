@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.service.bkdevops
 
+import com.tencent.bkrepo.auth.config.AuthProperties
 import com.tencent.bkrepo.auth.config.DevopsAuthConfig
 import com.tencent.bkrepo.auth.constant.CREATIVE
 import com.tencent.bkrepo.auth.constant.CUSTOM
@@ -61,6 +62,7 @@ import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.slf4j.LoggerFactory
 
 /**
@@ -78,7 +80,9 @@ class DevopsPermissionServiceImpl constructor(
     private val devopsProjectService: DevopsProjectService,
     repositoryService: RepositoryService,
     projectService: ProjectService,
-    bkIamV3Service: BkIamV3Service
+    bkIamV3Service: BkIamV3Service,
+    messageSupplier: MessageSupplier,
+    authProperties: AuthProperties
 ) : BkIamV3PermissionServiceImpl(
     bkIamV3Service,
     userDao,
@@ -89,6 +93,8 @@ class DevopsPermissionServiceImpl constructor(
     repoAuthConfigDao,
     repositoryService,
     projectService,
+    messageSupplier,
+    authProperties,
 ) {
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {

@@ -91,4 +91,15 @@ object TaskQueryHelper {
             .and(TReplicaObject::localRepoName).isEqualTo(repoName)
         return Query(criteria)
     }
+
+    fun taskObjectQueryByProject(projectId: String): Query {
+        val criteria = where(TReplicaObject::localProjectId).isEqualTo(projectId)
+        return Query(criteria)
+    }
+
+    fun allFederationTaskQuery(): Query {
+        val criteria = where(TReplicaTask::replicaType).isEqualTo(ReplicaType.FEDERATION)
+            .and(TReplicaTask::enabled).isEqualTo(true)
+        return Query(criteria)
+    }
 }

@@ -63,7 +63,6 @@ class FederationBasedReplicaService(
 ) : AbstractReplicaService(replicaRecordService, localDataManager, replicaFailureRecordDao) {
 
     override fun replica(context: ReplicaContext) {
-        // 全量同步的场景需要同步已删除节点
         replicaTaskObjects(context)
     }
 
@@ -106,7 +105,8 @@ class FederationBasedReplicaService(
     }
 
     private fun handleEventByType(replicaContext: ReplicaContext) {
-        when (replicaContext.event.type) {
+        val event = replicaContext.event
+        when (event.type) {
             EventType.METADATA_DELETED -> handleMetadataDeleted(replicaContext)
             EventType.METADATA_SAVED -> handleMetadataSaved(replicaContext)
             EventType.PACKAGE_METADATA_DELETED -> handlePackageMetadataDeleted(replicaContext)
@@ -119,7 +119,7 @@ class FederationBasedReplicaService(
             EventType.VERSION_CREATED -> handleVersionCreated(replicaContext)
             EventType.VERSION_UPDATED -> handleVersionUpdated(replicaContext)
             EventType.VERSION_DELETED -> handleVersionDeleted(replicaContext)
-            else -> throw UnsupportedOperationException("Unsupported event type: ${replicaContext.event.type}")
+            else -> throw UnsupportedOperationException("Unsupported event type: ${event.type}")
         }
     }
 

@@ -30,8 +30,20 @@ package com.tencent.bkrepo.replication.api
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.replication.pojo.request.AccountReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.BlockNodeCreateFinishRequest
 import com.tencent.bkrepo.replication.pojo.request.CheckPermissionRequest
+import com.tencent.bkrepo.replication.pojo.request.ExternalPermissionReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.KeyReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.OauthTokenReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.PermissionReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.PersonalPathReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.ProxyReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.RepoAuthConfigReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.TemporaryTokenReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.UserTokenReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.DirectChildrenPage
 import com.tencent.bkrepo.replication.pojo.request.DirectChildrenRequest
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
@@ -261,4 +273,40 @@ interface ArtifactReplicaClient {
     fun getPathStats(
         @RequestBody request: PathStatsRequest,
     ): Response<PathStatsResult>
+
+    @PostMapping("/user/replica")
+    fun replicaUserRequest(@RequestBody request: UserReplicaRequest): Response<Void>
+
+    @PostMapping("/permission/replica")
+    fun replicaPermissionRequest(@RequestBody request: PermissionReplicaRequest): Response<Void>
+
+    @PostMapping("/role/replica")
+    fun replicaRoleRequest(@RequestBody request: RoleReplicaRequest): Response<Void>
+
+    @PostMapping("/account/replica")
+    fun replicaAccountRequest(@RequestBody request: AccountReplicaRequest): Response<Void>
+
+    @PostMapping("/external-permission/replica")
+    fun replicaExternalPermissionRequest(@RequestBody request: ExternalPermissionReplicaRequest): Response<Void>
+
+    @PostMapping("/temporary-token/replica")
+    fun replicaTemporaryTokenRequest(@RequestBody request: TemporaryTokenReplicaRequest): Response<Void>
+
+    @PostMapping("/oauth-token/replica")
+    fun replicaOauthTokenRequest(@RequestBody request: OauthTokenReplicaRequest): Response<Void>
+
+    @PostMapping("/personal-path/replica")
+    fun replicaPersonalPathRequest(@RequestBody request: PersonalPathReplicaRequest): Response<Void>
+
+    @PostMapping("/proxy/replica")
+    fun replicaProxyRequest(@RequestBody request: ProxyReplicaRequest): Response<Void>
+
+    @PostMapping("/key/replica")
+    fun replicaKeyRequest(@RequestBody request: KeyReplicaRequest): Response<Void>
+
+    @PostMapping("/repo-auth-config/replica")
+    fun replicaRepoAuthConfigRequest(@RequestBody request: RepoAuthConfigReplicaRequest): Response<Void>
+
+    @PostMapping("/user-token/replica")
+    fun replicaUserTokenRequest(@RequestBody request: UserTokenReplicaRequest): Response<Void>
 }

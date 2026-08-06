@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.service.local
 
+import com.tencent.bkrepo.auth.config.AuthProperties
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_ADMIN
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_USER
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_VIEWER
@@ -38,6 +39,7 @@ import com.tencent.bkrepo.auth.constant.GLOBAL_PREVIEW_ROLE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
 import com.tencent.bkrepo.auth.constant.REPLICATION_MANAGE_ID
+import com.tencent.bkrepo.auth.context.FederationWriteContext
 import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
@@ -80,9 +82,13 @@ import com.tencent.bkrepo.auth.util.request.PermRequestUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.DEVX_ACCESS_FROM_OFFICE
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.slf4j.LoggerFactory
 
 open class PermissionServiceImpl constructor(
@@ -93,7 +99,9 @@ open class PermissionServiceImpl constructor(
     private val personalPathDao: PersonalPathDao,
     private val repoAuthConfigDao: RepoAuthConfigDao,
     val repositoryService: RepositoryService,
-    val projectService: ProjectService
+    val projectService: ProjectService,
+    private val messageSupplier: MessageSupplier,
+    protected val authProperties: AuthProperties
 ) : PermissionService {
 
     private val permHelper by lazy { PermissionHelper(userDao, roleRepository, permissionDao, personalPathDao) }
@@ -103,7 +111,12 @@ open class PermissionServiceImpl constructor(
 
     override fun deletePermission(id: String): Boolean {
         logger.info("delete  permission  repoName: [$id]")
+        val permission = permissionDao.findFirstById(id)
         permissionDao.deleteById(id)
+        val extraData = if (permission != null) {
+            mapOf("permName" to permission.permName, "resourceType" to permission.resourceType)
+        } else emptyMap()
+        publishEvent(EventType.PERMISSION_DELETED, id, permission?.projectId ?: "", extraData)
         return true
     }
 
@@ -117,6 +130,19 @@ open class PermissionServiceImpl constructor(
         return permissionDao.listByResourceAndProject(PROJECT.name, projectId).map {
             PermRequestUtil.convToPermission(it)
         }
+    }
+
+    override fun listAllPermissionByProject(projectId: String): List<Permission> {
+        return permissionDao.listAllByProject(projectId).map { PermRequestUtil.convToPermission(it) }
+    }
+
+    override fun listSystemPermissions(): List<Permission> {
+        return permissionDao.listSystemPermissions().map { PermRequestUtil.convToPermission(it) }
+    }
+
+    override fun getPermissionByName(projectId: String?, resourceType: String, permName: String): Permission? {
+        return permissionDao.listPermissionByProject(permName, projectId, resourceType)
+            ?.let { PermRequestUtil.convToPermission(it) }
     }
 
     override fun listBuiltinPermission(projectId: String, repoName: String): List<Permission> {
@@ -143,17 +169,28 @@ open class PermissionServiceImpl constructor(
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_PERMNAME)
         }
         val result = permissionDao.insert(PermRequestUtil.convToTPermission(request))
-        result.id?.let {
+        result.id?.let { id ->
+            publishEvent(EventType.PERMISSION_CREATED, id, request.projectId.orEmpty())
             return true
         }
         return false
+    }
+
+    override fun upsertPermissionForFederation(request: CreatePermissionRequest): Boolean {
+        permissionDao.upsertForFederation(PermRequestUtil.convToTPermission(request))
+        return true
     }
 
     override fun updateRepoPermission(request: UpdatePermissionRepoRequest): Boolean {
         logger.info("update repo permission request : [$request]")
         with(request) {
             permHelper.checkPermissionExist(permissionId)
-            return permHelper.updatePermissionById(permissionId, TPermission::repos.name, repos)
+            val result = permHelper.updatePermissionById(permissionId, TPermission::repos.name, repos)
+            if (result) {
+                val projectId = permissionDao.findFirstById(permissionId)?.projectId.orEmpty()
+                publishEvent(EventType.PERMISSION_UPDATED, permissionId, projectId)
+            }
+            return result
         }
     }
 
@@ -173,6 +210,7 @@ open class PermissionServiceImpl constructor(
                     userHelper.addUserToRoleBatchCommon(addRoleUserList, adminRoleId!!)
                     permHelper.removeUserFromRoleBatchCommon(removeRoleUserList, adminRoleId)
                     permHelper.removeUserFromRoleBatchCommon(addRoleUserList, commonRoleId!!)
+                    publishEvent(EventType.PERMISSION_UPDATED, permissionId, projectId)
                     return true
                 }
 
@@ -188,6 +226,7 @@ open class PermissionServiceImpl constructor(
                     userHelper.addUserToRoleBatchCommon(addRoleUserList, commonRoleId!!)
                     permHelper.removeUserFromRoleBatchCommon(removeRoleUserList, commonRoleId)
                     permHelper.removeUserFromRoleBatchCommon(addRoleUserList, adminRoleId!!)
+                    publishEvent(EventType.PERMISSION_UPDATED, permissionId, projectId)
                     return true
                 }
 
@@ -202,6 +241,7 @@ open class PermissionServiceImpl constructor(
                     val removeRoleUserList = serviceUsers.filter { !userId.contains(it) }
                     userHelper.addUserToRoleBatchCommon(addRoleUserList, replicationRoleId!!)
                     permHelper.removeUserFromRoleBatchCommon(removeRoleUserList, replicationRoleId)
+                    publishEvent(EventType.PERMISSION_UPDATED, permissionId, "")
                     return true
                 }
 
@@ -216,12 +256,15 @@ open class PermissionServiceImpl constructor(
                     val removeRoleUserList = serviceUsers.filter { !userId.contains(it) }
                     userHelper.addUserToRoleBatchCommon(addRoleUserList, globalPreviewRoleId!!)
                     permHelper.removeUserFromRoleBatchCommon(removeRoleUserList, globalPreviewRoleId)
+                    publishEvent(EventType.PERMISSION_UPDATED, permissionId, "")
                     return true
                 }
 
                 else -> {
                     permHelper.checkPermissionExist(permissionId)
-                    return permHelper.updatePermissionById(permissionId, TPermission::users.name, userId)
+                    val result = permHelper.updatePermissionById(permissionId, TPermission::users.name, userId)
+                    if (result) publishEvent(EventType.PERMISSION_UPDATED, permissionId, projectId ?: "")
+                    return result
                 }
             }
         }
@@ -623,10 +666,20 @@ open class PermissionServiceImpl constructor(
     override fun updatePermissionDeployInRepo(request: UpdatePermissionDeployInRepoRequest): Boolean {
         logger.info("update permission deploy in repo, create [$request]")
         permHelper.checkPermissionExist(request.permissionId)
-        return permHelper.updatePermissionById(request.permissionId, TPermission::includePattern.name, request.path)
-                && permHelper.updatePermissionById(request.permissionId, TPermission::users.name, request.users)
-                && permHelper.updatePermissionById(request.permissionId, TPermission::permName.name, request.name)
-                && permHelper.updatePermissionById(request.permissionId, TPermission::roles.name, request.roles)
+        val result = permHelper.updatePermissionById(
+            request.permissionId, TPermission::includePattern.name, request.path
+        ) && permHelper.updatePermissionById(
+            request.permissionId, TPermission::users.name, request.users
+        ) && permHelper.updatePermissionById(
+            request.permissionId, TPermission::permName.name, request.name
+        ) && permHelper.updatePermissionById(
+            request.permissionId, TPermission::roles.name, request.roles
+        )
+        if (result) {
+            val projectId = permissionDao.findFirstById(request.permissionId)?.projectId.orEmpty()
+            publishEvent(EventType.PERMISSION_UPDATED, request.permissionId, projectId)
+        }
+        return result
     }
 
     override fun getOrCreatePersonalPath(projectId: String, repoName: String, userId: String): String {
@@ -642,12 +695,58 @@ open class PermissionServiceImpl constructor(
                 )
             try {
                 personalPathDao.insert(personalPathData)
+                publishEvent(
+                    EventType.PERSONAL_PATH_CREATED,
+                    "$projectId/$repoName/$userId",
+                    projectId,
+                    mapOf(
+                        "userId" to userId,
+                        "repoName" to repoName,
+                        "fullPath" to personalPath
+                    )
+                )
             } catch (exception: RuntimeException) {
                 logger.error("create personal path error [$projectId, $repoName, $personalPath ,$exception]")
             }
 
         }
         return personalPath
+    }
+
+    override fun createPersonalPath(
+        userId: String,
+        projectId: String,
+        repoName: String,
+        fullPath: String
+    ): Boolean {
+        val existing = personalPathDao.findOneByProjectAndRepo(userId, projectId, repoName)
+        if (existing != null) return false
+        personalPathDao.insert(
+            TPersonalPath(
+                userId = userId,
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath
+            )
+        )
+        publishEvent(
+            EventType.PERSONAL_PATH_CREATED,
+            "$projectId/$repoName/$userId",
+            projectId,
+            mapOf("userId" to userId, "repoName" to repoName, "fullPath" to fullPath)
+        )
+        return true
+    }
+
+    override fun deletePersonalPath(projectId: String, repoName: String, userId: String): Boolean {
+        personalPathDao.deleteByProjectAndRepoAndUser(projectId, repoName, userId)
+        publishEvent(
+            EventType.PERSONAL_PATH_DELETED,
+            "$projectId/$repoName/$userId",
+            projectId,
+            mapOf("userId" to userId, "repoName" to repoName)
+        )
+        return true
     }
 
     override fun getPathCheckConfig(): Boolean {
@@ -760,7 +859,27 @@ open class PermissionServiceImpl constructor(
         return true
     }
 
+    fun publishEvent(
+        type: EventType,
+        resourceKey: String,
+        projectId: String,
+        data: Map<String, Any> = emptyMap()
+    ) {
+        if (!authProperties.federationEventEnabled || FederationWriteContext.isFederationWrite()) return
+        val event = ArtifactEvent(
+            type = type,
+            projectId = projectId,
+            repoName = "",
+            resourceKey = resourceKey,
+            userId = runCatching { SecurityUtils.getUserId() }.getOrDefault(""),
+            data = data,
+            eventId = ArtifactEvent.generateEventId()
+        )
+        messageSupplier.delegateToSupplier(event, topic = BINDING_OUT_NAME)
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(PermissionServiceImpl::class.java)
+        private const val BINDING_OUT_NAME = "artifactEvent-out-0"
     }
 }

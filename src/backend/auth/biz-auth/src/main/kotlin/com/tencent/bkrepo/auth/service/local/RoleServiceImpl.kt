@@ -31,10 +31,12 @@
 
 package com.tencent.bkrepo.auth.service.local
 
+import com.tencent.bkrepo.auth.config.AuthProperties
 import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.constant.GLOBAL_PREVIEW_ROLE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
+import com.tencent.bkrepo.auth.context.FederationWriteContext
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TRole
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
@@ -48,19 +50,28 @@ import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+import org.springframework.data.domain.PageRequest
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.slf4j.LoggerFactory
 
 class RoleServiceImpl constructor(
     private val roleRepository: RoleRepository,
     private val userService: UserService,
-    private val userDao: UserDao
+    private val userDao: UserDao,
+    private val messageSupplier: MessageSupplier,
+    private val authProperties: AuthProperties
 ) : RoleService {
 
     private val userHelper by lazy { UserHelper(userDao, roleRepository) }
 
     override fun createRole(request: CreateRoleRequest): String? {
         logger.info("create role : [$request]")
-        return userHelper.createRoleCommon(request)
+        val roleId = userHelper.createRoleCommon(request)
+        if (roleId != null) publishEvent(EventType.ROLE_CREATED, roleId, request.projectId ?: "")
+        return roleId
     }
 
     override fun detail(id: String): Role? {
@@ -99,6 +110,7 @@ class RoleServiceImpl constructor(
                 userService.addUserToRoleBatch(idList, id)
             }
         }
+        publishEvent(EventType.ROLE_UPDATED, id, role.projectId ?: "")
         return true
     }
 
@@ -127,6 +139,18 @@ class RoleServiceImpl constructor(
         ).map { transfer(it) }
     }
 
+    override fun listRoleByProjectPage(projectId: String, pageNumber: Int, pageSize: Int): List<Role> {
+        // 联邦全量同步需包含 PROJECT_MANAGE/VIEWER 及 admin 角色，不可复用 UI 列表过滤
+        return roleRepository.findByProjectId(
+            projectId,
+            PageRequest.of(pageNumber - 1, pageSize),
+        ).map { transfer(it) }
+    }
+
+    override fun listSystemRoles(): List<Role> {
+        return roleRepository.findByType(RoleType.SERVICE).map { transfer(it) }
+    }
+
     override fun listRoleBySource(source: RoleSource): List<Role> {
         logger.debug("list role by role ,[$source]")
         return roleRepository.findBySource(source).map { transfer(it) }
@@ -149,6 +173,7 @@ class RoleServiceImpl constructor(
                 userService.removeUserFromRoleBatch(users.map { it.userId }, id)
             }
             roleRepository.deleteTRolesById(role.id)
+            publishEvent(EventType.ROLE_DELETED, id, role.projectId ?: "")
         }
         return true
     }
@@ -162,6 +187,7 @@ class RoleServiceImpl constructor(
             type = tRole.type,
             name = tRole.name,
             projectId = tRole.projectId,
+            repoName = tRole.repoName,
             admin = tRole.admin,
             users = users,
             description = tRole.description,
@@ -170,7 +196,21 @@ class RoleServiceImpl constructor(
         )
     }
 
+    private fun publishEvent(type: EventType, resourceKey: String, projectId: String) {
+        if (!authProperties.federationEventEnabled || FederationWriteContext.isFederationWrite()) return
+        val event = ArtifactEvent(
+            type = type,
+            projectId = projectId,
+            repoName = "",
+            resourceKey = resourceKey,
+            userId = runCatching { SecurityUtils.getUserId() }.getOrDefault(""),
+            eventId = ArtifactEvent.generateEventId()
+        )
+        messageSupplier.delegateToSupplier(event, topic = BINDING_OUT_NAME)
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(RoleServiceImpl::class.java)
+        private const val BINDING_OUT_NAME = "artifactEvent-out-0"
     }
 }

@@ -27,10 +27,13 @@
 
 package com.tencent.bkrepo.auth.service.impl
 
+import com.tencent.bkrepo.auth.config.AuthProperties
+import com.tencent.bkrepo.auth.context.FederationWriteContext
 import com.tencent.bkrepo.auth.dao.ProxyDao
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TProxy
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.proxy.FederationProxyInfo
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyCreateRequest
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyKey
@@ -44,6 +47,8 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.UrlFormatter
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.AESUtils
@@ -53,6 +58,7 @@ import com.tencent.bkrepo.common.metadata.pojo.router.RouterNodeType
 import com.tencent.bkrepo.common.metadata.pojo.router.AddRouterNodeRequest
 import com.tencent.bkrepo.common.metadata.pojo.router.RemoveRouterNodeRequest
 import com.tencent.bkrepo.common.metadata.service.router.RouterAdminService
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.security.SecureRandom
@@ -64,7 +70,9 @@ import kotlin.random.Random
 class ProxyServiceImpl(
     private val proxyDao: ProxyDao,
     private val permissionManager: PermissionManager,
-    private val routerAdminService: RouterAdminService
+    private val routerAdminService: RouterAdminService,
+    private val messageSupplier: MessageSupplier,
+    private val authProperties: AuthProperties
 ) : ProxyService {
     override fun create(request: ProxyCreateRequest): ProxyInfo {
         permissionManager.checkProjectPermission(PermissionAction.MANAGE, request.projectId)
@@ -94,7 +102,50 @@ class ProxyServiceImpl(
             lastModifiedDate = LocalDateTime.now(),
             status = ProxyStatus.CREATE
         )
-        return proxyDao.insert(tProxy).convert()
+        val result = proxyDao.insert(tProxy).convert()
+        publishEvent(EventType.PROXY_CREATED, result.name, request.projectId)
+        return result
+    }
+
+    override fun upsertForFederation(info: FederationProxyInfo): Boolean {
+        val existing = proxyDao.findByProjectIdAndName(info.projectId, info.name)
+        val userId = runCatching { SecurityUtils.getUserId() }.getOrDefault("")
+        if (existing == null) {
+            proxyDao.insert(
+                TProxy(
+                    name = info.name,
+                    displayName = info.displayName,
+                    projectId = info.projectId,
+                    clusterName = info.clusterName,
+                    domain = UrlFormatter.formatHost(info.domain),
+                    ip = StringPool.UNKNOWN,
+                    secretKey = info.secretKey,
+                    sessionKey = StringPool.EMPTY,
+                    ticket = secureRandom.nextInt(),
+                    ticketCreateInstant = Instant.now(),
+                    syncRateLimit = info.syncRateLimit,
+                    syncTimeRange = info.syncTimeRange,
+                    cacheExpireDays = info.cacheExpireDays,
+                    createdBy = userId,
+                    createdDate = LocalDateTime.now(),
+                    lastModifiedBy = userId,
+                    lastModifiedDate = LocalDateTime.now(),
+                    status = ProxyStatus.OFFLINE
+                )
+            )
+        } else {
+            existing.displayName = info.displayName
+            existing.clusterName = info.clusterName
+            existing.domain = UrlFormatter.formatHost(info.domain)
+            existing.secretKey = info.secretKey
+            existing.syncRateLimit = info.syncRateLimit
+            existing.syncTimeRange = info.syncTimeRange
+            existing.cacheExpireDays = info.cacheExpireDays
+            existing.lastModifiedBy = userId
+            existing.lastModifiedDate = LocalDateTime.now()
+            proxyDao.save(existing)
+        }
+        return true
     }
 
     override fun getInfo(projectId: String, name: String): ProxyInfo {
@@ -134,7 +185,9 @@ class ProxyServiceImpl(
         tProxy.lastModifiedBy = userId
         tProxy.lastModifiedDate = LocalDateTime.now()
         logger.info("user[$userId] update proxy with request[$request]")
-        return proxyDao.save(tProxy).convert()
+        val result = proxyDao.save(tProxy).convert()
+        publishEvent(EventType.PROXY_UPDATED, result.name, result.projectId)
+        return result
     }
 
     override fun delete(projectId: String, name: String) {
@@ -143,6 +196,7 @@ class ProxyServiceImpl(
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_PROXY_NOT_EXIST, name)
         proxyDao.deleteByProjectIdAndName(projectId, name)
         routerAdminService.removeRouterNode(RemoveRouterNodeRequest(name, SecurityUtils.getUserId()))
+        publishEvent(EventType.PROXY_DELETED, name, projectId)
     }
 
     override fun ticket(projectId: String, name: String): Int {
@@ -245,8 +299,22 @@ class ProxyServiceImpl(
         return buffer.joinToString("") { String.format("%02x", it) }
     }
 
+    private fun publishEvent(type: EventType, resourceKey: String, projectId: String) {
+        if (!authProperties.federationEventEnabled || FederationWriteContext.isFederationWrite()) return
+        val event = ArtifactEvent(
+            type = type,
+            projectId = projectId,
+            repoName = "",
+            resourceKey = resourceKey,
+            userId = runCatching { SecurityUtils.getUserId() }.getOrDefault(""),
+            eventId = ArtifactEvent.generateEventId()
+        )
+        messageSupplier.delegateToSupplier(event, topic = BINDING_OUT_NAME)
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(ProxyServiceImpl::class.java)
+        private const val BINDING_OUT_NAME = "artifactEvent-out-0"
         private const val N_EXPIRED_SEC = 30L
         private const val STARTUP_OPERATION = "startup"
         private const val SHUTDOWN_OPERATION = "shutdown"

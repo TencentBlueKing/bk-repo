@@ -34,6 +34,7 @@ package com.tencent.bkrepo.auth.dao.repository
 import com.tencent.bkrepo.auth.model.TRole
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.role.RoleSource
+import org.springframework.data.domain.Pageable
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
 
@@ -47,6 +48,14 @@ interface RoleRepository : MongoRepository<TRole, String> {
         projectId: String,
         admin: Boolean,
         roles: List<String>
+    ): List<TRole>
+
+    fun findByTypeAndProjectIdAndAdminAndRoleIdNotIn(
+        type: RoleType,
+        projectId: String,
+        admin: Boolean,
+        roles: List<String>,
+        pageable: Pageable,
     ): List<TRole>
 
     fun findByTypeAndProjectIdAndAdmin(type: RoleType, projectId: String, admin: Boolean): List<TRole>
@@ -85,6 +94,10 @@ interface RoleRepository : MongoRepository<TRole, String> {
     fun findBySource(source: RoleSource): List<TRole>
 
     fun findByProjectIdAndSource(projectId: String, source: RoleSource): List<TRole>
+
+    fun findByProjectId(projectId: String, pageable: Pageable): List<TRole>
+
+    fun findByType(type: RoleType): List<TRole>
 
     fun findFirstByTypeAndRoleId(type: RoleType, roleId: String): TRole?
 }

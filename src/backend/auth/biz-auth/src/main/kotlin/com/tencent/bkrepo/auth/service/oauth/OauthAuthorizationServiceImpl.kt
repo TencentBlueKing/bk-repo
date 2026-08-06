@@ -29,7 +29,9 @@ package com.tencent.bkrepo.auth.service.oauth
 
 import cn.hutool.core.codec.Base64Decoder
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
+import com.tencent.bkrepo.auth.config.AuthProperties
 import com.tencent.bkrepo.auth.config.OauthProperties
+import com.tencent.bkrepo.auth.context.FederationWriteContext
 import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.dao.repository.OauthTokenRepository
 import com.tencent.bkrepo.auth.exception.OauthException
@@ -38,6 +40,7 @@ import com.tencent.bkrepo.auth.model.TAccount
 import com.tencent.bkrepo.auth.model.TOauthToken
 import com.tencent.bkrepo.auth.pojo.enums.OauthErrorType
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.oauth.OauthTokenInfo
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizeRequest
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizedResult
@@ -52,6 +55,9 @@ import com.tencent.bkrepo.auth.service.OauthAuthorizationService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.OauthUtils
 import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PREFIX
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
@@ -61,6 +67,8 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.api.util.toXmlString
 import com.tencent.bkrepo.common.artifact.hash.HashAlgorithm
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.security.crypto.CryptoProperties
 import com.tencent.bkrepo.common.security.util.JwtUtils
@@ -83,7 +91,9 @@ class OauthAuthorizationServiceImpl(
     private val userService: UserService,
     private val redisOperation: RedisOperation,
     private val cryptoProperties: CryptoProperties,
-    private val oauthProperties: OauthProperties
+    private val oauthProperties: OauthProperties,
+    private val messageSupplier: MessageSupplier,
+    private val authProperties: AuthProperties,
 ) : OauthAuthorizationService {
 
     override fun authorized(authorizeRequest: AuthorizeRequest): AuthorizedResult {
@@ -214,6 +224,7 @@ class OauthAuthorizationServiceImpl(
             idToken = if (openId) idToken else null,
         )
         oauthTokenRepository.insert(tOauthToken)
+        publishEvent(EventType.OAUTH_TOKEN_CREATED, tOauthToken.accessToken)
         return tOauthToken
     }
 
@@ -263,6 +274,7 @@ class OauthAuthorizationServiceImpl(
     override fun deleteToken(clientId: String, clientSecret: String, accessToken: String) {
         checkClientSecret(clientId, clientSecret, null, null)
         oauthTokenRepository.deleteByAccessToken(accessToken)
+        publishEvent(EventType.OAUTH_TOKEN_DELETED, accessToken)
     }
 
     override fun getUserInfo(): UserInfo {
@@ -373,8 +385,81 @@ class OauthAuthorizationServiceImpl(
         }
     }
 
+    override fun getTokenInfo(accessToken: String): OauthTokenInfo? {
+        val token = oauthTokenRepository.findFirstByAccessToken(accessToken) ?: return null
+        return OauthTokenInfo(
+            accessToken = token.accessToken,
+            refreshToken = token.refreshToken,
+            expireSeconds = token.expireSeconds,
+            type = token.type,
+            accountId = token.accountId,
+            userId = token.userId,
+            scope = token.scope?.map { it.name }?.toSet(),
+            issuedAt = token.issuedAt.epochSecond,
+            idToken = token.idToken
+        )
+    }
+
+    override fun listActiveTokens(pageNumber: Int, pageSize: Int): List<OauthTokenInfo> {
+        val pageable = PageRequest.of(
+            pageNumber,
+            pageSize,
+            Sort.by(Sort.Direction.ASC, "_id")
+        )
+        return oauthTokenRepository.findAll(pageable)
+            .content.map { token ->
+                OauthTokenInfo(
+                    accessToken = token.accessToken,
+                    refreshToken = token.refreshToken,
+                    expireSeconds = token.expireSeconds,
+                    type = token.type,
+                    accountId = token.accountId,
+                    userId = token.userId,
+                    scope = token.scope?.map { it.name }?.toSet(),
+                    issuedAt = token.issuedAt.epochSecond,
+                    idToken = token.idToken
+                )
+            }
+    }
+
+    override fun saveFederationToken(tokenInfo: OauthTokenInfo) {
+        val existing = oauthTokenRepository.findFirstByAccessToken(tokenInfo.accessToken)
+        if (existing != null) return
+        val token = TOauthToken(
+            accessToken = tokenInfo.accessToken,
+            refreshToken = tokenInfo.refreshToken,
+            expireSeconds = tokenInfo.expireSeconds,
+            type = tokenInfo.type,
+            accountId = tokenInfo.accountId,
+            userId = tokenInfo.userId,
+            scope = tokenInfo.scope?.mapNotNull { runCatching { ResourceType.valueOf(it) }.getOrNull() }?.toSet(),
+            issuedAt = java.time.Instant.ofEpochSecond(tokenInfo.issuedAt),
+            idToken = tokenInfo.idToken,
+        )
+        oauthTokenRepository.save(token)
+    }
+
+    override fun deleteTokenByAccessToken(accessToken: String) {
+        oauthTokenRepository.deleteByAccessToken(accessToken)
+        publishEvent(EventType.OAUTH_TOKEN_DELETED, accessToken)
+    }
+
+    private fun publishEvent(type: EventType, resourceKey: String) {
+        if (!authProperties.federationEventEnabled || FederationWriteContext.isFederationWrite()) return
+        val event = ArtifactEvent(
+            type = type,
+            projectId = "",
+            repoName = "",
+            resourceKey = resourceKey,
+            userId = "",
+            eventId = ArtifactEvent.generateEventId()
+        )
+        messageSupplier.delegateToSupplier(event, topic = BINDING_OUT_NAME)
+    }
+
     companion object {
         private const val KEY_ID_NAME = "kid"
         private const val KEY_ID_VALUE = "bkrepo_rsa_rs256"
+        private const val BINDING_OUT_NAME = "artifactEvent-out-0"
     }
 }

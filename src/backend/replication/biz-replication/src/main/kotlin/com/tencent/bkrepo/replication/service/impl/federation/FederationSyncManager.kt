@@ -9,6 +9,7 @@ import com.tencent.bkrepo.replication.replica.executor.FederationFullSyncThreadP
 import com.tencent.bkrepo.replication.replica.type.federation.FederationFullSyncReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Component
 import java.util.concurrent.Callable
 
@@ -20,7 +21,7 @@ import java.util.concurrent.Callable
 class FederationSyncManager(
     private val localFederationManager: LocalFederationManager,
     private val replicaTaskService: ReplicaTaskService,
-    private val federationFullSyncReplicaJobExecutor: FederationFullSyncReplicaJobExecutor,
+    @Lazy private val federationFullSyncReplicaJobExecutor: FederationFullSyncReplicaJobExecutor,
 ) {
 
     private val executor = FederationFullSyncThreadPoolExecutor.instance

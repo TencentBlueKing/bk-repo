@@ -35,7 +35,6 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import io.swagger.v3.oas.annotations.media.Schema
 
-
 @Schema(title = "创建权限请求")
 data class CreatePermissionRequest(
     @get:Schema(title = "资源类型")
