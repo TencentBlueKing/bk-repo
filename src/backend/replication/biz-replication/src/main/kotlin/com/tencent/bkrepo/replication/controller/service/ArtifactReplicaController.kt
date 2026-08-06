@@ -790,6 +790,7 @@ class ArtifactReplicaController(
                             email = request.email,
                             phone = request.phone,
                             tenantId = request.tenantId,
+                            locked = request.locked,
                         )
                     )
                 }
@@ -872,7 +873,9 @@ class ArtifactReplicaController(
                         repoName = request.repoName,
                         admin = request.admin,
                         users = request.users,
-                        description = request.description
+                        description = request.description,
+                        source = request.source,
+                        deptInfoList = request.deptInfoList
                     )
                     if (existing == null) {
                         localRoleClient.createRoleForFederation(roleInfo)
@@ -958,13 +961,19 @@ class ArtifactReplicaController(
                 }
 
                 ReplicaAction.DELETE -> {
-                    if (request.id == null) {
+                    val deleteId = request.id ?: runCatching {
+                        localExternalPermissionClient.listExternalPermission().data
+                            ?.find {
+                                it.projectId == request.projectId && it.repoName == request.repoName
+                            }?.id
+                    }.getOrNull()
+                    if (deleteId == null) {
                         logger.warn(
                             "Skipping external permission DELETE: " +
                                 "id is null for project=${request.projectId} repo=${request.repoName}"
                         )
                     } else {
-                        localExternalPermissionClient.deleteExternalPermission(request.id!!)
+                        localExternalPermissionClient.deleteExternalPermission(deleteId)
                     }
                 }
             }
@@ -1031,7 +1040,8 @@ class ArtifactReplicaController(
                             accountId = request.accountId,
                             userId = request.userId,
                             scope = request.scope,
-                            issuedAt = request.issuedAt
+                            issuedAt = request.issuedAt,
+                            idToken = request.idToken
                         )
                     )
                 }

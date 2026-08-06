@@ -10,4 +10,5 @@ data class OauthTokenReplicaRequest(
     val userId: String = "",
     val scope: Set<String>? = null,
     val issuedAt: Long = 0L,
+    val idToken: com.tencent.bkrepo.auth.pojo.oauth.IdToken? = null,
 )

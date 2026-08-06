@@ -48,6 +48,9 @@ interface ServiceExternalPermissionClient {
     @GetMapping
     fun listExternalPermission(): Response<List<ExternalPermission>>
 
+    @GetMapping("/federation/{id}")
+    fun getExternalPermission(@PathVariable id: String): Response<ExternalPermission?>
+
     @PostMapping("/federation/create")
     fun createExternalPermission(
         @RequestBody permission: ExternalPermission

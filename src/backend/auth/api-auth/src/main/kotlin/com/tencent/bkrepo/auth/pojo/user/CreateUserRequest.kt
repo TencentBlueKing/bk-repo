@@ -56,5 +56,7 @@ data class CreateUserRequest(
     @get:Schema(title = "联系电话")
     val phone: String? = null,
     @get:Schema(title = "租户ID")
-    val tenantId: String? = null
+    val tenantId: String? = null,
+    @get:Schema(title = "lock状态")
+    val locked: Boolean? = null,
 )

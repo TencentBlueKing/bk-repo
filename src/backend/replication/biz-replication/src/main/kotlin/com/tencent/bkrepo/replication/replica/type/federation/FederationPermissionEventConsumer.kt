@@ -193,6 +193,35 @@ class FederationPermissionEventConsumer(
                 )
             EventType.REPO_AUTH_CONFIG_UPDATED ->
                 federationReplicator.replicaRepoAuthConfigChangeTo(client, event.projectId, event.repoName, clusterName)
+            EventType.EXT_PERMISSION_CREAT, EventType.EXT_PERMISSION_UPDATE ->
+                federationReplicator.replicaExternalPermissionChangeTo(
+                    client, event.resourceKey, false,
+                    event.data["projectId"]?.toString() ?: event.projectId,
+                    event.data["repoName"]?.toString() ?: event.repoName,
+                    clusterName
+                )
+            EventType.EXT_PERMISSION_DELETE ->
+                federationReplicator.replicaExternalPermissionChangeTo(
+                    client, event.resourceKey, true,
+                    event.data["projectId"]?.toString() ?: event.projectId,
+                    event.data["repoName"]?.toString() ?: event.repoName,
+                    clusterName
+                )
+            EventType.PERSONAL_PATH_CREATED -> {
+                val userId = event.data["userId"]?.toString() ?: return
+                val repoName = event.data["repoName"]?.toString() ?: event.repoName
+                federationReplicator.replicaPersonalPathChangeTo(
+                    client, event.projectId, repoName, userId,
+                    event.data["fullPath"]?.toString(), false, clusterName
+                )
+            }
+            EventType.PERSONAL_PATH_DELETED -> {
+                val userId = event.data["userId"]?.toString() ?: return
+                val repoName = event.data["repoName"]?.toString() ?: event.repoName
+                federationReplicator.replicaPersonalPathChangeTo(
+                    client, event.projectId, repoName, userId, null, true, clusterName
+                )
+            }
             else -> logger.warn("Unhandled event type[${event.type}] in FederationPermissionEventConsumer")
         }
     }
@@ -218,6 +247,8 @@ class FederationPermissionEventConsumer(
             EventType.TEMP_TOKEN_CREATED, EventType.TEMP_TOKEN_DELETED,
             EventType.PROXY_CREATED, EventType.PROXY_UPDATED, EventType.PROXY_DELETED,
             EventType.REPO_AUTH_CONFIG_UPDATED,
+            EventType.EXT_PERMISSION_CREAT, EventType.EXT_PERMISSION_UPDATE, EventType.EXT_PERMISSION_DELETE,
+            EventType.PERSONAL_PATH_CREATED, EventType.PERSONAL_PATH_DELETED,
         )
     }
 }

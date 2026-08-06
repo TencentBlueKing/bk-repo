@@ -115,6 +115,10 @@ interface ServicePermissionClient {
         @RequestParam projectId: String
     ): Response<List<Permission>>
 
+    @Operation(summary = "查询系统级权限（projectId 为空，联邦同步）")
+    @GetMapping("/listSystem")
+    fun listSystemPermissions(): Response<List<Permission>>
+
     @Operation(summary = "创建权限（用于联邦同步）")
     @PostMapping("/create")
     fun createPermission(@RequestBody request: CreatePermissionRequest): Response<Boolean>

@@ -141,6 +141,7 @@ class FederationPermissionSyncJob(
             federationReplicator.replicaUsersTo(client, clusterName)
             federationReplicator.replicaKeysTo(client, clusterName)
             federationReplicator.replicaExternalPermissionsTo(client, clusterName)
+            federationReplicator.replicaSystemPermissionsTo(client, clusterName)
         } catch (e: Exception) {
             logger.warn("Failed to sync global data to cluster[$clusterName]: ${e.message}")
         }

@@ -395,7 +395,8 @@ class OauthAuthorizationServiceImpl(
             accountId = token.accountId,
             userId = token.userId,
             scope = token.scope?.map { it.name }?.toSet(),
-            issuedAt = token.issuedAt.epochSecond
+            issuedAt = token.issuedAt.epochSecond,
+            idToken = token.idToken
         )
     }
 
@@ -415,7 +416,8 @@ class OauthAuthorizationServiceImpl(
                     accountId = token.accountId,
                     userId = token.userId,
                     scope = token.scope?.map { it.name }?.toSet(),
-                    issuedAt = token.issuedAt.epochSecond
+                    issuedAt = token.issuedAt.epochSecond,
+                    idToken = token.idToken
                 )
             }
     }
@@ -432,7 +434,7 @@ class OauthAuthorizationServiceImpl(
             userId = tokenInfo.userId,
             scope = tokenInfo.scope?.mapNotNull { runCatching { ResourceType.valueOf(it) }.getOrNull() }?.toSet(),
             issuedAt = java.time.Instant.ofEpochSecond(tokenInfo.issuedAt),
-            idToken = null,
+            idToken = tokenInfo.idToken,
         )
         oauthTokenRepository.save(token)
     }

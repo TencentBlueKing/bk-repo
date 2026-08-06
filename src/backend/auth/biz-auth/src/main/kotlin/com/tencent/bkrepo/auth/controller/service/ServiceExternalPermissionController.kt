@@ -45,6 +45,10 @@ class ServiceExternalPermissionController(
         return ResponseBuilder.success(externalPermissionService.listExtPermission())
     }
 
+    override fun getExternalPermission(id: String): Response<ExternalPermission?> {
+        return ResponseBuilder.success(externalPermissionService.getExtPermission(id))
+    }
+
     override fun createExternalPermission(permission: ExternalPermission): Response<Boolean> {
         // TODO: 优化为 DAO 层按 projectId+repoName 直接查询，避免全量扫描
         val existing = externalPermissionService.listExtPermission().find {

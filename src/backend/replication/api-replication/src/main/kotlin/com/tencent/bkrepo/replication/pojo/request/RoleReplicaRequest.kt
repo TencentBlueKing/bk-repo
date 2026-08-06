@@ -11,4 +11,6 @@ data class RoleReplicaRequest(
     val admin: Boolean = false,
     val users: List<String> = emptyList(),
     val description: String? = null,
+    val source: String? = null,
+    val deptInfoList: List<com.tencent.bkrepo.auth.pojo.DeptInfo>? = null,
 )

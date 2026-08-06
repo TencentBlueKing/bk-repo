@@ -224,7 +224,11 @@ enum class EventType(val msgKey: String) {
     PROXY_DELETED("artifact.event.proxy-deleted"),
 
     // REPO AUTH CONFIG
-    REPO_AUTH_CONFIG_UPDATED("artifact.event.repo-auth-config-updated");
+    REPO_AUTH_CONFIG_UPDATED("artifact.event.repo-auth-config-updated"),
+
+    // PERSONAL PATH
+    PERSONAL_PATH_CREATED("artifact.event.personal-path-created"),
+    PERSONAL_PATH_DELETED("artifact.event.personal-path-deleted");
 
     companion object {
         @JsonCreator

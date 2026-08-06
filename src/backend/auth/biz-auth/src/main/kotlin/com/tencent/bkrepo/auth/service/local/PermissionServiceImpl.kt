@@ -136,6 +136,10 @@ open class PermissionServiceImpl constructor(
         return permissionDao.listAllByProject(projectId).map { PermRequestUtil.convToPermission(it) }
     }
 
+    override fun listSystemPermissions(): List<Permission> {
+        return permissionDao.listSystemPermissions().map { PermRequestUtil.convToPermission(it) }
+    }
+
     override fun getPermissionByName(projectId: String?, resourceType: String, permName: String): Permission? {
         return permissionDao.listPermissionByProject(permName, projectId, resourceType)
             ?.let { PermRequestUtil.convToPermission(it) }
@@ -675,12 +679,58 @@ open class PermissionServiceImpl constructor(
                 )
             try {
                 personalPathDao.insert(personalPathData)
+                publishEvent(
+                    EventType.PERSONAL_PATH_CREATED,
+                    "$projectId/$repoName/$userId",
+                    projectId,
+                    mapOf(
+                        "userId" to userId,
+                        "repoName" to repoName,
+                        "fullPath" to personalPath
+                    )
+                )
             } catch (exception: RuntimeException) {
                 logger.error("create personal path error [$projectId, $repoName, $personalPath ,$exception]")
             }
 
         }
         return personalPath
+    }
+
+    override fun createPersonalPath(
+        userId: String,
+        projectId: String,
+        repoName: String,
+        fullPath: String
+    ): Boolean {
+        val existing = personalPathDao.findOneByProjectAndRepo(userId, projectId, repoName)
+        if (existing != null) return false
+        personalPathDao.insert(
+            TPersonalPath(
+                userId = userId,
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath
+            )
+        )
+        publishEvent(
+            EventType.PERSONAL_PATH_CREATED,
+            "$projectId/$repoName/$userId",
+            projectId,
+            mapOf("userId" to userId, "repoName" to repoName, "fullPath" to fullPath)
+        )
+        return true
+    }
+
+    override fun deletePersonalPath(projectId: String, repoName: String, userId: String): Boolean {
+        personalPathDao.deleteByProjectAndRepoAndUser(projectId, repoName, userId)
+        publishEvent(
+            EventType.PERSONAL_PATH_DELETED,
+            "$projectId/$repoName/$userId",
+            projectId,
+            mapOf("userId" to userId, "repoName" to repoName)
+        )
+        return true
     }
 
     override fun getPathCheckConfig(): Boolean {

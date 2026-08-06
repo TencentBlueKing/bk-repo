@@ -195,7 +195,7 @@ class UserServiceImpl constructor(
     override fun listUsersForFederationPage(
         tenantId: String?, pageNumber: Int, pageSize: Int
     ): List<UserFederationInfo> {
-        return userDao.getUserNotLockedPage(tenantId, pageNumber, pageSize).map { u ->
+        return userDao.getUserPageForFederation(tenantId, pageNumber, pageSize).map { u ->
             UserFederationInfo(
                 userId = u.userId,
                 name = u.name,
@@ -206,6 +206,8 @@ class UserServiceImpl constructor(
                 email = u.email,
                 phone = u.phone,
                 tenantId = u.tenantId,
+                locked = u.locked,
+                tokens = u.tokens,
             )
         }
     }
@@ -530,6 +532,7 @@ class UserServiceImpl constructor(
                 email = request.email,
                 phone = request.phone,
                 tenantId = tenantId,
+                locked = request.locked,
             )
             )
             if (hashedPwd != null) {

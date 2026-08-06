@@ -149,6 +149,7 @@ class FederationReplicator(
     fun replicaUsersTo(client: ArtifactReplicaClient, clusterName: String) {
         var pageNumber = 1
         var totalCount = 0
+        var tokenCount = 0
         while (true) {
             val users = try {
                 localUserClient.listUsersForFederationPage(null, pageNumber, PAGE_SIZE).data ?: break
@@ -169,9 +170,29 @@ class FederationReplicator(
                             group = user.group,
                             email = user.email,
                             phone = user.phone,
-                            tenantId = user.tenantId
+                            tenantId = user.tenantId,
+                            locked = user.locked
                         )
                     )
+                    user.tokens.forEach { token ->
+                        val tokenName = token.name ?: return@forEach
+                        try {
+                            client.replicaUserTokenRequest(
+                                UserTokenReplicaRequest(
+                                    userId = user.userId,
+                                    tokenName = tokenName,
+                                    hashedTokenId = token.id,
+                                    createdAt = token.createdAt.toString(),
+                                    expiredAt = token.expiredAt?.toString()
+                                )
+                            )
+                            tokenCount++
+                        } catch (e: Exception) {
+                            logger.warn(
+                                "Failed to sync user token [$tokenName] of [${user.userId}]: ${e.message}"
+                            )
+                        }
+                    }
                 } catch (e: Exception) {
                     logger.warn("Failed to sync user [${user.userId}] to federation cluster: ${e.message}")
                 }
@@ -180,7 +201,9 @@ class FederationReplicator(
             if (users.size < PAGE_SIZE) break
             pageNumber++
         }
-        logger.info("Synced $totalCount users to federated cluster [$clusterName]")
+        logger.info(
+            "Synced $totalCount users and $tokenCount user tokens to federated cluster [$clusterName]"
+        )
     }
 
     /**
@@ -222,6 +245,38 @@ class FederationReplicator(
         logger.info("Synced ${permissions.size} permissions to federated cluster [$clusterName]")
     }
 
+    fun replicaSystemPermissionsTo(client: ArtifactReplicaClient, clusterName: String) {
+        val permissions = try {
+            localPermissionClient.listSystemPermissions().data ?: emptyList()
+        } catch (e: Exception) {
+            logger.warn("Failed to list system permissions for federation sync: ${e.message}")
+            return
+        }
+        permissions.forEach { perm ->
+            try {
+                client.replicaPermissionRequest(
+                    PermissionReplicaRequest(
+                        resourceType = perm.resourceType,
+                        projectId = perm.projectId,
+                        permName = perm.permName,
+                        repos = perm.repos,
+                        includePattern = perm.includePattern,
+                        excludePattern = perm.excludePattern,
+                        users = perm.users,
+                        roles = perm.roles,
+                        departments = perm.departments,
+                        actions = perm.actions,
+                        createBy = perm.createBy,
+                        updatedBy = perm.updatedBy
+                    )
+                )
+            } catch (e: Exception) {
+                logger.warn("Failed to sync system permission [${perm.permName}]: ${e.message}")
+            }
+        }
+        logger.info("Synced ${permissions.size} system permissions to federated cluster [$clusterName]")
+    }
+
     fun replicaRoles(context: ReplicaContext) {
         replicaRolesTo(context.artifactReplicaClient!!, context.localProjectId, context.remoteCluster.name)
     }
@@ -249,7 +304,9 @@ class FederationReplicator(
                             repoName = role.repoName,
                             admin = role.admin,
                             users = role.users,
-                            description = role.description
+                            description = role.description,
+                            source = role.source,
+                            deptInfoList = role.deptInfoList
                         )
                     )
                 } catch (e: Exception) {
@@ -441,7 +498,8 @@ class FederationReplicator(
                             accountId = token.accountId,
                             userId = token.userId,
                             scope = token.scope,
-                            issuedAt = token.issuedAt
+                            issuedAt = token.issuedAt,
+                            idToken = token.idToken
                         )
                     )
                 } catch (e: Exception) {
@@ -616,7 +674,8 @@ class FederationReplicator(
                         group = userInfo.group,
                         email = userInfo.email,
                         phone = userInfo.phone,
-                        tenantId = userInfo.tenantId
+                        tenantId = userInfo.tenantId,
+                        locked = userInfo.locked
                     )
                 )
             }
@@ -689,7 +748,9 @@ class FederationReplicator(
                         repoName = role.repoName,
                         admin = role.admin,
                         users = role.users,
-                        description = role.description
+                        description = role.description,
+                        source = role.source,
+                        deptInfoList = role.deptInfoList
                     )
                 )
             }
@@ -889,13 +950,106 @@ class FederationReplicator(
                         accountId = tokenInfo.accountId,
                         userId = tokenInfo.userId,
                         scope = tokenInfo.scope,
-                        issuedAt = tokenInfo.issuedAt
+                        issuedAt = tokenInfo.issuedAt,
+                        idToken = tokenInfo.idToken
                     )
                 )
             }
             logger.info("Incremental oauthToken (deleted=$deleted) synced to cluster[$clusterName]")
         } catch (e: Exception) {
             logger.warn("Failed to sync oauthToken to cluster[$clusterName]: ${e.message}")
+        }
+    }
+
+    fun replicaExternalPermissionChangeTo(
+        client: ArtifactReplicaClient,
+        id: String,
+        deleted: Boolean,
+        projectId: String?,
+        repoName: String?,
+        clusterName: String
+    ) {
+        try {
+            if (deleted) {
+                client.replicaExternalPermissionRequest(
+                    ExternalPermissionReplicaRequest(
+                        action = ReplicaAction.DELETE,
+                        id = id,
+                        projectId = projectId.orEmpty(),
+                        repoName = repoName.orEmpty()
+                    )
+                )
+            } else {
+                val perm = localExternalPermissionClient.getExternalPermission(id).data ?: run {
+                    logger.warn("ExternalPermission[$id] not found for incremental federation sync")
+                    return
+                }
+                client.replicaExternalPermissionRequest(
+                    ExternalPermissionReplicaRequest(
+                        action = ReplicaAction.UPSERT,
+                        id = perm.id,
+                        url = perm.url,
+                        headers = perm.headers,
+                        projectId = perm.projectId,
+                        repoName = perm.repoName,
+                        scope = perm.scope,
+                        platformWhiteList = perm.platformWhiteList,
+                        enabled = perm.enabled
+                    )
+                )
+            }
+            logger.info(
+                "Incremental externalPermission[$id] (deleted=$deleted) synced to cluster[$clusterName]"
+            )
+        } catch (e: Exception) {
+            logger.warn("Failed to sync externalPermission[$id] to cluster[$clusterName]: ${e.message}")
+        }
+    }
+
+    fun replicaPersonalPathChangeTo(
+        client: ArtifactReplicaClient,
+        projectId: String,
+        repoName: String,
+        userId: String,
+        fullPath: String?,
+        deleted: Boolean,
+        clusterName: String
+    ) {
+        try {
+            if (deleted) {
+                client.replicaPersonalPathRequest(
+                    PersonalPathReplicaRequest(
+                        action = ReplicaAction.DELETE,
+                        userId = userId,
+                        projectId = projectId,
+                        repoName = repoName
+                    )
+                )
+            } else {
+                val path = fullPath ?: run {
+                    logger.warn(
+                        "PersonalPath[$projectId/$repoName/$userId] missing fullPath for incremental sync"
+                    )
+                    return
+                }
+                client.replicaPersonalPathRequest(
+                    PersonalPathReplicaRequest(
+                        action = ReplicaAction.UPSERT,
+                        userId = userId,
+                        projectId = projectId,
+                        repoName = repoName,
+                        fullPath = path
+                    )
+                )
+            }
+            logger.info(
+                "Incremental personalPath[$projectId/$repoName/$userId]" +
+                    " (deleted=$deleted) synced to cluster[$clusterName]"
+            )
+        } catch (e: Exception) {
+            logger.warn(
+                "Failed to sync personalPath[$projectId/$repoName/$userId] to cluster[$clusterName]: ${e.message}"
+            )
         }
     }
 

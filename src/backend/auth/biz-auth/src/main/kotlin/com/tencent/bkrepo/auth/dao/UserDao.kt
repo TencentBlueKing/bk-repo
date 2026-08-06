@@ -94,6 +94,13 @@ class UserDao : SimpleMongoDao<TUser>() {
         return this.find(query.with(pageRequest), TUser::class.java)
     }
 
+    /** 联邦同步：含 locked 用户 */
+    fun getUserPageForFederation(tenantId: String?, pageNumber: Int, pageSize: Int): List<TUser> {
+        val query = UserQueryHelper.filterUserForFederation(tenantId)
+        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+        return this.find(query.with(pageRequest), TUser::class.java)
+    }
+
     fun addUserAccount(userId: String, accountId: String): Boolean {
         val query = Query(Criteria(TUser::userId.name).isEqualTo(userId))
         val update = Update().addToSet(TUser::accounts.name, accountId)

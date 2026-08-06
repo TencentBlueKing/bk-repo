@@ -203,6 +203,7 @@ class AccountServiceImpl constructor(
         )
         update.addToSet(TAccount::credentials.name, credentials)
         accountDao.upsert(query, update)
+        publishEvent(EventType.ACCOUNT_UPDATE, appId)
         return credentials
     }
 
@@ -227,6 +228,7 @@ class AccountServiceImpl constructor(
         account.credentials = account.credentials.filter { it.accessKey != accessKey }
         account.lastModifiedDate = LocalDateTime.now()
         accountDao.save(account)
+        publishEvent(EventType.ACCOUNT_UPDATE, appId)
         return true
     }
 
@@ -243,7 +245,10 @@ class AccountServiceImpl constructor(
             val update = Update()
             update.set("credentials.$.status", status.toString())
             val result = accountDao.updateFirst(query, update)
-            if (result.modifiedCount == 1L) return true
+            if (result.modifiedCount == 1L) {
+                publishEvent(EventType.ACCOUNT_UPDATE, appId)
+                return true
+            }
         }
         return false
     }

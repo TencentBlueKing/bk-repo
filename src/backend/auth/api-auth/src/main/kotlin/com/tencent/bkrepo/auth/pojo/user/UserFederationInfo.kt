@@ -1,6 +1,8 @@
 package com.tencent.bkrepo.auth.pojo.user
 
-/** 联邦同步专用：包含完整用户信息（含 hashedPwd），避免逐个调用 userInfoById + userPwdById */
+import com.tencent.bkrepo.auth.pojo.token.Token
+
+/** 联邦同步专用：包含完整用户信息（含 hashedPwd/tokens），避免逐个调用 detail */
 data class UserFederationInfo(
     val userId: String,
     val name: String,
@@ -11,4 +13,6 @@ data class UserFederationInfo(
     val email: String?,
     val phone: String?,
     val tenantId: String?,
+    val locked: Boolean = false,
+    val tokens: List<Token> = emptyList(),
 )

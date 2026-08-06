@@ -9,4 +9,5 @@ data class OauthTokenInfo(
     val userId: String,
     val scope: Set<String>? = null,
     val issuedAt: Long,
+    val idToken: IdToken? = null,
 )

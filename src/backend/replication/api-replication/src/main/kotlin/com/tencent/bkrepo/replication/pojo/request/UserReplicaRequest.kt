@@ -10,5 +10,6 @@ data class UserReplicaRequest(
     val group: Boolean = false,
     val email: String? = null,
     val phone: String? = null,
-    val tenantId: String? = null
+    val tenantId: String? = null,
+    val locked: Boolean = false,
 )

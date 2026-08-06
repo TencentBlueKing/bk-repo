@@ -34,7 +34,6 @@ package com.tencent.bkrepo.auth.controller.service
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.controller.OpenResource
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
-import com.tencent.bkrepo.auth.model.TPersonalPath
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.ListPathResult
@@ -115,6 +114,10 @@ class ServicePermissionController @Autowired constructor(
         return ResponseBuilder.success(permissionService.listAllPermissionByProject(projectId))
     }
 
+    override fun listSystemPermissions(): Response<List<Permission>> {
+        return ResponseBuilder.success(permissionService.listSystemPermissions())
+    }
+
     override fun createPermission(request: CreatePermissionRequest): Response<Boolean> {
         return ResponseBuilder.success(permissionService.createPermission(request))
     }
@@ -138,8 +141,7 @@ class ServicePermissionController @Autowired constructor(
         return ResponseBuilder.success(permissionService.getPermissionByName(projectId, resourceType, permName))
     }
 
-    // TODO: listPersonalPath/createPersonalPath/deletePersonalPath 应通过 PermissionService 操作，
-    //  当前直接调用 DAO 是临时方案，后续需将相关方法上移到 Service 层
+    // TODO: listPersonalPath 应通过 PermissionService 操作
     override fun listPersonalPath(projectId: String): Response<List<PersonalPathInfo>> {
         val paths = personalPathDao.listByProject(projectId)
         val result = paths.map { p ->
@@ -154,21 +156,14 @@ class ServicePermissionController @Autowired constructor(
     }
 
     override fun createPersonalPath(request: PersonalPathInfo): Response<Boolean> {
-        val existing = personalPathDao.findOneByProjectAndRepo(request.userId, request.projectId, request.repoName)
-        if (existing != null) return ResponseBuilder.success(false)
-        personalPathDao.insert(
-            TPersonalPath(
-                userId = request.userId,
-                projectId = request.projectId,
-                repoName = request.repoName,
-                fullPath = request.fullPath
+        return ResponseBuilder.success(
+            permissionService.createPersonalPath(
+                request.userId, request.projectId, request.repoName, request.fullPath
             )
         )
-        return ResponseBuilder.success(true)
     }
 
     override fun deletePersonalPath(projectId: String, repoName: String, userId: String): Response<Boolean> {
-        personalPathDao.deleteByProjectAndRepoAndUser(projectId, repoName, userId)
-        return ResponseBuilder.success(true)
+        return ResponseBuilder.success(permissionService.deletePersonalPath(projectId, repoName, userId))
     }
 }

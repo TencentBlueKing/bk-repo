@@ -125,6 +125,12 @@ class PermissionDao : SimpleMongoDao<TPermission>() {
         return this.find(query)
     }
 
+    /** 系统级权限（projectId 为 null） */
+    fun listSystemPermissions(): List<TPermission> {
+        val query = Query.query(Criteria.where(TPermission::projectId.name).`is`(null))
+        return this.find(query)
+    }
+
     /**
      * 按 permName+projectId+resourceType 做原子 upsert（更新所有可变字段），用于联邦同步，避免 delete-then-create 间的鉴权空窗期。
      */

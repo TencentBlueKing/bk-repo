@@ -39,6 +39,7 @@ import com.tencent.bkrepo.auth.constant.REPO_MANAGE_NAME
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.role.RoleInfo
+import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.pojo.role.UpdateRoleRequest
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
@@ -102,11 +103,14 @@ class ServiceRoleController @Autowired constructor(
         repoName = repoName,
         admin = admin,
         users = users,
-        description = description
+        description = description,
+        source = source?.name,
+        deptInfoList = deptInfoList
     )
 
     override fun createRoleForFederation(roleInfo: RoleInfo): Response<String?> {
         val type = runCatching { RoleType.valueOf(roleInfo.type) }.getOrDefault(RoleType.PROJECT)
+        val source = roleInfo.source?.let { runCatching { RoleSource.valueOf(it) }.getOrNull() }
         val request = CreateRoleRequest(
             roleId = roleInfo.roleId,
             name = roleInfo.name,
@@ -114,7 +118,9 @@ class ServiceRoleController @Autowired constructor(
             projectId = roleInfo.projectId,
             repoName = roleInfo.repoName,
             admin = roleInfo.admin,
-            description = roleInfo.description
+            description = roleInfo.description,
+            source = source,
+            deptInfoList = roleInfo.deptInfoList
         )
         val id = roleService.createRole(request)
         if (!roleInfo.users.isNullOrEmpty() && id != null) {
@@ -131,7 +137,7 @@ class ServiceRoleController @Autowired constructor(
             name = roleInfo.name,
             description = roleInfo.description,
             userIds = roleInfo.users.toSet(),
-            deptInfoList = null
+            deptInfoList = roleInfo.deptInfoList
         )
         val result = roleService.updateRoleInfo(existingRole.id!!, request)
         return ResponseBuilder.success(result)
