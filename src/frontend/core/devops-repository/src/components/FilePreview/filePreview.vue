@@ -54,7 +54,6 @@
         customizePreviewRemoteOfficeFile,
         getPreviewLocalOfficeFileInfo, getPreviewRemoteOfficeFileInfo
     } from '@repository/utils/previewOfficeFile'
-    import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
     import { isCode, isExcel, isFormatType, isHtmlFile, isHtmlType, isJsx, isMarkdown, isPic, isText, isXmind } from '@repository/utils/file'
     import { createAssetResolver, parsePreviewContext, resolvePreviewViewMode } from '@repository/utils/markdownJsxPreview'
@@ -180,19 +179,11 @@
                 return
             }
             if (!this.enableMultipleTypeFilePreview) {
-                if (isText(this.filePath)) {
-                    this.previewBasicFile({
-                        projectId: this.projectId,
-                        repoName: this.repoName,
-                        path: '/' + this.filePath
-                    }).then(res => {
-                        this.loading = false
-                        this.previewBasic = true
-                        this.$nextTick(() => {
-                            setTextareaHeight()
-                        })
-                        this.basicFileText = res
-                    }).catch(() => this.showError())
+                const codeSuffix = isCode(this.filePath)
+                if (codeSuffix === 'ini' || codeSuffix === 'toml') {
+                    this.previewViaOnlinePreview(res => this.dealDate(res))
+                } else if (isText(this.filePath)) {
+                    this.previewViaOnlinePreview(res => this.dealTextPreview(res))
                 } else {
                     this.showError()
                 }
@@ -201,28 +192,9 @@
                 this.dealWaterMark()
             }
             if (isCode(this.filePath) || isHtmlFile(this.filePath)) {
-                if (this.repoType === 'local') {
-                    customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
-                        this.dealDate(res)
-                    }).catch(() => this.showError())
-                } else {
-                    customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(res => {
-                        this.dealDate(res)
-                    }).catch(() => this.showError())
-                }
+                this.previewViaOnlinePreview(res => this.dealDate(res))
             } else if (isText(this.filePath)) {
-                this.previewBasicFile({
-                    projectId: this.projectId,
-                    repoName: this.repoName,
-                    path: '/' + this.filePath
-                }).then(res => {
-                    this.loading = false
-                    this.previewBasic = true
-                    this.$nextTick(() => {
-                        setTextareaHeight()
-                    })
-                    this.basicFileText = typeof (res) === 'string' ? res : JSON.stringify(res)
-                }).catch(() => this.showError())
+                this.previewViaOnlinePreview(res => this.dealTextPreview(res))
             } else if (isExcel(this.filePath)) {
                 if (this.repoType === 'local') {
                     customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
@@ -257,14 +229,36 @@
             this.cancel()
         },
         methods: {
-            ...mapActions([
-                'previewBasicFile'
-            ]),
             checkRepoType () {
                 return this.repoTypeEnum.includes(this.repoType)
             },
+            previewViaOnlinePreview (onSuccess) {
+                if (this.repoType === 'local') {
+                    customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath)
+                        .then(onSuccess)
+                        .catch(() => this.showError())
+                } else {
+                    customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam)))
+                        .then(onSuccess)
+                        .catch(() => this.showError())
+                }
+            },
+            async dealTextPreview (res) {
+                try {
+                    const raw = await res.data.text()
+                    this.basicFileText = Base64.decode(raw)
+                    this.loading = false
+                    this.previewBasic = true
+                    this.$nextTick(() => {
+                        setTextareaHeight()
+                    })
+                } catch (e) {
+                    this.showError()
+                }
+            },
             showError () {
                 this.loading = false
+                this.previewBasic = false
                 this.hasError = true
             },
             cancel () {

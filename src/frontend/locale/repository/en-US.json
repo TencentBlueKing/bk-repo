@@ -214,7 +214,7 @@
     "unknownSize": "The size of the unknown",
     "supportPreview": "This file does not support preview",
     "previewCompressedLimitTips": "You can preview only compressed files smaller than 1Gb",
-    "previewFileTips": "Note: Text files larger than 50 MB will only display the first 50 MB of content.",
+    "previewFileTips": "Note: Text files larger than 50 MB cannot be previewed.",
     "previewTab": "Preview",
     "sourceTab": "Source",
     "telephone": "Telephone",

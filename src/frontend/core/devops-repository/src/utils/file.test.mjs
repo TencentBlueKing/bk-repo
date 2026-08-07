@@ -28,6 +28,23 @@ test('isCode recognizes backend CODE suffixes', () => {
     assert.equal(isCode('page.htm'), undefined)
 })
 
+test('isCode recognizes ini and toml as code preview', () => {
+    assert.equal(isCode('config.ini'), 'ini')
+    assert.equal(isCode('Cargo.toml'), 'toml')
+    assert.equal(isCode('ini'), 'ini')
+    assert.equal(isCode('toml'), 'toml')
+    assert.equal(isText('config.ini'), undefined)
+    assert.equal(isText('Cargo.toml'), undefined)
+})
+
+test('isText recognizes plain text suffixes that stay on text preview', () => {
+    assert.ok(isText('notes.txt'))
+    assert.ok(isText('run.bat'))
+    assert.ok(isText('app.log'))
+    assert.ok(isText('config.properties'))
+    assert.ok(isText('payload.xml'))
+})
+
 test('isHtmlFile recognizes html and htm', () => {
     assert.equal(isHtmlFile('report.html'), 'html')
     assert.equal(isHtmlFile('docs/page.HTM'), 'htm')
@@ -42,6 +59,9 @@ test('isOutDisplayType includes code and html files', () => {
     assert.ok(isOutDisplayType('app.py'))
     assert.ok(isOutDisplayType('report.html'))
     assert.ok(isOutDisplayType('page.htm'))
+    assert.ok(isOutDisplayType('config.ini'))
+    assert.ok(isOutDisplayType('Cargo.toml'))
+    assert.ok(isOutDisplayType('notes.txt'))
 })
 
 test('isText still recognizes overlapping suffixes for non-community fallback', () => {

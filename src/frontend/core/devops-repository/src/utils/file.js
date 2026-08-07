@@ -7,10 +7,7 @@ const textType = [
     'yml',
     'xml',
     'log',
-    'ini',
-    'log',
     'properties',
-    'toml',
     'sql'
 ]
 
@@ -108,7 +105,9 @@ const codeType = [
     'cs',
     'aspx',
     'jsp',
-    'sql'
+    'sql',
+    'ini',
+    'toml'
 ]
 
 function getFileSuffix (param) {
