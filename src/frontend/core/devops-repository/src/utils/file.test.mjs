@@ -20,7 +20,7 @@ test('isCode recognizes backend CODE suffixes', () => {
     assert.equal(isCode('styles.css'), 'css')
     assert.equal(isCode('lib.cpp'), 'cpp')
     assert.equal(isCode('App.cs'), 'cs')
-    assert.equal(isCode('readme.txt'), undefined)
+    assert.equal(isCode('readme.txt'), 'txt')
     assert.equal(isCode('photo.png'), undefined)
     assert.equal(isCode('report.doc'), undefined)
     assert.equal(isCode('foo.path'), undefined)
@@ -37,7 +37,12 @@ test('isCode recognizes ini and toml as code preview', () => {
     assert.equal(isText('Cargo.toml'), undefined)
 })
 
-test('isText recognizes plain text suffixes that stay on text preview', () => {
+test('isCode recognizes former plain text suffixes for Monaco preview', () => {
+    assert.equal(isCode('notes.txt'), 'txt')
+    assert.equal(isCode('run.bat'), 'bat')
+    assert.equal(isCode('app.log'), 'log')
+    assert.equal(isCode('config.properties'), 'properties')
+    assert.equal(isCode('payload.xml'), 'xml')
     assert.ok(isText('notes.txt'))
     assert.ok(isText('run.bat'))
     assert.ok(isText('app.log'))

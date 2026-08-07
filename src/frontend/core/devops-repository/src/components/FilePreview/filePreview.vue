@@ -180,10 +180,8 @@
             }
             if (!this.enableMultipleTypeFilePreview) {
                 const codeSuffix = isCode(this.filePath)
-                if (codeSuffix === 'ini' || codeSuffix === 'toml') {
+                if (isText(this.filePath) || codeSuffix === 'ini' || codeSuffix === 'toml') {
                     this.previewViaOnlinePreview(res => this.dealDate(res))
-                } else if (isText(this.filePath)) {
-                    this.previewViaOnlinePreview(res => this.dealTextPreview(res))
                 } else {
                     this.showError()
                 }
@@ -193,8 +191,6 @@
             }
             if (isCode(this.filePath) || isHtmlFile(this.filePath)) {
                 this.previewViaOnlinePreview(res => this.dealDate(res))
-            } else if (isText(this.filePath)) {
-                this.previewViaOnlinePreview(res => this.dealTextPreview(res))
             } else if (isExcel(this.filePath)) {
                 if (this.repoType === 'local') {
                     customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
@@ -241,19 +237,6 @@
                     customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam)))
                         .then(onSuccess)
                         .catch(() => this.showError())
-                }
-            },
-            async dealTextPreview (res) {
-                try {
-                    const raw = await res.data.text()
-                    this.basicFileText = Base64.decode(raw)
-                    this.loading = false
-                    this.previewBasic = true
-                    this.$nextTick(() => {
-                        setTextareaHeight()
-                    })
-                } catch (e) {
-                    this.showError()
                 }
             },
             showError () {

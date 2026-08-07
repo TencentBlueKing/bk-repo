@@ -84,6 +84,7 @@ const xmindType = [
 ]
 
 // 与 preview 服务 FileType.CODES 对齐（html 已拆到 isHtmlFile 做渲染预览）
+// 含原文本类后缀：统一走 onlinePreview + Monaco
 const codeType = [
     'java',
     'c',
@@ -107,7 +108,12 @@ const codeType = [
     'jsp',
     'sql',
     'ini',
-    'toml'
+    'toml',
+    'txt',
+    'bat',
+    'xml',
+    'log',
+    'properties'
 ]
 
 function getFileSuffix (param) {

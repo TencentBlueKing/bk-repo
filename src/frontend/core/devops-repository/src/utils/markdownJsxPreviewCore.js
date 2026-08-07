@@ -130,7 +130,14 @@ const MONACO_LANGUAGE_BY_SUFFIX = {
     lua: 'lua',
     aspx: 'plaintext',
     jsp: 'plaintext',
-    ftl: 'plaintext'
+    ftl: 'plaintext',
+    xml: 'xml',
+    ini: 'ini',
+    bat: 'bat',
+    txt: 'plaintext',
+    log: 'plaintext',
+    properties: 'plaintext',
+    toml: 'plaintext'
 }
 
 function extractFileSuffix (filePath) {
