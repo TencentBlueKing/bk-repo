@@ -65,12 +65,7 @@ data class AgentProperties(
      */
     var maxSessionIdLength: Int = DEFAULT_MAX_SESSION_ID_LENGTH,
     /**
-     * 是否注册 HITL 冒烟工具 [com.tencent.bkrepo.agent.tool.HitlSmokeTestTool]。
-     * 联调确认链路时可开启；生产环境应关闭。
-     */
-    var hitlSmokeToolEnabled: Boolean = DEFAULT_HITL_SMOKE_TOOL_ENABLED,
-    /**
-     * 是否注册通过 SchemaOnlyTool 声明的只读本地工具（由客户端在 SSE 往返中执行）。
+     * 是否注册客户端本地工具 schema（由客户端在 REQUIRE_EXTERNAL_EXECUTION 中执行）。
      */
     var localToolsEnabled: Boolean = DEFAULT_LOCAL_TOOLS_ENABLED,
 ) {
@@ -81,7 +76,6 @@ data class AgentProperties(
         val DEFAULT_SSE_TIMEOUT: Duration = Duration.ofMinutes(10)
         const val DEFAULT_MAX_MESSAGE_LENGTH = 32 * 1024
         const val DEFAULT_MAX_SESSION_ID_LENGTH = 128
-        const val DEFAULT_HITL_SMOKE_TOOL_ENABLED = false
         const val DEFAULT_LOCAL_TOOLS_ENABLED = true
     }
 }

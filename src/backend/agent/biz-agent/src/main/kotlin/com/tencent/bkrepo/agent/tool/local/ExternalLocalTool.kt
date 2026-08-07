@@ -36,11 +36,7 @@ import io.agentscope.core.tool.ToolSuspendException
 import reactor.core.publisher.Mono
 
 /**
- * 客户端本地执行的 SchemaOnly 工具。
- *
- * 后台一律 ALLOW 并挂起，由 [REQUIRE_EXTERNAL_EXECUTION] 交客户端执行。
- * 写操作的用户确认在客户端外部执行前完成，避免「后台 HITL → confirmResults → 再外部执行」
- * 两段式往返导致会话 pending 残留与模型反复重试。
+ * 客户端本地执行的 SchemaOnly 工具：后台 ALLOW 并挂起，由 REQUIRE_EXTERNAL_EXECUTION 交客户端执行。
  */
 class ExternalLocalTool(
     definition: LocalToolDefinition,

@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.agent.config
 
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
-import com.tencent.bkrepo.agent.tool.HitlSmokeTestTool
 import com.tencent.bkrepo.agent.tool.local.ExternalLocalTool
 import com.tencent.bkrepo.agent.tool.local.LocalToolDefinitions
 import io.agentscope.core.tool.Toolkit
@@ -42,9 +41,6 @@ class AgentToolkitConfiguration {
     @Bean
     fun agentToolkit(properties: AgentProperties): Toolkit {
         val toolkit = Toolkit()
-        if (properties.hitlSmokeToolEnabled) {
-            toolkit.registerTool(HitlSmokeTestTool())
-        }
         val localTools = if (properties.localToolsEnabled) {
             LocalToolDefinitions.allTools().also { definitions ->
                 definitions.forEach { definition ->
@@ -55,11 +51,9 @@ class AgentToolkitConfiguration {
             emptyList()
         }
         logger.info(
-            "agent toolkit: hitlSmoke={}, localTools={}, readOnly={}, write={}, names={}",
-            properties.hitlSmokeToolEnabled,
+            "agent toolkit: localTools={}, count={}, names={}",
+            properties.localToolsEnabled,
             localTools.size,
-            LocalToolDefinitions.readOnlyTools().size,
-            LocalToolDefinitions.writeTools().size,
             localTools.map { it.name },
         )
         return toolkit

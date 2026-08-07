@@ -30,16 +30,14 @@ package com.tencent.bkrepo.agent.pojo
 import io.swagger.v3.oas.annotations.media.Schema
 
 /**
- * 发起一次agent对话。请求体只承载业务参数，userId、deviceId等身份信息一律取自已认证的请求上下文。
+ * 发起一次 agent 对话。userId、deviceId 等身份信息取自已认证的请求上下文。
  */
 @Schema(title = "Agent对话请求")
 data class AgentRunRequest(
     @get:Schema(title = "会话ID，由创建会话接口返回")
     val sessionId: String,
-    @get:Schema(title = "用户输入；HITL 恢复时可留空")
+    @get:Schema(title = "用户输入；外部工具续跑时可留空")
     val content: String = "",
-    @get:Schema(title = "HITL 确认结果；Agent 暂停在 ASK 状态时携带以恢复执行")
-    val confirmResults: List<AgentConfirmResult>? = null,
-    @get:Schema(title = "本地工具执行结果；Agent 暂停在外部执行时携带以恢复")
+    @get:Schema(title = "本地工具执行结果；Agent 挂起在外部执行时携带以恢复")
     val externalExecutionResults: List<AgentExternalExecutionResult>? = null,
 )

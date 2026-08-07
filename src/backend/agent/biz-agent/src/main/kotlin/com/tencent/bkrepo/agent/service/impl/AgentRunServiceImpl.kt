@@ -21,8 +21,8 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
  * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
  * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 package com.tencent.bkrepo.agent.service.impl
@@ -38,7 +38,6 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import io.agentscope.core.agent.RuntimeContext
 import io.agentscope.core.event.AgentEvent
 import io.agentscope.core.event.AgentResultEvent
-import io.agentscope.core.event.ConfirmResult
 import io.agentscope.core.event.RequireExternalExecutionEvent
 import io.agentscope.core.message.GenerateReason
 import io.agentscope.core.message.Msg
@@ -76,7 +75,6 @@ class AgentRunServiceImpl(
 
     override fun run(userId: String, deviceId: String?, request: AgentRunRequest): SseEmitter {
         validate(request)
-        // 会话状态按(userId, sessionId)寻址，userId取自已认证请求，因此伪造sessionId也读不到其他用户的会话
         val runtimeContextBuilder = RuntimeContext.builder()
             .userId(userId)
             .sessionId(request.sessionId)
@@ -100,11 +98,9 @@ class AgentRunServiceImpl(
                 { event ->
                     try {
                         if (emitAgentEvent(emitter, event, pendingExternalExecution)) {
-                            // 本地工具 / HITL 挂起后须结束 SSE，客户端才能执行并续跑
                             finishSse()
                         }
                     } catch (ignored: IOException) {
-                        // 客户端已断开，停止本轮推送；会话状态已由AgentStateStore保存，可重连后继续
                         logger.info("agent sse closed by client, session[${request.sessionId}]")
                         finishSse()
                     }
@@ -133,16 +129,15 @@ class AgentRunServiceImpl(
         Preconditions.checkNotBlank(request.sessionId, "sessionId")
         Preconditions.checkArgument(request.sessionId.length <= properties.maxSessionIdLength, "sessionId")
         val hasContent = request.content.isNotBlank()
-        val hasConfirm = !request.confirmResults.isNullOrEmpty()
         val hasExternal = !request.externalExecutionResults.isNullOrEmpty()
-        Preconditions.checkArgument(hasContent || hasConfirm || hasExternal, "content, confirmResults or externalExecutionResults")
+        Preconditions.checkArgument(hasContent || hasExternal, "content or externalExecutionResults")
         if (hasContent) {
             Preconditions.checkArgument(request.content.length <= properties.maxMessageLength, "content")
         }
     }
 
     /**
-     * @return true 表示本轮 SSE 应结束，等待客户端回传 confirmResults / externalExecutionResults
+     * @return true 表示本轮 SSE 应结束，等待客户端回传 externalExecutionResults
      */
     private fun emitAgentEvent(
         emitter: SseEmitter,
@@ -175,28 +170,10 @@ class AgentRunServiceImpl(
                 .name(event.type.value)
                 .data(event, MediaType.APPLICATION_JSON),
         )
-        return event.type.value == "REQUIRE_USER_CONFIRM"
+        return false
     }
 
     private fun buildResumeMessage(userId: String, request: AgentRunRequest): Msg {
-        val confirmResults = request.confirmResults
-        if (!confirmResults.isNullOrEmpty()) {
-            val results = confirmResults.map { dto ->
-                ConfirmResult(
-                    dto.confirmed,
-                    ToolUseBlock.builder()
-                        .id(dto.callId)
-                        .name(dto.toolName)
-                        .input(dto.toolInput)
-                        .build(),
-                )
-            }
-            return UserMessage.builder()
-                .name(userId)
-                .textContent(request.content.ifBlank { " " })
-                .metadata(mapOf(Msg.METADATA_CONFIRM_RESULTS to results))
-                .build()
-        }
         val externalResults = request.externalExecutionResults
         if (!externalResults.isNullOrEmpty()) {
             val blocks = externalResults.map { dto ->

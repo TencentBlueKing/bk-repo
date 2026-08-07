@@ -4,27 +4,14 @@ spring:
 server:
   port: 25915
 
-# 本地开发时可在此覆盖；生产环境通常由配置中心注入
+# 本地开发时可在此覆盖；生产环境通常由配置中心注入 model 与限流
 agent:
-  name: bkrepo-assistant
   local-tools-enabled: true
-  hitl-smoke-tool-enabled: false
-  max-iters: 10
-  workspace: /data/workspace/agent
-  sse-timeout: 10m
-  max-message-length: 32768
-  max-session-id-length: 128
   model:
     base-url:
     api-key:
     model-name:
-    stream: true
-    context-window-size: 128000
-  state:
-    key-prefix: bkrepo:agent:state:
 
-# 限流由 common-ratelimiter 自动装配（artifact-service 已引入），/api/** 走 UserRateLimitHandlerInterceptor。
-# 全局开关默认关闭；启用后下方规则对 /api/agent/run 按用户限流，数值请按环境调整。
 rate:
   limiter:
     enabled: false
