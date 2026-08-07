@@ -43,6 +43,7 @@ import io.agentscope.core.event.RequireExternalExecutionEvent
 import io.agentscope.core.message.GenerateReason
 import io.agentscope.core.message.Msg
 import io.agentscope.core.message.ToolResultBlock
+import io.agentscope.core.message.ToolResultMessage
 import io.agentscope.core.message.ToolUseBlock
 import io.agentscope.core.message.UserMessage
 import io.agentscope.harness.agent.HarnessAgent
@@ -93,7 +94,7 @@ class AgentRunServiceImpl(
             emitter.complete()
         }
         val subscription = agent
-            .streamEvents(buildUserMessage(userId, request), runtimeContext)
+            .streamEvents(buildResumeMessage(userId, request), runtimeContext)
             .subscribeOn(Schedulers.boundedElastic())
             .subscribe(
                 { event ->
@@ -177,7 +178,7 @@ class AgentRunServiceImpl(
         return event.type.value == "REQUIRE_USER_CONFIRM"
     }
 
-    private fun buildUserMessage(userId: String, request: AgentRunRequest): UserMessage {
+    private fun buildResumeMessage(userId: String, request: AgentRunRequest): Msg {
         val confirmResults = request.confirmResults
         if (!confirmResults.isNullOrEmpty()) {
             val results = confirmResults.map { dto ->
@@ -202,10 +203,8 @@ class AgentRunServiceImpl(
                 ToolResultBlock.text(dto.payload)
                     .withIdAndName(dto.callId, dto.toolName)
             }
-            return UserMessage.builder()
-                .name(userId)
-                .textContent(" ")
-                .content(blocks)
+            return ToolResultMessage.builder()
+                .results(blocks)
                 .build()
         }
         return UserMessage(userId, request.content)
