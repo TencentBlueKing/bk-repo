@@ -161,7 +161,13 @@ enum class FileType(val instanceName: String) {
             "cs",
             "aspx",
             "jsp",
-            "sql"
+            "sql",
+            "ini",
+            "toml",
+            "txt",
+            "bat",
+            "log",
+            "properties"
         )
         private val SSIM_TEXT_TYPES = arrayOf(
             "txt",
