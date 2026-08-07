@@ -54,6 +54,7 @@ import reactor.core.Disposable
 import reactor.core.scheduler.Schedulers
 import java.io.IOException
 import java.time.LocalDateTime
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 @Service
@@ -85,25 +86,36 @@ class AgentRunServiceImpl(
         val emitter = SseEmitter(properties.sseTimeout.toMillis())
         val subscriptionRef = AtomicReference<Disposable>()
         val pendingExternalExecution = AtomicReference(false)
+        val sseFinished = AtomicBoolean(false)
+        fun finishSse(disposeSubscription: Boolean = true) {
+            if (!sseFinished.compareAndSet(false, true)) return
+            if (disposeSubscription) subscriptionRef.get()?.dispose()
+            emitter.complete()
+        }
         val subscription = agent
             .streamEvents(buildUserMessage(userId, request), runtimeContext)
             .subscribeOn(Schedulers.boundedElastic())
             .subscribe(
                 { event ->
                     try {
-                        emitAgentEvent(emitter, event, pendingExternalExecution)
+                        if (emitAgentEvent(emitter, event, pendingExternalExecution)) {
+                            // 本地工具 / HITL 挂起后须结束 SSE，客户端才能执行并续跑
+                            finishSse()
+                        }
                     } catch (ignored: IOException) {
                         // 客户端已断开，停止本轮推送；会话状态已由AgentStateStore保存，可重连后继续
                         logger.info("agent sse closed by client, session[${request.sessionId}]")
-                        subscriptionRef.get()?.dispose()
-                        emitter.complete()
+                        finishSse()
                     }
                 },
                 { error ->
                     logger.error("agent run failed, user[$userId] session[${request.sessionId}]", error)
-                    emitter.completeWithError(error)
+                    if (sseFinished.compareAndSet(false, true)) {
+                        subscriptionRef.get()?.dispose()
+                        emitter.completeWithError(error)
+                    }
                 },
-                { emitter.complete() },
+                { finishSse() },
             )
         subscriptionRef.set(subscription)
         emitter.onCompletion { subscription.dispose() }
@@ -128,11 +140,14 @@ class AgentRunServiceImpl(
         }
     }
 
+    /**
+     * @return true 表示本轮 SSE 应结束，等待客户端回传 confirmResults / externalExecutionResults
+     */
     private fun emitAgentEvent(
         emitter: SseEmitter,
         event: AgentEvent,
         pendingExternalExecution: AtomicReference<Boolean>,
-    ) {
+    ): Boolean {
         if (event is AgentResultEvent) {
             val result = event.result
             if (result != null && result.generateReason == GenerateReason.TOOL_SUSPENDED) {
@@ -146,12 +161,12 @@ class AgentRunServiceImpl(
                             .name(externalEvent.type.value)
                             .data(externalEvent, MediaType.APPLICATION_JSON),
                     )
-                    return
+                    return true
                 }
             }
         }
         if (pendingExternalExecution.get() == true && event.type.value == "AGENT_END") {
-            return
+            return false
         }
         emitter.send(
             SseEmitter.event()
@@ -159,6 +174,7 @@ class AgentRunServiceImpl(
                 .name(event.type.value)
                 .data(event, MediaType.APPLICATION_JSON),
         )
+        return event.type.value == "REQUIRE_USER_CONFIRM"
     }
 
     private fun buildUserMessage(userId: String, request: AgentRunRequest): UserMessage {
