@@ -38,7 +38,7 @@ object AgentSystemPrompts {
 
         当用户问「当前有哪些下载」「在下什么」「失败任务」等问题时，必须先调用工具查询，再回答。
         首选工具：list_download_tasks（列出传输列表，默认最近 10 条活动任务）。
-        需要详情时用 get_download_task；排查失败用 diagnose_download_failure；排查慢速用 diagnose_slow_download。
+        需要详情时用 get_download_task；失败很多时先用 summarize_failed_tasks 看分布，再 diagnose_download_failure；排查慢速用 diagnose_slow_download。
 
         重要约束：
         - taskId 只能来自 list_download_tasks 的返回，禁止编造。

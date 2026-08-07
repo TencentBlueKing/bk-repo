@@ -49,6 +49,7 @@ object LocalToolDefinitions {
     private val LOG_SOURCES = listOf("main", "aria2")
     private val LOG_TOPICS = listOf("schedule", "cleanup", "extract", "script", "download", "engine", "update", "login")
     private val LOG_LEVELS = listOf("error", "warn", "info")
+    private const val MAX_SLOW_TASKS = 10
 
     fun readOnlyTools(): List<LocalToolDefinition> = listOf(
         LocalToolDefinition(
@@ -63,9 +64,50 @@ object LocalToolDefinitions {
         ),
         LocalToolDefinition(
             name = "get_download_task",
-            description = "查询一个或多个下载任务的完整详情，含失败码、保存路径、GID、已下载字节数。",
+            description =
+                "查询一个或多个下载任务的完整详情，含失败码、保存路径、GID、已下载字节数。" +
+                "排查失败用 diagnose_download_failure，排查慢或卡住用 diagnose_slow_download。",
             inputSchema = obj(
                 "taskIds" to strArray("任务 ID 列表，来自 list_download_tasks 的返回；不要编造", min = 1, max = 50),
+                required = listOf("taskIds"),
+            ),
+        ),
+        LocalToolDefinition(
+            name = "summarize_failed_tasks",
+            description =
+                "统计失败任务按根因分组的数量，不跑完整诊断。失败很多时先用本工具看分布，" +
+                "再对每组挑 taskId 调 diagnose_download_failure 深入分析。",
+            inputSchema = obj(
+                "keyword" to str("按文件名模糊匹配，仅在用户提到具体文件名时传"),
+                "source" to enumOf(TASK_SOURCES, "按下载来源过滤；用户没提来源时不要传"),
+                "limit" to int("返回条数上限，默认 50", min = 1, max = 50),
+            ),
+        ),
+        LocalToolDefinition(
+            name = "diagnose_download_failure",
+            description =
+                "诊断已经失败的下载任务：给出根因、支撑数值和该做什么。只适用于 state=failed 的任务；" +
+                "任务还在下载中而用户嫌慢，用 diagnose_slow_download。",
+            inputSchema = obj(
+                "taskIds" to strArray(
+                    "要诊断的任务 ID 列表，来自 list_download_tasks 或 summarize_failed_tasks 的 samples；不要编造",
+                    min = 1,
+                    max = 50,
+                ),
+                required = listOf("taskIds"),
+            ),
+        ),
+        LocalToolDefinition(
+            name = "diagnose_slow_download",
+            description =
+                "诊断正在下载但速度慢或卡住不动的任务。会采样几秒速度并排除引擎、并发、磁盘等原因。" +
+                "只适用于还在传输或排队中的任务；已失败用 diagnose_download_failure。",
+            inputSchema = obj(
+                "taskIds" to strArray(
+                    "要诊断的任务 ID 列表，来自 list_download_tasks 的返回；不要编造。一次最多 $MAX_SLOW_TASKS 个",
+                    min = 1,
+                    max = MAX_SLOW_TASKS,
+                ),
                 required = listOf("taskIds"),
             ),
         ),
