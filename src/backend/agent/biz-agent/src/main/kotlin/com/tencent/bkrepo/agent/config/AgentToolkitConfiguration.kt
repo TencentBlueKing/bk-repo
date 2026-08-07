@@ -28,41 +28,48 @@
 package com.tencent.bkrepo.agent.config
 
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
-import io.agentscope.core.model.Model
-import io.agentscope.core.state.AgentStateStore
+import com.tencent.bkrepo.agent.tool.HitlSmokeTestTool
+import com.tencent.bkrepo.agent.tool.local.LocalToolDefinitions
+import io.agentscope.core.model.ToolSchema
 import io.agentscope.core.tool.Toolkit
-import io.agentscope.harness.agent.HarnessAgent
+import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import java.nio.file.Paths
 
 @Configuration(proxyBeanMethods = false)
-class HarnessAgentConfiguration {
+class AgentToolkitConfiguration {
 
-    /**
-     * agent 实例在两次调用之间无状态，会话状态由 [AgentStateStore] 按 (userId, sessionId) 寻址，因此单例即可服务并发请求。
-     */
     @Bean
-    fun harnessAgent(
-        properties: AgentProperties,
-        model: Model,
-        stateStore: AgentStateStore,
-        toolkit: Toolkit,
-    ): HarnessAgent {
-        return HarnessAgent.builder()
-            .name(properties.name)
-            .sysPrompt(properties.sysPrompt)
-            .model(model)
-            .maxIters(properties.maxIters)
-            .stateStore(stateStore)
-            .workspace(Paths.get(properties.workspace))
-            .toolkit(toolkit)
-            .disableFilesystemTools()
-            .disableShellTool()
-            .disableSubagents()
-            .disableDynamicSkills()
-            .disableMemoryTools()
-            .disableWorkspaceContext()
-            .build()
+    fun agentToolkit(properties: AgentProperties): Toolkit {
+        val toolkit = Toolkit()
+        if (properties.hitlSmokeToolEnabled) {
+            toolkit.registerTool(HitlSmokeTestTool())
+        }
+        val localTools = if (properties.localToolsEnabled) {
+            LocalToolDefinitions.readOnlyTools().also { definitions ->
+                definitions.forEach { definition ->
+                    toolkit.registerSchema(
+                        ToolSchema.builder()
+                            .name(definition.name)
+                            .description(definition.description)
+                            .parameters(definition.inputSchema)
+                            .build(),
+                    )
+                }
+            }
+        } else {
+            emptyList()
+        }
+        logger.info(
+            "agent toolkit: hitlSmoke={}, localTools={}, names={}",
+            properties.hitlSmokeToolEnabled,
+            localTools.size,
+            localTools.map { it.name },
+        )
+        return toolkit
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(AgentToolkitConfiguration::class.java)
     }
 }

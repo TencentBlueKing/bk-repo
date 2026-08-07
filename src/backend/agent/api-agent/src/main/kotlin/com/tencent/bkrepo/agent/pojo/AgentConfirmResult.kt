@@ -25,44 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.agent.config
+package com.tencent.bkrepo.agent.pojo
 
-import com.tencent.bkrepo.agent.config.properties.AgentProperties
-import io.agentscope.core.model.Model
-import io.agentscope.core.state.AgentStateStore
-import io.agentscope.core.tool.Toolkit
-import io.agentscope.harness.agent.HarnessAgent
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import java.nio.file.Paths
+import io.swagger.v3.oas.annotations.media.Schema
 
-@Configuration(proxyBeanMethods = false)
-class HarnessAgentConfiguration {
-
-    /**
-     * agent 实例在两次调用之间无状态，会话状态由 [AgentStateStore] 按 (userId, sessionId) 寻址，因此单例即可服务并发请求。
-     */
-    @Bean
-    fun harnessAgent(
-        properties: AgentProperties,
-        model: Model,
-        stateStore: AgentStateStore,
-        toolkit: Toolkit,
-    ): HarnessAgent {
-        return HarnessAgent.builder()
-            .name(properties.name)
-            .sysPrompt(properties.sysPrompt)
-            .model(model)
-            .maxIters(properties.maxIters)
-            .stateStore(stateStore)
-            .workspace(Paths.get(properties.workspace))
-            .toolkit(toolkit)
-            .disableFilesystemTools()
-            .disableShellTool()
-            .disableSubagents()
-            .disableDynamicSkills()
-            .disableMemoryTools()
-            .disableWorkspaceContext()
-            .build()
-    }
-}
+/** 用户对单个 ASK 工具调用的确认结果，回传给 AgentScope 恢复执行 */
+@Schema(title = "Agent HITL 确认结果")
+data class AgentConfirmResult(
+    @get:Schema(title = "工具调用 ID")
+    val callId: String,
+    @get:Schema(title = "工具名")
+    val toolName: String,
+    @get:Schema(title = "工具参数")
+    val toolInput: Map<String, Any> = emptyMap(),
+    @get:Schema(title = "是否批准执行")
+    val confirmed: Boolean,
+)

@@ -27,42 +27,24 @@
 
 package com.tencent.bkrepo.agent.config
 
-import com.tencent.bkrepo.agent.config.properties.AgentProperties
-import io.agentscope.core.model.Model
-import io.agentscope.core.state.AgentStateStore
-import io.agentscope.core.tool.Toolkit
-import io.agentscope.harness.agent.HarnessAgent
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import java.nio.file.Paths
+/**
+ * Agent 系统提示词。工具路由以注册表 description 为准；此处只约束角色、边界与必须调工具的场景。
+ */
+object AgentSystemPrompts {
 
-@Configuration(proxyBeanMethods = false)
-class HarnessAgentConfiguration {
+    val DEFAULT = """
+        你是蓝鲸制品库客户端（BKArtifacts 下载器）里的小制助手，帮助用户查看和管理本机下载任务、诊断下载问题。
+        你服务的是用户电脑上的 aria2 传输列表，不是蓝鲸制品库服务端的后台任务系统。
 
-    /**
-     * agent 实例在两次调用之间无状态，会话状态由 [AgentStateStore] 按 (userId, sessionId) 寻址，因此单例即可服务并发请求。
-     */
-    @Bean
-    fun harnessAgent(
-        properties: AgentProperties,
-        model: Model,
-        stateStore: AgentStateStore,
-        toolkit: Toolkit,
-    ): HarnessAgent {
-        return HarnessAgent.builder()
-            .name(properties.name)
-            .sysPrompt(properties.sysPrompt)
-            .model(model)
-            .maxIters(properties.maxIters)
-            .stateStore(stateStore)
-            .workspace(Paths.get(properties.workspace))
-            .toolkit(toolkit)
-            .disableFilesystemTools()
-            .disableShellTool()
-            .disableSubagents()
-            .disableDynamicSkills()
-            .disableMemoryTools()
-            .disableWorkspaceContext()
-            .build()
-    }
+        当用户问「当前有哪些下载」「在下什么」「失败任务」等问题时，必须先调用工具查询，再回答。
+        首选工具：list_download_tasks（列出传输列表，默认最近 10 条活动任务）。
+        需要详情时用 get_download_task；排查失败用 diagnose_download_failure；排查慢速用 diagnose_slow_download。
+
+        重要约束：
+        - taskId 只能来自 list_download_tasks 的返回，禁止编造。
+        - 不要建议用户去 Web 控制台、bkrepo CLI 或制品库 API 查下载列表——你应该直接调工具。
+        - 不要使用 wait_async_results 来查下载任务；它与客户端下载列表无关。
+        - 客户端没有下载限速设置，不要向用户提限速。
+        - 只回答与制品下载、客户端诊断、下载配置相关的问题；闲聊简短回复即可。
+        """.trimIndent()
 }

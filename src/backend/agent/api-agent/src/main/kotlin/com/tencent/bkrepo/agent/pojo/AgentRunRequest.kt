@@ -36,6 +36,10 @@ import io.swagger.v3.oas.annotations.media.Schema
 data class AgentRunRequest(
     @get:Schema(title = "会话ID，由创建会话接口返回")
     val sessionId: String,
-    @get:Schema(title = "用户输入")
-    val content: String,
+    @get:Schema(title = "用户输入；HITL 恢复时可留空")
+    val content: String = "",
+    @get:Schema(title = "HITL 确认结果；Agent 暂停在 ASK 状态时携带以恢复执行")
+    val confirmResults: List<AgentConfirmResult>? = null,
+    @get:Schema(title = "本地工具执行结果；Agent 暂停在外部执行时携带以恢复")
+    val externalExecutionResults: List<AgentExternalExecutionResult>? = null,
 )

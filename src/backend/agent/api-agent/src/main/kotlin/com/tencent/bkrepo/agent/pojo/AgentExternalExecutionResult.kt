@@ -25,44 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.agent.config
+package com.tencent.bkrepo.agent.pojo
 
-import com.tencent.bkrepo.agent.config.properties.AgentProperties
-import io.agentscope.core.model.Model
-import io.agentscope.core.state.AgentStateStore
-import io.agentscope.core.tool.Toolkit
-import io.agentscope.harness.agent.HarnessAgent
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import java.nio.file.Paths
+import io.swagger.v3.oas.annotations.media.Schema
 
-@Configuration(proxyBeanMethods = false)
-class HarnessAgentConfiguration {
-
-    /**
-     * agent 实例在两次调用之间无状态，会话状态由 [AgentStateStore] 按 (userId, sessionId) 寻址，因此单例即可服务并发请求。
-     */
-    @Bean
-    fun harnessAgent(
-        properties: AgentProperties,
-        model: Model,
-        stateStore: AgentStateStore,
-        toolkit: Toolkit,
-    ): HarnessAgent {
-        return HarnessAgent.builder()
-            .name(properties.name)
-            .sysPrompt(properties.sysPrompt)
-            .model(model)
-            .maxIters(properties.maxIters)
-            .stateStore(stateStore)
-            .workspace(Paths.get(properties.workspace))
-            .toolkit(toolkit)
-            .disableFilesystemTools()
-            .disableShellTool()
-            .disableSubagents()
-            .disableDynamicSkills()
-            .disableMemoryTools()
-            .disableWorkspaceContext()
-            .build()
-    }
-}
+/** 客户端本地执行的工具结果，回传给 AgentScope 恢复外部工具调用 */
+@Schema(title = "本地工具执行结果")
+data class AgentExternalExecutionResult(
+    @get:Schema(title = "工具调用 ID")
+    val callId: String,
+    @get:Schema(title = "工具名")
+    val toolName: String,
+    @get:Schema(title = "工具结果 JSON 文本")
+    val payload: String,
+)

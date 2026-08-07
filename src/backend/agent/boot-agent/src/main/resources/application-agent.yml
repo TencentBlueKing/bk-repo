@@ -7,7 +7,8 @@ server:
 # 本地开发时可在此覆盖；生产环境通常由配置中心注入
 agent:
   name: bkrepo-assistant
-  sys-prompt: 你是蓝鲸制品库的助手，只回答与制品库、下载任务和客户端诊断相关的问题。
+  local-tools-enabled: true
+  hitl-smoke-tool-enabled: true
   max-iters: 10
   workspace: /data/workspace/agent
   sse-timeout: 10m

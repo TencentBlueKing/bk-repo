@@ -36,6 +36,14 @@ import com.tencent.bkrepo.agent.service.AgentRunService
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.Preconditions
 import io.agentscope.core.agent.RuntimeContext
+import io.agentscope.core.event.AgentEvent
+import io.agentscope.core.event.AgentResultEvent
+import io.agentscope.core.event.ConfirmResult
+import io.agentscope.core.event.RequireExternalExecutionEvent
+import io.agentscope.core.message.GenerateReason
+import io.agentscope.core.message.Msg
+import io.agentscope.core.message.ToolResultBlock
+import io.agentscope.core.message.ToolUseBlock
 import io.agentscope.core.message.UserMessage
 import io.agentscope.harness.agent.HarnessAgent
 import org.slf4j.LoggerFactory
@@ -76,18 +84,14 @@ class AgentRunServiceImpl(
         val runtimeContext = runtimeContextBuilder.build()
         val emitter = SseEmitter(properties.sseTimeout.toMillis())
         val subscriptionRef = AtomicReference<Disposable>()
+        val pendingExternalExecution = AtomicReference(false)
         val subscription = agent
-            .streamEvents(UserMessage(userId, request.content), runtimeContext)
+            .streamEvents(buildUserMessage(userId, request), runtimeContext)
             .subscribeOn(Schedulers.boundedElastic())
             .subscribe(
                 { event ->
                     try {
-                        emitter.send(
-                            SseEmitter.event()
-                                .id(event.id)
-                                .name(event.type.value)
-                                .data(event, MediaType.APPLICATION_JSON)
-                        )
+                        emitAgentEvent(emitter, event, pendingExternalExecution)
                     } catch (ignored: IOException) {
                         // 客户端已断开，停止本轮推送；会话状态已由AgentStateStore保存，可重连后继续
                         logger.info("agent sse closed by client, session[${request.sessionId}]")
@@ -115,8 +119,80 @@ class AgentRunServiceImpl(
     private fun validate(request: AgentRunRequest) {
         Preconditions.checkNotBlank(request.sessionId, "sessionId")
         Preconditions.checkArgument(request.sessionId.length <= properties.maxSessionIdLength, "sessionId")
-        Preconditions.checkNotBlank(request.content, "content")
-        Preconditions.checkArgument(request.content.length <= properties.maxMessageLength, "content")
+        val hasContent = request.content.isNotBlank()
+        val hasConfirm = !request.confirmResults.isNullOrEmpty()
+        val hasExternal = !request.externalExecutionResults.isNullOrEmpty()
+        Preconditions.checkArgument(hasContent || hasConfirm || hasExternal, "content, confirmResults or externalExecutionResults")
+        if (hasContent) {
+            Preconditions.checkArgument(request.content.length <= properties.maxMessageLength, "content")
+        }
+    }
+
+    private fun emitAgentEvent(
+        emitter: SseEmitter,
+        event: AgentEvent,
+        pendingExternalExecution: AtomicReference<Boolean>,
+    ) {
+        if (event is AgentResultEvent) {
+            val result = event.result
+            if (result != null && result.generateReason == GenerateReason.TOOL_SUSPENDED) {
+                val toolCalls = result.getContentBlocks(ToolUseBlock::class.java)
+                if (toolCalls.isNotEmpty()) {
+                    val externalEvent = RequireExternalExecutionEvent("", toolCalls)
+                    pendingExternalExecution.set(true)
+                    emitter.send(
+                        SseEmitter.event()
+                            .id(externalEvent.id)
+                            .name(externalEvent.type.value)
+                            .data(externalEvent, MediaType.APPLICATION_JSON),
+                    )
+                    return
+                }
+            }
+        }
+        if (pendingExternalExecution.get() == true && event.type.value == "AGENT_END") {
+            return
+        }
+        emitter.send(
+            SseEmitter.event()
+                .id(event.id)
+                .name(event.type.value)
+                .data(event, MediaType.APPLICATION_JSON),
+        )
+    }
+
+    private fun buildUserMessage(userId: String, request: AgentRunRequest): UserMessage {
+        val confirmResults = request.confirmResults
+        if (!confirmResults.isNullOrEmpty()) {
+            val results = confirmResults.map { dto ->
+                ConfirmResult(
+                    dto.confirmed,
+                    ToolUseBlock.builder()
+                        .id(dto.callId)
+                        .name(dto.toolName)
+                        .input(dto.toolInput)
+                        .build(),
+                )
+            }
+            return UserMessage.builder()
+                .name(userId)
+                .textContent(request.content.ifBlank { " " })
+                .metadata(mapOf(Msg.METADATA_CONFIRM_RESULTS to results))
+                .build()
+        }
+        val externalResults = request.externalExecutionResults
+        if (!externalResults.isNullOrEmpty()) {
+            val blocks = externalResults.map { dto ->
+                ToolResultBlock.text(dto.payload)
+                    .withIdAndName(dto.callId, dto.toolName)
+            }
+            return UserMessage.builder()
+                .name(userId)
+                .textContent(" ")
+                .content(blocks)
+                .build()
+        }
+        return UserMessage(userId, request.content)
     }
 
     companion object {

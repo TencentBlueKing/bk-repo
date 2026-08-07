@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.agent.config.properties
 
+import com.tencent.bkrepo.agent.config.AgentSystemPrompts
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.time.Duration
 
@@ -42,7 +43,7 @@ data class AgentProperties(
     /**
      * 系统提示词。Workspace 上下文会在每轮推理前追加到该提示词之后
      */
-    var sysPrompt: String = DEFAULT_SYS_PROMPT,
+    var sysPrompt: String = AgentSystemPrompts.DEFAULT,
     /**
      * ReAct 循环最大迭代次数
      */
@@ -63,14 +64,24 @@ data class AgentProperties(
      * 会话 ID 允许的最大长度
      */
     var maxSessionIdLength: Int = DEFAULT_MAX_SESSION_ID_LENGTH,
+    /**
+     * 是否注册 HITL 冒烟工具 [com.tencent.bkrepo.agent.tool.HitlSmokeTestTool]。
+     * 联调确认链路时可开启；生产环境应关闭。
+     */
+    var hitlSmokeToolEnabled: Boolean = DEFAULT_HITL_SMOKE_TOOL_ENABLED,
+    /**
+     * 是否注册通过 SchemaOnlyTool 声明的只读本地工具（由客户端在 SSE 往返中执行）。
+     */
+    var localToolsEnabled: Boolean = DEFAULT_LOCAL_TOOLS_ENABLED,
 ) {
     companion object {
         const val DEFAULT_NAME = "bkrepo-assistant"
-        const val DEFAULT_SYS_PROMPT = "你是蓝鲸制品库的助手，只回答与制品库、下载任务和客户端诊断相关的问题。"
         const val DEFAULT_MAX_ITERS = 10
         const val DEFAULT_WORKSPACE = "/data/workspace/agent"
         val DEFAULT_SSE_TIMEOUT: Duration = Duration.ofMinutes(10)
         const val DEFAULT_MAX_MESSAGE_LENGTH = 32 * 1024
         const val DEFAULT_MAX_SESSION_ID_LENGTH = 128
+        const val DEFAULT_HITL_SMOKE_TOOL_ENABLED = true
+        const val DEFAULT_LOCAL_TOOLS_ENABLED = true
     }
 }
