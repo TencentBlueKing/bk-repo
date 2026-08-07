@@ -8,7 +8,7 @@ server:
 agent:
   name: bkrepo-assistant
   local-tools-enabled: true
-  hitl-smoke-tool-enabled: true
+  hitl-smoke-tool-enabled: false
   max-iters: 10
   workspace: /data/workspace/agent
   sse-timeout: 10m

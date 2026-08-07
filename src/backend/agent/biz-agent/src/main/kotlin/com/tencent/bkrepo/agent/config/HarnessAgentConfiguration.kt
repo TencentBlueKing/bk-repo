@@ -57,6 +57,7 @@ class HarnessAgentConfiguration {
             .stateStore(stateStore)
             .workspace(Paths.get(properties.workspace))
             .toolkit(toolkit)
+            .enablePendingToolRecovery(true)
             .disableFilesystemTools()
             .disableShellTool()
             .disableSubagents()

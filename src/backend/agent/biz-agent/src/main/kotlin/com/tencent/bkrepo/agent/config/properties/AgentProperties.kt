@@ -81,7 +81,7 @@ data class AgentProperties(
         val DEFAULT_SSE_TIMEOUT: Duration = Duration.ofMinutes(10)
         const val DEFAULT_MAX_MESSAGE_LENGTH = 32 * 1024
         const val DEFAULT_MAX_SESSION_ID_LENGTH = 128
-        const val DEFAULT_HITL_SMOKE_TOOL_ENABLED = true
+        const val DEFAULT_HITL_SMOKE_TOOL_ENABLED = false
         const val DEFAULT_LOCAL_TOOLS_ENABLED = true
     }
 }
