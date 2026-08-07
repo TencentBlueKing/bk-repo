@@ -36,13 +36,49 @@ class DownloadRedirectManager(
     private val redirectServices: List<DownloadRedirectService>
 ) {
     /**
-     * 重定向下载请求
-     *
-     * @param context 下载请求上下文
-     *
-     * @return true 已重定向请求， false 未重定向请求
+     * 配置层面是否可能重定向（不访问 node/DB）。
+     * 路径需要二次解析的仓：必须先调此方法，false 则禁止查库。
+     */
+    fun mayRedirect(context: ArtifactDownloadContext): Boolean {
+        redirectServices.forEach {
+            try {
+                if (it.mayRedirect(context)) {
+                    return true
+                }
+            } catch (ignore: Exception) {
+                logger.error("Check mayRedirect by ${it.javaClass.simpleName} failed", ignore)
+            }
+        }
+        return false
+    }
+
+    /**
+     * 是否需要重定向（不执行）。命中时记录 service 下标，供 [redirect] 直接执行，避免重复判断。
+     */
+    fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
+        redirectServices.forEachIndexed { index, service ->
+            try {
+                if (service.shouldRedirect(context)) {
+                    context.putAttribute(ATTR_REDIRECT_SERVICE_INDEX, index)
+                    return true
+                }
+            } catch (ignore: Exception) {
+                logger.error("Check redirect by ${service.javaClass.simpleName} failed", ignore)
+            }
+        }
+        return false
+    }
+
+    /**
+     * 重定向下载请求（Generic 路径逻辑与原实现一致）。
+     * remapper 若已 [shouldRedirect] 命中，跳过重复判断直接执行。
      */
     fun redirect(context: ArtifactDownloadContext): Boolean {
+        val checkedIndex = context.getAttribute<Int>(ATTR_REDIRECT_SERVICE_INDEX)
+        if (checkedIndex != null) {
+            redirectServices[checkedIndex].redirect(context)
+            return true
+        }
         redirectServices.forEach {
             try {
                 if (it.shouldRedirect(context)) {
@@ -58,5 +94,6 @@ class DownloadRedirectManager(
 
     companion object {
         private val logger = LoggerFactory.getLogger(DownloadRedirectManager::class.java)
+        private const val ATTR_REDIRECT_SERVICE_INDEX = "redirect.service.index"
     }
 }

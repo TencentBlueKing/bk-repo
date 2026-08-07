@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.repository.redirect.CosRedirectService
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
@@ -404,8 +405,32 @@ class OciRegistryLocalRepository(
     }
 
     /**
-     * 在原有逻辑上增加响应头
+     * 未配置 redirect 时禁止路径解析；可能 302 时再 mapping 并拦截。
      */
+    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        val artifactInfo = context.artifactInfo as? OciArtifactInfo
+            ?: return super.onDownloadRedirect(context)
+        if (!redirectManager.mayRedirect(context)) {
+            return false
+        }
+        val fullPath = ociOperationService.getNodeFullPath(artifactInfo) ?: return false
+        getNodeDetail(artifactInfo, fullPath) ?: return false
+        return redirectAfterPrepare(context)
+    }
+
+    override fun beforeRedirect(context: ArtifactDownloadContext, node: NodeDetail) {
+        val artifactInfo = context.artifactInfo
+        val contentType = if (artifactInfo is OciManifestArtifactInfo) {
+            extractMediaTypeFromMetadata(node.metadata, OCI_IMAGE_MANIFEST_MEDIA_TYPE)
+        } else {
+            MediaTypes.APPLICATION_OCTET_STREAM
+        }
+        val digest = OciDigest.fromSha256(node.sha256.orEmpty())
+        OciResponseUtils.buildRedirectResponse(digest, context.response, contentType)
+        context.putAttribute(CosRedirectService.ATTR_RESPONSE_CONTENT_TYPE, contentType)
+        packageVersion(context, node)?.let { downloadIntercept(context, it) }
+    }
+
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         logger.info(
             "Will start to download oci artifact ${context.artifactInfo.getArtifactFullPath()}" +

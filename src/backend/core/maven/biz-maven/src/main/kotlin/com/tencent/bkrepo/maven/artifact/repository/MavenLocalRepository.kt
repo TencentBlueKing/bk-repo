@@ -458,6 +458,28 @@ class MavenLocalRepository(
 
 
     /**
+     * 未配置 redirect 时禁止 getNodeInfoForDownload；可能 302 时再解析路径并拦截。
+     */
+    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        if (!redirectManager.mayRedirect(context)) {
+            return false
+        }
+        return try {
+            getNodeInfoForDownload(context) ?: return false
+            redirectAfterPrepare(context)
+        } catch (ignore: MavenArtifactNotFoundException) {
+            false
+        }
+    }
+
+    override fun beforeRedirect(context: ArtifactDownloadContext, node: NodeDetail) {
+        node.metadata?.get(HashType.SHA1.ext)?.let {
+            context.response.addHeader(X_CHECKSUM_SHA1, it.toString())
+        }
+        packageVersion(node)?.let { downloadIntercept(context, it) }
+    }
+
+    /**
      * checksum 文件不存在时，系统生成
      */
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {

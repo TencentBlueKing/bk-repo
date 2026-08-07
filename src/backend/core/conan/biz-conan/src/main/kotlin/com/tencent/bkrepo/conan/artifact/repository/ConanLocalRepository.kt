@@ -154,6 +154,21 @@ class ConanLocalRepository : LocalRepository() {
         conanMetadataService.storeMetadata(request)
     }
 
+    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        if (!redirectManager.mayRedirect(context)) {
+            return false
+        }
+        with(context.artifactInfo as ConanArtifactInfo) {
+            setArtifactMappingUri(generateFullPath(this))
+            return redirectAfterPrepare(context)
+        }
+    }
+
+    override fun beforeRedirect(context: ArtifactDownloadContext, node: NodeDetail) {
+        buildDownloadResponse()
+        packageVersion(context, node)?.let { downloadIntercept(context, it) }
+    }
+
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context.artifactInfo as ConanArtifactInfo) {
             val fullPath = generateFullPath(this)

@@ -127,6 +127,20 @@ object OciResponseUtils {
         )
     }
 
+    /**
+     * COS 302 前写入 Docker/OCI 协议头（不设置 200，由 sendRedirect 决定状态码）。
+     */
+    fun buildRedirectResponse(
+        digest: OciDigest,
+        response: HttpServletResponse,
+        contentType: String = MediaTypes.APPLICATION_OCTET_STREAM
+    ) {
+        response.addHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
+        response.addHeader(DOCKER_CONTENT_DIGEST, digest.toString())
+        response.addHeader(HttpHeaders.ETAG, digest.toString())
+        response.addHeader(CONTENT_TYPE, contentType)
+    }
+
     fun buildDeleteResponse(response: HttpServletResponse) {
         deleteResponse(response)
     }
