@@ -138,6 +138,17 @@ class SkillLocalRepository(
         }
     }
 
+    /**
+     * zip 内单文件下载不能 COS 302（fullPath 指向整包 zip）。
+     */
+    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        return when (context.artifactInfo) {
+            is ClawHubFileDownloadInfo -> false
+            is ClawHubArchiveDownloadInfo -> super.onDownloadRedirect(context)
+            else -> false
+        }
+    }
+
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         return when (context.artifactInfo) {
             is ClawHubArchiveDownloadInfo -> super.onDownload(context)

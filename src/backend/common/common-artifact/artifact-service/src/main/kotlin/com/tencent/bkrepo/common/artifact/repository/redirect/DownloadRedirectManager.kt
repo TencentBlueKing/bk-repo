@@ -71,13 +71,21 @@ class DownloadRedirectManager(
 
     /**
      * 重定向下载请求（Generic 路径逻辑与原实现一致）。
-     * remapper 若已 [shouldRedirect] 命中，跳过重复判断直接执行。
+     * remapper 若已 [shouldRedirect] 命中，跳过重复判断直接执行；失败则降级回 onDownload。
      */
     fun redirect(context: ArtifactDownloadContext): Boolean {
-        val checkedIndex = context.getAttribute<Int>(ATTR_REDIRECT_SERVICE_INDEX)
+        val checkedIndex = context.getAndRemoveAttribute<Int>(ATTR_REDIRECT_SERVICE_INDEX)
         if (checkedIndex != null) {
-            redirectServices[checkedIndex].redirect(context)
-            return true
+            return try {
+                redirectServices[checkedIndex].redirect(context)
+                true
+            } catch (ignore: Exception) {
+                logger.error(
+                    "Redirect by ${redirectServices[checkedIndex].javaClass.simpleName} failed",
+                    ignore,
+                )
+                false
+            }
         }
         redirectServices.forEach {
             try {
