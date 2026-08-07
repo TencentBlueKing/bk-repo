@@ -29,8 +29,8 @@ package com.tencent.bkrepo.agent.config
 
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
 import com.tencent.bkrepo.agent.tool.HitlSmokeTestTool
+import com.tencent.bkrepo.agent.tool.local.ExternalLocalTool
 import com.tencent.bkrepo.agent.tool.local.LocalToolDefinitions
-import io.agentscope.core.model.ToolSchema
 import io.agentscope.core.tool.Toolkit
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
@@ -46,14 +46,12 @@ class AgentToolkitConfiguration {
             toolkit.registerTool(HitlSmokeTestTool())
         }
         val localTools = if (properties.localToolsEnabled) {
-            LocalToolDefinitions.readOnlyTools().also { definitions ->
+            LocalToolDefinitions.allTools().also { definitions ->
+                val readOnlyNames = LocalToolDefinitions.readOnlyTools().map { it.name }.toSet()
                 definitions.forEach { definition ->
-                    toolkit.registerSchema(
-                        ToolSchema.builder()
-                            .name(definition.name)
-                            .description(definition.description)
-                            .parameters(definition.inputSchema)
-                            .build(),
+                    val requiresConfirmation = definition.name !in readOnlyNames
+                    toolkit.registerAgentTool(
+                        ExternalLocalTool(definition, requiresConfirmation),
                     )
                 }
             }
@@ -61,9 +59,11 @@ class AgentToolkitConfiguration {
             emptyList()
         }
         logger.info(
-            "agent toolkit: hitlSmoke={}, localTools={}, names={}",
+            "agent toolkit: hitlSmoke={}, localTools={}, readOnly={}, write={}, names={}",
             properties.hitlSmokeToolEnabled,
             localTools.size,
+            LocalToolDefinitions.readOnlyTools().size,
+            LocalToolDefinitions.writeTools().size,
             localTools.map { it.name },
         )
         return toolkit

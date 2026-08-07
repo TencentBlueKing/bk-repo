@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.agent.tool.local
 
 /**
- * 本地工具 schema 定义，与客户端 tools.ts 只读工具对齐。
+ * 本地工具 schema 定义，与客户端 tools.ts 对齐。
  */
 data class LocalToolDefinition(
     val name: String,
@@ -111,6 +111,67 @@ object LocalToolDefinitions {
         ),
     )
 
+    fun writeTools(): List<LocalToolDefinition> = listOf(
+        LocalToolDefinition(
+            name = "pause_download_tasks",
+            description = "暂停指定的下载任务。仅在用户明确要求暂停时使用。",
+            inputSchema = obj(
+                "taskIds" to strArray("任务 ID 列表，来自 list_download_tasks 的返回；不要编造", min = 1, max = 50),
+                required = listOf("taskIds"),
+            ),
+        ),
+        LocalToolDefinition(
+            name = "resume_download_tasks",
+            description = "恢复（继续）指定的下载任务，也用于重试失败的任务。用户说重新下载、继续下载时使用。",
+            inputSchema = obj(
+                "taskIds" to strArray("任务 ID 列表，来自 list_download_tasks 的返回；不要编造", min = 1, max = 50),
+                required = listOf("taskIds"),
+            ),
+        ),
+        LocalToolDefinition(
+            name = "requeue_download_tasks",
+            description = "把失败的任务按当前配置的下载目录重新加入下载队列，只对失败任务有效。换过下载目录后应优先用本工具。",
+            inputSchema = obj(
+                "taskIds" to strArray("任务 ID 列表，来自 list_download_tasks 的返回；不要编造", min = 1, max = 50),
+                required = listOf("taskIds"),
+            ),
+        ),
+        LocalToolDefinition(
+            name = "delete_download_tasks",
+            description = "删除指定的下载任务。未完成会取消并删已下载部分；已完成只删记录。仅在用户明确要求删除时使用。",
+            inputSchema = obj(
+                "taskIds" to strArray("任务 ID 列表，来自 list_download_tasks 的返回；不要编造", min = 1, max = 50),
+                required = listOf("taskIds"),
+            ),
+        ),
+        LocalToolDefinition(
+            name = "update_download_settings",
+            description = "修改下载配置。只能改下载目录、是否开启自动清理、自动清理保留天数。",
+            inputSchema = obj(
+                "downloadPath" to str("下载保存目录，必须是绝对路径"),
+                "cleanupEnabled" to bool("是否开启自动清理"),
+                "cleanupDaysToKeep" to int("自动清理保留天数", min = 1, max = 30),
+            ),
+        ),
+        LocalToolDefinition(
+            name = "run_cleanup",
+            description = "立即执行一次文件清理，按当前清理策略删除磁盘上过期的已完成下载文件。",
+            inputSchema = NO_ARGS,
+        ),
+        LocalToolDefinition(
+            name = "restart_download_engine",
+            description = "重启下载引擎（aria2）。进行中的传输会中断，之后需要恢复任务才会继续。",
+            inputSchema = NO_ARGS,
+        ),
+        LocalToolDefinition(
+            name = "clear_completed_tasks",
+            description = "清空传输列表里的全部已完成记录。只删记录，磁盘文件不受影响。",
+            inputSchema = NO_ARGS,
+        ),
+    )
+
+    fun allTools(): List<LocalToolDefinition> = readOnlyTools() + writeTools()
+
     private fun obj(
         vararg properties: Pair<String, Map<String, Any>>,
         required: List<String> = emptyList(),
@@ -127,6 +188,9 @@ object LocalToolDefinitions {
 
     private fun str(description: String): Map<String, Any> =
         mapOf("type" to "string", "description" to description)
+
+    private fun bool(description: String): Map<String, Any> =
+        mapOf("type" to "boolean", "description" to description)
 
     private fun int(description: String, min: Int? = null, max: Int? = null): Map<String, Any> {
         val schema = linkedMapOf<String, Any>("type" to "integer", "description" to description)
