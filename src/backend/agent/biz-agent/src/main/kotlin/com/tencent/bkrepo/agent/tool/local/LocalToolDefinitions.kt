@@ -180,7 +180,9 @@ object LocalToolDefinitions {
         ),
         LocalToolDefinition(
             name = "delete_download_tasks",
-            description = "删除指定的下载任务。未完成会取消并删已下载部分；已完成只删记录。仅在用户明确要求删除时使用。",
+            description =
+                "删除指定的下载任务。用户已明确要删除（含「全部删除」「确认删除」）且 taskId 已知时，必须直接调用本工具；" +
+                "安全确认由客户端卡片完成，不要在聊天里再次索要文字确认。",
             inputSchema = obj(
                 "taskIds" to strArray("任务 ID 列表，来自 list_download_tasks 的返回；不要编造", min = 1, max = 50),
                 required = listOf("taskIds"),
