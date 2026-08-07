@@ -53,6 +53,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.HttpMediaTypeNotAcceptableException
 import org.springframework.web.HttpMediaTypeNotSupportedException
 import org.springframework.web.HttpRequestMethodNotSupportedException
+import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.MissingRequestHeaderException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -179,6 +180,17 @@ class GlobalExceptionHandler : AbstractExceptionHandler() {
             status = HttpStatus.NOT_FOUND,
             messageCode = CommonMessageCode.REQUEST_URL_NOT_FOUND,
             params = arrayOf(exception.requestURL)
+        )
+        return response(errorCodeException)
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException::class)
+    fun handleException(exception: MethodArgumentNotValidException): Response<Void> {
+        val message = exception.fieldError?.defaultMessage ?: StringPool.EMPTY
+        val errorCodeException = ErrorCodeException(
+            status = HttpStatus.BAD_REQUEST,
+            messageCode = CommonMessageCode.PARAMETER_VALIDATION_FAILED,
+            params = arrayOf(message)
         )
         return response(errorCodeException)
     }
