@@ -47,12 +47,8 @@ class AgentToolkitConfiguration {
         }
         val localTools = if (properties.localToolsEnabled) {
             LocalToolDefinitions.allTools().also { definitions ->
-                val readOnlyNames = LocalToolDefinitions.readOnlyTools().map { it.name }.toSet()
                 definitions.forEach { definition ->
-                    val requiresConfirmation = definition.name !in readOnlyNames
-                    toolkit.registerAgentTool(
-                        ExternalLocalTool(definition, requiresConfirmation),
-                    )
+                    toolkit.registerAgentTool(ExternalLocalTool(definition))
                 }
             }
         } else {
