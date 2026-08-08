@@ -48,6 +48,8 @@ import com.tencent.bkrepo.common.metadata.model.TNode.Companion.FULL_PATH_IDX
 import com.tencent.bkrepo.common.metadata.model.TNode.Companion.FULL_PATH_IDX_DEF
 import com.tencent.bkrepo.common.metadata.model.TNode.Companion.METADATA_IDX
 import com.tencent.bkrepo.common.metadata.model.TNode.Companion.METADATA_IDX_DEF
+import com.tencent.bkrepo.common.metadata.model.TNode.Companion.NAME_IDX
+import com.tencent.bkrepo.common.metadata.model.TNode.Companion.NAME_IDX_DEF
 import com.tencent.bkrepo.common.metadata.model.TNode.Companion.PATH_IDX
 import com.tencent.bkrepo.common.metadata.model.TNode.Companion.PATH_IDX_DEF
 import com.tencent.bkrepo.common.metadata.model.TNode.Companion.SHA256_IDX
@@ -63,6 +65,7 @@ import java.time.LocalDateTime
 @CompoundIndexes(
     CompoundIndex(name = FULL_PATH_IDX, def = FULL_PATH_IDX_DEF, unique = true, background = true),
     CompoundIndex(name = PATH_IDX, def = PATH_IDX_DEF, background = true),
+    CompoundIndex(name = NAME_IDX, def = NAME_IDX_DEF, background = true),
     CompoundIndex(name = METADATA_IDX, def = METADATA_IDX_DEF, background = true),
     CompoundIndex(name = SHA256_IDX, def = SHA256_IDX_DEF, background = true),
     CompoundIndex(name = COPY_FROM_IDX, def = COPY_FROM_IDX_DEF, background = true),
@@ -106,6 +109,7 @@ data class TNode(
     companion object {
         const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"
         const val PATH_IDX = "projectId_repoName_path_idx"
+        const val NAME_IDX = "projectId_repoName_name_idx"
         const val METADATA_IDX = "metadata_idx"
         const val COMPRESSED_IDX = "compressed_idx"
         const val ARCHIVED_IDX = "archived_idx"
@@ -113,6 +117,7 @@ data class TNode(
         const val COPY_FROM_IDX = "copy_idx"
         const val FULL_PATH_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'fullPath': 1, 'deleted': 1}"
         const val PATH_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'path': 1, 'deleted': 1}"
+        const val NAME_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'name': 1, 'deleted': 1}"
         const val METADATA_IDX_DEF = "{'metadata.key': 1, 'metadata.value': 1}"
         const val SHA256_IDX_DEF = "{'sha256': 1}"
         const val COMPRESSED_IDX_DEF = "{'compressed': 1}"
