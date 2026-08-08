@@ -9,7 +9,9 @@ export default {
             `${authPrefix}/user/info`
         ).then(res => {
             commit('SET_USER_INFO', {
-                displayName: res.displayName ? res.displayName : ''
+                displayName: res.displayName ? res.displayName : '',
+                tenantId: res.tenantId ? res.tenantId : '',
+                timeZone: res.timeZone ? res.timeZone : ''
             })
             return dispatch('getUserInfo', res.userId)
         })

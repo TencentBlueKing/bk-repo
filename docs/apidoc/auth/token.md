@@ -270,4 +270,7 @@
 | 字段|类型|说明|Description|
 |---|---|---|---|
 |userId | string | 用户id |the user Id|
+|displayName | string | 用户显示名 |the user display name|
+|tenantId | string | 企业空间/租户 ID |the tenant id|
+|timeZone | string | 默认时区（IANA 名称或偏移，由网关注入） |the default time zone|
 |bkrepo_ticket|string|请求跟踪id|the bkrepo ticket|

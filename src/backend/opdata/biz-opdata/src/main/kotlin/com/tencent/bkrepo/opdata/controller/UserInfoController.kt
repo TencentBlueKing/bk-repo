@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext.TIME_ZONE_HEADER
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.opdata.config.LocalUserService
 import io.swagger.v3.oas.annotations.Operation
@@ -68,7 +69,7 @@ class UserInfoController(
      * 获取当前登录用户的基础信息。
      *
      * 行为对齐 auth 的 `/user/info`：
-     * - displayName、tenantId 从网关注入的请求头中取得（仅做回显，不参与权限判定）；
+     * - displayName、tenantId、timeZone 从网关注入的请求头中取得（仅做回显，不参与权限判定）；
      * - userId 与 admin 字段**必须**基于已认证身份（`SecurityUtils.getUserId()`）判定，
      *   避免任意调用方通过伪造 `x-bkrepo-uid` 头探测系统中的管理员账号。
      *
@@ -85,7 +86,8 @@ class UserInfoController(
     fun userInfo(
         @RequestHeader("x-bkrepo-uid", required = false) bkUserId: String?,
         @RequestHeader("x-bkrepo-display-name", required = false) displayName: String?,
-        @RequestHeader("x-bk-tenant-id", required = false) tenantId: String?
+        @RequestHeader("x-bk-tenant-id", required = false) tenantId: String?,
+        @RequestHeader(TIME_ZONE_HEADER, required = false) timeZone: String?
     ): Response<Map<String, Any>> {
         val decodedName = if (displayName.isNullOrEmpty()) {
             ""
@@ -107,6 +109,7 @@ class UserInfoController(
             "userId" to responseUserId,
             "displayName" to decodedName,
             "tenantId" to tenantId.orEmpty(),
+            "timeZone" to timeZone.orEmpty(),
             "admin" to admin
         )
         return ResponseBuilder.success(result)

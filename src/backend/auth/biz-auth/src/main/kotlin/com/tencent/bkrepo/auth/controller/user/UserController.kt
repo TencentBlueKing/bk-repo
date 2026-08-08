@@ -53,6 +53,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext.TIME_ZONE_HEADER
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.util.JwtUtils
@@ -284,12 +285,14 @@ class UserController @Autowired constructor(
         @RequestHeader("x-bkrepo-uid") bkUserId: String?,
         @RequestHeader("x-bkrepo-display-name") displayName: String?,
         @RequestHeader("x-bk-tenant-id") tenantId: String?,
+        @RequestHeader(TIME_ZONE_HEADER, required = false) timeZone: String?,
     ): Response<Map<String, Any>> {
         val name = if (displayName == null) "" else String(Base64.getDecoder().decode(displayName))
         val result = mapOf(
             "userId" to bkUserId.orEmpty(),
             "displayName" to name,
-            "tenantId" to tenantId.orEmpty()
+            "tenantId" to tenantId.orEmpty(),
+            "timeZone" to timeZone.orEmpty()
         )
         bkUserId?.let {
             userService.createOrUpdateUser(bkUserId, name, tenantId)
