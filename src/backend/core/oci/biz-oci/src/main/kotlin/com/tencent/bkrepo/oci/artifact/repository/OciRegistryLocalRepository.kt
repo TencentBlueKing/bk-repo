@@ -502,19 +502,46 @@ class OciRegistryLocalRepository(
      * 版本不存在时 status code 404
      */
     override fun remove(context: ArtifactRemoveContext) {
-        with(context.artifactInfo) {
-            val fullPath = ociOperationService.getNodeFullPath(this as OciArtifactInfo)
+        val artifactInfo = context.artifactInfo as OciArtifactInfo
+        with(artifactInfo) {
+            val fullPath = ociOperationService.getNodeFullPath(this)
                 ?: throw OciFileNotFoundException(
                     OciMessageCode.OCI_FILE_NOT_FOUND, getArtifactFullPath(), getRepoIdentify()
                 )
-            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
+            // 提前获取节点详情，删除节点后无法再解析 version 元数据
+            val nodeDetail = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
                 ?: throw OciFileNotFoundException(
                     OciMessageCode.OCI_FILE_NOT_FOUND, getArtifactFullPath(), getRepoIdentify()
                 )
             logger.info("Ready to delete $fullPath in repo ${getRepoIdentify()}")
             val request = NodeDeleteRequest(projectId, repoName, fullPath, context.userId)
             nodeService.deleteNode(request)
+            // 删除 manifest 时同步清理对应的 package/version 元数据，避免版本列表残留
+            // 仅清理命中的单个 version（tag），其余 tag 不受影响
+            if (this is OciManifestArtifactInfo) {
+                val version = extractVersionFromMetadata(nodeDetail.metadata ?: emptyMap()) ?: this.reference
+                deleteManifestVersion(packageName, version)
+            }
             OciResponseUtils.buildDeleteResponse(context.response)
+        }
+    }
+
+    /**
+     * 同步清理 manifest 对应的 package/version 元数据
+     * 删除节点后调用，保证存储节点与平台版本列表状态一致
+     */
+    private fun deleteManifestVersion(packageName: String, version: String) {
+        val projectId = repositoryDetail.projectId
+        val repoName = repositoryDetail.name
+        val packageKey = PackageKeys.ofName(repositoryDetail.type, packageName)
+        packageService.findVersionByName(projectId, repoName, packageKey, version)?.let {
+            logger.info("Will delete package version [$packageKey/$version] metadata in repo [$projectId/$repoName]")
+            packageService.deleteVersion(projectId, repoName, packageKey, version)
+            // 若该 package 下已无版本，同步清理 package 元数据，避免残留空 package
+            if (packageService.listAllVersion(projectId, repoName, packageKey, VersionListOption()).isEmpty()) {
+                logger.info("Will delete empty package [$packageKey] in repo [$projectId/$repoName]")
+                packageService.deletePackage(projectId, repoName, packageKey)
+            }
         }
     }
 
