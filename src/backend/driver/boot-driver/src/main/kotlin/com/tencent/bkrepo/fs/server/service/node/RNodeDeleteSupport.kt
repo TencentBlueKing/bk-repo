@@ -124,7 +124,8 @@ open class RNodeDeleteSupport(
                     nodeDao.determineReactiveMongoOperations()
                         .updateMulti(q, u, collectionName).awaitSingle().modifiedCount
                 },
-                countByQuery = { q -> nodeDao.count(q) }
+                countByQuery = { q -> nodeDao.count(q) },
+                projectId = projectId,
             )
             if (deletedNum == 0L) {
                 return NodeDeleteResult(deletedNum, deletedSize, deleteTime)

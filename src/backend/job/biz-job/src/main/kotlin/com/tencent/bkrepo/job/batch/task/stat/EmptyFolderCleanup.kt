@@ -38,6 +38,8 @@ import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SIZE
 import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
+import com.tencent.bkrepo.common.metadata.routing.NodeMongoOperations
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.FolderUtils.extractFolderInfoFromCacheKey
 import com.tencent.bkrepo.job.pojo.FolderInfo
@@ -45,6 +47,7 @@ import com.tencent.bkrepo.job.pojo.stat.StatNode
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -61,6 +64,8 @@ class EmptyFolderCleanup(
     private val mongoTemplate: MongoTemplate,
     private val redisTemplate: RedisTemplate<String, String>,
     private val separationTaskService: SeparationTaskService,
+    @Autowired(required = false) private val routingRegistry: MongoRoutingRegistry? = null,
+    @Autowired(required = false) private val nodeMongoOperations: NodeMongoOperations? = null,
 ) : SeparationStatBaseJob(mongoTemplate, separationTaskService) {
 
     fun buildNode(
@@ -276,7 +281,7 @@ class EmptyFolderCleanup(
                     " in repo ${folderInfo.projectId}|${folderInfo.repoName} " +
                     "with config deletedFlag: $deletedFlag"
             )
-            doEmptyFolderDelete(id, collection, deletedFlag)
+            doEmptyFolderDelete(id, collection, deletedFlag, folderInfo.projectId)
             context.totalDeletedNum.increment()
         }
     }
@@ -339,7 +344,7 @@ class EmptyFolderCleanup(
             .and(FOLDER).isEqualTo(false)
 
         val query = Query(criteria).withHint(FULL_PATH_IDX)
-        val result = mongoTemplate.find(query, Map::class.java, collectionName)
+        val result = routedReadTemplate(projectId, collectionName).find(query, Map::class.java, collectionName)
         return result.isNullOrEmpty()
     }
 
@@ -350,6 +355,7 @@ class EmptyFolderCleanup(
         objectId: String?,
         collectionName: String,
         deletedEmptyFolder: Boolean,
+        projectId: String,
     ) {
         if (objectId.isNullOrEmpty()) return
         val query = Query(
@@ -364,11 +370,16 @@ class EmptyFolderCleanup(
             update.set(SIZE, 0).set(NODE_NUM, 0)
         }
         try {
-            mongoTemplate.updateFirst(query, update, collectionName)
+            nodeMongoOperations?.updateFirst(projectId, query, update, collectionName)
+                ?: routedReadTemplate(projectId, collectionName)
+                    .updateFirst(query, update, collectionName)
         } catch (e: Exception) {
             logger.error("delete $objectId in collection $collectionName failed, error: $e")
         }
     }
+
+    private fun routedReadTemplate(projectId: String, collectionName: String): MongoTemplate =
+        routingRegistry?.routeRead(collectionName, projectId) ?: mongoTemplate
 
     /**
      * 清除collection在context中对应的缓存记录

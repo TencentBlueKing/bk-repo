@@ -3,9 +3,13 @@ package com.tencent.bkrepo.job.batch.utils
 import com.google.common.hash.BloomFilter
 import com.google.common.hash.Funnels
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.api.thread.TransmitterRunnableWrapper
+import com.tencent.bkrepo.common.metadata.routing.NodeBatchQueryHelper
+import com.tencent.bkrepo.common.metadata.routing.NodeRoutingContext
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.mongo.api.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.COLLECTION_NAME_NODE
@@ -17,6 +21,7 @@ import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
@@ -38,13 +43,19 @@ import java.util.function.Consumer
 class NodeCommonUtils(
     mongoTemplate: MongoTemplate,
     migrateRepoStorageService: MigrateRepoStorageService,
-    separationTaskService: SeparationTaskService
+    separationTaskService: SeparationTaskService,
+    @Autowired(required = false) routingRegistry: MongoRoutingRegistry? = null,
+    @Autowired(required = false) nodeBatchQueryHelper: NodeBatchQueryHelper? = null,
 ) {
     init {
-        Companion.mongoTemplate = mongoTemplate
-        Companion.migrateRepoStorageService = migrateRepoStorageService
-        Companion.separationTaskService = separationTaskService
+        Companion.instance = this
     }
+
+    private val mongoTemplate: MongoTemplate = mongoTemplate
+    private val migrateRepoStorageService: MigrateRepoStorageService = migrateRepoStorageService
+    private val separationTaskService: SeparationTaskService = separationTaskService
+    private val routingRegistry: MongoRoutingRegistry? = routingRegistry
+    private val nodeBatchQueryHelper: NodeBatchQueryHelper? = nodeBatchQueryHelper
 
     data class ProjectRepo(
         val projectId: String,
@@ -64,10 +75,14 @@ class NodeCommonUtils(
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeCommonUtils::class.java)
-        lateinit var mongoTemplate: MongoTemplate
-        lateinit var migrateRepoStorageService: MigrateRepoStorageService
-        lateinit var separationTaskService: SeparationTaskService
+        @Volatile
+        private var instance: NodeCommonUtils? = null
+
+        private val ctx get() = instance ?: error("NodeCommonUtils not initialized")
+
         private const val COLLECTION_NAME_PREFIX = "node_"
+        private const val NODE_RULE = "node"
+        private const val PROJECT_FIELD = "projectId"
         const val SEPARATION_COLLECTION_NAME_PREFIX = "separation_node_"
         private val workPool = ThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors(),
@@ -78,19 +93,60 @@ class NodeCommonUtils(
             ThreadFactoryBuilder().setNameFormat("node-utils-%d").build(),
         )
 
+        private data class RoutedScanGroup(
+            val mongoTemplate: MongoTemplate,
+            val collectionNames: List<String>,
+            val queryCustomizer: (Query) -> Query,
+        )
+
+        private fun templateFor(collectionName: String, query: Query? = null): MongoTemplate =
+            ctx.routingRegistry?.routeRead(collectionName, query) ?: ctx.mongoTemplate
+
+        private fun buildNodeScanGroups(
+            baseQuery: Query,
+            collectionNames: List<String>,
+        ): List<RoutedScanGroup> {
+            val registry = ctx.routingRegistry
+            val explicitProjectId = baseQuery.queryObject[PROJECT_FIELD] as? String
+            if (explicitProjectId != null && registry != null) {
+                val shardCollection = "$COLLECTION_NAME_PREFIX${
+                    HashShardingUtils.shardingSequenceFor(explicitProjectId, SHARDING_COUNT)
+                }"
+                val template = registry.routeRead(shardCollection, explicitProjectId) ?: ctx.mongoTemplate
+                return listOf(RoutedScanGroup(template, listOf(shardCollection)) { Query.of(it) })
+            }
+            val groups = ctx.nodeBatchQueryHelper?.buildGroups(collectionNames)
+            if (groups != null) {
+                return groups.map { group ->
+                    RoutedScanGroup(group.mongoTemplate, group.collectionNames, group.criteriaCustomizer)
+                }
+            }
+            return listOf(RoutedScanGroup(ctx.mongoTemplate, collectionNames) { Query.of(it) })
+        }
+
         fun findNodes(query: Query, storageCredentialsKey: String?, checkMigrating: Boolean = true): List<Node> {
             val nodes = mutableListOf<Node>()
-            (0 until SHARDING_COUNT).map { "$COLLECTION_NAME_PREFIX$it" }.forEach { collection ->
-                val find = mongoTemplate.find(query, Node::class.java, collection).filter {
-                    val repo = RepositoryCommonUtils.getRepositoryDetail(it.projectId, it.repoName)
-                    val key = if (checkMigrating && migrateRepoStorageService.migrating(it.projectId, it.repoName)) {
-                        repo.oldCredentialsKey
-                    } else {
-                        repo.storageCredentials?.key
+            val collectionNames = (0 until SHARDING_COUNT).map { "$COLLECTION_NAME_PREFIX$it" }
+            buildNodeScanGroups(query, collectionNames).forEach { group ->
+                group.collectionNames.forEach { collection ->
+                    val find = group.mongoTemplate.find(
+                        group.queryCustomizer(query),
+                        Node::class.java,
+                        collection,
+                    ).filter {
+                        val repo = RepositoryCommonUtils.getRepositoryDetail(it.projectId, it.repoName)
+                        val key = if (
+                            checkMigrating &&
+                            ctx.migrateRepoStorageService.migrating(it.projectId, it.repoName)
+                        ) {
+                            repo.oldCredentialsKey
+                        } else {
+                            repo.storageCredentials?.key
+                        }
+                        key == storageCredentialsKey
                     }
-                    key == storageCredentialsKey
+                    nodes.addAll(find)
                 }
-                nodes.addAll(find)
             }
             return nodes
         }
@@ -109,40 +165,76 @@ class NodeCommonUtils(
             query: Query,
             storageCredentialsKey: String?
         ): Boolean {
+            if (collection == COLLECTION_NAME_NODE) {
+                val collectionNames = (0 until shardingCount).map { "${collection}_$it" }
+                return existsInRoutedGroups(query, collectionNames, storageCredentialsKey)
+            }
             for (i in 0 until shardingCount) {
-                if (doExist("${collection}_$i", query, storageCredentialsKey)) {
+                if (doExist(ctx.mongoTemplate, "${collection}_$i", query, storageCredentialsKey)) {
                     return true
+                }
+            }
+            return false
+        }
+
+        private fun existsInRoutedGroups(
+            query: Query,
+            collectionNames: List<String>,
+            storageCredentialsKey: String?,
+        ): Boolean {
+            buildNodeScanGroups(query, collectionNames).forEach { group ->
+                group.collectionNames.forEach { collectionName ->
+                    if (doExist(
+                            group.mongoTemplate,
+                            collectionName,
+                            group.queryCustomizer(query),
+                            storageCredentialsKey,
+                        )
+                    ) {
+                        return true
+                    }
                 }
             }
             return false
         }
 
         private fun separationNodeExist(query: Query, storageCredentialsKey: String?): Boolean {
-            val separationDates = separationTaskService.findDistinctSeparationDate()
+            val separationDates = ctx.separationTaskService.findDistinctSeparationDate()
             for (date in separationDates) {
                 val collection = SEPARATION_COLLECTION_NAME_PREFIX.plus(
                     MonthRangeShardingUtils.shardingSequenceFor(date, 1)
                 )
-                if (doExist(collection, query, storageCredentialsKey)) {
+                if (doExist(ctx.mongoTemplate, collection, query, storageCredentialsKey)) {
                     return true
                 }
             }
             return false
         }
 
+        private fun submitToWorkPool(projectId: String?, task: () -> Unit): Future<*> =
+            workPool.submit(TransmitterRunnableWrapper {
+                if (projectId != null) {
+                    NodeRoutingContext.withProject(projectId) { task() }
+                } else {
+                    task()
+                }
+            })
+
         fun forEachByCollectionParallel(
             collectionNamePrefix: String,
             query: Query,
             batchSize: Int = BATCH_SIZE,
             shardingCount: Int = SHARDING_COUNT,
-            mongoTemplate: MongoTemplate = Companion.mongoTemplate,
+            mongoTemplate: MongoTemplate? = null,
             consumer: Consumer<Map<String, Any?>>,
         ) {
             val futures = mutableListOf<Future<*>>()
+            val projectId = query.queryObject[PROJECT_FIELD] as? String
             for (i in 0 until shardingCount) {
                 val collection = "${collectionNamePrefix}_$i"
-                futures.add(workPool.submit {
-                    findByCollection(query, batchSize, collection, mongoTemplate, consumer)
+                val template = templateFor(collection, query)
+                futures.add(submitToWorkPool(projectId) {
+                    findByCollection(query, batchSize, collection, template, consumer)
                 })
             }
             futures.forEach { it.get() }
@@ -154,12 +246,14 @@ class NodeCommonUtils(
             consumer: Consumer<Map<String, Any?>>,
         ) {
             val futures = mutableListOf<Future<*>>()
-            val separationDates = separationTaskService.findDistinctSeparationDate()
+            val separationDates = ctx.separationTaskService.findDistinctSeparationDate()
             for (date in separationDates) {
                 val collection = SEPARATION_COLLECTION_NAME_PREFIX.plus(
                     MonthRangeShardingUtils.shardingSequenceFor(date, 1)
                 )
-                futures.add(workPool.submit { findByCollection(query, batchSize, collection, mongoTemplate, consumer) })
+                futures.add(workPool.submit(TransmitterRunnableWrapper {
+                    findByCollection(query, batchSize, collection, ctx.mongoTemplate, consumer)
+                }))
 
             }
             futures.forEach { it.get() }
@@ -169,9 +263,10 @@ class NodeCommonUtils(
             query: Query,
             batchSize: Int,
             collection: String,
-            mongoTemplate: MongoTemplate = Companion.mongoTemplate,
+            mongoTemplate: MongoTemplate? = null,
             consumer: Consumer<Map<String, Any?>>,
         ) {
+            val template = mongoTemplate ?: ctx.mongoTemplate
             var querySize: Int
             var lastId = ObjectId(MIN_OBJECT_ID)
             do {
@@ -179,7 +274,7 @@ class NodeCommonUtils(
                     .addCriteria(Criteria.where(ID).gt(lastId))
                     .limit(batchSize)
                     .with(Sort.by(ID).ascending())
-                val data = mongoTemplate.find<Map<String, Any?>>(
+                val data = template.find<Map<String, Any?>>(
                     newQuery,
                     collection,
                 )
@@ -196,7 +291,7 @@ class NodeCommonUtils(
             query: Query,
             batchSize: Int,
             collection: String,
-            mongoTemplate: MongoTemplate = Companion.mongoTemplate,
+            mongoTemplate: MongoTemplate? = null,
             consumer: Consumer<Map<String, Any?>>,
         ): Mono<Unit> {
             return Mono.fromCallable {
@@ -218,13 +313,48 @@ class NodeCommonUtils(
         }
 
         @Suppress("UnstableApiUsage")
+        /**
+         * 跨实例检查 node 集合中是否存在满足 query 的记录。
+         * 通过 [buildNodeScanGroups] 自动路由到 Default 和 Heavy 实例，避免 fallback 为仅查 Default。
+         */
+        fun crossInstanceNodeExist(query: Query, shardingCount: Int = SHARDING_COUNT): Boolean {
+            val collectionNames = (0 until shardingCount).map { "${COLLECTION_NAME_PREFIX}$it" }
+            buildNodeScanGroups(query, collectionNames).forEach { group ->
+                group.collectionNames.forEach { collectionName ->
+                    if (group.mongoTemplate.exists(
+                            group.queryCustomizer(query).limit(1),
+                            collectionName,
+                        )
+                    ) {
+                        return true
+                    }
+                }
+            }
+            return false
+        }
+
         fun buildNodeBloomFilter(expectedInsertions: Long, fpp: Double): BloomFilter<CharSequence> {
             return buildBloomFilter(expectedInsertions, fpp) { bf ->
                 val query = Query(Criteria.where(FOLDER).isEqualTo(false))
                 query.fields().include(SHA256)
-                forEachByCollectionParallel(COLLECTION_NAME_NODE, query) {
-                    it[SHA256]?.toString()?.let { sha256 -> bf.put(sha256) }
+                val collectionNames = (0 until SHARDING_COUNT).map { "$COLLECTION_NAME_PREFIX$it" }
+                val futures = mutableListOf<Future<*>>()
+                buildNodeScanGroups(query, collectionNames).forEach { group ->
+                    group.collectionNames.forEach { collection ->
+                        val projectId = group.queryCustomizer(query).queryObject[PROJECT_FIELD] as? String
+                        futures.add(submitToWorkPool(projectId) {
+                            findByCollection(
+                                group.queryCustomizer(query),
+                                BATCH_SIZE,
+                                collection,
+                                group.mongoTemplate,
+                            ) { row ->
+                                row[SHA256]?.toString()?.let { sha256 -> bf.put(sha256) }
+                            }
+                        })
+                    }
                 }
+                futures.forEach { it.get() }
 
                 //加上冷表检查
                 forEachColdNodeByCollectionParallel(query) {
@@ -239,11 +369,12 @@ class NodeCommonUtils(
             shardingCount: Int,
             expectedInsertions: Long,
             fpp: Double,
-            mongoTemplate: MongoTemplate = Companion.mongoTemplate,
+            mongoTemplate: MongoTemplate? = null,
         ): BloomFilter<CharSequence> {
+            val template = mongoTemplate ?: ctx.mongoTemplate
             return buildBloomFilter(expectedInsertions, fpp) { bf ->
                 val query = Query().apply { fields().include(SHA256) }
-                forEachByCollectionParallel(collectionName, query, BATCH_SIZE, shardingCount, mongoTemplate) {
+                forEachByCollectionParallel(collectionName, query, BATCH_SIZE, shardingCount, template) {
                     it[SHA256]?.toString()?.let { sha256 -> bf.put(sha256) }
                 }
             }
@@ -263,12 +394,17 @@ class NodeCommonUtils(
             return bf
         }
 
-        private fun doExist(collection: String, query: Query, storageCredentialsKey: String?): Boolean {
-            return mongoTemplate.find(query, ProjectRepo::class.java, collection)
+        private fun doExist(
+            template: MongoTemplate,
+            collection: String,
+            query: Query,
+            storageCredentialsKey: String?,
+        ): Boolean {
+            return template.find(query, ProjectRepo::class.java, collection)
                 .distinctBy { it.projectId + it.repoName }
                 .any {
                     // node正在迁移时无法判断是否存在于存储[storageCredentialsKey]上
-                    if (migrateRepoStorageService.migrating(it.projectId, it.repoName)) {
+                    if (ctx.migrateRepoStorageService.migrating(it.projectId, it.repoName)) {
                         throw RepoMigratingException("repo[${it.projectId}/${it.repoName}] was migrating")
                     }
                     val repo = RepositoryCommonUtils.getRepositoryDetail(it.projectId, it.repoName)

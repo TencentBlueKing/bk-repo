@@ -1,1 +1,2 @@
 com.tencent.bkrepo.common.mongo.MongoAutoConfiguration
+com.tencent.bkrepo.common.mongo.routing.MongoMultiInstanceConfiguration

@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.combineFullPath
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.metadata.routing.NodeRoutingContext
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
@@ -84,13 +85,15 @@ class NodeModifyEventListener(
             .removalListener<Triple<String, String, String>, Pair<LongAdder, LongAdder>> {
                 if (it.cause == RemovalCause.REPLACED) return@removalListener
                 logger.info("remove ${it.key}, ${it.value}, cause ${it.cause}, Thread ${Thread.currentThread().name}")
-                nodeDao.incSizeAndNodeNumOfFolder(
-                    projectId = it.key!!.first,
-                    repoName = it.key!!.second,
-                    fullPath = it.key!!.third,
-                    size = it.value!!.first.sumThenReset(),
-                    nodeNum = it.value!!.second.sumThenReset()
-                )
+                NodeRoutingContext.withProject(it.key!!.first) {
+                    nodeDao.incSizeAndNodeNumOfFolder(
+                        projectId = it.key!!.first,
+                        repoName = it.key!!.second,
+                        fullPath = it.key!!.third,
+                        size = it.value!!.first.sumThenReset(),
+                        nodeNum = it.value!!.second.sumThenReset(),
+                    )
+                }
             }
             .build(CacheLoader.from { _ -> Pair(LongAdder(), LongAdder()) })
 
@@ -356,19 +359,21 @@ class NodeModifyEventListener(
         repoName: String,
         fullPath: String,
         deleted: String? = null,
-        action: (List<TNode>) -> Unit
+        action: (List<TNode>) -> Unit,
     ) {
-        val srcRootNodePath = PathUtils.toPath(fullPath)
-        val query = buildNodeQuery(projectId, repoName, srcRootNodePath, deleted)
-        var nodes: List<TNode>
-        var pageNumber = DEFAULT_PAGE_NUMBER
-        do {
-            val pageRequest = Pages.ofRequest(pageNumber, 1000)
-            query.with(pageRequest).with(Sort.by(AbstractMongoDao.ID).ascending())
-            nodes = nodeDao.find(query)
-            action(nodes)
-            pageNumber++
-        } while (nodes.isNotEmpty())
+        NodeRoutingContext.withProject(projectId) {
+            val srcRootNodePath = PathUtils.toPath(fullPath)
+            val query = buildNodeQuery(projectId, repoName, srcRootNodePath, deleted)
+            var nodes: List<TNode>
+            var pageNumber = DEFAULT_PAGE_NUMBER
+            do {
+                val pageRequest = Pages.ofRequest(pageNumber, 1000)
+                query.with(pageRequest).with(Sort.by(AbstractMongoDao.ID).ascending())
+                nodes = nodeDao.find(query)
+                action(nodes)
+                pageNumber++
+            } while (nodes.isNotEmpty())
+        }
     }
 
 

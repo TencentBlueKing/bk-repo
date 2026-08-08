@@ -30,7 +30,9 @@ package com.tencent.bkrepo.job.separation.service.impl
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.routing.NodeMongoOperations
 import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
 import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
 import com.tencent.bkrepo.job.separation.pojo.NodeFilterInfo
@@ -44,6 +46,7 @@ import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
 import com.tencent.bkrepo.job.separation.util.SeparationUtils.getFileReferenceCollectionName
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -57,6 +60,27 @@ open class AbstractHandler(
     private val separationFailedRecordDao: SeparationFailedRecordDao,
     private val separationTaskDao: SeparationTaskDao,
 ) {
+    @Autowired(required = false)
+    private var routingRegistry: MongoRoutingRegistry? = null
+
+    @Autowired(required = false)
+    private var nodeMongoOperations: NodeMongoOperations? = null
+
+    protected fun routedReadTemplate(projectId: String, collectionName: String): MongoTemplate =
+        routingRegistry?.routeRead(collectionName, projectId) ?: mongoTemplate
+
+    protected fun updateNodeFirst(
+        projectId: String,
+        collectionName: String,
+        query: Query,
+        update: Update,
+    ) = nodeMongoOperations?.updateFirst(projectId, query, update, collectionName)
+        ?: mongoTemplate.updateFirst(query, update, collectionName)
+
+    protected fun saveNode(projectId: String, collectionName: String, entity: Any) {
+        nodeMongoOperations?.save(projectId, entity, collectionName)
+            ?: mongoTemplate.save(entity, collectionName)
+    }
 
     fun validatePackageParams(pkg: PackageFilterInfo?) {
         if (pkg != null && pkg.packageKey.isNullOrEmpty() && pkg.packageKeyRegex.isNullOrEmpty()) {
@@ -96,7 +120,9 @@ open class AbstractHandler(
                 val update = Update()
                     .set(NodeDetailInfo::lastModifiedBy.name, SYSTEM_USER)
                     .set(NodeDetailInfo::deleted.name, LocalDateTime.now())
-                val updateResult = mongoTemplate.updateFirst(nodeQuery, update, nodeCollectionName)
+                val updateResult = updateNodeFirst(
+                    context.projectId, nodeCollectionName, nodeQuery, update,
+                )
                 if (updateResult.modifiedCount != 1L) {
                     logger.error(
                         "delete hot node failed with id ${it.key} " +

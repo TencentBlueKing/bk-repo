@@ -31,6 +31,7 @@
 
 dependencies {
     implementation(project(":common:common-api"))
+    api(project(":common:common-mongo-api"))
     api(project(":common:common-artifact:artifact-service"))
     implementation(project(":common:common-artifact:artifact-api"))
     api("com.alibaba:easyexcel:3.1.1")

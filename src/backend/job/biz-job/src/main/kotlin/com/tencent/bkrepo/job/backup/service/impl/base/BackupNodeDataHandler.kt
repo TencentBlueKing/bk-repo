@@ -24,7 +24,10 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.metadata.routing.NodeMongoOperations
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -42,6 +45,14 @@ class BackupNodeDataHandler(
     private val mongoTemplate: MongoTemplate,
     private val storageService: StorageService,
 ) : BackupDataHandler, BaseService() {
+    @Autowired(required = false)
+    private var routingRegistry: MongoRoutingRegistry? = null
+
+    @Autowired(required = false)
+    private var nodeMongoOperations: NodeMongoOperations? = null
+
+    private fun routedReadTemplate(projectId: String, collectionName: String): MongoTemplate =
+        routingRegistry?.routeRead(collectionName, projectId) ?: mongoTemplate
     override fun dataType(): BackupDataEnum {
         return BackupDataEnum.NODE_DATA
     }
@@ -91,7 +102,8 @@ class BackupNodeDataHandler(
             }
         } else {
             try {
-                mongoTemplate.save(record, collectionName)
+                nodeMongoOperations?.save(record.projectId, record, collectionName)
+                    ?: mongoTemplate.save(record, collectionName)
                 if (sha256Check(record.folder, record.sha256)) {
                     increment(record.sha256!!, repo.storageCredentials?.key)
                 }
@@ -195,7 +207,8 @@ class BackupNodeDataHandler(
             buildQuery(record)
         }
         val collectionName = SeparationUtils.getNodeCollectionName(record.projectId)
-        return mongoTemplate.findOne(existNodeQuery, BackupNodeInfo::class.java, collectionName)
+        return routedReadTemplate(record.projectId, collectionName)
+            .findOne(existNodeQuery, BackupNodeInfo::class.java, collectionName)
     }
 
     private fun updateExistNode(nodeInfo: BackupNodeInfo, nodeCollectionName: String) {
@@ -214,7 +227,8 @@ class BackupNodeDataHandler(
             .set(NodeDetailInfo::compressed.name, nodeInfo.compressed)
             .set(NodeDetailInfo::federatedSource.name, nodeInfo.federatedSource)
 
-        mongoTemplate.updateFirst(nodeQuery, update, nodeCollectionName)
+        nodeMongoOperations?.updateFirst(nodeInfo.projectId, nodeQuery, update, nodeCollectionName)
+            ?: mongoTemplate.updateFirst(nodeQuery, update, nodeCollectionName)
         logger.info(
             "update exist node success with id ${nodeInfo.id} " +
                 "and fullPath ${nodeInfo.fullPath} in ${nodeInfo.projectId}|${nodeInfo.repoName}"
@@ -272,7 +286,8 @@ class BackupNodeDataHandler(
             .set(NodeDetailInfo::size.name, record.size)
             .set(NodeDetailInfo::id.name, record.id)
             .set(NodeDetailInfo::federatedSource.name, record.federatedSource)
-        mongoTemplate.updateFirst(existNodeQuery, update, collectionName)
+        nodeMongoOperations?.updateFirst(record.projectId, existNodeQuery, update, collectionName)
+            ?: mongoTemplate.updateFirst(existNodeQuery, update, collectionName)
     }
 
     private fun buildQuery(record: BackupNodeInfo): Query {

@@ -53,6 +53,7 @@ import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.context.FileJobContext
 import com.tencent.bkrepo.job.batch.utils.DriveUtils
+import com.tencent.bkrepo.common.mongo.routing.MigrationGate
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils.Companion.buildBlockNodeBloomFilter
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
@@ -82,6 +83,7 @@ class FileReferenceCleanupJob(
     private val archiveClient: ArchiveClient,
     private val blockNodeProperties: BlockNodeProperties,
     private val storageProperties: StorageProperties,
+    private val migrationGate: MigrationGate? = null,
 ) : MongoDbBatchJob<FileReferenceCleanupJob.FileReferenceData, FileJobContext>(properties) {
 
     /**
@@ -154,6 +156,15 @@ class FileReferenceCleanupJob(
         val id = row.id
         val storageCredentials = credentialsKey?.let { getCredentials(credentialsKey) }
         try {
+            // ─── 第〇层（迁移期主防线）：GC 全局暂停（§3.14.5 / §3.18.2） ───
+            if (isGcFrozenDueToMigration()) {
+                logger.info(
+                    "GC frozen due to active project migration, skipping " +
+                        "file_reference cleanup for sha256[$sha256] on [$credentialsKey]"
+                )
+                return
+            }
+
             /*
             * 我们认为大部分的情况下，引用计数应该是正确的，并且为了确保文件没有被节点或者压缩root等资源引用
             * 我们需要进行强制判断，同时文件丢失的情况，我们认为也是小概率事件，因此我们选择先进行文件是否可以
@@ -196,6 +207,7 @@ class FileReferenceCleanupJob(
                             "existsRefOfMappingStorage[$existsRefOfMappingStorage], skip cleaning up."
                 )
             }
+
             mongoTemplate.remove(Query(Criteria(ID).isEqualTo(id)), collectionName)
         } catch (e: Exception) {
             if (e is RepoMigratingException) {
@@ -318,6 +330,18 @@ class FileReferenceCleanupJob(
         return mongoTemplate.findOne(query, Node::class.java, COLLECTION_NAME_COMPRESS_FILE) != null
     }
 
+    // ─── 第〇层 / 第一层 / 第三层 防护辅助方法 ──────────────────────
+
+    /**
+     * §3.14.5 / §3.18.2：迁移期全局 GC 暂停。
+     * 任一项目处于迁移过程中（INITIAL_SYNC ~ CLEANUP），file_reference GC 全局暂停。
+     */
+    private fun isGcFrozenDueToMigration(): Boolean {
+        val gate = migrationGate ?: return false
+        return gate.isGcFrozen()
+    }
+
+
     private val cacheMap: ConcurrentHashMap<String, StorageCredentials?> = ConcurrentHashMap()
 
     companion object {
@@ -331,6 +355,7 @@ class FileReferenceCleanupJob(
         val id: String? by map
         val sha256: String by map
         val credentialsKey: String? = map[CREDENTIALS] as String?
+        val count: Number? = map[COUNT] as? Number
     }
 
     data class Node(

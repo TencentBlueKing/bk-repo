@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
+import com.tencent.bkrepo.common.metadata.routing.NodeShardReadSupport
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
@@ -60,8 +61,12 @@ open class StatBaseJob(
     private val mongoTemplate: MongoTemplate,
     private val properties: StatJobProperties,
     private val executor: ThreadPoolTaskExecutor,
-    private val separationTaskService: SeparationTaskService
+    private val separationTaskService: SeparationTaskService,
+    private val nodeShardReadSupport: NodeShardReadSupport? = null,
 ) : DefaultContextJob(properties) {
+
+    private fun readTemplate(projectId: String, collection: String): MongoTemplate =
+        nodeShardReadSupport?.readTemplate(projectId, collection) ?: mongoTemplate
 
     private fun queryNodes(
         projectId: String,
@@ -87,7 +92,7 @@ open class StatBaseJob(
                     .addCriteria(Criteria.where(ID).gt(lastId))
                     .limit(properties.batchSize)
                     .with(Sort.by(ID).ascending())
-                val data = mongoTemplate.find<StatNode>(
+                val data = readTemplate(projectId, collection).find<StatNode>(
                     newQuery,
                     collection,
                 )

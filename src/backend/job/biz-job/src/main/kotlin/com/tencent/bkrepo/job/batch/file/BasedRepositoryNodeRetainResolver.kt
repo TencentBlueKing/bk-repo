@@ -15,6 +15,7 @@ import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SHA256
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.SIZE
+import com.tencent.bkrepo.common.metadata.routing.NodeShardReadSupport
 import com.tencent.bkrepo.job.batch.base.BaseService
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.pojo.TFileCache
@@ -42,7 +43,8 @@ class BasedRepositoryNodeRetainResolver(
     private val fileCacheService: FileCacheService,
     private val mongoTemplate: MongoTemplate,
     private val redisTemplate: RedisTemplate<String, String>,
-    private val lockOperation: LockOperation
+    private val lockOperation: LockOperation,
+    private val nodeShardReadSupport: NodeShardReadSupport? = null,
 ) : NodeRetainResolver, BaseService(redisTemplate, lockOperation) {
 
     private var retainNodes = HashMap<String, RetainNode>()
@@ -177,7 +179,8 @@ class BasedRepositoryNodeRetainResolver(
                 .addCriteria(Criteria.where(ID).gt(lastId))
                 .limit(batchSize)
                 .with(Sort.by(ID).ascending())
-            val data = mongoTemplate.find<Map<String, Any?>>(
+            val data = (nodeShardReadSupport?.readTemplate(projectId, collection) ?: mongoTemplate)
+                .find<Map<String, Any?>>(
                 newQuery,
                 collection,
             )

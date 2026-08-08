@@ -49,6 +49,7 @@ object NodeDeleteHelper {
         updateMulti: (Query, Update) -> Long,
         countByQuery: (Query) -> Long = { 0L },
         useFullPathIndex: Boolean = true,
+        projectId: String? = null,
     ): Long {
         val running = runningDeleteCount.incrementAndGet()
         logger.info(
@@ -64,7 +65,9 @@ object NodeDeleteHelper {
                     updateMulti(deleteQuery, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
                 }
                 useFullPathIndex && deleteMode == DELETE_MODE_BATCH_BY_IDS -> {
-                    deleteBatchByNodeIds(deleteQuery, batchSize, operator, deleteTime, findByQuery, updateMulti)
+                    deleteBatchByNodeIds(
+                        deleteQuery, batchSize, operator, deleteTime, findByQuery, updateMulti, projectId
+                    )
                 }
                 else -> updateMulti(deleteQuery, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
             }
@@ -120,6 +123,7 @@ object NodeDeleteHelper {
         deleteTime: LocalDateTime,
         findByQuery: (Query) -> List<Map<*, *>>,
         updateMulti: (Query, Update) -> Long,
+        projectId: String? = null,
     ): Long {
         // 限制删除范围为删除发起时刻（deleteTime）之前已存在的节点，避免删除过程中新建的节点被持续卷入导致循环无法收敛
         query.addCriteria(Criteria.where(TNode::createdDate.name).lte(deleteTime))
@@ -134,7 +138,11 @@ object NodeDeleteHelper {
         var docs = findByQuery(query)
         while (docs.isNotEmpty()) {
             val nodeIds = docs.map { it[ID]!! }
-            val modifiedCount = updateMulti(Query(Criteria.where(ID).`in`(nodeIds)), update)
+            val idCriteria = Criteria.where(ID).`in`(nodeIds)
+            val shardProjectId = projectId ?: query.queryObject[TNode::projectId.name] as? String
+            require(shardProjectId != null) { "Sharding value can not empty!" }
+            idCriteria.and(TNode::projectId.name).`is`(shardProjectId)
+            val modifiedCount = updateMulti(Query(idCriteria), update)
             if (modifiedCount != nodeIds.size.toLong()) {
                 logger.error(
                     "Node batch delete modified count [$modifiedCount] mismatch with node id count " +

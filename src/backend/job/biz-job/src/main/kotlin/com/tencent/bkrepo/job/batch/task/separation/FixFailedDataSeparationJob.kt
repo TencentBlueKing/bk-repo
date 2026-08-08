@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.batch.task.separation
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.job.PACKAGE_COLLECTION_NAME
 import com.tencent.bkrepo.job.PACKAGE_VERSION_COLLECTION_NAME
@@ -74,6 +75,8 @@ class FixFailedDataSeparationJob(
     private val separationPackageVersionDao: SeparationPackageVersionDao,
     private val separationNodeDao: SeparationNodeDao,
     private val separationFailedRecordDao: SeparationFailedRecordDao,
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private val routingRegistry: MongoRoutingRegistry? = null,
 ) : DefaultContextJob(properties) {
 
     override fun doStart0(jobContext: JobContext) {
@@ -119,7 +122,8 @@ class FixFailedDataSeparationJob(
             SEPARATE -> {
                 val nodeQuery = Query(Criteria.where(ID).isEqualTo(record.nodeId))
                 val collectionName = SeparationUtils.getNodeCollectionName(record.projectId)
-                val nodeInfo = mongoTemplate.findOne(nodeQuery, NodeBaseInfo::class.java, collectionName)
+                val nodeInfo = (routingRegistry?.routeRead(collectionName, record.projectId) ?: mongoTemplate)
+                    .findOne(nodeQuery, NodeBaseInfo::class.java, collectionName)
                 if (nodeInfo == null) {
                     logger.error("node ${record.nodeId} is deleted")
                     separationFailedRecordDao.saveFailedRecord(

@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.ID_IDX
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils.shardingSequenceFor
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
@@ -58,8 +59,12 @@ class NodeIterator(
     private val task: MigrateRepoStorageTask,
     private val mongoTemplate: MongoTemplate,
     private val collectionName: String = "node_${shardingSequenceFor(task.projectId, SHARDING_COUNT)}",
-    private val pageSize: Int = DEFAULT_PAGE_SIZE
+    private val pageSize: Int = DEFAULT_PAGE_SIZE,
+    private val routingRegistry: MongoRoutingRegistry? = null,
 ) : Iterator<Node> {
+
+    private fun readTemplate(): MongoTemplate =
+        routingRegistry?.routeRead(collectionName, task.projectId) ?: mongoTemplate
 
     /**
      * 待遍历的游标
@@ -85,7 +90,7 @@ class NodeIterator(
         // 查询第一个node id
         lastNodeId = initLastNodeId()
         // 查询总数
-        totalCount = mongoTemplate.count(Query(buildCriteria()), collectionName)
+        totalCount = readTemplate().count(Query(buildCriteria()), collectionName)
         // 查询第一页数据
         data = if (totalCount == 0L) {
             emptyList()
@@ -117,7 +122,7 @@ class NodeIterator(
             .withHint(ID_IDX)
             .limit(pageSize)
             .with(Sort.by(Sort.Direction.ASC, ID))
-        val result = mongoTemplate.find(query, Node::class.java, collectionName)
+        val result = readTemplate().find(query, Node::class.java, collectionName)
         if (result.isNotEmpty()) {
             lastNodeId = result.last().id
         }
@@ -146,7 +151,7 @@ class NodeIterator(
         return if (task.lastMigratedNodeId == MIN_OBJECT_ID) {
             val query = Query(buildCriteria()).with(Sort.by(Sort.Direction.ASC, ID)).withHint(PATH_IDX)
             // 找到第一个node
-            mongoTemplate.findOne(query, Node::class.java, collectionName)?.id?.let {
+            readTemplate().findOne(query, Node::class.java, collectionName)?.id?.let {
                 // 获取一个比其小的id
                 ObjectId(ObjectId(it).timestamp - 1, 0).toHexString()
             } ?: MIN_OBJECT_ID

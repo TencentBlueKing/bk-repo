@@ -30,7 +30,10 @@ package com.tencent.bkrepo.job.batch.task.clean
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.routing.NodeShardReadSupport
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.mongo.routing.MigrationGate
+import org.springframework.beans.factory.annotation.Autowired
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
@@ -54,7 +57,11 @@ import kotlin.reflect.KClass
 @Component
 class PipelineArtifactCleanupJob(
     private val properties: PipelineArtifactCleanupJobProperties,
-    private val nodeService: NodeService
+    private val nodeService: NodeService,
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private val nodeShardReadSupport: NodeShardReadSupport? = null,
+    @Autowired(required = false)
+    private val migrationGate: MigrationGate? = null,
 ) : DefaultContextMongoDbJob<PipelineArtifactCleanupJob.Node>(properties) {
     override fun collectionNames(): List<String> {
         return (0 until SHARDING_COUNT)
@@ -88,6 +95,11 @@ class PipelineArtifactCleanupJob(
     }
 
     override fun run(row: Node, collectionName: String, context: JobContext) {
+        // spec §3.18.3 迁移期间冻结物理删除
+        if (migrationGate?.isPhysicalDeleteFrozen(row.projectId) == true) {
+            logger.info("freeze-physical-delete active, skip ${row.projectId}")
+            return
+        }
         getEarliestBuildNode(collectionName, row)?.let { buildNode ->
             deleteBeforeBuild(buildNode)
         }
@@ -112,7 +124,9 @@ class PipelineArtifactCleanupJob(
                 .and(Node::folder.name).isEqualTo(true)
                 .and(Node::deleted.name).isEqualTo(null)
         ).with(Sort.by(Sort.Direction.DESC, Node::id.name)).skip(properties.reservedFrequency - 1).limit(1)
-        return mongoTemplate.findOne(query, collectionName)
+        return (nodeShardReadSupport?.readTemplate(pipelineNode.projectId, collectionName)
+            ?: routedMongoTemplate(pipelineNode.projectId, collectionName))
+            .findOne(query, collectionName)
     }
 
     /**

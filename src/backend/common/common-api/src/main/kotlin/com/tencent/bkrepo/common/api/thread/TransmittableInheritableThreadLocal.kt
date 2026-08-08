@@ -13,4 +13,9 @@ open class TransmittableInheritableThreadLocal<T> : InheritableThreadLocal<T>() 
             Transmitter.holder.get().add(this as ThreadLocal<Any>)
         }
     }
+
+    override fun remove() {
+        super.remove()
+        Transmitter.holder.get().remove(this as ThreadLocal<Any>)
+    }
 }

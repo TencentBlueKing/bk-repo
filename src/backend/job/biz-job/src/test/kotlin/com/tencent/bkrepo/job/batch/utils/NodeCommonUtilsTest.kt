@@ -63,6 +63,7 @@ import java.time.LocalDateTime
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class NodeCommonUtilsTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
+    private val nodeCommonUtils: NodeCommonUtils,
 ) : JobBaseTest() {
 
     @MockitoBean
@@ -92,9 +93,6 @@ class NodeCommonUtilsTest @Autowired constructor(
     fun beforeEach() {
         mongoTemplate.remove(Query(), nodeCollectionName)
         whenever(migrateRepoStorageService.migrating(anyString(), anyString())).thenReturn(true)
-        NodeCommonUtils.mongoTemplate = mongoTemplate
-        NodeCommonUtils.migrateRepoStorageService = migrateRepoStorageService
-        NodeCommonUtils.separationTaskService = separationTaskService
         mockRepositoryCommonUtils()
     }
 

@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.fs.service
+﻿package com.tencent.bkrepo.fs.service
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.metadata.dao.blocknode.RBlockNodeDao
 import com.tencent.bkrepo.common.metadata.dao.node.RNodeDao
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.metadata.properties.BlockNodeProperties
 import com.tencent.bkrepo.common.metadata.service.blocknode.RBlockNodeService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.fs.UT_CRC64_ECMA
@@ -22,8 +23,9 @@ import org.mockito.kotlin.any
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringBootConfiguration
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.context.annotation.ComponentScan
+import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
@@ -34,7 +36,8 @@ import java.time.LocalDateTime
 @DataMongoTest
 @SpringBootConfiguration
 @EnableAutoConfiguration
-@ComponentScan("com.tencent.bkrepo.common.metadata")
+@Import(BlockNodeServiceTestConfiguration::class)
+@EnableConfigurationProperties(BlockNodeProperties::class)
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
 class BlockNodeServiceTest {
 
@@ -101,7 +104,6 @@ class BlockNodeServiceTest {
                 createdDate
             )
             Assertions.assertEquals(2, blocks0.size)
-            // 删除所有分块
             blockNodeService.deleteBlocks(
                 projectId = UT_PROJECT_ID,
                 repoName = UT_REPO_NAME,
@@ -114,7 +116,6 @@ class BlockNodeServiceTest {
                 "/file",
                 createdDate
             )
-            // 所有分块已被删除
             Assertions.assertEquals(0, blocks1.size)
         }
     }
