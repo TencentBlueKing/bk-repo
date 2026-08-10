@@ -15,6 +15,8 @@ import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.preview.constant.PreviewMessageCode
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
+import org.springframework.web.util.UriUtils
+import java.nio.charset.StandardCharsets
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -186,11 +188,13 @@ class PreviewTokenAuthService(
         if (segments.size < 2) return null
         for (i in 0..segments.size - 2) {
             if (segments[i] == tokenInfo.projectId && segments[i + 1] == tokenInfo.repoName) {
-                return if (i + 2 < segments.size) {
+                val encodedPath = if (i + 2 < segments.size) {
                     "/" + segments.drop(i + 2).joinToString("/")
                 } else {
                     "/"
                 }
+                // requestURI 保留 URL encode，token.fullPath 为解码路径，比较前需统一解码
+                return UriUtils.decode(encodedPath, StandardCharsets.UTF_8)
             }
         }
         return null
