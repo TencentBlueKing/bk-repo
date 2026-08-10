@@ -52,9 +52,11 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.redirect.CosRedirectService
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
@@ -133,6 +135,31 @@ class OciRegistryRemoteRepository(
                 doRequest(context) as ArtifactResource?
             }
         }
+    }
+
+    /**
+     * manifest 每次拉远端，禁止缓存 302；blob 缓存命中时 mapping 后重定向。
+     */
+    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        if (context.artifactInfo is OciManifestArtifactInfo) {
+            return false
+        }
+        val artifactInfo = context.artifactInfo as? OciArtifactInfo
+            ?: return super.onDownloadRedirect(context)
+        if (!redirectManager.mayRedirect(context)) {
+            return false
+        }
+        val fullPath = ociOperationService.getNodeFullPath(artifactInfo) ?: return false
+        artifactInfo.setArtifactMappingUri(fullPath)
+        ArtifactContextHolder.getNodeDetail(artifactInfo) ?: return false
+        return redirectAfterPrepare(context)
+    }
+
+    override fun beforeRedirect(context: ArtifactDownloadContext, node: NodeDetail) {
+        val contentType = MediaTypes.APPLICATION_OCTET_STREAM
+        val digest = OciDigest.fromSha256(node.sha256.orEmpty())
+        OciResponseUtils.buildRedirectResponse(digest, context.response, contentType)
+        context.putAttribute(CosRedirectService.ATTR_RESPONSE_CONTENT_TYPE, contentType)
     }
 
     /**
