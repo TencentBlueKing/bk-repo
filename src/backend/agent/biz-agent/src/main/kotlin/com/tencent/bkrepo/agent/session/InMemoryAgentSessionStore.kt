@@ -25,43 +25,26 @@
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.agent.tool.local
+package com.tencent.bkrepo.agent.session
 
-import com.tencent.bkrepo.agent.permission.ToolRiskLevel
-import io.agentscope.core.message.ToolResultBlock
-import io.agentscope.core.permission.PermissionContextState
-import io.agentscope.core.permission.PermissionDecision
-import io.agentscope.core.tool.ToolBase
-import io.agentscope.core.tool.ToolCallParam
-import io.agentscope.core.tool.ToolSuspendException
-import reactor.core.publisher.Mono
+import com.tencent.bkrepo.common.security.exception.PermissionException
+import java.util.concurrent.ConcurrentHashMap
 
-/**
- * 客户端本地执行的 SchemaOnly 工具：后台 PASSTHROUGH 交给 PermissionEngine 裁决，执行挂起后由客户端完成。
- */
-class ExternalLocalTool(
-    definition: LocalToolDefinition,
-) : ToolBase(
-    ToolBase.builder()
-        .name(definition.name)
-        .description(definition.description)
-        .inputSchema(definition.inputSchema)
-        .externalTool(true)
-        .readOnly(definition.riskLevel.isReadOnly())
-        .concurrencySafe(true),
-) {
+class InMemoryAgentSessionStore : AgentSessionStore {
 
-    override fun checkPermissions(
-        toolInput: MutableMap<String, Any>,
-        context: PermissionContextState,
-    ): Mono<PermissionDecision> = Mono.just(
-        PermissionDecision.passthrough("Local tool '$name' defers to PermissionEngine"),
-    )
+    private val owners = ConcurrentHashMap<String, String>()
 
-    override fun callAsync(param: ToolCallParam): Mono<ToolResultBlock> =
-        Mono.error(ToolSuspendException())
-}
+    override fun bindSession(userId: String, projectId: String, sessionId: String) {
+        owners[sessionKey(projectId, sessionId)] = userId
+    }
 
-private fun ToolRiskLevel.isReadOnly(): Boolean {
-    return this == ToolRiskLevel.READ_SAFE || this == ToolRiskLevel.READ_SENSITIVE
+    override fun assertSessionOwner(userId: String, projectId: String, sessionId: String) {
+        val owner = owners[sessionKey(projectId, sessionId)]
+            ?: throw PermissionException("Session[$sessionId] does not exist in project[$projectId]")
+        if (owner != userId) {
+            throw PermissionException("Session[$sessionId] does not belong to user[$userId] in project[$projectId]")
+        }
+    }
+
+    private fun sessionKey(projectId: String, sessionId: String): String = "$projectId:$sessionId"
 }

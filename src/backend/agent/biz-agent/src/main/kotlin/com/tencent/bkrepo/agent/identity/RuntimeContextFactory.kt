@@ -25,43 +25,32 @@
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.agent.tool.local
+package com.tencent.bkrepo.agent.identity
 
-import com.tencent.bkrepo.agent.permission.ToolRiskLevel
-import io.agentscope.core.message.ToolResultBlock
-import io.agentscope.core.permission.PermissionContextState
-import io.agentscope.core.permission.PermissionDecision
-import io.agentscope.core.tool.ToolBase
-import io.agentscope.core.tool.ToolCallParam
-import io.agentscope.core.tool.ToolSuspendException
-import reactor.core.publisher.Mono
+import com.tencent.bkrepo.agent.constant.RUNTIME_CONTEXT_DEVICE_ID
+import com.tencent.bkrepo.agent.constant.RUNTIME_CONTEXT_PROJECT_ID
+import io.agentscope.core.agent.RuntimeContext
+import org.springframework.stereotype.Component
 
 /**
- * 客户端本地执行的 SchemaOnly 工具：后台 PASSTHROUGH 交给 PermissionEngine 裁决，执行挂起后由客户端完成。
+ * 统一构造 AgentScope [RuntimeContext]，保证 userId 只来自已认证请求。
  */
-class ExternalLocalTool(
-    definition: LocalToolDefinition,
-) : ToolBase(
-    ToolBase.builder()
-        .name(definition.name)
-        .description(definition.description)
-        .inputSchema(definition.inputSchema)
-        .externalTool(true)
-        .readOnly(definition.riskLevel.isReadOnly())
-        .concurrencySafe(true),
-) {
+@Component
+class RuntimeContextFactory {
 
-    override fun checkPermissions(
-        toolInput: MutableMap<String, Any>,
-        context: PermissionContextState,
-    ): Mono<PermissionDecision> = Mono.just(
-        PermissionDecision.passthrough("Local tool '$name' defers to PermissionEngine"),
-    )
-
-    override fun callAsync(param: ToolCallParam): Mono<ToolResultBlock> =
-        Mono.error(ToolSuspendException())
-}
-
-private fun ToolRiskLevel.isReadOnly(): Boolean {
-    return this == ToolRiskLevel.READ_SAFE || this == ToolRiskLevel.READ_SENSITIVE
+    fun create(
+        userId: String,
+        projectId: String,
+        sessionId: String,
+        deviceId: String? = null,
+    ): RuntimeContext {
+        val builder = RuntimeContext.builder()
+            .userId(userId)
+            .sessionId(sessionId)
+            .put(RUNTIME_CONTEXT_PROJECT_ID, projectId)
+        deviceId?.takeIf { it.isNotBlank() }?.let {
+            builder.put(RUNTIME_CONTEXT_DEVICE_ID, it)
+        }
+        return builder.build()
+    }
 }

@@ -34,12 +34,12 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 interface AgentRunService {
 
     /**
-     * 创建一个归属于[userId]的会话
+     * 创建一个归属于[userId]和[projectId]的会话
      */
-    fun createSession(userId: String, deviceId: String?): AgentSessionInfo
+    fun createSession(userId: String, projectId: String, deviceId: String?): AgentSessionInfo
 
     /**
      * 执行一轮对话，并把AgentScope事件流转成SSE推给客户端
      */
-    fun run(userId: String, deviceId: String?, request: AgentRunRequest): SseEmitter
+    fun run(userId: String, projectId: String, deviceId: String?, request: AgentRunRequest): SseEmitter
 }

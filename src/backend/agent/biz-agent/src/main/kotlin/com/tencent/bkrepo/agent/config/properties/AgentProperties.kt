@@ -65,6 +65,10 @@ data class AgentProperties(
      */
     var maxSessionIdLength: Int = DEFAULT_MAX_SESSION_ID_LENGTH,
     /**
+     * 会话归属记录在 Redis 中的 TTL；未配置 Redis 时退化为进程内存储
+     */
+    var sessionTtl: Duration = DEFAULT_SESSION_TTL,
+    /**
      * 是否注册客户端本地工具 schema（由客户端在 REQUIRE_EXTERNAL_EXECUTION 中执行）。
      */
     var localToolsEnabled: Boolean = DEFAULT_LOCAL_TOOLS_ENABLED,
@@ -76,6 +80,7 @@ data class AgentProperties(
         val DEFAULT_SSE_TIMEOUT: Duration = Duration.ofMinutes(10)
         const val DEFAULT_MAX_MESSAGE_LENGTH = 32 * 1024
         const val DEFAULT_MAX_SESSION_ID_LENGTH = 128
+        val DEFAULT_SESSION_TTL: Duration = Duration.ofDays(30)
         const val DEFAULT_LOCAL_TOOLS_ENABLED = true
     }
 }

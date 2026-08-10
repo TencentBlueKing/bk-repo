@@ -25,43 +25,14 @@
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.agent.tool.local
-
-import com.tencent.bkrepo.agent.permission.ToolRiskLevel
-import io.agentscope.core.message.ToolResultBlock
-import io.agentscope.core.permission.PermissionContextState
-import io.agentscope.core.permission.PermissionDecision
-import io.agentscope.core.tool.ToolBase
-import io.agentscope.core.tool.ToolCallParam
-import io.agentscope.core.tool.ToolSuspendException
-import reactor.core.publisher.Mono
+package com.tencent.bkrepo.agent.session
 
 /**
- * 客户端本地执行的 SchemaOnly 工具：后台 PASSTHROUGH 交给 PermissionEngine 裁决，执行挂起后由客户端完成。
+ * 会话归属存储：sessionId -> owner userId + projectId。
  */
-class ExternalLocalTool(
-    definition: LocalToolDefinition,
-) : ToolBase(
-    ToolBase.builder()
-        .name(definition.name)
-        .description(definition.description)
-        .inputSchema(definition.inputSchema)
-        .externalTool(true)
-        .readOnly(definition.riskLevel.isReadOnly())
-        .concurrencySafe(true),
-) {
+interface AgentSessionStore {
 
-    override fun checkPermissions(
-        toolInput: MutableMap<String, Any>,
-        context: PermissionContextState,
-    ): Mono<PermissionDecision> = Mono.just(
-        PermissionDecision.passthrough("Local tool '$name' defers to PermissionEngine"),
-    )
+    fun bindSession(userId: String, projectId: String, sessionId: String)
 
-    override fun callAsync(param: ToolCallParam): Mono<ToolResultBlock> =
-        Mono.error(ToolSuspendException())
-}
-
-private fun ToolRiskLevel.isReadOnly(): Boolean {
-    return this == ToolRiskLevel.READ_SAFE || this == ToolRiskLevel.READ_SENSITIVE
+    fun assertSessionOwner(userId: String, projectId: String, sessionId: String)
 }

@@ -90,12 +90,14 @@ class HarnessAgentSmokeTest {
         )
         val modelConfiguration = AgentModelConfiguration()
         val harnessConfiguration = HarnessAgentConfiguration()
+        val permissionContext = io.agentscope.core.permission.PermissionContextState.builder().build()
         val toolkit = io.agentscope.core.tool.Toolkit()
         val agent = harnessConfiguration.harnessAgent(
             properties = agentProperties,
             model = modelConfiguration.agentChatModel(modelProperties),
             stateStore = InMemoryAgentStateStore(),
             toolkit = toolkit,
+            permissionContext = permissionContext,
         )
         val runtimeContext = RuntimeContext.builder()
             .userId("smoke-user")

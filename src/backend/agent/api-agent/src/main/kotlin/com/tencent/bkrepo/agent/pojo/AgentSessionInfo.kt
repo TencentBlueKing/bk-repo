@@ -36,6 +36,8 @@ data class AgentSessionInfo(
     val sessionId: String,
     @get:Schema(title = "会话归属用户")
     val userId: String,
+    @get:Schema(title = "会话归属项目")
+    val projectId: String,
     @get:Schema(title = "会话归属设备")
     val deviceId: String?,
     @get:Schema(title = "创建时间")

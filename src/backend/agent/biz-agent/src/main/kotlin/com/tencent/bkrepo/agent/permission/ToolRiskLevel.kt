@@ -25,43 +25,24 @@
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.agent.tool.local
-
-import com.tencent.bkrepo.agent.permission.ToolRiskLevel
-import io.agentscope.core.message.ToolResultBlock
-import io.agentscope.core.permission.PermissionContextState
-import io.agentscope.core.permission.PermissionDecision
-import io.agentscope.core.tool.ToolBase
-import io.agentscope.core.tool.ToolCallParam
-import io.agentscope.core.tool.ToolSuspendException
-import reactor.core.publisher.Mono
+package com.tencent.bkrepo.agent.permission
 
 /**
- * 客户端本地执行的 SchemaOnly 工具：后台 PASSTHROUGH 交给 PermissionEngine 裁决，执行挂起后由客户端完成。
+ * 工具风险等级，对应手册 §7.1 与 AgentScope PermissionEngine 裁决策略。
  */
-class ExternalLocalTool(
-    definition: LocalToolDefinition,
-) : ToolBase(
-    ToolBase.builder()
-        .name(definition.name)
-        .description(definition.description)
-        .inputSchema(definition.inputSchema)
-        .externalTool(true)
-        .readOnly(definition.riskLevel.isReadOnly())
-        .concurrencySafe(true),
-) {
+enum class ToolRiskLevel {
+    /** 普通只读，默认 ALLOW */
+    READ_SAFE,
 
-    override fun checkPermissions(
-        toolInput: MutableMap<String, Any>,
-        context: PermissionContextState,
-    ): Mono<PermissionDecision> = Mono.just(
-        PermissionDecision.passthrough("Local tool '$name' defers to PermissionEngine"),
-    )
+    /** 敏感只读，仍走 ALLOW，资源 IAM 在 DomainToolGateway 中补充 */
+    READ_SENSITIVE,
 
-    override fun callAsync(param: ToolCallParam): Mono<ToolResultBlock> =
-        Mono.error(ToolSuspendException())
-}
+    /** 可恢复写操作，默认 ASK */
+    WRITE_REVERSIBLE,
 
-private fun ToolRiskLevel.isReadOnly(): Boolean {
-    return this == ToolRiskLevel.READ_SAFE || this == ToolRiskLevel.READ_SENSITIVE
+    /** 删除或不可恢复写操作，ASK 且二次 IAM */
+    WRITE_DESTRUCTIVE,
+
+    /** 禁止调用 */
+    PROHIBITED,
 }

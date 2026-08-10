@@ -29,13 +29,14 @@ package com.tencent.bkrepo.agent.service.impl
 
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
 import com.tencent.bkrepo.agent.constant.AGENT_SESSION_ID_PREFIX
-import com.tencent.bkrepo.agent.constant.RUNTIME_CONTEXT_DEVICE_ID
+import com.tencent.bkrepo.agent.identity.AgentAuthorizationService
+import com.tencent.bkrepo.agent.identity.RuntimeContextFactory
 import com.tencent.bkrepo.agent.pojo.AgentRunRequest
 import com.tencent.bkrepo.agent.pojo.AgentSessionInfo
 import com.tencent.bkrepo.agent.service.AgentRunService
+import com.tencent.bkrepo.agent.session.AgentSessionStore
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.Preconditions
-import io.agentscope.core.agent.RuntimeContext
 import io.agentscope.core.event.AgentEvent
 import io.agentscope.core.event.AgentResultEvent
 import io.agentscope.core.event.RequireExternalExecutionEvent
@@ -61,27 +62,29 @@ import java.util.concurrent.atomic.AtomicReference
 class AgentRunServiceImpl(
     private val agent: HarnessAgent,
     private val properties: AgentProperties,
+    private val agentAuthorizationService: AgentAuthorizationService,
+    private val agentSessionStore: AgentSessionStore,
+    private val runtimeContextFactory: RuntimeContextFactory,
 ) : AgentRunService {
 
-    override fun createSession(userId: String, deviceId: String?): AgentSessionInfo {
+    override fun createSession(userId: String, projectId: String, deviceId: String?): AgentSessionInfo {
+        agentAuthorizationService.ensureProjectPermission(userId, projectId)
         val sessionId = AGENT_SESSION_ID_PREFIX + StringPool.uniqueId()
+        agentSessionStore.bindSession(userId, projectId, sessionId)
         return AgentSessionInfo(
             sessionId = sessionId,
             userId = userId,
+            projectId = projectId,
             deviceId = deviceId,
             createdDate = LocalDateTime.now(),
         )
     }
 
-    override fun run(userId: String, deviceId: String?, request: AgentRunRequest): SseEmitter {
+    override fun run(userId: String, projectId: String, deviceId: String?, request: AgentRunRequest): SseEmitter {
         validate(request)
-        val runtimeContextBuilder = RuntimeContext.builder()
-            .userId(userId)
-            .sessionId(request.sessionId)
-        deviceId?.takeIf { it.isNotBlank() }?.let {
-            runtimeContextBuilder.put(RUNTIME_CONTEXT_DEVICE_ID, it)
-        }
-        val runtimeContext = runtimeContextBuilder.build()
+        agentAuthorizationService.ensureProjectPermission(userId, projectId)
+        agentSessionStore.assertSessionOwner(userId, projectId, request.sessionId)
+        val runtimeContext = runtimeContextFactory.create(userId, projectId, request.sessionId, deviceId)
         val emitter = SseEmitter(properties.sseTimeout.toMillis())
         val subscriptionRef = AtomicReference<Disposable>()
         val pendingExternalExecution = AtomicReference(false)

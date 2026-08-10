@@ -29,6 +29,7 @@ package com.tencent.bkrepo.agent.config
 
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
 import io.agentscope.core.model.Model
+import io.agentscope.core.permission.PermissionContextState
 import io.agentscope.core.state.AgentStateStore
 import io.agentscope.core.tool.Toolkit
 import io.agentscope.harness.agent.HarnessAgent
@@ -48,6 +49,7 @@ class HarnessAgentConfiguration {
         model: Model,
         stateStore: AgentStateStore,
         toolkit: Toolkit,
+        permissionContext: PermissionContextState,
     ): HarnessAgent {
         return HarnessAgent.builder()
             .name(properties.name)
@@ -57,6 +59,7 @@ class HarnessAgentConfiguration {
             .stateStore(stateStore)
             .workspace(Paths.get(properties.workspace))
             .toolkit(toolkit)
+            .permissionContext(permissionContext)
             .enablePendingToolRecovery(true)
             .disableFilesystemTools()
             .disableShellTool()

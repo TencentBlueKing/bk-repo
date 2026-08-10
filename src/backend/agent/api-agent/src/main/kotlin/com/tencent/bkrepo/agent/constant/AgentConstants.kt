@@ -37,8 +37,16 @@ const val HEADER_DEVICE_ID = "X-BKREPO-AGENT-DEVICE-ID"
  */
 const val RUNTIME_CONTEXT_DEVICE_ID = "deviceId"
 
+/**
+ * [io.agentscope.core.agent.RuntimeContext] 中冻结的会话所属项目
+ */
+const val RUNTIME_CONTEXT_PROJECT_ID = "projectId"
+
 const val AGENT_SESSION_ID_PREFIX = "s-"
 
 const val LOG_OPERATE_SESSION_CREATE = "AGENT_SESSION_CREATE"
 
 const val LOG_OPERATE_RUN = "AGENT_RUN"
+
+/** Redis 中 sessionId -> userId 归属映射的 key 前缀 */
+const val AGENT_SESSION_OWNER_KEY_PREFIX = "bkrepo:agent:session-owner:"

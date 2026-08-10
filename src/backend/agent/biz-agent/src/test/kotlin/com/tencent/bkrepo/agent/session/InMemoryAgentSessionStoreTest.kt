@@ -25,43 +25,37 @@
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.agent.tool.local
+package com.tencent.bkrepo.agent.session
 
-import com.tencent.bkrepo.agent.permission.ToolRiskLevel
-import io.agentscope.core.message.ToolResultBlock
-import io.agentscope.core.permission.PermissionContextState
-import io.agentscope.core.permission.PermissionDecision
-import io.agentscope.core.tool.ToolBase
-import io.agentscope.core.tool.ToolCallParam
-import io.agentscope.core.tool.ToolSuspendException
-import reactor.core.publisher.Mono
+import com.tencent.bkrepo.common.security.exception.PermissionException
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Test
 
-/**
- * 客户端本地执行的 SchemaOnly 工具：后台 PASSTHROUGH 交给 PermissionEngine 裁决，执行挂起后由客户端完成。
- */
-class ExternalLocalTool(
-    definition: LocalToolDefinition,
-) : ToolBase(
-    ToolBase.builder()
-        .name(definition.name)
-        .description(definition.description)
-        .inputSchema(definition.inputSchema)
-        .externalTool(true)
-        .readOnly(definition.riskLevel.isReadOnly())
-        .concurrencySafe(true),
-) {
+class InMemoryAgentSessionStoreTest {
 
-    override fun checkPermissions(
-        toolInput: MutableMap<String, Any>,
-        context: PermissionContextState,
-    ): Mono<PermissionDecision> = Mono.just(
-        PermissionDecision.passthrough("Local tool '$name' defers to PermissionEngine"),
-    )
+    private val store = InMemoryAgentSessionStore()
 
-    override fun callAsync(param: ToolCallParam): Mono<ToolResultBlock> =
-        Mono.error(ToolSuspendException())
-}
+    @Test
+    fun `session is bound to user and project`() {
+        store.bindSession(USER_ID, PROJECT_ID, SESSION_ID)
 
-private fun ToolRiskLevel.isReadOnly(): Boolean {
-    return this == ToolRiskLevel.READ_SAFE || this == ToolRiskLevel.READ_SENSITIVE
+        assertDoesNotThrow {
+            store.assertSessionOwner(USER_ID, PROJECT_ID, SESSION_ID)
+        }
+        assertThrows(PermissionException::class.java) {
+            store.assertSessionOwner(USER_ID, OTHER_PROJECT_ID, SESSION_ID)
+        }
+        assertThrows(PermissionException::class.java) {
+            store.assertSessionOwner(OTHER_USER_ID, PROJECT_ID, SESSION_ID)
+        }
+    }
+
+    companion object {
+        private const val USER_ID = "user"
+        private const val OTHER_USER_ID = "other-user"
+        private const val PROJECT_ID = "project"
+        private const val OTHER_PROJECT_ID = "other-project"
+        private const val SESSION_ID = "session"
+    }
 }

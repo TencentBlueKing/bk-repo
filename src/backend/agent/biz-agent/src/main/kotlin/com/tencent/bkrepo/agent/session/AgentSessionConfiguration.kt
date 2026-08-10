@@ -25,43 +25,35 @@
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.agent.tool.local
+package com.tencent.bkrepo.agent.session
 
-import com.tencent.bkrepo.agent.permission.ToolRiskLevel
-import io.agentscope.core.message.ToolResultBlock
-import io.agentscope.core.permission.PermissionContextState
-import io.agentscope.core.permission.PermissionDecision
-import io.agentscope.core.tool.ToolBase
-import io.agentscope.core.tool.ToolCallParam
-import io.agentscope.core.tool.ToolSuspendException
-import reactor.core.publisher.Mono
+import com.tencent.bkrepo.agent.config.properties.AgentProperties
+import com.tencent.bkrepo.common.redis.RedisOperation
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
-/**
- * 客户端本地执行的 SchemaOnly 工具：后台 PASSTHROUGH 交给 PermissionEngine 裁决，执行挂起后由客户端完成。
- */
-class ExternalLocalTool(
-    definition: LocalToolDefinition,
-) : ToolBase(
-    ToolBase.builder()
-        .name(definition.name)
-        .description(definition.description)
-        .inputSchema(definition.inputSchema)
-        .externalTool(true)
-        .readOnly(definition.riskLevel.isReadOnly())
-        .concurrencySafe(true),
-) {
+@Configuration(proxyBeanMethods = false)
+class AgentSessionConfiguration {
 
-    override fun checkPermissions(
-        toolInput: MutableMap<String, Any>,
-        context: PermissionContextState,
-    ): Mono<PermissionDecision> = Mono.just(
-        PermissionDecision.passthrough("Local tool '$name' defers to PermissionEngine"),
-    )
+    @Bean
+    fun agentSessionStore(
+        properties: AgentProperties,
+        redisOperation: ObjectProvider<RedisOperation>,
+    ): AgentSessionStore {
+        val redis = redisOperation.getIfAvailable()
+        if (redis == null) {
+            logger.warn("No RedisOperation available, falling back to in-memory agent session ownership store")
+            return InMemoryAgentSessionStore()
+        }
+        return RedisAgentSessionStore(
+            redisOperation = redis,
+            sessionTtlSeconds = properties.sessionTtl.seconds,
+        )
+    }
 
-    override fun callAsync(param: ToolCallParam): Mono<ToolResultBlock> =
-        Mono.error(ToolSuspendException())
-}
-
-private fun ToolRiskLevel.isReadOnly(): Boolean {
-    return this == ToolRiskLevel.READ_SAFE || this == ToolRiskLevel.READ_SENSITIVE
+    companion object {
+        private val logger = LoggerFactory.getLogger(AgentSessionConfiguration::class.java)
+    }
 }
