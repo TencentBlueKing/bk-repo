@@ -45,6 +45,7 @@ class SnapshotConfig {
 class CosProperties {
     var secretId: String = ""
     var secretKey: String = ""
+    var region: String = ""
     var bucket: String = ""
     var endpoint: String = ""
 }
