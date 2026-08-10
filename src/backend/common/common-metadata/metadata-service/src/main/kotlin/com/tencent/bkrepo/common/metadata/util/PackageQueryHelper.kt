@@ -123,7 +123,7 @@ object PackageQueryHelper {
     ): Criteria {
         return where(TPackageVersion::packageId).isEqualTo(packageId)
             .apply {
-                name?.let { and(TPackageVersion::name).regex("^$it") }
+                name?.let { and(TPackageVersion::name).regex("^${EscapeUtils.escapeRegex(it)}") }
             }.apply {
                 if (!stageTag.isNullOrEmpty()) {
                     and(TPackageVersion::stageTag).all(stageTag)
