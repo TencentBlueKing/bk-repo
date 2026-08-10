@@ -220,23 +220,12 @@
                                 const url = URL.createObjectURL(fileDate.data)
                                 this.showFrame = true
                                 this.pageUrl = url
-                            } else if (isCode(res.data.data.suffix) || isHtmlFile(res.data.data.suffix)) {
+                            } else if (isCode(res.data.data.suffix) || isHtmlFile(res.data.data.suffix) || isText(res.data.data.suffix)) {
                                 const text = await fileDate.data.text()
                                 const suffix = res.data.data.suffix
                                 this.richTextFilePath = this.previewContext.filePath || `preview.${suffix}`
                                 this.richTextSource = text
                                 this.richTextShow = true
-                            } else if (isText(res.data.data.suffix)) {
-                                this.previewBasic = true
-                                this.$nextTick(() => {
-                                    setTextareaHeight()
-                                })
-                                const reader = new FileReader()
-                                reader.onload = function (event) {
-                                    // 读取的文本内容,强行赋值渲染
-                                    document.getElementById('basicFileText').value = Base64.decode(event.target.result)
-                                }
-                                reader.readAsText(fileDate.data)
                             } else if (isPic(res.data.data.suffix)) {
                                 this.imgShow = true
                                 this.imgUrl = URL.createObjectURL(fileDate.data)

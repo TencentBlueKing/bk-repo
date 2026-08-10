@@ -147,6 +147,10 @@ test('resolveMonacoLanguage maps CODE suffixes to monaco language ids', () => {
     assert.equal(resolveMonacoLanguage('page.aspx'), 'plaintext')
     assert.equal(resolveMonacoLanguage('page.jsp'), 'plaintext')
     assert.equal(resolveMonacoLanguage('page.ftl'), 'plaintext')
+    assert.equal(resolveMonacoLanguage('notes.txt'), 'plaintext')
+    assert.equal(resolveMonacoLanguage('payload.xml'), 'xml')
+    assert.equal(resolveMonacoLanguage('config.ini'), 'ini')
+    assert.equal(resolveMonacoLanguage('run.bat'), 'bat')
 })
 
 test('resolvePreviewViewMode reads view from query and defaults to preview', () => {
