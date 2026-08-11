@@ -34,18 +34,18 @@ import com.tencent.bkrepo.agent.pojo.AgentRunRequest
 import com.tencent.bkrepo.agent.pojo.AgentSessionInfo
 import com.tencent.bkrepo.agent.service.AgentRunService
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.metadata.annotation.LogOperate
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
-import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -64,12 +64,11 @@ class UserAgentController(
     @LogOperate(type = LOG_OPERATE_SESSION_CREATE)
     fun createSession(
         @RequestAttribute userId: String,
+        @Parameter(name = "项目ID", required = true)
         @RequestParam projectId: String,
+        @RequestHeader(HEADER_DEVICE_ID, required = false) deviceId: String?,
     ): Response<AgentSessionInfo> {
-        val normalizedProjectId = requireProjectId(projectId)
-        return ResponseBuilder.success(
-            agentRunService.createSession(userId, normalizedProjectId, currentDeviceId()),
-        )
+        return ResponseBuilder.success(agentRunService.createSession(userId, projectId, deviceId))
     }
 
     @Operation(summary = "发起一轮对话，以SSE返回agent事件流")
@@ -77,18 +76,11 @@ class UserAgentController(
     @LogOperate(type = LOG_OPERATE_RUN, desensitize = true)
     fun run(
         @RequestAttribute userId: String,
+        @Parameter(name = "项目ID", required = true)
         @RequestParam projectId: String,
+        @RequestHeader(HEADER_DEVICE_ID, required = false) deviceId: String?,
         @RequestBody request: AgentRunRequest,
     ): SseEmitter {
-        val normalizedProjectId = requireProjectId(projectId)
-        return agentRunService.run(userId, normalizedProjectId, currentDeviceId(), request)
-    }
-
-    private fun requireProjectId(projectId: String): String {
-        return Preconditions.checkNotBlank(projectId.trim(), "projectId")
-    }
-
-    private fun currentDeviceId(): String? {
-        return HeaderUtils.getHeader(HEADER_DEVICE_ID)?.takeIf { it.isNotBlank() }
+        return agentRunService.run(userId, projectId, deviceId, request)
     }
 }

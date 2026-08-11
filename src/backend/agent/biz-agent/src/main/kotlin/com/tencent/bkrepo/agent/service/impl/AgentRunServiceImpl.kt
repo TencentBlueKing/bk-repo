@@ -29,14 +29,15 @@ package com.tencent.bkrepo.agent.service.impl
 
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
 import com.tencent.bkrepo.agent.constant.AGENT_SESSION_ID_PREFIX
-import com.tencent.bkrepo.agent.identity.AgentAuthorizationService
 import com.tencent.bkrepo.agent.identity.RuntimeContextFactory
 import com.tencent.bkrepo.agent.pojo.AgentRunRequest
 import com.tencent.bkrepo.agent.pojo.AgentSessionInfo
 import com.tencent.bkrepo.agent.service.AgentRunService
 import com.tencent.bkrepo.agent.session.AgentSessionStore
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import io.agentscope.core.event.AgentEvent
 import io.agentscope.core.event.AgentResultEvent
 import io.agentscope.core.event.RequireExternalExecutionEvent
@@ -62,13 +63,13 @@ import java.util.concurrent.atomic.AtomicReference
 class AgentRunServiceImpl(
     private val agent: HarnessAgent,
     private val properties: AgentProperties,
-    private val agentAuthorizationService: AgentAuthorizationService,
+    private val permissionManager: PermissionManager,
     private val agentSessionStore: AgentSessionStore,
     private val runtimeContextFactory: RuntimeContextFactory,
 ) : AgentRunService {
 
     override fun createSession(userId: String, projectId: String, deviceId: String?): AgentSessionInfo {
-        agentAuthorizationService.ensureProjectPermission(userId, projectId)
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
         val sessionId = AGENT_SESSION_ID_PREFIX + StringPool.uniqueId()
         agentSessionStore.bindSession(userId, projectId, sessionId)
         return AgentSessionInfo(
@@ -82,7 +83,7 @@ class AgentRunServiceImpl(
 
     override fun run(userId: String, projectId: String, deviceId: String?, request: AgentRunRequest): SseEmitter {
         validate(request)
-        agentAuthorizationService.ensureProjectPermission(userId, projectId)
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
         agentSessionStore.assertSessionOwner(userId, projectId, request.sessionId)
         val runtimeContext = runtimeContextFactory.create(userId, projectId, request.sessionId, deviceId)
         val emitter = SseEmitter(properties.sseTimeout.toMillis())
