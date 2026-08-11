@@ -34,11 +34,14 @@ import com.tencent.bkrepo.agent.constant.RUNTIME_CONTEXT_FORCE_ARCHIVE_ASSISTANT
 import com.tencent.bkrepo.agent.identity.RuntimeContextFactory
 import com.tencent.bkrepo.agent.pojo.AgentMessageInfo
 import com.tencent.bkrepo.agent.pojo.AgentRunRequest
+import com.tencent.bkrepo.agent.pojo.AgentRunStatus
+import com.tencent.bkrepo.agent.pojo.AgentRunTriggerType
 import com.tencent.bkrepo.agent.pojo.AgentSessionDeleteRequest
 import com.tencent.bkrepo.agent.pojo.AgentSessionCreateResult
 import com.tencent.bkrepo.agent.pojo.AgentSessionInfo
 import com.tencent.bkrepo.agent.pojo.AgentSessionUpdateRequest
 import com.tencent.bkrepo.agent.runtime.AgentSessionInterruptor
+import com.tencent.bkrepo.agent.service.AgentRunRecordService
 import com.tencent.bkrepo.agent.service.AgentRunService
 import com.tencent.bkrepo.agent.service.AgentSessionService
 import com.tencent.bkrepo.agent.session.AgentRunLock
@@ -81,6 +84,7 @@ class AgentRunServiceImpl(
     private val agentSessionService: AgentSessionService,
     private val agentRunLock: AgentRunLock,
     private val agentSessionInterruptor: AgentSessionInterruptor,
+    private val agentRunRecordService: AgentRunRecordService,
     private val runtimeContextFactory: RuntimeContextFactory,
 ) : AgentRunService {
 
@@ -120,6 +124,20 @@ class AgentRunServiceImpl(
             throw TooManyRequestsException("Session[${request.sessionId}] is already running")
         }
         val runId = AGENT_RUN_ID_PREFIX + StringPool.uniqueId()
+        val triggerType = if (!request.externalExecutionResults.isNullOrEmpty()) {
+            AgentRunTriggerType.EXTERNAL_TOOL_RESUME
+        } else {
+            AgentRunTriggerType.USER_INPUT
+        }
+        agentRunRecordService.startRun(
+            runId = runId,
+            sessionId = request.sessionId,
+            userId = userId,
+            projectId = projectId,
+            deviceId = deviceId,
+            entryAgentId = properties.name,
+            triggerType = triggerType,
+        )
         agentSessionService.touchSession(request.sessionId, runId)
         agentSessionStore.touchSessionOwner(userId, projectId, request.sessionId)
         // RuntimeContext 冻结 userId/projectId/sessionId/deviceId/runId，供工具、权限与归档 middleware 读取。
@@ -142,14 +160,26 @@ class AgentRunServiceImpl(
             agentSessionInterruptor.interrupt(runtimeContext)
         }
         /**
-         * 结束本轮 SSE。默认释放 run 锁、dispose 订阅。
+         * 结束本轮 SSE。默认释放 run 锁、dispose 订阅，并写入 [agent_run] 终态。
          *
          * @param abortAgent 客户端断连/超时/异常时为 true，通知 AgentScope 中断推理。
          */
-        fun finishSse(disposeSubscription: Boolean = true, abortAgent: Boolean = false) {
+        fun finishSse(
+            disposeSubscription: Boolean = true,
+            abortAgent: Boolean = false,
+            runStatus: AgentRunStatus = AgentRunStatus.COMPLETED,
+            cancelReason: String? = null,
+            errorCode: String? = null,
+        ) {
             if (!sseFinished.compareAndSet(false, true)) return
             if (abortAgent) abortInflightAgentRun()
             if (disposeSubscription) subscriptionRef.get()?.dispose()
+            agentRunRecordService.finishRun(
+                runId = runId,
+                status = runStatus,
+                cancelReason = cancelReason,
+                errorCode = errorCode,
+            )
             releaseRunLock()
             emitter.complete()
         }
@@ -162,13 +192,17 @@ class AgentRunServiceImpl(
                     try {
                         if (emitAgentEvent(emitter, event, pendingExternalExecution)) {
                             // TOOL_SUSPENDED：通知客户端执行本地工具，本连接到此结束。
-                            finishSse()
+                            finishSse(runStatus = AgentRunStatus.SUSPENDED)
                         }
                     } catch (ignored: IOException) {
                         // 客户端断开连接；通知 middleware 在 cancel 时归档已有 assistant 片段。
                         logger.info("agent sse closed by client, session[${request.sessionId}]")
                         runtimeContext.put(RUNTIME_CONTEXT_FORCE_ARCHIVE_ASSISTANT, true)
-                        finishSse(abortAgent = true)
+                        finishSse(
+                            abortAgent = true,
+                            runStatus = AgentRunStatus.CANCELLED,
+                            cancelReason = "client_disconnected",
+                        )
                     }
                 },
                 { error ->
@@ -176,6 +210,11 @@ class AgentRunServiceImpl(
                     if (sseFinished.compareAndSet(false, true)) {
                         abortInflightAgentRun()
                         subscriptionRef.get()?.dispose()
+                        agentRunRecordService.finishRun(
+                            runId = runId,
+                            status = AgentRunStatus.FAILED,
+                            errorCode = error.javaClass.simpleName,
+                        )
                         releaseRunLock()
                         // 异常路径不归档 assistant，避免历史库留下截断回复。
                         emitter.completeWithError(error)
@@ -203,6 +242,11 @@ class AgentRunServiceImpl(
             if (sseFinished.compareAndSet(false, true)) {
                 abortInflightAgentRun()
                 subscription.dispose()
+                agentRunRecordService.finishRun(
+                    runId = runId,
+                    status = AgentRunStatus.CANCELLED,
+                    cancelReason = "timeout",
+                )
                 releaseRunLock()
                 // 超时与异常类似，不保证 assistant 完整，故不归档。
                 emitter.complete()

@@ -36,6 +36,7 @@ import com.tencent.bkrepo.agent.pojo.AgentMessageInfo
 import com.tencent.bkrepo.agent.pojo.AgentSessionCreateResult
 import com.tencent.bkrepo.agent.pojo.AgentSessionInfo
 import com.tencent.bkrepo.agent.pojo.AgentSessionStatus
+import com.tencent.bkrepo.agent.service.AgentRunRecordService
 import com.tencent.bkrepo.agent.service.AgentSessionService
 import com.tencent.bkrepo.agent.session.AgentRunLock
 import com.tencent.bkrepo.agent.session.AgentRuntimeStateCleaner
@@ -53,6 +54,7 @@ import java.time.LocalDateTime
 class AgentSessionServiceImpl(
     private val agentSessionDao: AgentSessionDao,
     private val agentMessageDao: AgentMessageDao,
+    private val agentRunRecordService: AgentRunRecordService,
     private val agentSessionStore: AgentSessionStore,
     private val agentRunLock: AgentRunLock,
     private val agentRuntimeStateCleaner: AgentRuntimeStateCleaner,
@@ -122,6 +124,7 @@ class AgentSessionServiceImpl(
         val now = LocalDateTime.now()
         agentSessionDao.markDeleted(sessionId, now)
         agentMessageDao.removeBySessionId(sessionId)
+        agentRunRecordService.removeBySessionId(sessionId)
         agentSessionStore.removeSession(projectId, sessionId)
         agentRuntimeStateCleaner.clear(userId, sessionId)
     }
