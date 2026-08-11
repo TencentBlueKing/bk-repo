@@ -21,31 +21,39 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
  * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
  * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.agent.pojo
+package com.tencent.bkrepo.agent.session
 
-import io.swagger.v3.oas.annotations.media.Schema
-import java.time.LocalDateTime
+import com.tencent.bkrepo.agent.constant.AGENT_RUN_LOCK_KEY_PREFIX
+import com.tencent.bkrepo.common.redis.RedisLock
+import com.tencent.bkrepo.common.redis.RedisOperation
 
-@Schema(title = "Agent会话信息")
-data class AgentSessionInfo(
-    @get:Schema(title = "会话ID")
-    val sessionId: String,
-    @get:Schema(title = "会话归属用户")
-    val userId: String,
-    @get:Schema(title = "会话归属项目")
-    val projectId: String,
-    @get:Schema(title = "会话归属设备")
-    val deviceId: String?,
-    @get:Schema(title = "会话标题")
-    val title: String? = null,
-    @get:Schema(title = "会话状态")
-    val status: AgentSessionStatus = AgentSessionStatus.ACTIVE,
-    @get:Schema(title = "创建时间")
-    val createdDate: LocalDateTime,
-    @get:Schema(title = "更新时间")
-    val updatedDate: LocalDateTime? = null,
-)
+class RedisAgentRunLock(
+    private val redisOperation: RedisOperation,
+    private val lockTtlSeconds: Long,
+) : AgentRunLock {
+
+    private val activeLocks = ThreadLocal<MutableMap<String, RedisLock>>()
+
+    override fun tryAcquire(userId: String, sessionId: String): Boolean {
+        val lock = RedisLock(redisOperation, lockKey(userId, sessionId), lockTtlSeconds)
+        if (!lock.tryLock()) {
+            return false
+        }
+        val holder = activeLocks.get() ?: mutableMapOf<String, RedisLock>().also { activeLocks.set(it) }
+        holder[lockKey(userId, sessionId)] = lock
+        return true
+    }
+
+    override fun release(userId: String, sessionId: String) {
+        val key = lockKey(userId, sessionId)
+        activeLocks.get()?.remove(key)?.unlock()
+    }
+
+    private fun lockKey(userId: String, sessionId: String): String {
+        return "$AGENT_RUN_LOCK_KEY_PREFIX$userId:$sessionId"
+    }
+}

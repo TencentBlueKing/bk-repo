@@ -44,9 +44,24 @@ const val RUNTIME_CONTEXT_PROJECT_ID = "projectId"
 
 const val AGENT_SESSION_ID_PREFIX = "s-"
 
+const val AGENT_MESSAGE_ID_PREFIX = "m-"
+
+const val AGENT_RUN_ID_PREFIX = "r-"
+
 const val LOG_OPERATE_SESSION_CREATE = "AGENT_SESSION_CREATE"
+
+const val LOG_OPERATE_SESSION_LIST = "AGENT_SESSION_LIST"
+
+const val LOG_OPERATE_SESSION_MESSAGES = "AGENT_SESSION_MESSAGES"
+
+const val LOG_OPERATE_SESSION_UPDATE = "AGENT_SESSION_UPDATE"
+
+const val LOG_OPERATE_SESSION_DELETE = "AGENT_SESSION_DELETE"
 
 const val LOG_OPERATE_RUN = "AGENT_RUN"
 
 /** Redis 中 sessionId -> userId 归属映射的 key 前缀 */
 const val AGENT_SESSION_OWNER_KEY_PREFIX = "bkrepo:agent:session-owner:"
+
+/** Redis 中同会话 run 互斥锁 key 前缀 */
+const val AGENT_RUN_LOCK_KEY_PREFIX = "bkrepo:agent:run-lock:"

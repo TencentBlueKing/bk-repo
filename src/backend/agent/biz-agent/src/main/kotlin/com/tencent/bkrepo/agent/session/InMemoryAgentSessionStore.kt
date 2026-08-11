@@ -46,5 +46,9 @@ class InMemoryAgentSessionStore : AgentSessionStore {
         }
     }
 
+    override fun removeSession(projectId: String, sessionId: String) {
+        owners.remove(sessionKey(projectId, sessionId))
+    }
+
     private fun sessionKey(projectId: String, sessionId: String): String = "$projectId:$sessionId"
 }

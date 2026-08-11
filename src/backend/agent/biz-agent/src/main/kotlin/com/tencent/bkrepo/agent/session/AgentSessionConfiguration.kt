@@ -53,6 +53,22 @@ class AgentSessionConfiguration {
         )
     }
 
+    @Bean
+    fun agentRunLock(
+        properties: AgentProperties,
+        redisOperation: ObjectProvider<RedisOperation>,
+    ): AgentRunLock {
+        val redis = redisOperation.getIfAvailable()
+        if (redis == null) {
+            logger.warn("No RedisOperation available, falling back to in-memory agent run lock")
+            return InMemoryAgentRunLock()
+        }
+        return RedisAgentRunLock(
+            redisOperation = redis,
+            lockTtlSeconds = properties.runLockTtl.seconds,
+        )
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(AgentSessionConfiguration::class.java)
     }

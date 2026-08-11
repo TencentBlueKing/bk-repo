@@ -30,9 +30,17 @@ package com.tencent.bkrepo.agent.controller
 import com.tencent.bkrepo.agent.constant.HEADER_DEVICE_ID
 import com.tencent.bkrepo.agent.constant.LOG_OPERATE_RUN
 import com.tencent.bkrepo.agent.constant.LOG_OPERATE_SESSION_CREATE
+import com.tencent.bkrepo.agent.constant.LOG_OPERATE_SESSION_DELETE
+import com.tencent.bkrepo.agent.constant.LOG_OPERATE_SESSION_LIST
+import com.tencent.bkrepo.agent.constant.LOG_OPERATE_SESSION_MESSAGES
+import com.tencent.bkrepo.agent.constant.LOG_OPERATE_SESSION_UPDATE
+import com.tencent.bkrepo.agent.pojo.AgentMessageInfo
 import com.tencent.bkrepo.agent.pojo.AgentRunRequest
+import com.tencent.bkrepo.agent.pojo.AgentSessionDeleteRequest
 import com.tencent.bkrepo.agent.pojo.AgentSessionInfo
+import com.tencent.bkrepo.agent.pojo.AgentSessionUpdateRequest
 import com.tencent.bkrepo.agent.service.AgentRunService
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.metadata.annotation.LogOperate
 import com.tencent.bkrepo.common.security.permission.Principal
@@ -42,6 +50,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.MediaType
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
@@ -69,6 +78,66 @@ class UserAgentController(
         @RequestHeader(HEADER_DEVICE_ID, required = false) deviceId: String?,
     ): Response<AgentSessionInfo> {
         return ResponseBuilder.success(agentRunService.createSession(userId, projectId, deviceId))
+    }
+
+    @Operation(summary = "查询会话列表")
+    @GetMapping("/session/list")
+    @LogOperate(type = LOG_OPERATE_SESSION_LIST)
+    fun listSessions(
+        @RequestAttribute userId: String,
+        @Parameter(name = "项目ID", required = true)
+        @RequestParam projectId: String,
+        @Parameter(name = "页码，从1开始")
+        @RequestParam(defaultValue = "1") pageNumber: Int,
+        @Parameter(name = "分页大小")
+        @RequestParam(defaultValue = "20") pageSize: Int,
+    ): Response<Page<AgentSessionInfo>> {
+        return ResponseBuilder.success(agentRunService.listSessions(userId, projectId, pageNumber, pageSize))
+    }
+
+    @Operation(summary = "查询会话消息历史")
+    @GetMapping("/session/messages")
+    @LogOperate(type = LOG_OPERATE_SESSION_MESSAGES)
+    fun listMessages(
+        @RequestAttribute userId: String,
+        @Parameter(name = "项目ID", required = true)
+        @RequestParam projectId: String,
+        @Parameter(name = "会话ID", required = true)
+        @RequestParam sessionId: String,
+        @Parameter(name = "页码，从1开始")
+        @RequestParam(defaultValue = "1") pageNumber: Int,
+        @Parameter(name = "分页大小")
+        @RequestParam(defaultValue = "50") pageSize: Int,
+    ): Response<Page<AgentMessageInfo>> {
+        return ResponseBuilder.success(
+            agentRunService.listMessages(userId, projectId, sessionId, pageNumber, pageSize),
+        )
+    }
+
+    @Operation(summary = "更新会话标题")
+    @PostMapping("/session/update")
+    @LogOperate(type = LOG_OPERATE_SESSION_UPDATE)
+    fun updateSession(
+        @RequestAttribute userId: String,
+        @Parameter(name = "项目ID", required = true)
+        @RequestParam projectId: String,
+        @RequestBody request: AgentSessionUpdateRequest,
+    ): Response<Boolean> {
+        agentRunService.updateSessionTitle(userId, projectId, request)
+        return ResponseBuilder.success(true)
+    }
+
+    @Operation(summary = "删除会话")
+    @PostMapping("/session/delete")
+    @LogOperate(type = LOG_OPERATE_SESSION_DELETE)
+    fun deleteSession(
+        @RequestAttribute userId: String,
+        @Parameter(name = "项目ID", required = true)
+        @RequestParam projectId: String,
+        @RequestBody request: AgentSessionDeleteRequest,
+    ): Response<Boolean> {
+        agentRunService.deleteSession(userId, projectId, request)
+        return ResponseBuilder.success(true)
     }
 
     @Operation(summary = "发起一轮对话，以SSE返回agent事件流")

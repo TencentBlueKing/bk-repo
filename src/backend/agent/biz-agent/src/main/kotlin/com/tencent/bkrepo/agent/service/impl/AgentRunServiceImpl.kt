@@ -28,19 +28,29 @@
 package com.tencent.bkrepo.agent.service.impl
 
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
+import com.tencent.bkrepo.agent.constant.AGENT_RUN_ID_PREFIX
 import com.tencent.bkrepo.agent.constant.AGENT_SESSION_ID_PREFIX
 import com.tencent.bkrepo.agent.identity.RuntimeContextFactory
+import com.tencent.bkrepo.agent.pojo.AgentMessageInfo
 import com.tencent.bkrepo.agent.pojo.AgentRunRequest
+import com.tencent.bkrepo.agent.pojo.AgentSessionDeleteRequest
 import com.tencent.bkrepo.agent.pojo.AgentSessionInfo
+import com.tencent.bkrepo.agent.pojo.AgentSessionUpdateRequest
+import com.tencent.bkrepo.agent.service.AgentMessageArchiveService
 import com.tencent.bkrepo.agent.service.AgentRunService
+import com.tencent.bkrepo.agent.service.AgentSessionService
+import com.tencent.bkrepo.agent.session.AgentRunLock
 import com.tencent.bkrepo.agent.session.AgentSessionStore
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import io.agentscope.core.event.AgentEvent
 import io.agentscope.core.event.AgentResultEvent
 import io.agentscope.core.event.RequireExternalExecutionEvent
+import io.agentscope.core.event.TextBlockDeltaEvent
 import io.agentscope.core.message.GenerateReason
 import io.agentscope.core.message.Msg
 import io.agentscope.core.message.ToolResultBlock
@@ -55,7 +65,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import reactor.core.Disposable
 import reactor.core.scheduler.Schedulers
 import java.io.IOException
-import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
@@ -65,6 +74,9 @@ class AgentRunServiceImpl(
     private val properties: AgentProperties,
     private val permissionManager: PermissionManager,
     private val agentSessionStore: AgentSessionStore,
+    private val agentSessionService: AgentSessionService,
+    private val agentMessageArchiveService: AgentMessageArchiveService,
+    private val agentRunLock: AgentRunLock,
     private val runtimeContextFactory: RuntimeContextFactory,
 ) : AgentRunService {
 
@@ -72,27 +84,42 @@ class AgentRunServiceImpl(
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
         val sessionId = AGENT_SESSION_ID_PREFIX + StringPool.uniqueId()
         agentSessionStore.bindSession(userId, projectId, sessionId)
-        return AgentSessionInfo(
-            sessionId = sessionId,
-            userId = userId,
-            projectId = projectId,
-            deviceId = deviceId,
-            createdDate = LocalDateTime.now(),
-        )
+        return agentSessionService.createSessionRecord(sessionId, userId, projectId, deviceId)
     }
 
     override fun run(userId: String, projectId: String, deviceId: String?, request: AgentRunRequest): SseEmitter {
         validate(request)
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
-        agentSessionStore.assertSessionOwner(userId, projectId, request.sessionId)
+        agentSessionService.assertActiveSession(userId, projectId, request.sessionId)
+        if (!agentRunLock.tryAcquire(userId, request.sessionId)) {
+            throw TooManyRequestsException("Session[${request.sessionId}] is already running")
+        }
+        val runId = AGENT_RUN_ID_PREFIX + StringPool.uniqueId()
+        agentSessionService.touchSession(request.sessionId, runId)
+        if (request.content.isNotBlank()) {
+            agentMessageArchiveService.archiveUserMessage(request.sessionId, runId, request.content)
+        }
         val runtimeContext = runtimeContextFactory.create(userId, projectId, request.sessionId, deviceId)
         val emitter = SseEmitter(properties.sseTimeout.toMillis())
         val subscriptionRef = AtomicReference<Disposable>()
         val pendingExternalExecution = AtomicReference(false)
         val sseFinished = AtomicBoolean(false)
-        fun finishSse(disposeSubscription: Boolean = true) {
+        val assistantText = StringBuilder()
+        fun releaseRunLock() {
+            agentRunLock.release(userId, request.sessionId)
+        }
+        fun finishSse(disposeSubscription: Boolean = true, archiveAssistant: Boolean = true) {
             if (!sseFinished.compareAndSet(false, true)) return
             if (disposeSubscription) subscriptionRef.get()?.dispose()
+            releaseRunLock()
+            if (archiveAssistant && assistantText.isNotEmpty()) {
+                agentMessageArchiveService.archiveAssistantMessage(
+                    sessionId = request.sessionId,
+                    runId = runId,
+                    content = assistantText.toString(),
+                    agentId = properties.name,
+                )
+            }
             emitter.complete()
         }
         val subscription = agent
@@ -101,8 +128,11 @@ class AgentRunServiceImpl(
             .subscribe(
                 { event ->
                     try {
+                        if (event is TextBlockDeltaEvent) {
+                            assistantText.append(event.delta)
+                        }
                         if (emitAgentEvent(emitter, event, pendingExternalExecution)) {
-                            finishSse()
+                            finishSse(archiveAssistant = false)
                         }
                     } catch (ignored: IOException) {
                         logger.info("agent sse closed by client, session[${request.sessionId}]")
@@ -113,6 +143,7 @@ class AgentRunServiceImpl(
                     logger.error("agent run failed, user[$userId] session[${request.sessionId}]", error)
                     if (sseFinished.compareAndSet(false, true)) {
                         subscriptionRef.get()?.dispose()
+                        releaseRunLock()
                         emitter.completeWithError(error)
                     }
                 },
@@ -124,9 +155,38 @@ class AgentRunServiceImpl(
         emitter.onTimeout {
             logger.info("agent run timeout, user[$userId] session[${request.sessionId}]")
             subscription.dispose()
-            emitter.complete()
+            if (sseFinished.compareAndSet(false, true)) {
+                releaseRunLock()
+                emitter.complete()
+            }
         }
         return emitter
+    }
+
+    override fun listSessions(userId: String, projectId: String, pageNumber: Int, pageSize: Int): Page<AgentSessionInfo> {
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
+        return agentSessionService.listSessions(userId, projectId, pageNumber, pageSize)
+    }
+
+    override fun listMessages(
+        userId: String,
+        projectId: String,
+        sessionId: String,
+        pageNumber: Int,
+        pageSize: Int,
+    ): Page<AgentMessageInfo> {
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
+        return agentSessionService.listMessages(userId, projectId, sessionId, pageNumber, pageSize)
+    }
+
+    override fun updateSessionTitle(userId: String, projectId: String, request: AgentSessionUpdateRequest) {
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
+        agentSessionService.updateTitle(userId, projectId, request.sessionId, request.title)
+    }
+
+    override fun deleteSession(userId: String, projectId: String, request: AgentSessionDeleteRequest) {
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
+        agentSessionService.deleteSession(userId, projectId, request.sessionId)
     }
 
     private fun validate(request: AgentRunRequest) {

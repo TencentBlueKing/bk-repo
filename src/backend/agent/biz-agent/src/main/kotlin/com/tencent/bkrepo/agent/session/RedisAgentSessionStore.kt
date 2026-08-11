@@ -48,6 +48,10 @@ class RedisAgentSessionStore(
         }
     }
 
+    override fun removeSession(projectId: String, sessionId: String) {
+        redisOperation.delete(sessionKey(projectId, sessionId))
+    }
+
     private fun sessionKey(projectId: String, sessionId: String): String {
         return "$AGENT_SESSION_OWNER_KEY_PREFIX$projectId:$sessionId"
     }

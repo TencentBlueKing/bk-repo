@@ -21,31 +21,17 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
  * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
  * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.agent.pojo
+package com.tencent.bkrepo.agent.service
 
-import io.swagger.v3.oas.annotations.media.Schema
-import java.time.LocalDateTime
+import com.tencent.bkrepo.agent.pojo.AgentMessageRole
 
-@Schema(title = "Agent会话信息")
-data class AgentSessionInfo(
-    @get:Schema(title = "会话ID")
-    val sessionId: String,
-    @get:Schema(title = "会话归属用户")
-    val userId: String,
-    @get:Schema(title = "会话归属项目")
-    val projectId: String,
-    @get:Schema(title = "会话归属设备")
-    val deviceId: String?,
-    @get:Schema(title = "会话标题")
-    val title: String? = null,
-    @get:Schema(title = "会话状态")
-    val status: AgentSessionStatus = AgentSessionStatus.ACTIVE,
-    @get:Schema(title = "创建时间")
-    val createdDate: LocalDateTime,
-    @get:Schema(title = "更新时间")
-    val updatedDate: LocalDateTime? = null,
-)
+interface AgentMessageArchiveService {
+
+    fun archiveUserMessage(sessionId: String, runId: String, content: String)
+
+    fun archiveAssistantMessage(sessionId: String, runId: String, content: String, agentId: String? = null)
+}

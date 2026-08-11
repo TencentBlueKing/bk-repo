@@ -21,14 +21,18 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
  * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
  * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 package com.tencent.bkrepo.agent.service
 
+import com.tencent.bkrepo.agent.pojo.AgentMessageInfo
 import com.tencent.bkrepo.agent.pojo.AgentRunRequest
+import com.tencent.bkrepo.agent.pojo.AgentSessionDeleteRequest
 import com.tencent.bkrepo.agent.pojo.AgentSessionInfo
+import com.tencent.bkrepo.agent.pojo.AgentSessionUpdateRequest
+import com.tencent.bkrepo.common.api.pojo.Page
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 
 interface AgentRunService {
@@ -42,4 +46,18 @@ interface AgentRunService {
      * 执行一轮对话，并把AgentScope事件流转成SSE推给客户端
      */
     fun run(userId: String, projectId: String, deviceId: String?, request: AgentRunRequest): SseEmitter
+
+    fun listSessions(userId: String, projectId: String, pageNumber: Int, pageSize: Int): Page<AgentSessionInfo>
+
+    fun listMessages(
+        userId: String,
+        projectId: String,
+        sessionId: String,
+        pageNumber: Int,
+        pageSize: Int,
+    ): Page<AgentMessageInfo>
+
+    fun updateSessionTitle(userId: String, projectId: String, request: AgentSessionUpdateRequest)
+
+    fun deleteSession(userId: String, projectId: String, request: AgentSessionDeleteRequest)
 }

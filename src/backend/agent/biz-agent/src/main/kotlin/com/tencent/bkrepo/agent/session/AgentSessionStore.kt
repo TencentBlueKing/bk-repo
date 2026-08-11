@@ -35,4 +35,6 @@ interface AgentSessionStore {
     fun bindSession(userId: String, projectId: String, sessionId: String)
 
     fun assertSessionOwner(userId: String, projectId: String, sessionId: String)
+
+    fun removeSession(projectId: String, sessionId: String)
 }

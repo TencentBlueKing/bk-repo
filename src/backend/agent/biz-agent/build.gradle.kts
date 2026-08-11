@@ -28,6 +28,7 @@
 dependencies {
     api(project(":agent:api-agent"))
     api(project(":common:common-artifact:artifact-service"))
+    api(project(":common:common-mongo"))
     implementation(project(":common:common-redis"))
     // AgentScope自带okhttp 5的KMP产物，会与仓库统一管理的okhttp 4共存导致重复类，统一使用后者
     api("io.agentscope:agentscope-harness") {

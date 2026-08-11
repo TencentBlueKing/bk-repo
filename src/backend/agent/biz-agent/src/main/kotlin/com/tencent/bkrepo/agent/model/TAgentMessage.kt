@@ -21,31 +21,41 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
  * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
  * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.agent.pojo
+package com.tencent.bkrepo.agent.model
 
-import io.swagger.v3.oas.annotations.media.Schema
+import com.tencent.bkrepo.agent.pojo.AgentMessageRole
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
-@Schema(title = "Agent会话信息")
-data class AgentSessionInfo(
-    @get:Schema(title = "会话ID")
-    val sessionId: String,
-    @get:Schema(title = "会话归属用户")
-    val userId: String,
-    @get:Schema(title = "会话归属项目")
-    val projectId: String,
-    @get:Schema(title = "会话归属设备")
-    val deviceId: String?,
-    @get:Schema(title = "会话标题")
-    val title: String? = null,
-    @get:Schema(title = "会话状态")
-    val status: AgentSessionStatus = AgentSessionStatus.ACTIVE,
-    @get:Schema(title = "创建时间")
-    val createdDate: LocalDateTime,
-    @get:Schema(title = "更新时间")
-    val updatedDate: LocalDateTime? = null,
+@Document("agent_message")
+@CompoundIndexes(
+    CompoundIndex(
+        name = "sessionId_createdAt_idx",
+        def = "{'sessionId': 1, 'createdAt': 1}",
+        background = true,
+    ),
+    CompoundIndex(
+        name = "runId_idx",
+        def = "{'runId': 1}",
+        background = true,
+    ),
+)
+data class TAgentMessage(
+    var id: String? = null,
+    var messageId: String,
+    var sessionId: String,
+    var runId: String?,
+    var role: AgentMessageRole,
+    var content: String,
+    var agentId: String? = null,
+    var toolCallId: String? = null,
+    var createdAt: LocalDateTime,
+    var metadata: Map<String, Any>? = null,
+    var redactionVersion: Int? = null,
 )

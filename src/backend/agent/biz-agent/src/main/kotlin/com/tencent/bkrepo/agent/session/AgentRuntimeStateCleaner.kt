@@ -21,31 +21,35 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
  * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
  * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.agent.pojo
+package com.tencent.bkrepo.agent.session
 
-import io.swagger.v3.oas.annotations.media.Schema
-import java.time.LocalDateTime
+import com.tencent.bkrepo.agent.config.properties.AgentStateProperties
+import com.tencent.bkrepo.common.redis.RedisOperation
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
+import org.springframework.stereotype.Component
 
-@Schema(title = "Agent会话信息")
-data class AgentSessionInfo(
-    @get:Schema(title = "会话ID")
-    val sessionId: String,
-    @get:Schema(title = "会话归属用户")
-    val userId: String,
-    @get:Schema(title = "会话归属项目")
-    val projectId: String,
-    @get:Schema(title = "会话归属设备")
-    val deviceId: String?,
-    @get:Schema(title = "会话标题")
-    val title: String? = null,
-    @get:Schema(title = "会话状态")
-    val status: AgentSessionStatus = AgentSessionStatus.ACTIVE,
-    @get:Schema(title = "创建时间")
-    val createdDate: LocalDateTime,
-    @get:Schema(title = "更新时间")
-    val updatedDate: LocalDateTime? = null,
-)
+@Component
+class AgentRuntimeStateCleaner(
+    private val agentStateProperties: AgentStateProperties,
+    private val redisOperation: ObjectProvider<RedisOperation>,
+) {
+
+    fun clear(userId: String, sessionId: String) {
+        val redis = redisOperation.getIfAvailable() ?: return
+        val key = "${agentStateProperties.keyPrefix}$userId:$sessionId"
+        try {
+            redis.delete(key)
+        } catch (exception: Exception) {
+            logger.warn("failed to clear agent runtime state for user[$userId] session[$sessionId]", exception)
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(AgentRuntimeStateCleaner::class.java)
+    }
+}
