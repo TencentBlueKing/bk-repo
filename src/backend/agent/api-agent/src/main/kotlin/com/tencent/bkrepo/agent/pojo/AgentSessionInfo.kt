@@ -30,6 +30,7 @@ package com.tencent.bkrepo.agent.pojo
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
+/** 会话列表/详情用；创建会话仅返回 [AgentSessionCreateResult]。 */
 @Schema(title = "Agent会话信息")
 data class AgentSessionInfo(
     @get:Schema(title = "会话ID")
@@ -38,8 +39,6 @@ data class AgentSessionInfo(
     val userId: String,
     @get:Schema(title = "会话归属项目")
     val projectId: String,
-    @get:Schema(title = "会话归属设备")
-    val deviceId: String?,
     @get:Schema(title = "会话标题")
     val title: String? = null,
     @get:Schema(title = "会话状态")

@@ -37,6 +37,7 @@ import org.springframework.context.annotation.Configuration
 @Configuration(proxyBeanMethods = false)
 class AgentSessionConfiguration {
 
+    /** 无 Redis 时退化为进程内实现，便于本地开发；生产多副本应配置 Redis。 */
     @Bean
     fun agentSessionStore(
         properties: AgentProperties,

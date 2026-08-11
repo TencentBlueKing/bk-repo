@@ -27,23 +27,23 @@
 
 package com.tencent.bkrepo.agent.session
 
-import com.tencent.bkrepo.agent.config.properties.AgentStateProperties
-import com.tencent.bkrepo.common.redis.RedisOperation
+import io.agentscope.core.state.AgentStateStore
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Component
 
+/**
+ * 清理 AgentScope 运行时状态。
+ *
+ * 与 Mongo 消息归档生命周期不同，删除会话时需单独处理；通过 [AgentStateStore.delete] 删除整 slot。
+ */
 @Component
 class AgentRuntimeStateCleaner(
-    private val agentStateProperties: AgentStateProperties,
-    private val redisOperation: ObjectProvider<RedisOperation>,
+    private val agentStateStore: AgentStateStore,
 ) {
 
     fun clear(userId: String, sessionId: String) {
-        val redis = redisOperation.getIfAvailable() ?: return
-        val key = "${agentStateProperties.keyPrefix}$userId:$sessionId"
         try {
-            redis.delete(key)
+            agentStateStore.delete(userId, sessionId)
         } catch (exception: Exception) {
             logger.warn("failed to clear agent runtime state for user[$userId] session[$sessionId]", exception)
         }

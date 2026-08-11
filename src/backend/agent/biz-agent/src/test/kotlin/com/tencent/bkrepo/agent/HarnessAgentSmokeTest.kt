@@ -33,6 +33,8 @@ import com.tencent.bkrepo.agent.config.AgentModelConfiguration
 import com.tencent.bkrepo.agent.config.HarnessAgentConfiguration
 import com.tencent.bkrepo.agent.config.properties.AgentModelProperties
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
+import com.tencent.bkrepo.agent.middleware.MessageArchiveMiddleware
+import com.tencent.bkrepo.agent.service.AgentMessageArchiveService
 import io.agentscope.core.agent.RuntimeContext
 import io.agentscope.core.event.AgentEvent
 import io.agentscope.core.event.TextBlockDeltaEvent
@@ -90,6 +92,10 @@ class HarnessAgentSmokeTest {
         )
         val modelConfiguration = AgentModelConfiguration()
         val harnessConfiguration = HarnessAgentConfiguration()
+        val messageArchiveMiddleware = MessageArchiveMiddleware(
+            agentMessageArchiveService = NoOpAgentMessageArchiveService,
+            agentProperties = agentProperties,
+        )
         val permissionContext = io.agentscope.core.permission.PermissionContextState.builder().build()
         val toolkit = io.agentscope.core.tool.Toolkit()
         val agent = harnessConfiguration.harnessAgent(
@@ -98,6 +104,7 @@ class HarnessAgentSmokeTest {
             stateStore = InMemoryAgentStateStore(),
             toolkit = toolkit,
             permissionContext = permissionContext,
+            messageArchiveMiddleware = messageArchiveMiddleware,
         )
         val runtimeContext = RuntimeContext.builder()
             .userId("smoke-user")
@@ -142,5 +149,16 @@ class HarnessAgentSmokeTest {
 
     companion object {
         private const val REPLY_TEXT = "你好"
+
+        private val NoOpAgentMessageArchiveService = object : AgentMessageArchiveService {
+            override fun archiveUserMessage(sessionId: String, runId: String, content: String) = Unit
+
+            override fun archiveAssistantMessage(
+                sessionId: String,
+                runId: String,
+                content: String,
+                agentId: String?,
+            ) = Unit
+        }
     }
 }

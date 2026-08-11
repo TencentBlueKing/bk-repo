@@ -46,6 +46,10 @@ class InMemoryAgentSessionStore : AgentSessionStore {
         }
     }
 
+    override fun touchSessionOwner(userId: String, projectId: String, sessionId: String) {
+        // 进程内存储无 TTL，无需续期
+    }
+
     override fun removeSession(projectId: String, sessionId: String) {
         owners.remove(sessionKey(projectId, sessionId))
     }

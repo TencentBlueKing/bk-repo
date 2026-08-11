@@ -25,19 +25,13 @@
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.agent.session
+package com.tencent.bkrepo.agent.pojo
 
-/**
- * 同会话前台 run 的分布式互斥锁。
- *
- * AgentScope 单 JVM 内可串行，多副本部署需 Redis 锁配合。
- */
-interface AgentRunLock {
+import io.swagger.v3.oas.annotations.media.Schema
 
-    fun tryAcquire(userId: String, sessionId: String): Boolean
-
-    fun release(userId: String, sessionId: String)
-
-    /** 是否有进行中的前台 run（任意实例持有锁）。 */
-    fun isRunning(userId: String, sessionId: String): Boolean
-}
+/** 创建会话接口的返回值；客户端只需 sessionId 即可发起后续 run。 */
+@Schema(title = "Agent创建会话结果")
+data class AgentSessionCreateResult(
+    @get:Schema(title = "会话ID")
+    val sessionId: String,
+)

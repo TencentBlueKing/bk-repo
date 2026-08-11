@@ -30,27 +30,36 @@ package com.tencent.bkrepo.agent.session
 import com.tencent.bkrepo.agent.constant.AGENT_RUN_LOCK_KEY_PREFIX
 import com.tencent.bkrepo.common.redis.RedisLock
 import com.tencent.bkrepo.common.redis.RedisOperation
+import java.util.concurrent.ConcurrentHashMap
 
+/**
+ * 基于 [RedisLock] 的 run 互斥实现。
+ *
+ * 锁实例按 lockKey 缓存在 [ConcurrentHashMap] 中，以便 Reactor 异步线程释放（不可使用 ThreadLocal）。
+ */
 class RedisAgentRunLock(
     private val redisOperation: RedisOperation,
     private val lockTtlSeconds: Long,
 ) : AgentRunLock {
 
-    private val activeLocks = ThreadLocal<MutableMap<String, RedisLock>>()
+    private val activeLocks = ConcurrentHashMap<String, RedisLock>()
 
     override fun tryAcquire(userId: String, sessionId: String): Boolean {
-        val lock = RedisLock(redisOperation, lockKey(userId, sessionId), lockTtlSeconds)
+        val key = lockKey(userId, sessionId)
+        val lock = RedisLock(redisOperation, key, lockTtlSeconds)
         if (!lock.tryLock()) {
             return false
         }
-        val holder = activeLocks.get() ?: mutableMapOf<String, RedisLock>().also { activeLocks.set(it) }
-        holder[lockKey(userId, sessionId)] = lock
+        activeLocks[key] = lock
         return true
     }
 
     override fun release(userId: String, sessionId: String) {
-        val key = lockKey(userId, sessionId)
-        activeLocks.get()?.remove(key)?.unlock()
+        activeLocks.remove(lockKey(userId, sessionId))?.unlock()
+    }
+
+    override fun isRunning(userId: String, sessionId: String): Boolean {
+        return redisOperation.get(lockKey(userId, sessionId)) != null
     }
 
     private fun lockKey(userId: String, sessionId: String): String {

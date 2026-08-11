@@ -30,25 +30,41 @@ package com.tencent.bkrepo.agent.service
 import com.tencent.bkrepo.agent.pojo.AgentMessageInfo
 import com.tencent.bkrepo.agent.pojo.AgentRunRequest
 import com.tencent.bkrepo.agent.pojo.AgentSessionDeleteRequest
+import com.tencent.bkrepo.agent.pojo.AgentSessionCreateResult
 import com.tencent.bkrepo.agent.pojo.AgentSessionInfo
 import com.tencent.bkrepo.agent.pojo.AgentSessionUpdateRequest
 import com.tencent.bkrepo.common.api.pojo.Page
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 
+/**
+ * Agent 对外业务能力：会话生命周期与对话 run。
+ *
+ * 入口均校验项目 [project_view] 权限；[userId] 来自已认证请求上下文，不可由客户端指定。
+ */
 interface AgentRunService {
 
     /**
-     * 创建一个归属于[userId]和[projectId]的会话
+     * 创建归属于 [userId] 与 [projectId] 的新会话。
+     *
+     * 写入 Redis 归属映射与 Mongo 会话元数据，返回 [AgentSessionCreateResult.sessionId] 供后续 run 使用。
      */
-    fun createSession(userId: String, projectId: String, deviceId: String?): AgentSessionInfo
+    fun createSession(userId: String, projectId: String): AgentSessionCreateResult
 
     /**
-     * 执行一轮对话，并把AgentScope事件流转成SSE推给客户端
+     * 执行一轮对话，将 AgentScope 事件流转为 SSE 推送给客户端。
+     *
+     * 详见 [com.tencent.bkrepo.agent.service.impl.AgentRunServiceImpl.run]。
      */
     fun run(userId: String, projectId: String, deviceId: String?, request: AgentRunRequest): SseEmitter
 
+    /**
+     * 分页查询当前用户在指定项目下的活跃会话列表，按最近更新时间倒序。
+     */
     fun listSessions(userId: String, projectId: String, pageNumber: Int, pageSize: Int): Page<AgentSessionInfo>
 
+    /**
+     * 分页查询指定会话的消息历史（Mongo 归档原文），按创建时间正序。
+     */
     fun listMessages(
         userId: String,
         projectId: String,
@@ -57,7 +73,13 @@ interface AgentRunService {
         pageSize: Int,
     ): Page<AgentMessageInfo>
 
+    /**
+     * 更新会话标题；会话须处于 ACTIVE 且归属当前用户。
+     */
     fun updateSessionTitle(userId: String, projectId: String, request: AgentSessionUpdateRequest)
 
+    /**
+     * 删除会话：软删 Mongo 元数据、清除消息归档、Redis 归属与 AgentState 运行时状态。
+     */
     fun deleteSession(userId: String, projectId: String, request: AgentSessionDeleteRequest)
 }

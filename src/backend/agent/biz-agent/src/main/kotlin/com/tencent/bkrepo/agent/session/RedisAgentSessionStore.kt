@@ -48,6 +48,13 @@ class RedisAgentSessionStore(
         }
     }
 
+    override fun touchSessionOwner(userId: String, projectId: String, sessionId: String) {
+        val key = sessionKey(projectId, sessionId)
+        if (redisOperation.get(key) == userId) {
+            redisOperation.expire(key, sessionTtlSeconds)
+        }
+    }
+
     override fun removeSession(projectId: String, sessionId: String) {
         redisOperation.delete(sessionKey(projectId, sessionId))
     }

@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.agent.config
 
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
+import com.tencent.bkrepo.agent.middleware.MessageArchiveMiddleware
 import io.agentscope.core.model.Model
 import io.agentscope.core.permission.PermissionContextState
 import io.agentscope.core.state.AgentStateStore
@@ -50,6 +51,7 @@ class HarnessAgentConfiguration {
         stateStore: AgentStateStore,
         toolkit: Toolkit,
         permissionContext: PermissionContextState,
+        messageArchiveMiddleware: MessageArchiveMiddleware,
     ): HarnessAgent {
         return HarnessAgent.builder()
             .name(properties.name)
@@ -60,6 +62,7 @@ class HarnessAgentConfiguration {
             .workspace(Paths.get(properties.workspace))
             .toolkit(toolkit)
             .permissionContext(permissionContext)
+            .middleware(messageArchiveMiddleware)
             .enablePendingToolRecovery(true)
             .disableFilesystemTools()
             .disableShellTool()

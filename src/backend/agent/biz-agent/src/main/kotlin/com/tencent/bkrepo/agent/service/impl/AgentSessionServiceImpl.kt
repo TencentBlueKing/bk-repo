@@ -30,18 +30,21 @@ package com.tencent.bkrepo.agent.service.impl
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
 import com.tencent.bkrepo.agent.dao.AgentMessageDao
 import com.tencent.bkrepo.agent.dao.AgentSessionDao
+import com.tencent.bkrepo.agent.model.TAgentMessage
 import com.tencent.bkrepo.agent.model.TAgentSession
 import com.tencent.bkrepo.agent.pojo.AgentMessageInfo
+import com.tencent.bkrepo.agent.pojo.AgentSessionCreateResult
 import com.tencent.bkrepo.agent.pojo.AgentSessionInfo
 import com.tencent.bkrepo.agent.pojo.AgentSessionStatus
 import com.tencent.bkrepo.agent.service.AgentSessionService
+import com.tencent.bkrepo.agent.session.AgentRunLock
 import com.tencent.bkrepo.agent.session.AgentRuntimeStateCleaner
 import com.tencent.bkrepo.agent.session.AgentSessionStore
 import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -51,6 +54,7 @@ class AgentSessionServiceImpl(
     private val agentSessionDao: AgentSessionDao,
     private val agentMessageDao: AgentMessageDao,
     private val agentSessionStore: AgentSessionStore,
+    private val agentRunLock: AgentRunLock,
     private val agentRuntimeStateCleaner: AgentRuntimeStateCleaner,
     private val properties: AgentProperties,
 ) : AgentSessionService {
@@ -59,32 +63,25 @@ class AgentSessionServiceImpl(
         sessionId: String,
         userId: String,
         projectId: String,
-        deviceId: String?,
-    ): AgentSessionInfo {
-        val now = LocalDateTime.now()
-        val session = TAgentSession(
-            sessionId = sessionId,
-            userId = userId,
-            projectId = projectId,
-            title = null,
-            status = AgentSessionStatus.ACTIVE,
-            createdAt = now,
-            updatedAt = now,
-        )
-        agentSessionDao.insert(session)
-        return toInfo(session, deviceId)
-    }
-
-    override fun assertActiveSession(userId: String, projectId: String, sessionId: String) {
-        agentSessionStore.assertSessionOwner(userId, projectId, sessionId)
-        val session = agentSessionDao.findBySessionId(sessionId)
-            ?: backfillSessionRecord(userId, projectId, sessionId)
-        if (session.userId != userId || session.projectId != projectId) {
-            throw PermissionException("Session[$sessionId] does not belong to user[$userId] in project[$projectId]")
-        }
+    ): AgentSessionCreateResult {
+        val session = agentSessionDao.insertSession(sessionId, userId, projectId)
         if (session.status != AgentSessionStatus.ACTIVE) {
             throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, "Session[$sessionId]")
         }
+        return AgentSessionCreateResult(sessionId = session.sessionId)
+    }
+
+    override fun assertActiveSession(userId: String, projectId: String, sessionId: String) {
+        val session = agentSessionDao.findBySessionId(sessionId)
+            ?: agentSessionDao.insertSession(sessionId, userId, projectId)
+        if (session.status != AgentSessionStatus.ACTIVE) {
+            throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, "Session[$sessionId]")
+        }
+        if (session.userId != userId || session.projectId != projectId) {
+            throw PermissionException("Session[$sessionId] does not belong to user[$userId] in project[$projectId]")
+        }
+        // Mongo 校验通过后同步 Redis 归属并刷新 TTL，避免 Redis 过期后 run 失败。
+        agentSessionStore.bindSession(userId, projectId, sessionId)
     }
 
     override fun listSessions(
@@ -93,15 +90,8 @@ class AgentSessionServiceImpl(
         pageNumber: Int,
         pageSize: Int,
     ): Page<AgentSessionInfo> {
-        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-        val records = agentSessionDao.listByUserAndProject(
-            userId = userId,
-            projectId = projectId,
-            pageNumber = pageRequest.pageNumber + 1,
-            pageSize = pageRequest.pageSize,
-        )
-        val total = agentSessionDao.countByUserAndProject(userId, projectId)
-        return Pages.ofResponse(pageRequest, total, records.map { toInfo(it, deviceId = null) })
+        val page = agentSessionDao.pageByUserAndProject(userId, projectId, pageNumber, pageSize)
+        return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { toInfo(it) })
     }
 
     override fun listMessages(
@@ -112,14 +102,8 @@ class AgentSessionServiceImpl(
         pageSize: Int,
     ): Page<AgentMessageInfo> {
         assertActiveSession(userId, projectId, sessionId)
-        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-        val records = agentMessageDao.listBySessionId(
-            sessionId = sessionId,
-            pageNumber = pageRequest.pageNumber + 1,
-            pageSize = pageRequest.pageSize,
-        )
-        val total = agentMessageDao.countBySessionId(sessionId)
-        return Pages.ofResponse(pageRequest, total, records.map { toMessageInfo(it) })
+        val page = agentMessageDao.pageBySessionId(sessionId, pageNumber, pageSize)
+        return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { toMessageInfo(it) })
     }
 
     override fun updateTitle(userId: String, projectId: String, sessionId: String, title: String) {
@@ -132,6 +116,9 @@ class AgentSessionServiceImpl(
 
     override fun deleteSession(userId: String, projectId: String, sessionId: String) {
         assertActiveSession(userId, projectId, sessionId)
+        if (agentRunLock.isRunning(userId, sessionId)) {
+            throw TooManyRequestsException("Session[$sessionId] is running")
+        }
         val now = LocalDateTime.now()
         agentSessionDao.markDeleted(sessionId, now)
         agentMessageDao.removeBySessionId(sessionId)
@@ -143,26 +130,11 @@ class AgentSessionServiceImpl(
         agentSessionDao.touchSession(sessionId, runId, LocalDateTime.now())
     }
 
-    private fun backfillSessionRecord(userId: String, projectId: String, sessionId: String): TAgentSession {
-        val now = LocalDateTime.now()
-        val session = TAgentSession(
-            sessionId = sessionId,
-            userId = userId,
-            projectId = projectId,
-            status = AgentSessionStatus.ACTIVE,
-            createdAt = now,
-            updatedAt = now,
-        )
-        agentSessionDao.insert(session)
-        return session
-    }
-
-    private fun toInfo(session: TAgentSession, deviceId: String?): AgentSessionInfo {
+    private fun toInfo(session: TAgentSession): AgentSessionInfo {
         return AgentSessionInfo(
             sessionId = session.sessionId,
             userId = session.userId,
             projectId = session.projectId,
-            deviceId = deviceId,
             title = session.title,
             status = session.status,
             createdDate = session.createdAt,
@@ -170,7 +142,7 @@ class AgentSessionServiceImpl(
         )
     }
 
-    private fun toMessageInfo(message: com.tencent.bkrepo.agent.model.TAgentMessage): AgentMessageInfo {
+    private fun toMessageInfo(message: TAgentMessage): AgentMessageInfo {
         return AgentMessageInfo(
             messageId = message.messageId,
             sessionId = message.sessionId,

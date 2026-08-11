@@ -29,6 +29,7 @@ package com.tencent.bkrepo.agent.identity
 
 import com.tencent.bkrepo.agent.constant.RUNTIME_CONTEXT_DEVICE_ID
 import com.tencent.bkrepo.agent.constant.RUNTIME_CONTEXT_PROJECT_ID
+import com.tencent.bkrepo.agent.constant.RUNTIME_CONTEXT_RUN_ID
 import io.agentscope.core.agent.RuntimeContext
 import org.springframework.stereotype.Component
 
@@ -43,6 +44,7 @@ class RuntimeContextFactory {
         projectId: String,
         sessionId: String,
         deviceId: String? = null,
+        runId: String? = null,
     ): RuntimeContext {
         val builder = RuntimeContext.builder()
             .userId(userId)
@@ -50,6 +52,9 @@ class RuntimeContextFactory {
             .put(RUNTIME_CONTEXT_PROJECT_ID, projectId)
         deviceId?.takeIf { it.isNotBlank() }?.let {
             builder.put(RUNTIME_CONTEXT_DEVICE_ID, it)
+        }
+        runId?.takeIf { it.isNotBlank() }?.let {
+            builder.put(RUNTIME_CONTEXT_RUN_ID, it)
         }
         return builder.build()
     }

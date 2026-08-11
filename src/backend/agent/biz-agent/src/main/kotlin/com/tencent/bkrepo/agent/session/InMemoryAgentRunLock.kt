@@ -42,5 +42,9 @@ class InMemoryAgentRunLock : AgentRunLock {
         locks.remove(lockKey(userId, sessionId))
     }
 
+    override fun isRunning(userId: String, sessionId: String): Boolean {
+        return locks.containsKey(lockKey(userId, sessionId))
+    }
+
     private fun lockKey(userId: String, sessionId: String): String = "$userId:$sessionId"
 }

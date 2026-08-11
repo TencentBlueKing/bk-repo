@@ -42,6 +42,19 @@ const val RUNTIME_CONTEXT_DEVICE_ID = "deviceId"
  */
 const val RUNTIME_CONTEXT_PROJECT_ID = "projectId"
 
+/**
+ * [io.agentscope.core.agent.RuntimeContext] 中本轮 HTTP run 的 runId，供消息归档 middleware 使用。
+ */
+const val RUNTIME_CONTEXT_RUN_ID = "runId"
+
+/**
+ * SSE 发送失败等场景下，middleware 在 [reactor.core.publisher.SignalType.CANCEL] 时仍归档 assistant 片段。
+ */
+const val RUNTIME_CONTEXT_FORCE_ARCHIVE_ASSISTANT = "forceArchiveAssistant"
+
+/** middleware 内部 per-call 归档状态在 [RuntimeContext] 中的 key */
+const val RUNTIME_CONTEXT_MESSAGE_ARCHIVE_STATE = "messageArchiveState"
+
 const val AGENT_SESSION_ID_PREFIX = "s-"
 
 const val AGENT_MESSAGE_ID_PREFIX = "m-"

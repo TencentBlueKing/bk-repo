@@ -25,19 +25,36 @@
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.agent.session
+package com.tencent.bkrepo.agent.runtime
+
+import io.agentscope.core.agent.RuntimeContext
+import io.agentscope.harness.agent.HarnessAgent
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 
 /**
- * 同会话前台 run 的分布式互斥锁。
+ * 按 [RuntimeContext] 中断 AgentScope 进行中的 run。
  *
- * AgentScope 单 JVM 内可串行，多副本部署需 Redis 锁配合。
+ * AgentScope 2.0.0 的 [HarnessAgent] 尚未转发 per-session interrupt，需经 [HarnessAgent.getDelegate]。
  */
-interface AgentRunLock {
+@Component
+class AgentSessionInterruptor(
+    private val agent: HarnessAgent,
+) {
 
-    fun tryAcquire(userId: String, sessionId: String): Boolean
+    fun interrupt(runtimeContext: RuntimeContext) {
+        try {
+            agent.delegate.interrupt(runtimeContext)
+        } catch (exception: Exception) {
+            logger.debug(
+                "failed to interrupt agent run for user[${runtimeContext.userId}] " +
+                    "session[${runtimeContext.sessionId}]",
+                exception,
+            )
+        }
+    }
 
-    fun release(userId: String, sessionId: String)
-
-    /** 是否有进行中的前台 run（任意实例持有锁）。 */
-    fun isRunning(userId: String, sessionId: String): Boolean
+    companion object {
+        private val logger = LoggerFactory.getLogger(AgentSessionInterruptor::class.java)
+    }
 }

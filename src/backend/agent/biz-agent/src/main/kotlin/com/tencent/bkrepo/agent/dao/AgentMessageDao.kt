@@ -28,25 +28,28 @@
 package com.tencent.bkrepo.agent.dao
 
 import com.tencent.bkrepo.agent.model.TAgentMessage
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Repository
 
+/**
+ * 会话消息持久化。保存 USER/ASSISTANT 原文，供历史查询；
+ * 与 AgentScope [io.agentscope.core.state.AgentStateStore] 的运行时上下文分离，后者会被压缩。
+ */
 @Repository
 class AgentMessageDao : SimpleMongoDao<TAgentMessage>() {
 
-    fun listBySessionId(sessionId: String, pageNumber: Int, pageSize: Int): List<TAgentMessage> {
+    fun pageBySessionId(sessionId: String, pageNumber: Int, pageSize: Int): Page<TAgentMessage> {
         val query = Query(Criteria.where(TAgentMessage::sessionId.name).`is`(sessionId))
             .with(Sort.by(Sort.Direction.ASC, TAgentMessage::createdAt.name))
-        query.skip(((pageNumber - 1) * pageSize).toLong())
-        query.limit(pageSize)
-        return find(query)
-    }
-
-    fun countBySessionId(sessionId: String): Long {
-        return count(Query(Criteria.where(TAgentMessage::sessionId.name).`is`(sessionId)))
+        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+        val totalRecords = count(query)
+        val records = find(query.with(pageRequest))
+        return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
     fun removeBySessionId(sessionId: String) {

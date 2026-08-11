@@ -37,6 +37,7 @@ import com.tencent.bkrepo.agent.constant.LOG_OPERATE_SESSION_UPDATE
 import com.tencent.bkrepo.agent.pojo.AgentMessageInfo
 import com.tencent.bkrepo.agent.pojo.AgentRunRequest
 import com.tencent.bkrepo.agent.pojo.AgentSessionDeleteRequest
+import com.tencent.bkrepo.agent.pojo.AgentSessionCreateResult
 import com.tencent.bkrepo.agent.pojo.AgentSessionInfo
 import com.tencent.bkrepo.agent.pojo.AgentSessionUpdateRequest
 import com.tencent.bkrepo.agent.service.AgentRunService
@@ -60,6 +61,11 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 
+/**
+ * Agent 会话与对话 HTTP 接口。
+ *
+ * 所有接口均需登录；[projectId] 通过 query 传递，权限复用项目 `project_view`。
+ */
 @Tag(name = "Agent会话接口")
 @RestController
 @RequestMapping("/api/agent")
@@ -68,6 +74,11 @@ class UserAgentController(
     private val agentRunService: AgentRunService,
 ) {
 
+    /**
+     * 创建会话。
+     *
+     * `POST /api/agent/session/create?projectId=`，返回 [AgentSessionCreateResult]。
+     */
     @Operation(summary = "创建会话")
     @PostMapping("/session/create")
     @LogOperate(type = LOG_OPERATE_SESSION_CREATE)
@@ -75,11 +86,15 @@ class UserAgentController(
         @RequestAttribute userId: String,
         @Parameter(name = "项目ID", required = true)
         @RequestParam projectId: String,
-        @RequestHeader(HEADER_DEVICE_ID, required = false) deviceId: String?,
-    ): Response<AgentSessionInfo> {
-        return ResponseBuilder.success(agentRunService.createSession(userId, projectId, deviceId))
+    ): Response<AgentSessionCreateResult> {
+        return ResponseBuilder.success(agentRunService.createSession(userId, projectId))
     }
 
+    /**
+     * 分页查询当前用户在项目下的会话列表。
+     *
+     * `GET /api/agent/session/list?projectId=&pageNumber=&pageSize=`
+     */
     @Operation(summary = "查询会话列表")
     @GetMapping("/session/list")
     @LogOperate(type = LOG_OPERATE_SESSION_LIST)
@@ -95,6 +110,11 @@ class UserAgentController(
         return ResponseBuilder.success(agentRunService.listSessions(userId, projectId, pageNumber, pageSize))
     }
 
+    /**
+     * 分页查询会话消息历史（Mongo 归档原文）。
+     *
+     * `GET /api/agent/session/messages?projectId=&sessionId=&pageNumber=&pageSize=`
+     */
     @Operation(summary = "查询会话消息历史")
     @GetMapping("/session/messages")
     @LogOperate(type = LOG_OPERATE_SESSION_MESSAGES)
@@ -114,6 +134,11 @@ class UserAgentController(
         )
     }
 
+    /**
+     * 更新会话标题。
+     *
+     * `POST /api/agent/session/update?projectId=`
+     */
     @Operation(summary = "更新会话标题")
     @PostMapping("/session/update")
     @LogOperate(type = LOG_OPERATE_SESSION_UPDATE)
@@ -127,6 +152,11 @@ class UserAgentController(
         return ResponseBuilder.success(true)
     }
 
+    /**
+     * 删除会话及关联的 Mongo 消息、Redis 归属与 AgentState。
+     *
+     * `POST /api/agent/session/delete?projectId=`
+     */
     @Operation(summary = "删除会话")
     @PostMapping("/session/delete")
     @LogOperate(type = LOG_OPERATE_SESSION_DELETE)
@@ -140,6 +170,11 @@ class UserAgentController(
         return ResponseBuilder.success(true)
     }
 
+    /**
+     * 发起一轮对话，响应为 SSE 事件流。
+     *
+     * `POST /api/agent/run?projectId=`；支持用户输入与本地工具续跑（externalExecutionResults）。
+     */
     @Operation(summary = "发起一轮对话，以SSE返回agent事件流")
     @PostMapping("/run", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
     @LogOperate(type = LOG_OPERATE_RUN, desensitize = true)

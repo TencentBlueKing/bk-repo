@@ -37,6 +37,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
+/**
+ * 将 USER/ASSISTANT 原文写入 Mongo，供历史 API 查询。
+ *
+ * 归档失败不阻塞主流程，但会记录日志并在写入层重试一次。
+ */
 @Service
 class AgentMessageArchiveServiceImpl(
     private val agentMessageDao: AgentMessageDao,
@@ -83,6 +88,7 @@ class AgentMessageArchiveServiceImpl(
         insertWithRetry(message)
     }
 
+    /** 归档为尽力而为：失败记录日志并补偿重试，不向上抛出以免中断 SSE。 */
     private fun insertWithRetry(message: TAgentMessage) {
         try {
             agentMessageDao.insert(message)

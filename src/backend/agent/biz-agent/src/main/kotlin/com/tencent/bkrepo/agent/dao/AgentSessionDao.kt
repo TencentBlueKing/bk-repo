@@ -29,7 +29,11 @@ package com.tencent.bkrepo.agent.dao
 
 import com.tencent.bkrepo.agent.model.TAgentSession
 import com.tencent.bkrepo.agent.pojo.AgentSessionStatus
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import org.slf4j.LoggerFactory
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -37,36 +41,54 @@ import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
+/** 会话元数据访问层，对应 Mongo 集合 `agent_session`。 */
 @Repository
 class AgentSessionDao : SimpleMongoDao<TAgentSession>() {
+
+    /**
+     * 写入会话元数据。返回 Mongo [insert] 结果（含 `_id`）。
+     *
+     * 命中 `sessionId` 唯一索引冲突时，仅在同归属下返回已有记录以支持幂等重试；
+     * 否则重新抛出异常，避免误返回他人会话。
+     */
+    fun insertSession(sessionId: String, userId: String, projectId: String): TAgentSession {
+        val now = LocalDateTime.now()
+        val session = TAgentSession(
+            sessionId = sessionId,
+            userId = userId,
+            projectId = projectId,
+            title = null,
+            status = AgentSessionStatus.ACTIVE,
+            createdAt = now,
+            updatedAt = now,
+        )
+        return try {
+            insert(session)
+        } catch (exception: DuplicateKeyException) {
+            logger.warn("duplicate agent session insert, sessionId[$sessionId]", exception)
+            val existing = findBySessionId(sessionId)
+            if (existing != null && existing.userId == userId && existing.projectId == projectId) {
+                existing
+            } else {
+                throw exception
+            }
+        }
+    }
 
     fun findBySessionId(sessionId: String): TAgentSession? {
         return findOne(Query(Criteria.where(TAgentSession::sessionId.name).`is`(sessionId)))
     }
 
-    fun listByUserAndProject(
-        userId: String,
-        projectId: String,
-        pageNumber: Int,
-        pageSize: Int,
-    ): List<TAgentSession> {
+    fun pageByUserAndProject(userId: String, projectId: String, pageNumber: Int, pageSize: Int): Page<TAgentSession> {
         val query = Query(
             Criteria.where(TAgentSession::userId.name).`is`(userId)
                 .and(TAgentSession::projectId.name).`is`(projectId)
                 .and(TAgentSession::status.name).`is`(AgentSessionStatus.ACTIVE),
         ).with(Sort.by(Sort.Direction.DESC, TAgentSession::updatedAt.name))
-        query.skip(((pageNumber - 1) * pageSize).toLong())
-        query.limit(pageSize)
-        return find(query)
-    }
-
-    fun countByUserAndProject(userId: String, projectId: String): Long {
-        val query = Query(
-            Criteria.where(TAgentSession::userId.name).`is`(userId)
-                .and(TAgentSession::projectId.name).`is`(projectId)
-                .and(TAgentSession::status.name).`is`(AgentSessionStatus.ACTIVE),
-        )
-        return count(query)
+        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+        val totalRecords = count(query)
+        val records = find(query.with(pageRequest))
+        return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
     fun updateTitle(sessionId: String, title: String, updatedAt: LocalDateTime) {
@@ -77,6 +99,7 @@ class AgentSessionDao : SimpleMongoDao<TAgentSession>() {
         updateFirst(query, update)
     }
 
+    /** 记录最近一次 run，并刷新列表排序用的 [TAgentSession.updatedAt]。 */
     fun touchSession(sessionId: String, lastRunId: String, updatedAt: LocalDateTime) {
         val query = Query(Criteria.where(TAgentSession::sessionId.name).`is`(sessionId))
         val update = Update()
@@ -91,5 +114,9 @@ class AgentSessionDao : SimpleMongoDao<TAgentSession>() {
             .set(TAgentSession::status.name, AgentSessionStatus.DELETED)
             .set(TAgentSession::updatedAt.name, updatedAt)
         updateFirst(query, update)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(AgentSessionDao::class.java)
     }
 }

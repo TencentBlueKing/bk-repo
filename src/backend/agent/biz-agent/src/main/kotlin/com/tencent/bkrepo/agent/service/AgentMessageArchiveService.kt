@@ -27,11 +27,16 @@
 
 package com.tencent.bkrepo.agent.service
 
-import com.tencent.bkrepo.agent.pojo.AgentMessageRole
-
+/**
+ * 会话消息 Mongo 归档，与 AgentScope AgentState 分离。
+ *
+ * 写入失败不向上抛出，由实现层记录日志并重试。
+ */
 interface AgentMessageArchiveService {
 
+    /** 归档本轮用户输入原文，通常发生在 run 推理开始前。 */
     fun archiveUserMessage(sessionId: String, runId: String, content: String)
 
+    /** 归档 assistant 可见文本汇总，通常发生在 SSE 正常结束时。 */
     fun archiveAssistantMessage(sessionId: String, runId: String, content: String, agentId: String? = null)
 }

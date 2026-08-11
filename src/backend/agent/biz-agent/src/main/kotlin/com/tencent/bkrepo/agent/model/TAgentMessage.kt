@@ -33,6 +33,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
+/** 会话消息归档，对应 Mongo 集合 `agent_message`。 */
 @Document("agent_message")
 @CompoundIndexes(
     CompoundIndex(
