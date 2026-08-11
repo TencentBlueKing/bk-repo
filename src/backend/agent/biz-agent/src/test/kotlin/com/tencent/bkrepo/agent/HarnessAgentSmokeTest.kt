@@ -29,10 +29,13 @@ package com.tencent.bkrepo.agent
 
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
+import com.tencent.bkrepo.agent.config.AgentCompactionConfigurer
 import com.tencent.bkrepo.agent.config.AgentModelConfiguration
 import com.tencent.bkrepo.agent.config.HarnessAgentConfiguration
+import com.tencent.bkrepo.agent.config.properties.AgentCompactionProperties
 import com.tencent.bkrepo.agent.config.properties.AgentModelProperties
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
+import com.tencent.bkrepo.agent.config.properties.AgentToolResultEvictionProperties
 import com.tencent.bkrepo.agent.middleware.MessageArchiveMiddleware
 import com.tencent.bkrepo.agent.service.AgentMessageArchiveService
 import io.agentscope.core.agent.RuntimeContext
@@ -96,6 +99,11 @@ class HarnessAgentSmokeTest {
             agentMessageArchiveService = NoOpAgentMessageArchiveService,
             agentProperties = agentProperties,
         )
+        val agentCompactionConfigurer = AgentCompactionConfigurer(
+            compactionProperties = AgentCompactionProperties(enabled = false),
+            toolResultEvictionProperties = AgentToolResultEvictionProperties(enabled = false),
+            modelProperties = modelProperties,
+        )
         val permissionContext = io.agentscope.core.permission.PermissionContextState.builder().build()
         val toolkit = io.agentscope.core.tool.Toolkit()
         val agent = harnessConfiguration.harnessAgent(
@@ -105,6 +113,7 @@ class HarnessAgentSmokeTest {
             toolkit = toolkit,
             permissionContext = permissionContext,
             messageArchiveMiddleware = messageArchiveMiddleware,
+            agentCompactionConfigurer = agentCompactionConfigurer,
         )
         val runtimeContext = RuntimeContext.builder()
             .userId("smoke-user")

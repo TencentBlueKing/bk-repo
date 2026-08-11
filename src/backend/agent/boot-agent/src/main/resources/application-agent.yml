@@ -7,6 +7,12 @@ server:
 # 本地开发时可在此覆盖；生产环境通常由配置中心注入 model 与限流
 agent:
   local-tools-enabled: true
+  compaction:
+    enabled: true
+    flush-before-compact: false
+    offload-before-compact: false
+  tool-result-eviction:
+    enabled: true
   model:
     base-url:
     api-key:

@@ -52,8 +52,9 @@ class HarnessAgentConfiguration {
         toolkit: Toolkit,
         permissionContext: PermissionContextState,
         messageArchiveMiddleware: MessageArchiveMiddleware,
+        agentCompactionConfigurer: AgentCompactionConfigurer,
     ): HarnessAgent {
-        return HarnessAgent.builder()
+        val builder = HarnessAgent.builder()
             .name(properties.name)
             .sysPrompt(properties.sysPrompt)
             .model(model)
@@ -70,6 +71,6 @@ class HarnessAgentConfiguration {
             .disableDynamicSkills()
             .disableMemoryTools()
             .disableWorkspaceContext()
-            .build()
+        return agentCompactionConfigurer.apply(builder).build()
     }
 }

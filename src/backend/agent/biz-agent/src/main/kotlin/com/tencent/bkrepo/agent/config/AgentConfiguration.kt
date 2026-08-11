@@ -27,9 +27,11 @@
 
 package com.tencent.bkrepo.agent.config
 
+import com.tencent.bkrepo.agent.config.properties.AgentCompactionProperties
 import com.tencent.bkrepo.agent.config.properties.AgentModelProperties
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
 import com.tencent.bkrepo.agent.config.properties.AgentStateProperties
+import com.tencent.bkrepo.agent.config.properties.AgentToolResultEvictionProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration
 
@@ -38,5 +40,7 @@ import org.springframework.context.annotation.Configuration
     AgentProperties::class,
     AgentModelProperties::class,
     AgentStateProperties::class,
+    AgentCompactionProperties::class,
+    AgentToolResultEvictionProperties::class,
 )
 class AgentConfiguration
