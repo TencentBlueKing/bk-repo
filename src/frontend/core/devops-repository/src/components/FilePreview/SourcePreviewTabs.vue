@@ -236,11 +236,23 @@
     overflow: hidden;
 }
 .markdown-preview-body {
+    box-sizing: border-box;
+    width: 85%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
     line-height: 1.7;
     color: #313238;
     word-break: break-word;
     min-height: 100%;
-    padding: 0;
+    overflow-x: auto;
+}
+@media (max-width: 767px) {
+    .markdown-preview-body {
+        width: 100%;
+        max-width: none;
+        padding: 16px;
+    }
 }
 .markdown-preview-body ::v-deep img {
     max-width: 100%;
