@@ -40,4 +40,5 @@ dependencies {
     api("commons-net:commons-net:${Versions.CommonsNet}")
     //编码检测-JUniversalCharDet-->
     api("com.googlecode.juniversalchardet:juniversalchardet:${Versions.JuniversalCharDet}")
+    testImplementation("io.mockk:mockk")
 }

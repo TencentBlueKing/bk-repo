@@ -394,7 +394,7 @@
     import compressedFileTable from './compressedFileTable'
     import previewBasicFileDialog from './previewBasicFileDialog'
     import { Base64 } from 'js-base64'
-    import { isOutDisplayType, isText } from '@repository/utils/file'
+    import { isCode, isOutDisplayType, isText } from '@repository/utils/file'
     import {
         CLIENT_DOWNLOAD_CANCELLED,
         CLIENT_DOWNLOAD_FAILED,
@@ -652,7 +652,6 @@
                 'getFolderSize',
                 'getFileNumOfFolder',
                 'getMultiFileNumOfFolder',
-                'previewBasicFile',
                 'previewCompressedBasicFile',
                 'previewCompressedFileList',
                 'forbidMetadata',
@@ -1824,60 +1823,7 @@
                 })
             },
             async handlerPreviewBasicsFile (row) {
-                if (this.enableMultipleTypeFilePreview) {
-                    this.previewFile(row)
-                    return
-                }
-                const isLocal = this.localRepo
-                this.$refs.previewBasicFileDialog.setDialogData({
-                    show: true,
-                    title: row.name,
-                    isLoading: true,
-                    repoName: row.repoName,
-                    repoType: isLocal ? 'local' : 'remote',
-                    extraParam: 0,
-                    filePath: row.fullPath
-                })
-                const res = await this.previewBasicFile({
-                    projectId: this.projectId,
-                    repoName: this.repoName,
-                    path: row.fullPath
-                }).catch(e => {
-                    if (e.status === 403) {
-                        this.getPermissionUrl({
-                            body: {
-                                projectId: this.projectId,
-                                action: 'READ',
-                                resourceType: 'NODE',
-                                uid: this.userInfo.name,
-                                repoName: this.repoName,
-                                path: row.fullPath
-                            }
-                        }).then(res => {
-                            if (res !== '') {
-                                this.showIamDenyDialog = true
-                                this.showData = {
-                                    projectId: this.projectId,
-                                    repoName: this.repoName,
-                                    action: 'READ',
-                                    path: row.fullPath,
-                                    url: res
-                                }
-                            } else {
-                                this.$bkMessage({
-                                    theme: 'error',
-                                    message: e.message
-                                })
-                            }
-                        })
-                    } else {
-                        this.$bkMessage({
-                            theme: 'error',
-                            message: e.message
-                        })
-                    }
-                })
-                this.$refs.previewBasicFileDialog.setData(typeof (res) === 'string' ? res : JSON.stringify(res))
+                this.previewFile(row)
             },
             async handlerPreviewCompressedFile (row) {
                 if (row.size > 1073741824) {
@@ -1964,7 +1910,11 @@
             },
 
             getBtnDisabled (name) {
-                return this.enableMultipleTypeFilePreview ? isOutDisplayType(name) : isText(name)
+                if (this.enableMultipleTypeFilePreview) {
+                    return isOutDisplayType(name)
+                }
+                const codeSuffix = isCode(name)
+                return Boolean(isText(name) || codeSuffix === 'ini' || codeSuffix === 'toml')
             },
             // 文件夹内部的搜索，根据文件名或文件夹名搜索
             inFolderSearchFile () {

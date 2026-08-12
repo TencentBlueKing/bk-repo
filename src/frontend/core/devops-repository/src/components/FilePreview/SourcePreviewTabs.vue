@@ -23,6 +23,13 @@
                 allow="clipboard-write"
                 title="jsx-preview"
             />
+            <iframe
+                v-else-if="fileKind === 'html' && htmlSrcdoc"
+                class="html-preview-iframe"
+                :srcdoc="htmlSrcdoc"
+                sandbox="allow-scripts"
+                title="html-preview"
+            />
         </div>
         <div
             v-show="activeView === 'source'"
@@ -43,6 +50,7 @@
     import java from 'highlight.js/lib/languages/java'
     import 'highlight.js/styles/github.min.css'
     import {
+        buildHtmlSandboxSrcdoc,
         buildJsxSandboxSrcdoc,
         getMonacoLanguage,
         getPreviewFileKind,
@@ -87,6 +95,7 @@
                 previewHtml: '',
                 previewError: '',
                 jsxSrcdoc: '',
+                htmlSrcdoc: '',
                 editor: null
             }
         },
@@ -104,7 +113,7 @@
                 if (this.fileKind === 'markdown') {
                     return normalizeMarkdownText(this.sourceText)
                 }
-                if (this.fileKind === 'code') {
+                if (this.fileKind === 'code' || this.fileKind === 'html') {
                     return normalizeCodeText(this.sourceText)
                 }
                 return this.sourceText
@@ -143,6 +152,7 @@
                 this.previewError = ''
                 this.previewHtml = ''
                 this.jsxSrcdoc = ''
+                this.htmlSrcdoc = ''
                 if (this.fileKind === 'code' || this.activeView !== 'preview' || !this.normalizedSource) {
                     return
                 }
@@ -154,6 +164,8 @@
                         })
                     } else if (this.fileKind === 'jsx') {
                         this.jsxSrcdoc = buildJsxSandboxSrcdoc(this.normalizedSource)
+                    } else if (this.fileKind === 'html') {
+                        this.htmlSrcdoc = buildHtmlSandboxSrcdoc(this.normalizedSource)
                     }
                 } catch (error) {
                     this.previewError = error && error.message ? error.message : String(error)
@@ -224,11 +236,23 @@
     overflow: hidden;
 }
 .markdown-preview-body {
+    box-sizing: border-box;
+    width: 85%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
     line-height: 1.7;
     color: #313238;
     word-break: break-word;
     min-height: 100%;
-    padding: 0;
+    overflow-x: auto;
+}
+@media (max-width: 767px) {
+    .markdown-preview-body {
+        width: 100%;
+        max-width: none;
+        padding: 16px;
+    }
 }
 .markdown-preview-body ::v-deep img {
     max-width: 100%;
@@ -240,6 +264,12 @@
     background: #f5f7fa;
 }
 .jsx-preview-iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+}
+.html-preview-iframe {
     width: 100%;
     height: 100%;
     border: 0;

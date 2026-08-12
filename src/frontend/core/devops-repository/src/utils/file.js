@@ -7,10 +7,7 @@ const textType = [
     'yml',
     'xml',
     'log',
-    'ini',
-    'log',
     'properties',
-    'toml',
     'sql'
 ]
 
@@ -77,11 +74,17 @@ const jsxType = [
     'jsx'
 ]
 
+const htmlFileType = [
+    'html',
+    'htm'
+]
+
 const xmindType = [
     'xmind'
 ]
 
-// 与 preview 服务 FileType.CODES 对齐
+// 与 preview 服务 FileType.CODES 对齐（html 已拆到 isHtmlFile 做渲染预览）
+// 含原文本类后缀：统一走 onlinePreview + Monaco
 const codeType = [
     'java',
     'c',
@@ -90,7 +93,6 @@ const codeType = [
     'python',
     'py',
     'js',
-    'html',
     'ftl',
     'css',
     'lua',
@@ -104,7 +106,14 @@ const codeType = [
     'cs',
     'aspx',
     'jsp',
-    'sql'
+    'sql',
+    'ini',
+    'toml',
+    'txt',
+    'bat',
+    'xml',
+    'log',
+    'properties'
 ]
 
 function getFileSuffix (param) {
@@ -163,6 +172,12 @@ export function isJsx (param) {
     return jsxType.find(type => param.endsWith(type))
 }
 
+// 单 HTML 文件渲染预览（勿与 isHtmlType / Excel→HTML 混淆）
+export function isHtmlFile (param) {
+    const suffix = getFileSuffix(param)
+    return htmlFileType.find(type => type === suffix)
+}
+
 export function isXmind (param) {
     return xmindType.find(type => param.endsWith(type))
 }
@@ -176,5 +191,5 @@ export function isDisplayType (param) {
 // 判断可预览的类型(包括pic)
 export function isOutDisplayType (param) {
     const isExcel = excelType.find(type => param.endsWith(type))
-    return isText(param) || isCode(param) || isFormatType(param) || isExcel || isPic(param) || isMarkdown(param) || isJsx(param) || isXmind(param)
+    return isText(param) || isCode(param) || isFormatType(param) || isExcel || isPic(param) || isMarkdown(param) || isJsx(param) || isHtmlFile(param) || isXmind(param)
 }

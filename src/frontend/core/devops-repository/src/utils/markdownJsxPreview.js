@@ -2,7 +2,7 @@ import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 import { Base64 } from 'js-base64'
 import { appendPreviewTokenToUrl } from '@repository/utils/previewOfficeFile'
-import { isCode, isJsx, isMarkdown } from '@repository/utils/file'
+import { isCode, isHtmlFile, isJsx, isMarkdown } from '@repository/utils/file'
 import {
     buildJsxSandboxSrcdoc as buildJsxSandboxSrcdocCore,
     normalizeCodeText as normalizeCodeTextCore,
@@ -22,6 +22,8 @@ export {
 } from '@repository/utils/markdownJsxPreviewCore'
 
 export { prepareJsxSource } from '@repository/utils/markdownJsxPreviewCore'
+
+export { buildHtmlSandboxSrcdoc } from '@repository/utils/htmlFilePreview'
 
 export function buildGenericAssetUrl ({ projectId, repoName, resolvedPath }) {
     if (!projectId || !repoName || !resolvedPath) {
@@ -88,6 +90,9 @@ export function getMonacoLanguage (filePath) {
     if (isJsx(filePath)) {
         return 'javascriptreact'
     }
+    if (isHtmlFile(filePath)) {
+        return 'html'
+    }
     if (isCode(filePath)) {
         return resolveMonacoLanguage(filePath)
     }
@@ -100,6 +105,9 @@ export function getPreviewFileKind (filePath) {
     }
     if (isJsx(filePath)) {
         return 'jsx'
+    }
+    if (isHtmlFile(filePath)) {
+        return 'html'
     }
     if (isCode(filePath)) {
         return 'code'

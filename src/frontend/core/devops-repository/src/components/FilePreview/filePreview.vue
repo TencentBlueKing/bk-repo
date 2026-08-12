@@ -54,9 +54,8 @@
         customizePreviewRemoteOfficeFile,
         getPreviewLocalOfficeFileInfo, getPreviewRemoteOfficeFileInfo
     } from '@repository/utils/previewOfficeFile'
-    import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
-    import { isCode, isExcel, isFormatType, isHtmlType, isJsx, isMarkdown, isPic, isText, isXmind } from '@repository/utils/file'
+    import { isCode, isExcel, isFormatType, isHtmlFile, isHtmlType, isJsx, isMarkdown, isPic, isText, isXmind } from '@repository/utils/file'
     import { createAssetResolver, parsePreviewContext, resolvePreviewViewMode } from '@repository/utils/markdownJsxPreview'
     import { buildImageViewerOptions, isPurePreviewEnabled } from '@repository/utils/imagePreview'
     import { createOrUpdateXmindViewer, destroyXmindViewer } from '@repository/utils/xmindPreview'
@@ -180,19 +179,9 @@
                 return
             }
             if (!this.enableMultipleTypeFilePreview) {
-                if (isText(this.filePath)) {
-                    this.previewBasicFile({
-                        projectId: this.projectId,
-                        repoName: this.repoName,
-                        path: '/' + this.filePath
-                    }).then(res => {
-                        this.loading = false
-                        this.previewBasic = true
-                        this.$nextTick(() => {
-                            setTextareaHeight()
-                        })
-                        this.basicFileText = res
-                    }).catch(() => this.showError())
+                const codeSuffix = isCode(this.filePath)
+                if (isText(this.filePath) || codeSuffix === 'ini' || codeSuffix === 'toml') {
+                    this.previewViaOnlinePreview(res => this.dealDate(res))
                 } else {
                     this.showError()
                 }
@@ -200,29 +189,8 @@
             } else {
                 this.dealWaterMark()
             }
-            if (isCode(this.filePath)) {
-                if (this.repoType === 'local') {
-                    customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
-                        this.dealDate(res)
-                    }).catch(() => this.showError())
-                } else {
-                    customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(res => {
-                        this.dealDate(res)
-                    }).catch(() => this.showError())
-                }
-            } else if (isText(this.filePath)) {
-                this.previewBasicFile({
-                    projectId: this.projectId,
-                    repoName: this.repoName,
-                    path: '/' + this.filePath
-                }).then(res => {
-                    this.loading = false
-                    this.previewBasic = true
-                    this.$nextTick(() => {
-                        setTextareaHeight()
-                    })
-                    this.basicFileText = typeof (res) === 'string' ? res : JSON.stringify(res)
-                }).catch(() => this.showError())
+            if (isCode(this.filePath) || isHtmlFile(this.filePath)) {
+                this.previewViaOnlinePreview(res => this.dealDate(res))
             } else if (isExcel(this.filePath)) {
                 if (this.repoType === 'local') {
                     customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
@@ -257,14 +225,23 @@
             this.cancel()
         },
         methods: {
-            ...mapActions([
-                'previewBasicFile'
-            ]),
             checkRepoType () {
                 return this.repoTypeEnum.includes(this.repoType)
             },
+            previewViaOnlinePreview (onSuccess) {
+                if (this.repoType === 'local') {
+                    customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath)
+                        .then(onSuccess)
+                        .catch(() => this.showError())
+                } else {
+                    customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam)))
+                        .then(onSuccess)
+                        .catch(() => this.showError())
+                }
+            },
             showError () {
                 this.loading = false
+                this.previewBasic = false
                 this.hasError = true
             },
             cancel () {
@@ -326,7 +303,7 @@
             async dealDate (res) {
                 this.loading = false
                 let url
-                if (!isHtmlType(this.filePath) && !isPic(this.filePath) && !isJsx(this.filePath) && !isMarkdown(this.filePath) && !isXmind(this.filePath) && !isCode(this.filePath)) {
+                if (!isHtmlType(this.filePath) && !isPic(this.filePath) && !isJsx(this.filePath) && !isMarkdown(this.filePath) && !isXmind(this.filePath) && !isCode(this.filePath) && !isHtmlFile(this.filePath)) {
                     this.loadFile(URL.createObjectURL(res.data))
                     this.pdfShow = true
                     this.pageUrl = url
@@ -338,7 +315,7 @@
                             purePreview: isPurePreviewEnabled(this.$route.query)
                         }))
                     })
-                } else if (isMarkdown(this.filePath) || isJsx(this.filePath) || isCode(this.filePath)) {
+                } else if (isMarkdown(this.filePath) || isJsx(this.filePath) || isCode(this.filePath) || isHtmlFile(this.filePath)) {
                     const text = await res.data.text()
                     this.richTextFilePath = this.filePath
                     this.richTextSource = text

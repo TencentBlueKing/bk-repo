@@ -82,10 +82,6 @@ import org.springframework.stereotype.Component
 class GenericRemoteRepository(
     private val genericProperties: GenericProperties,
 ) : RemoteRepository() {
-    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
-        return redirectManager.redirect(context)
-    }
-
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         return getCacheArtifactResource(context) ?: run {
             val remoteConfiguration = context.getRemoteConfiguration()

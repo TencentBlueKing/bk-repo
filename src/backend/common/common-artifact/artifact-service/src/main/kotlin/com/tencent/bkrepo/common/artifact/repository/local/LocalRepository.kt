@@ -47,6 +47,33 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
  */
 abstract class LocalRepository : AbstractArtifactRepository() {
 
+    /**
+     * 与 Generic 一致：直接交由 [DownloadRedirectManager.redirect]。
+     * URI≠存储路径的子类：先 [DownloadRedirectManager.mayRedirect]（禁止未开启时查库），
+     * 再 mapping，然后调 [redirectAfterPrepare]。
+     */
+    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        return redirectManager.redirect(context)
+    }
+
+    /**
+     * remapper 在完成路径 mapping 后调用：shouldRedirect → 拦截 → redirect。
+     */
+    protected fun redirectAfterPrepare(context: ArtifactDownloadContext): Boolean {
+        if (!redirectManager.shouldRedirect(context)) {
+            return false
+        }
+        val node = ArtifactContextHolder.getNodeDetail(context.artifactInfo) ?: return false
+        downloadIntercept(context, node)
+        beforeRedirect(context, node)
+        return redirectManager.redirect(context)
+    }
+
+    /**
+     * 确认会重定向后、真正 302 前（协议头、非标准 package 拦截）。
+     */
+    protected open fun beforeRedirect(context: ArtifactDownloadContext, node: NodeDetail) = Unit
+
     override fun onUpload(context: ArtifactUploadContext) {
         with(context) {
             val nodeCreateRequest = buildNodeCreateRequest(this)
