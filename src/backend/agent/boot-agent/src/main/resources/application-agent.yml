@@ -20,6 +20,7 @@ agent:
     bk-app-code:
     bk-app-secret:
     model-name:
+    # reasoning-effort: high  # no_think | low | high；非空时开启深度思考请求与 REASONING_* SSE
 
 rate:
   limiter:

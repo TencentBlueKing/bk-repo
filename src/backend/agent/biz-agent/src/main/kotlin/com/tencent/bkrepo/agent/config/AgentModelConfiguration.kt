@@ -44,11 +44,13 @@ class AgentModelConfiguration {
         require(properties.baseUrl.isNotBlank()) { "agent.model.base-url is required" }
         require(properties.modelName.isNotBlank()) { "agent.model.model-name is required" }
 
+        val reasoningEffort = properties.effectiveReasoningEffort()
         logger.info(
-            "Initializing agent chat model: baseUrl={}, modelName={}, authType={}",
+            "Initializing agent chat model: baseUrl={}, modelName={}, authType={}, reasoningEffort={}",
             properties.baseUrl,
             properties.modelName,
             properties.authType,
+            reasoningEffort ?: "<unset>",
         )
 
         val builder = OpenAIChatModel.builder()
@@ -67,22 +69,30 @@ class AgentModelConfiguration {
                 }
                 val authJson =
                     """{"bk_app_code":"${properties.bkAppCode}","bk_app_secret":"${properties.bkAppSecret}"}"""
-                builder
-                    .generateOptions(
-                        GenerateOptions.builder()
-                            .additionalHeader("X-Bkapi-Authorization", authJson)
-                            .build(),
-                    )
-                    .endpointPath("")
+                applyGenerateOptions(builder, gatewayAuthJson = authJson, reasoningEffort = reasoningEffort)
+                builder.endpointPath("")
             }
             AgentModelAuthType.API_KEY -> {
                 require(properties.apiKey.isNotBlank()) {
                     "agent.model.api-key is required when auth-type=api-key"
                 }
                 builder.apiKey(properties.apiKey)
+                applyGenerateOptions(builder, reasoningEffort = reasoningEffort)
             }
         }
         return builder.build()
+    }
+
+    private fun applyGenerateOptions(
+        builder: OpenAIChatModel.Builder,
+        gatewayAuthJson: String? = null,
+        reasoningEffort: String? = null,
+    ) {
+        if (gatewayAuthJson == null && reasoningEffort == null) return
+        val optionsBuilder = GenerateOptions.builder()
+        gatewayAuthJson?.let { optionsBuilder.additionalHeader("X-Bkapi-Authorization", it) }
+        reasoningEffort?.let { optionsBuilder.reasoningEffort(it) }
+        builder.generateOptions(optionsBuilder.build())
     }
 
     companion object {

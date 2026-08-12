@@ -55,9 +55,14 @@ data class AgentModelProperties(
      */
     var bkAppSecret: String = "",
     /**
-     * 模型名称，例如 gpt-4o / qwen-max
+     * 模型名称，例如 gpt-4o / qwen-max / kimi-k2
      */
     var modelName: String = "",
+    /**
+     * 思考模式档位，映射请求体 `reasoning_effort`（混元 Hy3 等：`no_think` / `low` / `high`）。
+     * 留空则不向模型发送该字段；非空时 AG-UI 层同步开启 REASONING_* 事件输出。
+     */
+    var reasoningEffort: String? = null,
     /**
      * 是否启用流式输出。Agent 对外以 SSE 推送事件，建议保持 true
      */
@@ -67,6 +72,8 @@ data class AgentModelProperties(
      */
     var contextWindowSize: Int = DEFAULT_CONTEXT_WINDOW_SIZE,
 ) {
+    fun effectiveReasoningEffort(): String? = reasoningEffort?.takeIf { it.isNotBlank() }
+
     companion object {
         const val DEFAULT_CONTEXT_WINDOW_SIZE = 128_000
     }

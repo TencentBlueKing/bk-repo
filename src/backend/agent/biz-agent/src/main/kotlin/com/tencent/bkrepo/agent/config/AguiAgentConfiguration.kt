@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.agent.config
 
 import com.tencent.bkrepo.agent.agui.StatelessHarnessAgentResolver
+import com.tencent.bkrepo.agent.config.properties.AgentModelProperties
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
 import io.agentscope.core.agui.adapter.AguiAdapterConfig
 import io.agentscope.core.agui.model.ToolMergeMode
@@ -61,16 +62,20 @@ class AguiAgentConfiguration {
      * 关闭；升级后应显式设为 false。
      */
     @Bean
-    fun aguiAdapterConfig(properties: AgentProperties): AguiAdapterConfig {
+    fun aguiAdapterConfig(
+        properties: AgentProperties,
+        modelProperties: AgentModelProperties,
+    ): AguiAdapterConfig {
         val toolMergeMode = if (properties.localToolsEnabled) {
             ToolMergeMode.FRONTEND_ONLY
         } else {
             ToolMergeMode.AGENT_ONLY
         }
+        val enableReasoning = modelProperties.effectiveReasoningEffort() != null
         return AguiAdapterConfig.builder()
             .defaultAgentId(properties.name)
             .runTimeout(properties.sseTimeout)
-            .enableReasoning(false)
+            .enableReasoning(enableReasoning)
             .emitTokenUsage(false)
             .emitToolCallArgs(true)
             .toolMergeMode(toolMergeMode)
