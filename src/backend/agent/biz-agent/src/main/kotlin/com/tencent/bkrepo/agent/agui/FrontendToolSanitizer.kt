@@ -28,21 +28,40 @@ class FrontendToolSanitizer(
             if (input.hasTools()) {
                 throw ParameterInvalidException("tools", "local tools are disabled")
             }
-            return input
+            return sanitizeForwardedProps(input)
         }
 
         val sanitizedTools = resolveTools(input.tools)
-        if (sanitizedTools == input.tools) {
+        val withTools = if (sanitizedTools == input.tools) {
+            input
+        } else {
+            RunAgentInput.builder()
+                .threadId(input.threadId)
+                .runId(input.runId)
+                .messages(input.messages)
+                .tools(sanitizedTools)
+                .context(input.context)
+                .state(input.state)
+                .forwardedProps(input.forwardedProps)
+                .resume(input.resume)
+                .build()
+        }
+        return sanitizeForwardedProps(withTools)
+    }
+
+    private fun sanitizeForwardedProps(input: RunAgentInput): RunAgentInput {
+        val sanitizedProps = AgentForwardedPropsSupport.sanitizeForwardedProps(input.forwardedProps)
+        if (sanitizedProps == input.forwardedProps) {
             return input
         }
         return RunAgentInput.builder()
             .threadId(input.threadId)
             .runId(input.runId)
             .messages(input.messages)
-            .tools(sanitizedTools)
+            .tools(input.tools)
             .context(input.context)
             .state(input.state)
-            .forwardedProps(input.forwardedProps)
+            .forwardedProps(sanitizedProps)
             .resume(input.resume)
             .build()
     }

@@ -59,8 +59,6 @@ interface AgentRunService {
     fun run(
         userId: String,
         projectId: String,
-        deviceId: String?,
-        traceId: String?,
         input: RunAgentInput,
     ): SseEmitter
 
@@ -91,7 +89,7 @@ interface AgentRunService {
     fun deleteSession(userId: String, projectId: String, request: AgentSessionDeleteRequest)
 
     /** 查询 thread 当前 run 状态（Mongo + 运行锁 + pending interrupt）。 */
-    fun getRunStatus(userId: String, projectId: String, sessionId: String): AgentRunStatusInfo
+    fun getRunStatus(userId: String, projectId: String, threadId: String): AgentRunStatusInfo
 
     /** 请求停止 active run；跨副本通过 cancel 信号 + 本机 handle 中断。 */
     fun stopRun(userId: String, projectId: String, request: AgentRunStopRequest): Boolean

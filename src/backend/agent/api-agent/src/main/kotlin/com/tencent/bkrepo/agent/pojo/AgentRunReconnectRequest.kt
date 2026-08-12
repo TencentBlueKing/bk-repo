@@ -8,8 +8,12 @@
 
 package com.tencent.bkrepo.agent.pojo
 
-/** 对已终态 run 重放 AG-UI 事件，不重新执行 agent。 */
+import io.swagger.v3.oas.annotations.media.Schema
+
+@Schema(title = "Agent run 重连请求")
 data class AgentRunReconnectRequest(
+    @get:Schema(title = "AG-UI threadId（等同 sessionId）", required = true)
     val threadId: String,
+    @get:Schema(title = "canonical runId", required = true)
     val runId: String,
 )

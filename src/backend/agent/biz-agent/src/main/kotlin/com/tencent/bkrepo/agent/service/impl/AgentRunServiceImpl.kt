@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.agent.service.impl
 
+import com.tencent.bkrepo.agent.agui.AgentForwardedPropsSupport
 import com.tencent.bkrepo.agent.agui.AguiInterruptTracker
 import com.tencent.bkrepo.agent.agui.AguiMessageArchiveHandler
 import com.tencent.bkrepo.agent.agui.AguiRunInputProcessor
@@ -121,8 +122,6 @@ class AgentRunServiceImpl(
     override fun run(
         userId: String,
         projectId: String,
-        deviceId: String?,
-        traceId: String?,
         input: RunAgentInput,
     ): SseEmitter {
         validate(input)
@@ -143,6 +142,7 @@ class AgentRunServiceImpl(
         if (!agentRunLock.tryAcquire(userId, threadId)) {
             throw TooManyRequestsException("Session[$threadId] is already running")
         }
+        val transport = AgentForwardedPropsSupport.extract(processedInput)
         val executionId = AGENT_RUN_ID_PREFIX + StringPool.uniqueId()
         val triggerType = if (processedInput.hasResume()) {
             AgentRunTriggerType.AGUI_RESUME
@@ -155,7 +155,7 @@ class AgentRunServiceImpl(
             sessionId = threadId,
             userId = userId,
             projectId = projectId,
-            deviceId = deviceId,
+            deviceId = transport.deviceId,
             entryAgentId = properties.name,
             triggerType = triggerType,
         )
@@ -173,9 +173,9 @@ class AgentRunServiceImpl(
             userId = userId,
             projectId = projectId,
             input = processedInput,
-            deviceId = deviceId,
+            deviceId = transport.deviceId,
             executionId = executionId,
-            traceId = traceId,
+            traceId = transport.traceId,
         )
         val processResult = aguiRequestProcessor.process(processedInput, null, null, runtimeContext)
         val terminalStatus = AtomicReference(AgentRunStatus.COMPLETED)
@@ -342,12 +342,12 @@ class AgentRunServiceImpl(
         agentSessionService.deleteSession(userId, projectId, request.sessionId)
     }
 
-    override fun getRunStatus(userId: String, projectId: String, sessionId: String): AgentRunStatusInfo {
+    override fun getRunStatus(userId: String, projectId: String, threadId: String): AgentRunStatusInfo {
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
-        agentSessionService.assertActiveSession(userId, projectId, sessionId)
-        val running = agentRunLock.isRunning(userId, sessionId)
-        val activeRunId = activeRunStore.get(userId, sessionId)
-        val latestRun = agentRunRecordService.findLatestBySessionId(sessionId)
+        agentSessionService.assertActiveSession(userId, projectId, threadId)
+        val running = agentRunLock.isRunning(userId, threadId)
+        val activeRunId = activeRunStore.get(userId, threadId)
+        val latestRun = agentRunRecordService.findLatestBySessionId(threadId)
         val runId = activeRunId ?: latestRun?.runId
         val status = when {
             running -> AgentRunStatus.RUNNING
@@ -355,19 +355,19 @@ class AgentRunServiceImpl(
             else -> null
         }
         return AgentRunStatusInfo(
-            sessionId = sessionId,
+            threadId = threadId,
             runId = runId,
             status = status,
             running = running,
-            hasPendingInterrupt = pendingInterruptStore.get(sessionId) != null,
+            hasPendingInterrupt = pendingInterruptStore.get(threadId) != null,
         )
     }
 
     override fun stopRun(userId: String, projectId: String, request: AgentRunStopRequest): Boolean {
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
-        agentSessionService.assertActiveSession(userId, projectId, request.sessionId)
-        val activeRunId = activeRunStore.get(userId, request.sessionId)
-            ?: agentRunRecordService.findLatestBySessionId(request.sessionId)
+        agentSessionService.assertActiveSession(userId, projectId, request.threadId)
+        val activeRunId = activeRunStore.get(userId, request.threadId)
+            ?: agentRunRecordService.findLatestBySessionId(request.threadId)
                 ?.takeIf { it.status == AgentRunStatus.RUNNING }
                 ?.runId
         if (activeRunId == null) {
@@ -377,7 +377,7 @@ class AgentRunServiceImpl(
             throw ParameterInvalidException("runId", "run[${request.runId}] is not active")
         }
         runCancelStore.requestCancel(activeRunId)
-        runHandleRegistry.find(userId, request.sessionId)
+        runHandleRegistry.find(userId, request.threadId)
             ?.takeIf { it.runId == activeRunId }
             ?.abort()
         return true

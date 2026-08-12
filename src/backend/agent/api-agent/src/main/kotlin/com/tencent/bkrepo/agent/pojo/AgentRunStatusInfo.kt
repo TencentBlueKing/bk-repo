@@ -8,11 +8,17 @@
 
 package com.tencent.bkrepo.agent.pojo
 
-/** AG-UI 之外的 run 运行状态查询结果。 */
+import io.swagger.v3.oas.annotations.media.Schema
+
+@Schema(title = "Agent run 运行状态")
 data class AgentRunStatusInfo(
-    val sessionId: String,
+    @get:Schema(title = "AG-UI threadId（等同 sessionId）")
+    val threadId: String,
+    @get:Schema(title = "canonical runId")
     val runId: String?,
     val status: AgentRunStatus?,
+    @get:Schema(title = "是否持有 run 锁")
     val running: Boolean,
+    @get:Schema(title = "是否存在待恢复 interrupt")
     val hasPendingInterrupt: Boolean,
 )

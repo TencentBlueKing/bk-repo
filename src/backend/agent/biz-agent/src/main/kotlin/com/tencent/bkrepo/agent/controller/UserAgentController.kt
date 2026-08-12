@@ -27,8 +27,6 @@
 
 package com.tencent.bkrepo.agent.controller
 
-import com.tencent.bkrepo.agent.constant.HEADER_DEVICE_ID
-import com.tencent.bkrepo.agent.constant.HEADER_TRACE_ID
 import com.tencent.bkrepo.agent.constant.LOG_OPERATE_RUN
 import com.tencent.bkrepo.agent.constant.LOG_OPERATE_RUN_RECONNECT
 import com.tencent.bkrepo.agent.constant.LOG_OPERATE_RUN_STATUS
@@ -62,7 +60,6 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -180,7 +177,7 @@ class UserAgentController(
     /**
      * 发起一轮 AG-UI run，响应为 SSE [io.agentscope.core.agui.event.AguiEvent] 流。
      *
-     * `POST /api/agent/run?projectId=`；请求体为标准 [RunAgentInput]。
+     * `POST /api/agent/run?projectId=`；请求体为标准 [RunAgentInput]（deviceId/traceId 经 forwardedProps 传递）。
      */
     @Operation(summary = "发起一轮 AG-UI run，以SSE返回AguiEvent事件流")
     @PostMapping("/run", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
@@ -189,17 +186,15 @@ class UserAgentController(
         @RequestAttribute userId: String,
         @Parameter(name = "项目ID", required = true)
         @RequestParam projectId: String,
-        @RequestHeader(HEADER_DEVICE_ID, required = false) deviceId: String?,
-        @RequestHeader(HEADER_TRACE_ID, required = false) traceId: String?,
         @RequestBody input: RunAgentInput,
     ): SseEmitter {
-        return agentRunService.run(userId, projectId, deviceId, traceId, input)
+        return agentRunService.run(userId, projectId, input)
     }
 
     /**
      * 查询 thread 当前 run 状态。
      *
-     * `GET /api/agent/run/status?projectId=&sessionId=`
+     * `GET /api/agent/run/status?projectId=&threadId=`
      */
     @Operation(summary = "查询 run 运行状态")
     @GetMapping("/run/status")
@@ -208,16 +203,16 @@ class UserAgentController(
         @RequestAttribute userId: String,
         @Parameter(name = "项目ID", required = true)
         @RequestParam projectId: String,
-        @Parameter(name = "会话ID", required = true)
-        @RequestParam sessionId: String,
+        @Parameter(name = "AG-UI threadId（等同 sessionId）", required = true)
+        @RequestParam threadId: String,
     ): Response<AgentRunStatusInfo> {
-        return ResponseBuilder.success(agentRunService.getRunStatus(userId, projectId, sessionId))
+        return ResponseBuilder.success(agentRunService.getRunStatus(userId, projectId, threadId))
     }
 
     /**
      * 停止指定 thread 的 active run。
      *
-     * `POST /api/agent/run/stop?projectId=`
+     * `POST /api/agent/run/stop?projectId=`（body: `{ threadId, runId? }`）
      */
     @Operation(summary = "停止 active run")
     @PostMapping("/run/stop")

@@ -587,6 +587,9 @@ AgentScope 权限不能代替 IAM；IAM 也不能代替用户确认。
     }
   ],
   "tools": [],
+  "forwardedProps": {
+    "deviceId": "client-mac-xxx"
+  },
   "context": [
     {
       "description": "projectName",
@@ -1342,7 +1345,7 @@ Agent 适合需要语言理解、证据综合和不确定性推理的任务。�
 
 1. 运行入口改为官方 `RunAgentInput`，SSE 输出官方 `AguiEvent`；
 2. 使用 `AguiRequestProcessor` 和 `AguiAgentAdapter`，删除手写 `AgentEvent` SSE 透传；
-3. 使用 `AguiRuntimeContextResolver` 注入受信任的 userId、projectId、deviceId 和 traceId；
+3. 使用 `AguiRuntimeContextResolver` 注入受信任的 userId、projectId；`deviceId` / `traceId` 经 `RunAgentInput.forwardedProps` 白名单提取；
 4. 保留 session create/list/latest/messages/delete 业务 API，但 create 返回真实标题和服务端时间；
 5. runId 使用客户端 AG-UI runId；需要内部跟踪时新增 executionId。
 
@@ -1423,11 +1426,19 @@ Agent 适合需要语言理解、证据综合和不确定性推理的任务。�
 
 **已实现 API**
 
+约定：`projectId` 一律走 query；会话 CRUD 用 `sessionId`；run 相关用 AG-UI `threadId`（等同 `sessionId`）；`deviceId` / `traceId` 经 `RunAgentInput.forwardedProps` 传递，不用 Header。
+
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| GET | `/api/agent/run/status?projectId=&sessionId=` | 查询 thread 运行状态、canonical runId、pending interrupt |
-| POST | `/api/agent/run/stop?projectId=` | 停止 active run（body: `{ sessionId, runId? }`） |
-| POST | `/api/agent/run/reconnect?projectId=` | 对已终态 run SSE 重放事件，不重新执行 |
+| POST | `/api/agent/session/create?projectId=` | 创建会话 |
+| GET | `/api/agent/session/list?projectId=&pageNumber=&pageSize=` | 会话列表 |
+| GET | `/api/agent/session/messages?projectId=&sessionId=&pageNumber=&pageSize=` | 消息历史 |
+| POST | `/api/agent/session/update?projectId=` | 更新标题（body: `{ sessionId, title }`） |
+| POST | `/api/agent/session/delete?projectId=` | 删除会话（body: `{ sessionId }`） |
+| POST | `/api/agent/run?projectId=` | AG-UI run SSE（body: 标准 `RunAgentInput`） |
+| GET | `/api/agent/run/status?projectId=&threadId=` | 查询 run 状态 |
+| POST | `/api/agent/run/stop?projectId=` | 停止 active run（body: `{ threadId, runId? }`） |
+| POST | `/api/agent/run/reconnect?projectId=` | 终态 run 事件重放 SSE（body: `{ threadId, runId }`） |
 
 **验收**
 

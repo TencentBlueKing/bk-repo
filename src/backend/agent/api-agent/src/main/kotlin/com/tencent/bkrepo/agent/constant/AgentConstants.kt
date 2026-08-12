@@ -27,14 +27,10 @@
 
 package com.tencent.bkrepo.agent.constant
 
-/**
- * 会话所属设备标识，用于后续把本地工具调用路由回同一台已登录客户端
- */
-const val HEADER_DEVICE_ID = "X-BKREPO-AGENT-DEVICE-ID"
+/** 设备标识，经 [RunAgentInput.forwardedProps] 传递，写入 RuntimeContext 与 agent_run。 */
+const val FORWARDED_PROP_DEVICE_ID = "deviceId"
 
-/**
- * [io.agentscope.core.agent.RuntimeContext] 中存放设备标识的 key，供 Tool / Hook 读取
- */
+/** [io.agentscope.core.agent.RuntimeContext] 中存放设备标识的 key，供 Tool / Hook 读取 */
 const val RUNTIME_CONTEXT_DEVICE_ID = "deviceId"
 
 /**
@@ -52,10 +48,11 @@ const val RUNTIME_CONTEXT_RUN_ID = "runId"
  */
 const val RUNTIME_CONTEXT_EXECUTION_ID = "executionId"
 
-/** 可选 traceId，来自受信任 HTTP Header。 */
-const val RUNTIME_CONTEXT_TRACE_ID = "traceId"
+/** 可选 traceId，经 RunAgentInput.forwardedProps 传递。 */
+const val FORWARDED_PROP_TRACE_ID = "traceId"
 
-const val HEADER_TRACE_ID = "X-Trace-Id"
+/** RuntimeContext 中的 traceId 键。 */
+const val RUNTIME_CONTEXT_TRACE_ID = "traceId"
 
 /**
  * SSE 发送失败等场景下，middleware 在 [reactor.core.publisher.SignalType.CANCEL] 时仍归档 assistant 片段。
