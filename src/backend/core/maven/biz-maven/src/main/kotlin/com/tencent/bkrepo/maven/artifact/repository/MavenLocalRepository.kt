@@ -78,6 +78,7 @@ import com.tencent.bkrepo.maven.pojo.MavenRepoConf
 import com.tencent.bkrepo.maven.pojo.response.MavenArtifactResponse
 import com.tencent.bkrepo.maven.service.MavenMetadataService
 import com.tencent.bkrepo.maven.service.MavenService
+import com.tencent.bkrepo.maven.util.MavenActiveContentHeaders.applyIfActiveContent
 import com.tencent.bkrepo.maven.util.MavenConfiguration.toMavenRepoConf
 import com.tencent.bkrepo.maven.util.MavenConfiguration.versionBehaviorConflict
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
@@ -456,6 +457,11 @@ class MavenLocalRepository(
         }
     }
 
+
+    override fun onDownloadBefore(context: ArtifactDownloadContext) {
+        super.onDownloadBefore(context)
+        applyIfActiveContent(context.artifactInfo.getResponseName())
+    }
 
     /**
      * checksum 文件不存在时，系统生成
