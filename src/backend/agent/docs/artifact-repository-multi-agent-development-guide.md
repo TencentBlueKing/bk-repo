@@ -1440,11 +1440,29 @@ Agent 适合需要语言理解、证据综合和不确定性推理的任务。�
 | POST | `/api/agent/run/stop?projectId=` | 停止 active run（body: `{ threadId, runId? }`） |
 | POST | `/api/agent/run/reconnect?projectId=` | 终态 run 事件重放 SSE（body: `{ threadId, runId }`） |
 
+**客户端接线（bk-artifacts-ui，`agent-backend`）**
+
+| 能力 | 模块 | 说明 |
+| --- | --- | --- |
+| stop | `agentRunLoop` → `stopBackendRun` | 暂停按钮 abort SSE 并 POST `/run/stop` |
+| status | `backendClient.fetchBackendRunStatus` | 打开会话前查询 thread 活跃 run |
+| reconnect | `backendClient.reconnectBackendRun` + `aguiSseStream` | 解析终态 SSE，提取 pending interrupt |
+| 恢复策略 | `agentRunRecovery.planThreadRunRecovery` | `wait_running` 轮询后刷新历史；`resume_interrupt` 调 `startAgentRecoveryTurn` |
+| abort 误报 | `isBenignRunAbortError` | 用户主动 stop 时不展示 `BodyStreamBuffer was aborted` |
+
 **验收**
 
 - stop 能终止正确的 active run；
 - reconnect 不重复消息且终态一致；
 - 多副本切换后仍能查询运行状态；
 - 真机完成至少一轮普通对话、本地工具、确认写操作和历史恢复后再推送。
+
+**下一步（§17.6 验收）**
+
+1. **stop**：流式输出中点暂停，后台 active run 终止，已输出内容保留、无 abort 误报；
+2. **reconnect / 历史恢复**：本地工具或 HITL 中断后关闭小制 → 重开同一会话 → 自动 reconnect 并 resume；
+3. **wait_running**：对话中途退出 → 重开同一会话 → 轮询 status 结束后刷新完整回复；
+4. **多副本 status**：切换网关实例后 `GET run/status` 仍能返回一致状态；
+5. 通过后删除旧协议兼容分支，更新契约测试与接口文档。
 
 
