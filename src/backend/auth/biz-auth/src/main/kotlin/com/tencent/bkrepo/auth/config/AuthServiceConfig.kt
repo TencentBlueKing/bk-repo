@@ -44,12 +44,14 @@ import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
+import com.tencent.bkrepo.auth.service.UserDeptService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.service.bkdevops.DevopsPermissionServiceImpl
 import com.tencent.bkrepo.auth.service.bkdevops.DevopsPipelineService
 import com.tencent.bkrepo.auth.service.bkdevops.DevopsProjectService
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.bkiamv3.BkIamV3Service
+import com.tencent.bkrepo.auth.service.impl.NoopUserDeptService
 import com.tencent.bkrepo.auth.service.local.AccountServiceImpl
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.local.RoleServiceImpl
@@ -174,4 +176,8 @@ class AuthServiceConfig {
         roleRepository: RoleRepository,
         userDao: UserDao
     ) = UserServiceImpl(roleRepository, userDao)
+
+    @Bean
+    @ConditionalOnMissingBean(UserDeptService::class)
+    fun userDeptService() = NoopUserDeptService()
 }

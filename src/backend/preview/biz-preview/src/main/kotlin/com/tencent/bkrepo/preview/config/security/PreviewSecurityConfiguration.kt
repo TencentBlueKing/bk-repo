@@ -11,6 +11,7 @@
 package com.tencent.bkrepo.preview.config.security
 
 import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
+import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionCheckHandler
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
@@ -52,8 +53,14 @@ class PreviewSecurityConfiguration {
     fun previewTokenAuthService(
         authenticationManager: AuthenticationManager,
         temporaryTokenClient: ServiceTemporaryTokenClient,
+        serviceUserClient: ServiceUserClient,
         config: PreviewTokenAuthConfig,
-    ): PreviewTokenAuthService = PreviewTokenAuthService(authenticationManager, temporaryTokenClient, config)
+    ): PreviewTokenAuthService = PreviewTokenAuthService(
+        authenticationManager,
+        temporaryTokenClient,
+        serviceUserClient,
+        config,
+    )
 
     /**
      * 通过 [Primary] 让 preview 自家的 PermissionCheckHandler 优先被注入到 PermissionAspect 中。

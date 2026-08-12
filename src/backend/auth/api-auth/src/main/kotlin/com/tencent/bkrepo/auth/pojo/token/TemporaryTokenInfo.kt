@@ -46,6 +46,11 @@ data class TemporaryTokenInfo(
     val token: String,
     @get:Schema(title = "授权用户")
     val authorizedUserList: Set<String>,
+    /**
+     * 授权组织 ID 集合，与用户组织 scopeValue 做交集匹配。
+     */
+    @get:Schema(title = "授权组织 ID")
+    val authorizedOrgList: Set<String> = emptySet(),
     @get:Schema(title = "授权IP")
     val authorizedIpList: Set<String>,
     @get:Schema(title = "过期时间")

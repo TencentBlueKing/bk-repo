@@ -35,6 +35,7 @@ import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.User
+import com.tencent.bkrepo.auth.pojo.user.UserOrgMembership
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.v3.oas.annotations.Parameter
@@ -84,6 +85,11 @@ interface RAuthClient {
     fun detail(
         @PathVariable uid: String
     ): Mono<Response<User?>>
+
+    @GetMapping("/user/userdept/{uid}")
+    fun userDeptById(
+        @PathVariable uid: String
+    ): Mono<Response<UserOrgMembership>>
 
     @PostMapping("/user/create")
     fun create(

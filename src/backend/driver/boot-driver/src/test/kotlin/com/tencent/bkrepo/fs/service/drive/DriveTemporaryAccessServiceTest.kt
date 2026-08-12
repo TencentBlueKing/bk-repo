@@ -1,8 +1,9 @@
 package com.tencent.bkrepo.fs.service.drive
 
+import com.tencent.bkrepo.auth.pojo.token.OrgScope
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.token.TokenType
-import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
+import com.tencent.bkrepo.auth.pojo.user.UserOrgMembership
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -117,13 +118,13 @@ class DriveTemporaryAccessServiceTest {
     }
 
     @Test
-    fun `should use token creator as audited user for anonymous request`() {
+    fun `should allow anonymous visitor for public token and audit as creator`() {
         runBlocking {
             mockTokenInfo(snapSeq = null)
             whenever(permissionService.checkNodePermission(any(), any(), any(), any(), any())).thenReturn(true)
         }
 
-        runBlockingWithRequestContext(uidHeader = "consumer") {
+        runBlockingWithRequestContext(loggedInUser = null) {
             service.validateToken(
                 token = TOKEN,
                 projectId = PROJECT_ID,
@@ -134,6 +135,27 @@ class DriveTemporaryAccessServiceTest {
             )
             val exchange = ReactiveRequestContextHolder.getWebExchange()
             assertEquals(USER_ID, exchange.attributes[USER_KEY])
+        }
+    }
+
+    @Test
+    fun `should use authenticated user as audited user for public token`() {
+        runBlocking {
+            mockTokenInfo(snapSeq = null)
+            whenever(permissionService.checkNodePermission(any(), any(), any(), any(), any())).thenReturn(true)
+        }
+
+        runBlockingWithRequestContext(loggedInUser = "consumer") {
+            service.validateToken(
+                token = TOKEN,
+                projectId = PROJECT_ID,
+                repoName = REPO_NAME,
+                fullPath = FULL_PATH,
+                type = TokenType.DOWNLOAD,
+                requestSnapSeq = null,
+            )
+            val exchange = ReactiveRequestContextHolder.getWebExchange()
+            assertEquals("consumer", exchange.attributes[USER_KEY])
         }
     }
 
@@ -149,19 +171,145 @@ class DriveTemporaryAccessServiceTest {
         verify(rAuthClient).deleteTemporaryToken(TOKEN)
     }
 
-    private fun mockTokenInfo(snapSeq: Long?) {
+    @Test
+    fun `should accept logged-in user matching authorized org`() {
+        runBlocking {
+            mockTokenInfo(
+                snapSeq = null,
+                authorizedOrgList = setOf("dept-9"),
+            )
+            whenever(permissionService.checkNodePermission(any(), any(), any(), any(), any())).thenReturn(true)
+            whenever(rAuthClient.userDeptById("consumer")).thenReturn(
+                Mono.just(
+                    Response(
+                        0,
+                        null,
+                        UserOrgMembership(
+                            userId = "consumer",
+                            scopes = listOf(OrgScope("DEPARTMENT", "dept-9")),
+                        ),
+                        null,
+                    ),
+                ),
+            )
+        }
+
+        runBlockingWithRequestContext(loggedInUser = "consumer") {
+            service.validateToken(
+                token = TOKEN,
+                projectId = PROJECT_ID,
+                repoName = REPO_NAME,
+                fullPath = FULL_PATH,
+                type = TokenType.DOWNLOAD,
+                requestSnapSeq = null,
+            )
+        }
+    }
+
+    @Test
+    fun `should accept logged-in user matching org id with different scope type`() {
+        runBlocking {
+            mockTokenInfo(
+                snapSeq = null,
+                authorizedOrgList = setOf("dept-9"),
+            )
+            whenever(permissionService.checkNodePermission(any(), any(), any(), any(), any())).thenReturn(true)
+            whenever(rAuthClient.userDeptById("consumer")).thenReturn(
+                Mono.just(
+                    Response(
+                        0,
+                        null,
+                        UserOrgMembership(
+                            userId = "consumer",
+                            scopes = listOf(OrgScope("CENTER", "dept-9")),
+                        ),
+                        null,
+                    ),
+                ),
+            )
+        }
+
+        runBlockingWithRequestContext(loggedInUser = "consumer") {
+            service.validateToken(
+                token = TOKEN,
+                projectId = PROJECT_ID,
+                repoName = REPO_NAME,
+                fullPath = FULL_PATH,
+                type = TokenType.DOWNLOAD,
+                requestSnapSeq = null,
+            )
+        }
+    }
+
+    @Test
+    fun `should reject logged-in user not matching authorized org`() {
+        runBlocking {
+            mockTokenInfo(
+                snapSeq = null,
+                authorizedOrgList = setOf("dept-9"),
+            )
+            whenever(permissionService.checkNodePermission(any(), any(), any(), any(), any())).thenReturn(true)
+            whenever(rAuthClient.userDeptById("consumer")).thenReturn(
+                Mono.just(
+                    Response(
+                        0,
+                        null,
+                        UserOrgMembership(userId = "consumer", scopes = emptyList()),
+                        null,
+                    ),
+                ),
+            )
+        }
+
+        val exception = assertThrows(ErrorCodeException::class.java) {
+            runBlockingWithRequestContext(loggedInUser = "consumer") {
+                service.validateToken(
+                    token = TOKEN,
+                    projectId = PROJECT_ID,
+                    repoName = REPO_NAME,
+                    fullPath = FULL_PATH,
+                    type = TokenType.DOWNLOAD,
+                    requestSnapSeq = null,
+                )
+            }
+        }
+        assertEquals(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, exception.messageCode)
+    }
+
+    private fun mockTokenInfo(
+        snapSeq: Long?,
+        authorizedUserList: Set<String> = emptySet(),
+        authorizedOrgList: Set<String> = emptySet(),
+    ) {
         whenever(rAuthClient.getTemporaryTokenInfo(TOKEN)).thenReturn(
-            Mono.just(Response(0, null, tokenInfo(snapSeq = snapSeq), null))
+            Mono.just(
+                Response(
+                    0,
+                    null,
+                    tokenInfo(
+                        snapSeq = snapSeq,
+                        authorizedUserList = authorizedUserList,
+                        authorizedOrgList = authorizedOrgList,
+                    ),
+                    null,
+                ),
+            )
         )
     }
 
-    private fun tokenInfo(snapSeq: Long? = null, permits: Int? = null): TemporaryTokenInfo {
+    private fun tokenInfo(
+        snapSeq: Long? = null,
+        permits: Int? = null,
+        authorizedUserList: Set<String> = emptySet(),
+        authorizedOrgList: Set<String> = emptySet(),
+    ): TemporaryTokenInfo {
         return TemporaryTokenInfo(
             projectId = PROJECT_ID,
             repoName = REPO_NAME,
             fullPath = FULL_PATH,
             token = TOKEN,
-            authorizedUserList = emptySet(),
+            authorizedUserList = authorizedUserList,
+            authorizedOrgList = authorizedOrgList,
             authorizedIpList = emptySet(),
             expireDate = LocalDateTime.now().plusDays(1).format(DateTimeFormatter.ISO_DATE_TIME),
             permits = permits,
@@ -171,16 +319,17 @@ class DriveTemporaryAccessServiceTest {
         )
     }
 
-    private fun runBlockingWithRequestContext(uidHeader: String? = null, block: suspend () -> Unit) {
+    private fun runBlockingWithRequestContext(loggedInUser: String? = USER_ID, block: suspend () -> Unit) {
         runBlocking {
             val headers = HttpHeaders()
-            uidHeader?.let { headers.set(AUTH_HEADER_UID, it) }
             val request = mock<ServerHttpRequest>()
             val response = mock<ServerHttpResponse>()
             val exchange = mock<ServerWebExchange>()
+            val attributes = mutableMapOf<String, Any>()
+            loggedInUser?.let { attributes[USER_KEY] = it }
             whenever(request.headers).thenReturn(headers)
             whenever(request.remoteAddress).thenReturn(InetSocketAddress("127.0.0.1", 8080))
-            whenever(exchange.attributes).thenReturn(mutableMapOf())
+            whenever(exchange.attributes).thenReturn(attributes)
             val requestContext = RequestContext(request, response, exchange)
             withContext(ReactorContext(Context.of(ReactiveRequestContextHolder.REQUEST_CONTEXT_KEY, requestContext))) {
                 block()

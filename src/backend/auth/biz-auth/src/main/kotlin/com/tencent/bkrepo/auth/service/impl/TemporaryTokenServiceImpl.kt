@@ -31,6 +31,7 @@ import com.tencent.bkrepo.auth.dao.AuthTemporaryTokenDao
 import com.tencent.bkrepo.auth.model.TTemporaryToken
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
+import com.tencent.bkrepo.auth.pojo.token.normalizeOrgIds
 import com.tencent.bkrepo.auth.service.TemporaryTokenService
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.Preconditions
@@ -63,6 +64,7 @@ class TemporaryTokenServiceImpl(
                     fullPath = it,
                     expireDate = computeExpireDate(request.expireSeconds),
                     authorizedUserList = request.authorizedUserSet,
+                    authorizedOrgList = request.authorizedOrgList.normalizeOrgIds(),
                     authorizedIpList = request.authorizedIpSet,
                     token = generateToken(),
                     permits = permits,
@@ -124,6 +126,7 @@ class TemporaryTokenServiceImpl(
                     projectId = it.projectId,
                     token = it.token,
                     authorizedUserList = it.authorizedUserList,
+                    authorizedOrgList = it.authorizedOrgList,
                     authorizedIpList = it.authorizedIpList,
                     expireDate = it.expireDate?.format(DateTimeFormatter.ISO_DATE_TIME),
                     type = it.type,

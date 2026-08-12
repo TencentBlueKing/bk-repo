@@ -4,6 +4,9 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.token.TokenType
+import com.tencent.bkrepo.auth.pojo.token.OrgScope
+import com.tencent.bkrepo.auth.pojo.token.matchesAuthorizedOrgIds
+import com.tencent.bkrepo.auth.pojo.token.normalizeOrgIds
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -65,6 +68,7 @@ class DriveTemporaryAccessService(
                 repoName = repoName,
                 fullPathSet = fullPathSet,
                 authorizedUserSet = authorizedUserSet,
+                authorizedOrgList = authorizedOrgList,
                 authorizedIpSet = authorizedIpSet,
                 expireSeconds = expireSeconds,
                 permits = permits,
@@ -190,7 +194,11 @@ class DriveTemporaryAccessService(
 
     private suspend fun checkAuthorization(tokenInfo: TemporaryTokenInfo) {
         val authenticatedUid = ReactiveSecurityUtils.getUser()
-        if (tokenInfo.authorizedUserList.isNotEmpty() && authenticatedUid !in tokenInfo.authorizedUserList) {
+        val restricted = tokenInfo.authorizedUserList.isNotEmpty() || tokenInfo.authorizedOrgList.isNotEmpty()
+        if (restricted &&
+            authenticatedUid !in tokenInfo.authorizedUserList &&
+            !matchesAuthorizedOrg(authenticatedUid, tokenInfo.authorizedOrgList)
+        ) {
             throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, authenticatedUid)
         }
         val auditedUid = if (ReactiveSecurityUtils.isAnonymous()) {
@@ -202,6 +210,24 @@ class DriveTemporaryAccessService(
         val clientIp = ReactiveRequestContextHolder.getClientAddress()
         if (tokenInfo.authorizedIpList.isNotEmpty() && clientIp !in tokenInfo.authorizedIpList) {
             throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, clientIp)
+        }
+    }
+
+    private suspend fun matchesAuthorizedOrg(userId: String, authorizedOrgIds: Set<String>): Boolean {
+        if (ReactiveSecurityUtils.isAnonymous() || authorizedOrgIds.normalizeOrgIds().isEmpty()) {
+            return false
+        }
+        return loadUserOrgScopesOrThrow(userId).matchesAuthorizedOrgIds(authorizedOrgIds)
+    }
+
+    private suspend fun loadUserOrgScopesOrThrow(userId: String): List<OrgScope> {
+        return try {
+            rAuthClient.userDeptById(userId).awaitSingle().data?.scopes
+                ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, userId)
+        } catch (ex: ErrorCodeException) {
+            throw ex
+        } catch (_: Exception) {
+            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, userId)
         }
     }
 
