@@ -70,7 +70,11 @@ class AgentSessionServiceImpl(
         if (session.status != AgentSessionStatus.ACTIVE) {
             throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, "Session[$sessionId]")
         }
-        return AgentSessionCreateResult(sessionId = session.sessionId)
+        return AgentSessionCreateResult(
+            sessionId = session.sessionId,
+            title = session.title,
+            createdAt = session.createdAt,
+        )
     }
 
     override fun assertActiveSession(userId: String, projectId: String, sessionId: String) {

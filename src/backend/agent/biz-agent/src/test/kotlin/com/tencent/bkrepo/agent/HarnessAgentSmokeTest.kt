@@ -21,8 +21,8 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
  * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
  * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 package com.tencent.bkrepo.agent
@@ -30,14 +30,12 @@ package com.tencent.bkrepo.agent
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import com.tencent.bkrepo.agent.config.AgentCompactionConfigurer
+import com.tencent.bkrepo.agent.config.AgentHarnessConfigurer
 import com.tencent.bkrepo.agent.config.AgentModelConfiguration
-import com.tencent.bkrepo.agent.config.HarnessAgentConfiguration
 import com.tencent.bkrepo.agent.config.properties.AgentCompactionProperties
 import com.tencent.bkrepo.agent.config.properties.AgentModelProperties
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
 import com.tencent.bkrepo.agent.config.properties.AgentToolResultEvictionProperties
-import com.tencent.bkrepo.agent.middleware.MessageArchiveMiddleware
-import com.tencent.bkrepo.agent.service.AgentMessageArchiveService
 import io.agentscope.core.agent.RuntimeContext
 import io.agentscope.core.event.AgentEvent
 import io.agentscope.core.event.TextBlockDeltaEvent
@@ -94,26 +92,23 @@ class HarnessAgentSmokeTest {
             stream = true,
         )
         val modelConfiguration = AgentModelConfiguration()
-        val harnessConfiguration = HarnessAgentConfiguration()
-        val messageArchiveMiddleware = MessageArchiveMiddleware(
-            agentMessageArchiveService = NoOpAgentMessageArchiveService,
-            agentProperties = agentProperties,
-        )
-        val agentCompactionConfigurer = AgentCompactionConfigurer(
-            compactionProperties = AgentCompactionProperties(enabled = false),
-            toolResultEvictionProperties = AgentToolResultEvictionProperties(enabled = false),
-            modelProperties = modelProperties,
+        val agentHarnessConfigurer = AgentHarnessConfigurer(
+            agentCompactionConfigurer = AgentCompactionConfigurer(
+                compactionProperties = AgentCompactionProperties(enabled = false),
+                toolResultEvictionProperties = AgentToolResultEvictionProperties(enabled = false),
+                modelProperties = modelProperties,
+            ),
         )
         val permissionContext = io.agentscope.core.permission.PermissionContextState.builder().build()
-        val toolkit = io.agentscope.core.tool.Toolkit()
-        val agent = harnessConfiguration.harnessAgent(
+        val toolkit = io.agentscope.core.tool.Toolkit(
+            io.agentscope.core.tool.ToolkitConfig.builder().parallel(false).build(),
+        )
+        val agent = agentHarnessConfigurer.configure(
             properties = agentProperties,
             model = modelConfiguration.agentChatModel(modelProperties),
             stateStore = InMemoryAgentStateStore(),
             toolkit = toolkit,
             permissionContext = permissionContext,
-            messageArchiveMiddleware = messageArchiveMiddleware,
-            agentCompactionConfigurer = agentCompactionConfigurer,
         )
         val runtimeContext = RuntimeContext.builder()
             .userId("smoke-user")
@@ -158,16 +153,5 @@ class HarnessAgentSmokeTest {
 
     companion object {
         private const val REPLY_TEXT = "你好"
-
-        private val NoOpAgentMessageArchiveService = object : AgentMessageArchiveService {
-            override fun archiveUserMessage(sessionId: String, runId: String, content: String) = Unit
-
-            override fun archiveAssistantMessage(
-                sessionId: String,
-                runId: String,
-                content: String,
-                agentId: String?,
-            ) = Unit
-        }
     }
 }

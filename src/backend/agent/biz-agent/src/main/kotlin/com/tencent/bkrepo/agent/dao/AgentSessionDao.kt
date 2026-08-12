@@ -99,6 +99,24 @@ class AgentSessionDao : SimpleMongoDao<TAgentSession>() {
         updateFirst(query, update)
     }
 
+    /** 仅在 title 为空时写入，避免覆盖用户或后续手动改过的标题。 */
+    fun updateTitleIfBlank(sessionId: String, title: String, updatedAt: LocalDateTime) {
+        val query = Query(
+            Criteria.where(TAgentSession::sessionId.name).`is`(sessionId)
+                .andOperator(
+                    Criteria().orOperator(
+                        Criteria.where(TAgentSession::title.name).exists(false),
+                        Criteria.where(TAgentSession::title.name).`is`(null),
+                        Criteria.where(TAgentSession::title.name).`is`(""),
+                    ),
+                ),
+        )
+        val update = Update()
+            .set(TAgentSession::title.name, title)
+            .set(TAgentSession::updatedAt.name, updatedAt)
+        updateFirst(query, update)
+    }
+
     /** 记录最近一次 run，并刷新列表排序用的 [TAgentSession.updatedAt]。 */
     fun touchSession(sessionId: String, lastRunId: String, updatedAt: LocalDateTime) {
         val query = Query(Criteria.where(TAgentSession::sessionId.name).`is`(sessionId))

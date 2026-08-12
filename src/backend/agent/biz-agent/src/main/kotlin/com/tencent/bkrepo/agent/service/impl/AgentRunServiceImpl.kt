@@ -27,13 +27,15 @@
 
 package com.tencent.bkrepo.agent.service.impl
 
+import com.tencent.bkrepo.agent.agui.AguiInterruptTracker
+import com.tencent.bkrepo.agent.agui.AguiMessageArchiveHandler
+import com.tencent.bkrepo.agent.agui.AguiRunInputProcessor
+import com.tencent.bkrepo.agent.agui.BkrepoAguiRuntimeContextResolver
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
 import com.tencent.bkrepo.agent.constant.AGENT_RUN_ID_PREFIX
 import com.tencent.bkrepo.agent.constant.AGENT_SESSION_ID_PREFIX
-import com.tencent.bkrepo.agent.constant.RUNTIME_CONTEXT_FORCE_ARCHIVE_ASSISTANT
-import com.tencent.bkrepo.agent.identity.RuntimeContextFactory
+import com.tencent.bkrepo.agent.model.TAgentRun
 import com.tencent.bkrepo.agent.pojo.AgentMessageInfo
-import com.tencent.bkrepo.agent.pojo.AgentRunRequest
 import com.tencent.bkrepo.agent.pojo.AgentRunStatus
 import com.tencent.bkrepo.agent.pojo.AgentRunTriggerType
 import com.tencent.bkrepo.agent.pojo.AgentSessionDeleteRequest
@@ -44,6 +46,7 @@ import com.tencent.bkrepo.agent.runtime.AgentSessionInterruptor
 import com.tencent.bkrepo.agent.service.AgentRunRecordService
 import com.tencent.bkrepo.agent.service.AgentRunService
 import com.tencent.bkrepo.agent.service.AgentSessionService
+import com.tencent.bkrepo.agent.session.AgentPendingInterruptStore
 import com.tencent.bkrepo.agent.session.AgentRunLock
 import com.tencent.bkrepo.agent.session.AgentSessionStore
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
@@ -52,16 +55,10 @@ import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
-import io.agentscope.core.event.AgentEvent
-import io.agentscope.core.event.AgentResultEvent
-import io.agentscope.core.event.RequireExternalExecutionEvent
-import io.agentscope.core.message.GenerateReason
-import io.agentscope.core.message.Msg
-import io.agentscope.core.message.ToolResultBlock
-import io.agentscope.core.message.ToolResultMessage
-import io.agentscope.core.message.ToolUseBlock
-import io.agentscope.core.message.UserMessage
-import io.agentscope.harness.agent.HarnessAgent
+import io.agentscope.core.agui.encoder.AguiEventEncoder
+import io.agentscope.core.agui.event.AguiEvent
+import io.agentscope.core.agui.model.RunAgentInput
+import io.agentscope.core.agui.processor.AguiRequestProcessor
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
@@ -73,11 +70,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Agent 对话入口：权限校验、会话/run 编排、SSE 事件转发与消息归档。
+ * Agent 对话入口：权限校验、会话/run 编排、AG-UI SSE 事件输出与消息归档。
  */
 @Service
 class AgentRunServiceImpl(
-    private val agent: HarnessAgent,
     private val properties: AgentProperties,
     private val permissionManager: PermissionManager,
     private val agentSessionStore: AgentSessionStore,
@@ -85,12 +81,16 @@ class AgentRunServiceImpl(
     private val agentRunLock: AgentRunLock,
     private val agentSessionInterruptor: AgentSessionInterruptor,
     private val agentRunRecordService: AgentRunRecordService,
-    private val runtimeContextFactory: RuntimeContextFactory,
+    private val aguiRequestProcessor: AguiRequestProcessor,
+    private val aguiRunInputProcessor: AguiRunInputProcessor,
+    private val aguiInterruptTracker: AguiInterruptTracker,
+    private val pendingInterruptStore: AgentPendingInterruptStore,
+    private val aguiRuntimeContextResolver: BkrepoAguiRuntimeContextResolver,
+    private val aguiMessageArchiveHandler: AguiMessageArchiveHandler,
 ) : AgentRunService {
 
-    /**
-     * 创建新会话：生成 sessionId，写入 Redis 归属与 Mongo 元数据。
-     */
+    private val aguiEventEncoder = AguiEventEncoder()
+
     override fun createSession(userId: String, projectId: String): AgentSessionCreateResult {
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
         val sessionId = AGENT_SESSION_ID_PREFIX + StringPool.uniqueId()
@@ -104,70 +104,85 @@ class AgentRunServiceImpl(
     }
 
     /**
-     * 发起一轮对话，以 SSE 推送 AgentScope 事件流。
+     * 发起一轮 AG-UI run，以 SSE 推送 [AguiEvent]。
      *
-     * 一次 HTTP 请求对应一个前台 [runId]；客户端通过多次 POST 完成「用户输入 → 模型推理 →
-     * 本地工具挂起 → 回传 externalExecutionResults → 续跑」的完整回合。
-     *
-     * 生命周期要点：
-     * - 入口校验权限与会话归属，并持有 run 锁直至 SSE 结束；
-     * - USER/ASSISTANT 消息由 [com.tencent.bkrepo.agent.middleware.MessageArchiveMiddleware] 归档；
-     * - 本地工具挂起（REQUIRE_EXTERNAL_EXECUTION）时提前关闭 SSE 并释放锁，不归档半成品 assistant；
-     * - 续跑请求只带 [AgentRunRequest.externalExecutionResults]、content 可为空，不再重复归档 USER。
+     * canonical runId 来自 [RunAgentInput.runId]；服务端另建 executionId 供内部 run 记录追踪。
      */
-    override fun run(userId: String, projectId: String, deviceId: String?, request: AgentRunRequest): SseEmitter {
-        validate(request)
+    override fun run(
+        userId: String,
+        projectId: String,
+        deviceId: String?,
+        traceId: String?,
+        input: RunAgentInput,
+    ): SseEmitter {
+        validate(input)
+        val processedInput = aguiRunInputProcessor.prepare(userId, projectId, input)
+        val threadId = processedInput.threadId
+        val runId = processedInput.runId
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
-        agentSessionService.assertActiveSession(userId, projectId, request.sessionId)
-        // 同会话前台 run 互斥；获取失败立即拒绝，不排队。续跑也视为新的 HTTP run，需重新抢锁。
-        if (!agentRunLock.tryAcquire(userId, request.sessionId)) {
-            throw TooManyRequestsException("Session[${request.sessionId}] is already running")
+        agentSessionService.assertActiveSession(userId, projectId, threadId)
+
+        val existingRun = agentRunRecordService.findByRunId(runId)
+        if (existingRun != null) {
+            return when (existingRun.status) {
+                AgentRunStatus.RUNNING -> throw TooManyRequestsException("Run[$runId] is already running")
+                else -> replayTerminalRun(processedInput, existingRun)
+            }
         }
-        val runId = AGENT_RUN_ID_PREFIX + StringPool.uniqueId()
-        val triggerType = if (!request.externalExecutionResults.isNullOrEmpty()) {
-            AgentRunTriggerType.EXTERNAL_TOOL_RESUME
+
+        if (!agentRunLock.tryAcquire(userId, threadId)) {
+            throw TooManyRequestsException("Session[$threadId] is already running")
+        }
+        val executionId = AGENT_RUN_ID_PREFIX + StringPool.uniqueId()
+        val triggerType = if (processedInput.hasResume()) {
+            AgentRunTriggerType.AGUI_RESUME
         } else {
             AgentRunTriggerType.USER_INPUT
         }
         agentRunRecordService.startRun(
             runId = runId,
-            sessionId = request.sessionId,
+            executionId = executionId,
+            sessionId = threadId,
             userId = userId,
             projectId = projectId,
             deviceId = deviceId,
             entryAgentId = properties.name,
             triggerType = triggerType,
         )
-        agentSessionService.touchSession(request.sessionId, runId)
-        agentSessionStore.touchSessionOwner(userId, projectId, request.sessionId)
-        // RuntimeContext 冻结 userId/projectId/sessionId/deviceId/runId，供工具、权限与归档 middleware 读取。
-        val runtimeContext = runtimeContextFactory.create(
+        agentSessionService.touchSession(threadId, runId)
+        agentSessionStore.touchSessionOwner(userId, projectId, threadId)
+
+        val archiveState = AguiMessageArchiveHandler.State()
+        aguiMessageArchiveHandler.archiveIncomingUserMessages(processedInput, threadId, runId)
+
+        aguiInterruptTracker.reset()
+
+        val runtimeContext = aguiRuntimeContextResolver.resolve(
             userId = userId,
             projectId = projectId,
-            sessionId = request.sessionId,
+            input = processedInput,
             deviceId = deviceId,
-            runId = runId,
+            executionId = executionId,
+            traceId = traceId,
         )
+        val processResult = aguiRequestProcessor.process(processedInput, null, null, runtimeContext)
+        val terminalStatus = AtomicReference(AgentRunStatus.COMPLETED)
         val emitter = SseEmitter(properties.sseTimeout.toMillis())
         val subscriptionRef = AtomicReference<Disposable>()
-        val pendingExternalExecution = AtomicReference(false)
-        // 防止 onComplete / onError / onTimeout / finishSse 重复释放锁或 complete emitter。
         val sseFinished = AtomicBoolean(false)
+
         fun releaseRunLock() {
-            agentRunLock.release(userId, request.sessionId)
+            agentRunLock.release(userId, threadId)
         }
+
         fun abortInflightAgentRun() {
             agentSessionInterruptor.interrupt(runtimeContext)
         }
-        /**
-         * 结束本轮 SSE。默认释放 run 锁、dispose 订阅，并写入 [agent_run] 终态。
-         *
-         * @param abortAgent 客户端断连/超时/异常时为 true，通知 AgentScope 中断推理。
-         */
+
         fun finishSse(
             disposeSubscription: Boolean = true,
             abortAgent: Boolean = false,
-            runStatus: AgentRunStatus = AgentRunStatus.COMPLETED,
+            runStatus: AgentRunStatus = terminalStatus.get(),
             cancelReason: String? = null,
             errorCode: String? = null,
         ) {
@@ -183,21 +198,23 @@ class AgentRunServiceImpl(
             releaseRunLock()
             emitter.complete()
         }
-        // HarnessAgent 无请求级状态，会话恢复依赖 AgentStateStore + 本次 runtimeContext。
-        val subscription = agent
-            .streamEvents(buildResumeMessage(userId, request), runtimeContext)
+
+        val subscription = processResult.events()
             .subscribeOn(Schedulers.boundedElastic())
             .subscribe(
                 { event ->
                     try {
-                        if (emitAgentEvent(emitter, event, pendingExternalExecution)) {
-                            // TOOL_SUSPENDED：通知客户端执行本地工具，本连接到此结束。
-                            finishSse(runStatus = AgentRunStatus.SUSPENDED)
-                        }
+                        aguiInterruptTracker.onEvent(event)
+                        trackTerminalStatus(event, terminalStatus)
+                        handlePendingInterrupt(threadId, runId, event, terminalStatus.get())
+                        aguiMessageArchiveHandler.onEvent(event, threadId, runId, archiveState)
+                        emitter.send(
+                            SseEmitter.event()
+                                .data(aguiEventEncoder.encodeToJson(event), MediaType.APPLICATION_JSON),
+                        )
                     } catch (ignored: IOException) {
-                        // 客户端断开连接；通知 middleware 在 cancel 时归档已有 assistant 片段。
-                        logger.info("agent sse closed by client, session[${request.sessionId}]")
-                        runtimeContext.put(RUNTIME_CONTEXT_FORCE_ARCHIVE_ASSISTANT, true)
+                        logger.info("agent ag-ui sse closed by client, session[$threadId]")
+                        aguiMessageArchiveHandler.forceFinalizeAssistant(threadId, runId, archiveState)
                         finishSse(
                             abortAgent = true,
                             runStatus = AgentRunStatus.CANCELLED,
@@ -206,7 +223,7 @@ class AgentRunServiceImpl(
                     }
                 },
                 { error ->
-                    logger.error("agent run failed, user[$userId] session[${request.sessionId}]", error)
+                    logger.error("agent ag-ui run failed, user[$userId] session[$threadId]", error)
                     if (sseFinished.compareAndSet(false, true)) {
                         abortInflightAgentRun()
                         subscriptionRef.get()?.dispose()
@@ -216,7 +233,6 @@ class AgentRunServiceImpl(
                             errorCode = error.javaClass.simpleName,
                         )
                         releaseRunLock()
-                        // 异常路径不归档 assistant，避免历史库留下截断回复。
                         emitter.completeWithError(error)
                     }
                 },
@@ -238,7 +254,7 @@ class AgentRunServiceImpl(
             }
         }
         emitter.onTimeout {
-            logger.info("agent run timeout, user[$userId] session[${request.sessionId}]")
+            logger.info("agent ag-ui run timeout, user[$userId] session[$threadId]")
             if (sseFinished.compareAndSet(false, true)) {
                 abortInflightAgentRun()
                 subscription.dispose()
@@ -248,7 +264,6 @@ class AgentRunServiceImpl(
                     cancelReason = "timeout",
                 )
                 releaseRunLock()
-                // 超时与异常类似，不保证 assistant 完整，故不归档。
                 emitter.complete()
             }
         }
@@ -282,81 +297,108 @@ class AgentRunServiceImpl(
     }
 
     /**
-     * run 请求体校验。
-     *
-     * 两种合法入口：带 [AgentRunRequest.content] 的新一轮用户输入，或仅带
-     * [AgentRunRequest.externalExecutionResults] 的本地工具续跑（content 可空）。
+     * 对已终态的 run 重放最小 AG-UI 事件序列，避免重复执行 agent。
      */
-    private fun validate(request: AgentRunRequest) {
-        Preconditions.checkNotBlank(request.sessionId, "sessionId")
-        Preconditions.checkArgument(request.sessionId.length <= properties.maxSessionIdLength, "sessionId")
-        val hasContent = request.content.isNotBlank()
-        val hasExternal = !request.externalExecutionResults.isNullOrEmpty()
-        Preconditions.checkArgument(hasContent || hasExternal, "content or externalExecutionResults")
-        if (hasContent) {
-            Preconditions.checkArgument(request.content.length <= properties.maxMessageLength, "content")
-        }
-    }
-
-    /**
-     * 将 AgentScope 内部事件透传为 SSE 帧。
-     *
-     * @return `true` 表示本轮 SSE 应结束（已下发 REQUIRE_EXTERNAL_EXECUTION，等待客户端本地执行）
-     */
-    private fun emitAgentEvent(
-        emitter: SseEmitter,
-        event: AgentEvent,
-        pendingExternalExecution: AtomicReference<Boolean>,
-    ): Boolean {
-        if (event is AgentResultEvent) {
-            val result = event.result
-            // 模型因外部本地工具而挂起：不下发完整 AgentResult，改为 REQUIRE_EXTERNAL_EXECUTION 协议事件。
-            if (result != null && result.generateReason == GenerateReason.TOOL_SUSPENDED) {
-                val toolCalls = result.getContentBlocks(ToolUseBlock::class.java)
-                if (toolCalls.isNotEmpty()) {
-                    val externalEvent = RequireExternalExecutionEvent("", toolCalls)
-                    pendingExternalExecution.set(true)
-                    emitter.send(
-                        SseEmitter.event()
-                            .id(externalEvent.id)
-                            .name(externalEvent.type.value)
-                            .data(externalEvent, MediaType.APPLICATION_JSON),
+    private fun replayTerminalRun(input: RunAgentInput, existingRun: TAgentRun): SseEmitter {
+        logger.info("replay terminal run[${existingRun.runId}] status[${existingRun.status}]")
+        val emitter = SseEmitter(properties.sseTimeout.toMillis())
+        Schedulers.boundedElastic().schedule {
+            try {
+                sendEncoded(emitter, AguiEvent.RunStarted(input.threadId, input.runId, null, input))
+                when (existingRun.status) {
+                    AgentRunStatus.FAILED -> sendEncoded(
+                        emitter,
+                        AguiEvent.RunError(
+                            input.threadId,
+                            input.runId,
+                            existingRun.errorCode ?: "run_failed",
+                            existingRun.errorCode,
+                        ),
                     )
-                    return true
+                    AgentRunStatus.SUSPENDED -> sendEncoded(
+                        emitter,
+                        AguiEvent.RunFinished(
+                            input.threadId,
+                            input.runId,
+                            null,
+                            AguiEvent.RunFinishedInterruptOutcome(emptyList()),
+                        ),
+                    )
+                    else -> sendEncoded(
+                        emitter,
+                        AguiEvent.RunFinished(
+                            input.threadId,
+                            input.runId,
+                            null,
+                            AguiEvent.RunFinishedSuccessOutcome(),
+                        ),
+                    )
                 }
+                emitter.complete()
+            } catch (ex: Exception) {
+                emitter.completeWithError(ex)
             }
         }
-        // 挂起后 HarnessAgent 仍可能发出 AGENT_END；此时连接已在上面关闭，忽略以免重复发送。
-        if (pendingExternalExecution.get() == true && event.type.value == "AGENT_END") {
-            return false
-        }
+        return emitter
+    }
+
+    private fun sendEncoded(emitter: SseEmitter, event: AguiEvent) {
         emitter.send(
             SseEmitter.event()
-                .id(event.id)
-                .name(event.type.value)
-                .data(event, MediaType.APPLICATION_JSON),
+                .data(aguiEventEncoder.encodeToJson(event), MediaType.APPLICATION_JSON),
         )
-        return false
     }
 
-    /**
-     * 构造本轮送入 HarnessAgent 的消息。
-     *
-     * - 有 externalExecutionResults：ToolResultMessage，恢复 pending tool；
-     * - 否则：UserMessage，开启新一轮用户输入。
-     */
-    private fun buildResumeMessage(userId: String, request: AgentRunRequest): Msg {
-        val externalResults = request.externalExecutionResults
-        if (!externalResults.isNullOrEmpty()) {
-            val blocks = externalResults.map { dto ->
-                ToolResultBlock.text(dto.payload)
-                    .withIdAndName(dto.callId, dto.toolName)
+    private fun validate(input: RunAgentInput) {
+        Preconditions.checkNotBlank(input.threadId, "threadId")
+        Preconditions.checkArgument(input.threadId.length <= properties.maxSessionIdLength, "threadId")
+        Preconditions.checkNotBlank(input.runId, "runId")
+        Preconditions.checkArgument(input.hasMessages() || input.hasResume(), "messages or resume")
+        if (input.hasMessages()) {
+            val latestUserText = input.messages
+                .asReversed()
+                .firstOrNull { "user".equals(it.role, ignoreCase = true) }
+                ?.textContent
+                ?: ""
+            if (latestUserText.isNotBlank()) {
+                Preconditions.checkArgument(latestUserText.length <= properties.maxMessageLength, "messages")
             }
-            return ToolResultMessage.builder()
-                .results(blocks)
-                .build()
         }
-        return UserMessage(userId, request.content)
+    }
+
+    private fun handlePendingInterrupt(
+        threadId: String,
+        runId: String,
+        event: AguiEvent,
+        terminalStatus: AgentRunStatus,
+    ) {
+        if (event !is AguiEvent.RunFinished) return
+        when (terminalStatus) {
+            AgentRunStatus.SUSPENDED -> {
+                aguiInterruptTracker.captureSuspendedSession(runId, event)?.let { session ->
+                    pendingInterruptStore.save(threadId, session)
+                }
+            }
+            AgentRunStatus.COMPLETED -> pendingInterruptStore.clear(threadId)
+            else -> Unit
+        }
+    }
+
+    private fun trackTerminalStatus(event: AguiEvent, terminalStatus: AtomicReference<AgentRunStatus>) {
+        when (event) {
+            is AguiEvent.RunFinished -> {
+                val outcome = event.outcome()
+                terminalStatus.set(
+                    if (outcome is AguiEvent.RunFinishedInterruptOutcome) {
+                        AgentRunStatus.SUSPENDED
+                    } else {
+                        AgentRunStatus.COMPLETED
+                    },
+                )
+            }
+            is AguiEvent.RunError -> terminalStatus.set(AgentRunStatus.FAILED)
+            else -> Unit
+        }
     }
 
     companion object {

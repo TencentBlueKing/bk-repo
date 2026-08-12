@@ -28,9 +28,8 @@
 package com.tencent.bkrepo.agent.config
 
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
-import com.tencent.bkrepo.agent.tool.local.ExternalLocalTool
-import com.tencent.bkrepo.agent.tool.local.LocalToolDefinitions
 import io.agentscope.core.tool.Toolkit
+import io.agentscope.core.tool.ToolkitConfig
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -40,22 +39,10 @@ class AgentToolkitConfiguration {
 
     @Bean
     fun agentToolkit(properties: AgentProperties): Toolkit {
-        val toolkit = Toolkit()
-        val localTools = if (properties.localToolsEnabled) {
-            LocalToolDefinitions.allTools().also { definitions ->
-                definitions.forEach { definition ->
-                    toolkit.registerAgentTool(ExternalLocalTool(definition))
-                }
-            }
-        } else {
-            emptyList()
-        }
-        logger.info(
-            "agent toolkit: localTools={}, count={}, names={}",
-            properties.localToolsEnabled,
-            localTools.size,
-            localTools.map { it.name },
-        )
+        // AgentScope 2.0.1 默认改为并行执行；诊断类工具有依赖关系，必须显式串行（手册 §17.1）
+        // 本地工具经 RunAgentInput.tools[] + FRONTEND_ONLY run-scoped 注入，不在 toolkit 常驻注册（§17.5）
+        val toolkit = Toolkit(ToolkitConfig.builder().parallel(false).build())
+        logger.info("agent toolkit: localToolsEnabled={}", properties.localToolsEnabled)
         return toolkit
     }
 

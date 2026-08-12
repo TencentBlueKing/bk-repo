@@ -73,7 +73,7 @@ data class AgentProperties(
      */
     var runLockTtl: Duration = DEFAULT_RUN_LOCK_TTL,
     /**
-     * 是否注册客户端本地工具 schema（由客户端在 REQUIRE_EXTERNAL_EXECUTION 中执行）。
+     * 是否启用客户端本地 frontend tools（经 RunAgentInput.tools[] + AG-UI run-scoped 注入）。
      */
     var localToolsEnabled: Boolean = DEFAULT_LOCAL_TOOLS_ENABLED,
 ) {

@@ -1,8 +1,10 @@
 # 制品库多 Agent 后台开发手册
 
-> 本文从零设计一个基于 AgentScope Java 2.x 的制品库多 Agent 后台。
+> 本文设计一个基于 AgentScope Java 2.0.1、通过官方 AG-UI 协议连接客户端的制品库多 Agent 后台。
 >
-> 不以现有单 Agent 实现为前提，也不讨论客户端本地工具如何连接。重点是后台服务自身：服务架构、Agent 拓扑、身份、权限、工具、状态、会话、记忆、知识、执行、观测和实现顺序。
+> 重点覆盖服务架构、Agent 拓扑、身份、权限、工具、状态、会话、消息、记忆、知识、执行、观测，以及 Electron 本地工具在 AG-UI frontend tool / interrupt / resume 链路中的边界。
+>
+> 版本基线不能省略：bk-ci 使用 AgentScope 1.0.11，只能作为业务能力参考；本项目不得复制其兼容代码，应以 AgentScope 2.0.1 的 `RunAgentInput`、`AguiEvent`、HITL interrupt 和 `resume[]` 为准。AgentScope 2.0.0 的 `RunAgentInput` 尚无 `resume[]`，不能满足“不自定义协议”的本地工具和确认恢复要求。
 
 ## 1. 目标与边界
 
@@ -14,6 +16,7 @@
 - 对只读查询、诊断分析和写操作采用不同的安全策略；
 - 在多轮会话、多副本部署、进程重启和模型失败时恢复运行；
 - 保留用户可查看的完整会话原文，同时允许模型上下文独立压缩；
+- 使用标准 AG-UI 请求、事件、消息 ID 和中断恢复语义连接客户端；
 - 对每一次模型调用、Agent 委派、工具调用、权限检查和写操作进行追踪与审计。
 
 明确不做：
@@ -21,6 +24,7 @@
 - 不让模型直接访问数据库、DAO 或全权限内部接口；
 - 不把用户身份作为模型可填写的工具参数；
 - 不把 AgentScope 内部事件直接作为长期稳定的外部协议；
+- 不自定义 `run` 请求、SSE 事件、本地工具结果或 HITL 恢复协议；
 - 不把模型上下文等同于用户会话归档；
 - 不为体现“多 Agent”而强行拆分简单任务；
 - 不允许模型动态生成 Agent、扩大工具权限或修改安全规则；
@@ -29,7 +33,16 @@
 ## 2. 总体架构
 
 ```text
-请求入口
+AG-UI 客户端（`@ag-ui/client`）
+  ├─ `RunAgentInput(threadId, runId, messages, tools, context, resume)`
+  ├─ 标准 AG-UI SSE 事件
+  └─ Electron 本地工具经 IPC 执行
+  │
+  ▼
+AG-UI Spring Boot Adapter
+  ├─ `AguiRequestProcessor`
+  ├─ `AguiAgentAdapter`
+  └─ `AguiRuntimeContextResolver`
   │
   ▼
 bk-repo common-security
@@ -42,7 +55,7 @@ Agent Application Service
   ├─ 会话归属校验
   ├─ 将可信 userId 注入 RuntimeContext
   ├─ 运行互斥、超时、取消
-  ├─ 消息归档
+  ├─ 按 AG-UI messageId/runId 归档
   └─ 调用主 Agent
   │
   ▼
@@ -185,7 +198,19 @@ Knowledge Agent 只拥有检索工具。检索结果必须带来源、版本和�
 - 不继承业务工具；
 - 使用低成本模型和固定输出格式。
 
-## 4. AgentScope 能力边界
+## 4. AgentScope 与 AG-UI 能力边界
+
+### 4.1 版本调查结论
+
+- bk-ci 固定在 AgentScope 1.0.11，并依赖 `agentscope-agui-spring-boot-starter`；
+- bk-repo 当前代码已锁定 AgentScope 2.0.1，依赖 Core、Harness、OpenAI、Redis 与 AG-UI 扩展；
+- `/api/agent/run` 已切换为标准 `RunAgentInput` → `AguiEvent` SSE；客户端本地工具续跑使用官方 `resume[]`；
+- 当前客户端手写 SSE parser、事件字段兼容映射和外部工具续跑循环，也不属于 `@ag-ui/client` 标准链路；
+- AgentScope 2.0.1 已提供本项目需要的 `resume[]`、frontend tool、permission HITL 和 v2 `streamEvents()` 适配，应作为迁移目标。
+
+“不自定义协议”不等于不写业务代码。会话 CRUD、IAM、审计、运行锁、消息归档和本地 IPC 仍由 bk-repo 实现；`run` 请求体、流式事件、tool interrupt 和 resume 必须使用 AG-UI 标准类型。
+
+### 4.2 直接使用框架
 
 直接使用框架：
 
@@ -203,6 +228,14 @@ Knowledge Agent 只拥有检索工具。检索结果必须带来源、版本和�
 - `OtelTracingMiddleware`：Agent、模型和工具追踪；
 - `ModelRegistry`、`fallbackModel`、`maxRetries`：模型解析、重试和单级降级；
 - `enablePendingToolRecovery(true)`：挂起工具恢复。
+- `agentscope-agui-spring-boot-starter`：Spring MVC/WebFlux AG-UI 接入；
+- `RunAgentInput`：`threadId`、`runId`、`messages`、`tools`、`context`、`state`、`forwardedProps` 和 `resume`；
+- `AguiRequestProcessor`、`AguiAgentAdapter`：消息转换、运行和 `AgentEvent` 到 `AguiEvent` 的标准映射；
+- `AguiRuntimeContextResolver`：从受信任的 HTTP 请求注入用户、项目和设备上下文；
+- AG-UI `RUN_*`、`TEXT_MESSAGE_*`、`TOOL_CALL_*`、`REASONING_*`、`CUSTOM` 和 interrupt outcome；
+- `@ag-ui/client`：客户端运行、消息状态和标准事件消费。
+
+### 4.3 必须由 bk-repo 自建
 
 必须由 bk-repo 自建：
 
@@ -210,7 +243,7 @@ Knowledge Agent 只拥有检索工具。检索结果必须带来源、版本和�
 - common-security 认证结果到 AgentScope `RuntimeContext` 的接入；
 - bk-repo IAM 与 Agent 工具的桥接；
 - 多副本运行锁和业务幂等；
-- 稳定的对外事件协议；
+- AG-UI 之外的会话 CRUD、运行状态、停止、重连和事件持久化；
 - 后台子任务的分布式持久化；
 - 用量聚合和业务配额；
 - 领域 RAG 和知识版本管理；
@@ -235,8 +268,8 @@ Knowledge Agent 只拥有检索工具。检索结果必须带来源、版本和�
 src/backend/agent
 ├─ api-agent
 │  ├─ session/       会话请求与响应
-│  ├─ run/           运行请求、事件和状态
-│  ├─ approval/      确认请求与确认结果
+│  ├─ run/           AG-UI 之外的运行状态、停止和重连
+│  ├─ approval/      approval 审计；线上交互使用 AG-UI interrupt/resume
 │  └─ admin/         Agent 配置与灰度接口
 │
 ├─ biz-agent
@@ -259,7 +292,7 @@ src/backend/agent
 │     ├─ permission/       PermissionEngine 规则与 IAM 桥接
 │     ├─ memory/           压缩、长期记忆策略
 │     ├─ knowledge/        文档索引与检索
-│     ├─ protocol/         AgentEvent 到公共 DTO 的映射
+│     ├─ protocol/         AG-UI 接入配置、可信上下文和业务事件增强
 │     ├─ observability/    trace、usage、audit
 │     ├─ evaluation/       评估集和回归
 │     ├─ persistence/      Mongo/Redis DAO
@@ -282,7 +315,8 @@ HTTP 入口复用 bk-repo `common-security`：
 - 从受信任 request attribute 获取 `userId`；
 - 不接受请求体或模型提供的 `userId`；
 - 请求必须携带 query 参数 `projectId`；
-- 入口 API：`POST /api/agent/session/create?projectId=`、`POST /api/agent/run?projectId=`（`projectId` 不放 path）；
+- 会话入口：`POST /api/agent/session/create?projectId=`；
+- 运行入口接收官方 `RunAgentInput` 并输出官方 `AguiEvent` SSE；路径可由网关配置，但请求体和事件不得包成自定义协议；
 - 入口权限调用现有 `RAuthClient.checkPermission(PROJECT, READ, projectId)`，**不新增 IAM 动作、不改 `support-files/bkiam`**；
 
 `@Principal(PrincipalType.GENERAL)` 只保证当前请求来自非匿名登录用户。它不检查：
@@ -296,13 +330,14 @@ HTTP 入口复用 bk-repo `common-security`：
 
 ### 6.2 使用 RuntimeContext 传递真实用户
 
-第一阶段不新增 `AgentPrincipal`，直接使用 AgentScope v2 已有的 `RuntimeContext.userId` 作为 Agent 运行期间唯一的用户身份来源：
+第一阶段不新增 `AgentPrincipal`，通过 `AguiRuntimeContextResolver` 将认证结果写入 AgentScope v2 `RuntimeContext`。`RunAgentInput.threadId` 只作为会话标识，不能证明身份：
 
 ```kotlin
 val runtimeContext = RuntimeContext.builder()
     .userId(authenticatedUserId)
-    .sessionId(sessionId)
+    .sessionId(runAgentInput.threadId)
     .put("projectId", authenticatedProjectId)
+    .put("deviceId", authenticatedDeviceId)
     .build()
 ```
 
@@ -312,9 +347,9 @@ val runtimeContext = RuntimeContext.builder()
 common-security 认证
   → 从受信任 request attribute 取得 userId
   → 校验 PROJECT + READ(userId, projectId)
-  → 校验 session.owner == (userId, projectId)
-  → 构造 RuntimeContext(userId, projectId, sessionId)
-  → 调用 Coordinator Agent
+  → 校验 session.owner == (userId, projectId, RunAgentInput.threadId)
+  → AguiRuntimeContextResolver 构造可信 RuntimeContext
+  → AguiRequestProcessor / AguiAgentAdapter 调用 Coordinator Agent
 ```
 
 主 Agent 创建子 Agent 时会基于父 `RuntimeContext` 创建子上下文，因此专业 Agent 和工具可以继续取得相同的真实 `userId`，不需要复制 bk-ci 的 `threadId → userId` Map、ThreadLocal 或 `Supplier<String>`。
@@ -322,7 +357,7 @@ common-security 认证
 约束：
 
 - `RuntimeContext.userId` 只能由应用层从认证结果写入；
-- `projectId` 来自请求 query 参数 `?projectId=`，创建会话时固化；后续工具不能切换会话所属项目；
+- `projectId` 来自请求 query 参数 `?projectId=`，创建会话时固化；不能信任 `context` 或 `forwardedProps` 中的同名字段；
 - tool schema 不声明 `userId`、角色、token 或 ticket；
 - 系统提示词和用户消息中不注入 userId；
 - 工具不能接受模型传来的 operator/creator 字段覆盖当前用户；
@@ -528,12 +563,69 @@ AgentScope 权限不能代替 IAM；IAM 也不能代替用户确认。
 - 先按当前 bk-repo 版本、制品类型和场景过滤；
 - 无足够证据时明确返回未知。
 
+### 8.5 AG-UI 会话、运行与消息标识
+
+三个 ID 不能混用：
+
+- `threadId`：AG-UI 对话线程，等于 bk-repo 创建会话返回的 `sessionId`；
+- `runId`：一次 AG-UI 执行，由客户端在发请求前生成，并由请求、SSE、运行记录和 trace 全链路复用；
+- `messageId`：一条消息的稳定 ID。客户端生成 USER 消息 ID；助手消息 ID 来自 `TEXT_MESSAGE_START`；工具调用使用独立的 `toolCallId`。
+
+一次 run 因工具执行或用户确认中断后，以相同 `threadId`、新的 `runId` 和 `resume[]` 发起下一次 run。前后运行通过 `interruptId` 关联，不复用旧 `runId`。
+
+标准请求示例：
+
+```json
+{
+  "threadId": "s-7d35...",
+  "runId": "run-0d98...",
+  "messages": [
+    {
+      "id": "msg-f263...",
+      "role": "user",
+      "content": "为什么这个下载任务一直没有速度"
+    }
+  ],
+  "tools": [],
+  "context": [
+    {
+      "description": "projectName",
+      "value": "示例项目"
+    }
+  ]
+}
+```
+
+消息规则：
+
+- 客户端发送本轮新增消息即可；服务端已有 AgentState 时不要求重传完整历史；
+- USER 消息必须有 `messageId`，相同 `(sessionId, messageId)` 重试不得重复归档或重复触发执行；
+- 客户端不得发送 `system` 或伪造 `assistant` 消息；允许的 role 由服务端白名单校验；
+- AgentScope 2.0.1 使用类型化 `MessageContent`，归档必须保留结构化内容，同时提供纯文本投影用于标题和搜索；
+- SSE 增量按 `messageId` 聚合；`TEXT_MESSAGE_END` 后形成完整助手消息；
+- 历史 API 返回持久化的原始 `messageId`，不得在客户端重新生成；
+- `context`、`state` 和 `forwardedProps` 都是不可信业务输入，不能承载 userId、ticket、IAM 结论或资源权限。
+
+### 8.6 Frontend tool 与 HITL
+
+Electron 本地能力使用 AG-UI frontend tool：
+
+1. 客户端在 `RunAgentInput.tools[]` 声明本地工具 schema；
+2. 服务端按 allowlist 校验工具名、参数 schema 和风险等级，再由 AG-UI adapter 进行 run-scoped 注入；
+3. AgentScope 输出标准 `TOOL_CALL_START/ARGS/END`；
+4. 外部执行或 ASK 暂停通过 `RUN_FINISHED.outcome.interrupts[]` 返回；
+5. 客户端展示确认、通过 IPC 执行本地工具；
+6. 客户端以相同 `threadId`、新 `runId` 和标准 `resume[]` 恢复；
+7. 服务端在真正执行写操作前重新检查 IAM、approval 有效期和幂等键。
+
+禁止保留 `REQUIRE_EXTERNAL_EXECUTION`、`externalExecutionResults`、自定义确认事件或自定义 resume DTO。客户端工具 schema 不构成授权，服务端目录和 RuntimeContext 才是可信边界。
+
 ## 9. 运行、并发与恢复
 
 ### 9.1 运行实体
 
-- `AgentSession`：用户会话；
-- `AgentRun`：一次用户输入触发的运行；
+- `AgentSession`：AG-UI `threadId` 对应的用户会话；
+- `AgentRun`：一次 `RunAgentInput` 对应的 AG-UI 运行；interrupt 恢复会创建新 run；
 - `AgentTask`：主 Agent 委派给专业 Agent 的子任务；
 - `AgentApproval`：高风险操作确认；
 - `AgentToolInvocation`：一次工具执行；
@@ -620,20 +712,18 @@ AgentScope 支持 `agent_spawn(timeout_seconds=0)` 和后台任务，但框架�
 
 ### 11.1 对外事件
 
-AgentScope `AgentEvent` 是内部事件源，不是稳定公共协议。协议层映射为有限事件：
+AgentScope `AgentEvent` 是内部事件源，必须由官方 `AguiAgentAdapter` 映射为 AG-UI：
 
-- `run.started`；
-- `message.delta`；
-- `agent.delegated`；
-- `agent.completed`；
-- `tool.started`；
-- `tool.completed`；
-- `approval.required`；
-- `run.completed`；
-- `run.failed`；
-- `run.cancelled`。
+- `RUN_STARTED`、`RUN_FINISHED`、`RUN_ERROR`；
+- `TEXT_MESSAGE_START/CONTENT/END`；
+- `TOOL_CALL_START/ARGS/END/RESULT`；
+- `STATE_SNAPSHOT/DELTA`；
+- `CUSTOM`；
+- interrupt outcome 和后续 `resume[]`。
 
-默认不暴露模型思维链。可以输出简短阶段说明和证据摘要，但不传递 `THINKING_BLOCK_*` 原文。
+不得透传 `TEXT_BLOCK_DELTA`、`AGENT_END`、`REQUIRE_EXTERNAL_EXECUTION` 等 AgentScope 内部事件，也不得在客户端通过多组候选字段猜测事件结构。客户端使用 `@ag-ui/client` 消费事件。
+
+生产环境默认关闭原始 reasoning 输出。需要展示过程时使用简短阶段说明、工具状态和证据摘要，不直接展示模型思维链。AgentScope 2.0.1 的正常错误终态使用 `RUN_ERROR`，不要求再补伪造的 `RUN_FINISHED`。
 
 ### 11.2 Trace
 
@@ -684,28 +774,32 @@ AgentScope `AgentEvent` 是内部事件源，不是稳定公共协议。协议�
 
 ### 12.1 agent_session
 
-- `sessionId`、`userId`、`title`、`status`；
+- `sessionId`（即 AG-UI `threadId`）、`userId`、`projectId`、`title`、`status`；
 - `createdAt`、`updatedAt`；
 - `lastRunId`、`deleted`、`promptVersion`。
 
-索引：唯一 `sessionId`，以及 `userId + updatedAt`。
+创建接口返回服务端真实的 `sessionId`、`title`、`status`、`createdTime` 和 `updatedTime`，客户端不自行虚构时间。索引：唯一 `sessionId`，以及 `userId + projectId + updatedAt`。
 
 ### 12.2 agent_message
 
 - `messageId`、`sessionId`、`runId`；
-- `role`、`content`、`agentId`；
+- `role`、结构化 `content`、可搜索 `textContent`、`agentId`；
 - `toolCallId`、`createdAt`；
 - `metadata`、`redactionVersion`。
 
-索引：`sessionId + createdAt`，以及 `runId`。
+索引：唯一 `sessionId + messageId`，以及 `sessionId + createdAt`、`runId`。客户端重试相同 messageId 时返回已有结果或当前状态，不重复写入。
+
+**索引迁移**：若从旧版无 `(sessionId, messageId)` 唯一索引升级，可直接清空 `agent_message` 集合后重建索引，无需数据迁移脚本（历史消息可丢弃）。
 
 ### 12.3 agent_run
 
-- `runId`、`sessionId`、`userId`；
-- `status`、`entryAgentId`；
+- `runId`（来自 `RunAgentInput`）、`sessionId`、`userId`、`projectId`；
+- `status`、`outcome`、`entryAgentId`、`triggerType`；
 - `startedAt`、`finishedAt`；
 - `cancelReason`、`errorCode`、`traceId`；
 - 预算和实际消耗。
+
+`runId` 全局唯一；服务端若需要内部尝试号，另建 `executionId`，不得替换 AG-UI runId。resume run 通过 interrupt/approval 记录关联前一 run。
 
 ### 12.4 agent_task
 
@@ -717,7 +811,7 @@ AgentScope `AgentEvent` 是内部事件源，不是稳定公共协议。协议�
 
 ### 12.5 agent_approval
 
-- `approvalId`、`runId`、`toolCallId`；
+- `approvalId`、`interruptId`、`originRunId`、`resumeRunId`、`toolCallId`；
 - `userId`、`resourceDigest`、`action`；
 - `status`、`expiresAt`、`confirmedAt`；
 - `idempotencyKey`。
@@ -775,18 +869,22 @@ Redis 仅保存：
 **目标**
 
 - 建立 `api-agent`、`biz-agent`、`boot-agent`；
+- 将 AgentScope 统一升级并锁定到 2.0.1；
+- 引入 `agentscope-agui-spring-boot-starter` 和官方 AG-UI 类型；
 - 接入 common-security；
 - 入口调用 `RAuthClient.checkPermission(PROJECT, READ, projectId)`；
 - 将可信 `userId` 接入 AgentScope `RuntimeContext`。
 
 **框架使用**
 
+- `AguiRequestProcessor` / `AguiAgentAdapter`；
+- `AguiRuntimeContextResolver`；
 - `RuntimeContext` 作为身份和调用上下文容器。
 
 **自建设计**
 
 - Controller 只读取受信任的 `userId`；
-- 每次运行校验 `session.owner == (userId, projectId)`；
+- 每次运行校验 `session.owner == (userId, projectId, threadId)`；
 - 使用 `RuntimeContext.userId` 作为 Agent 和工具的唯一用户身份来源；
 - 内部服务调用采用“服务间认证 + 显式 userId + 下游 IAM”；
 - OBO/Token Exchange 暂不实现；
@@ -799,7 +897,9 @@ Redis 仅保存：
 - 请求体伪造 userId 不生效；
 - 相同 sessionId 不能被其他用户使用；
 - userId 不进入工具 schema 和系统提示词；
-- 主 Agent、子 Agent 和工具取得相同的 `RuntimeContext.userId`。
+- 主 Agent、子 Agent 和工具取得相同的 `RuntimeContext.userId`；
+- `context` 或 `forwardedProps` 伪造 userId/projectId 不生效；
+- AG-UI endpoint 不存在绕过 common-security 的备用路径。
 
 ### 阶段 2：模型接入与最小主 Agent
 
@@ -815,21 +915,24 @@ Redis 仅保存：
 - `ModelRegistry` / `OpenAIChatModel`；
 - `GenerateOptions`；
 - `maxRetries`、`fallbackModel`；
-- `streamEvents`。
+- AG-UI `RunAgentInput` / `AguiEvent`；
+- `@ag-ui/client`。
 
 **设计**
 
 - 关闭 shell、filesystem、动态 skill、动态 subagent；
 - 主 Agent 只回答制品库范围问题；
 - 定义最大迭代、token 和总时长；
-- 对外事件经过协议层映射。
+- 由官方 adapter 将 `streamEvents()` 转为 AG-UI SSE，不手写事件映射。
 
 **验收**
 
-- 一轮流式对话成功；
+- 一轮 `threadId + runId + messages[]` 流式对话成功；
 - 模型超时可控；
 - fallback 生效；
-- 不泄露框架内部事件和思维链。
+- 不泄露框架内部事件和思维链；
+- `RUN_STARTED`、`TEXT_MESSAGE_*`、`RUN_FINISHED/RUN_ERROR` 符合 AG-UI；
+- 客户端不包含兼容多个内部字段名的 heuristic parser。
 
 ### 阶段 3：工具契约与第一个只读工具
 
@@ -913,14 +1016,19 @@ Redis 仅保存：
 - Redis 保存运行时 state；
 - 每次运行先校验 session 属于当前 user；
 - 归档采用单份完整存储；
-- 归档 middleware 对失败进行补偿。
+- 归档 middleware 对失败进行补偿；
+- USER 消息沿用客户端 AG-UI `messageId`，助手消息沿用 `TEXT_MESSAGE_START.messageId`；
+- `runId` 使用 `RunAgentInput.runId`，不再生成第二套后台 runId；
+- 为 `(sessionId, messageId)` 和 `runId` 建唯一约束。
 
 **验收**
 
 - 重启后能继续对话；
 - 历史原文不因上下文压缩丢失；
 - 不同用户使用相同 sessionId 不能互相访问；
-- 删除会话时按策略清理 Mongo 和 Redis。
+- 删除会话时按策略清理 Mongo 和 Redis；
+- 同一 messageId 网络重试不会产生重复消息或重复 run；
+- 历史 API 返回与 AG-UI 流一致的 messageId。
 
 ### 阶段 6：权限规则、HITL 和第一个写工具
 
@@ -935,6 +1043,8 @@ Redis 仅保存：
 - `PermissionRule`；
 - `PermissionBehavior.ALLOW/DENY/ASK/PASSTHROUGH`；
 - `RequireUserConfirmEvent`；
+- AG-UI `RUN_FINISHED.outcome.interrupts[]`；
+- `RunAgentInput.resume[]`；
 - `stopOnReject(true)`。
 
 **设计**
@@ -942,16 +1052,20 @@ Redis 仅保存：
 - 只读工具 ALLOW；
 - 写工具 PASSTHROUGH 到规则引擎并默认 ASK；
 - 高风险禁止工具 DENY；
-- approval 绑定用户、资源摘要、动作、toolCallId 和过期时间；
+- approval 绑定用户、资源摘要、动作、interruptId、originRunId、toolCallId 和过期时间；
 - 确认后重新检查 IAM；
-- 写入使用 idempotencyKey。
+- 写入使用 idempotencyKey；
+- 恢复请求使用相同 threadId 和新 runId，resume 覆盖全部未决 interrupt；
+- Electron 本地工具通过 `tools[]` 声明、标准 tool-call 事件触发并经 IPC 执行。
 
 **验收**
 
 - 未确认写操作不执行；
 - 权限在确认期间被撤销时执行失败；
 - 重复确认不会重复写；
-- 子 Agent 不能绕过父级 DENY。
+- 子 Agent 不能绕过父级 DENY；
+- 同意、拒绝、过期、重复 resume 和缺失 interrupt 均有确定结果；
+- 链路中不存在 `externalExecutionResults` 或自定义确认事件。
 
 ### 阶段 7：上下文压缩和工具结果治理
 
@@ -1196,11 +1310,122 @@ Agent 适合需要语言理解、证据综合和不确定性推理的任务。�
 - 主 Agent 按依赖递进委派，不无条件并行；
 - AgentState、会话归档、知识和长期记忆相互分离；
 - 多副本下同会话互斥、任务可恢复；
-- 框架事件经过稳定协议映射；
+- 对外运行请求和事件符合 AG-UI，客户端不依赖 AgentScope 内部事件；
 - 主 Agent、子 Agent、模型和工具全链路可观测；
 - 有固定评估集验证工具选择、答案质量和越权风险；
 - 可以一键关闭写能力并降级为只读模式。
 
 满足以上条件后，多 Agent 才是一个可治理的后台系统，而不是多个模型调用的集合。
+
+## 17. 现有实现的 AG-UI 对齐改造计划
+
+本节只针对调查中发现的现状差距，按依赖顺序迁移。迁移期间允许短期 feature flag，不长期维护两套 wire protocol。
+
+### 17.1 基线升级
+
+**改造**
+
+1. 将所有 AgentScope 模块从 2.0.0 统一升级到 2.0.1；
+2. 在统一依赖管理中加入 `agentscope-extensions-agui` 和 `agentscope-agui-spring-boot-starter`；
+3. 显式固定 Middleware 顺序，覆盖消息归档、Compaction 和 ToolResultEviction；
+4. AgentScope 2.0.1 将 Toolkit 默认执行策略改为并行，必须显式配置为符合任务依赖的执行方式，不能无条件并行探测。
+
+**验收**
+
+- `biz-agent` 编译和已有 smoke test 通过；
+- 会话恢复、消息压缩、外部工具挂起和 Permission ASK 回归通过；
+- 同一有依赖诊断场景不会提前执行后续探针。
+
+### 17.2 后台 AG-UI 边界
+
+**改造**
+
+1. 运行入口改为官方 `RunAgentInput`，SSE 输出官方 `AguiEvent`；
+2. 使用 `AguiRequestProcessor` 和 `AguiAgentAdapter`，删除手写 `AgentEvent` SSE 透传；
+3. 使用 `AguiRuntimeContextResolver` 注入受信任的 userId、projectId、deviceId 和 traceId；
+4. 保留 session create/list/latest/messages/delete 业务 API，但 create 返回真实标题和服务端时间；
+5. runId 使用客户端 AG-UI runId；需要内部跟踪时新增 executionId。
+
+**删除**
+
+- `AgentRunRequest.content` 快捷协议；
+- `AgentExternalExecutionResult`；
+- `REQUIRE_EXTERNAL_EXECUTION` 对外事件；
+- 后台自生成且不返回客户端的第二套 runId；
+- 直接序列化 `AgentEvent` 的 `emitAgentEvent()`。
+
+**验收**
+
+- 可用标准 AG-UI 客户端直接发起 run；
+- 所有 SSE 事件均属于 AG-UI 事件集合；
+- 请求体或 context 伪造身份不影响 RuntimeContext；
+- sessionId/threadId、runId、messageId 可贯穿日志、Mongo 和 trace。
+
+### 17.3 消息与幂等
+
+**改造**
+
+1. USER 消息以 `messages[].id` 作为 canonical messageId；
+2. 助手消息以 `TEXT_MESSAGE_START.messageId` 聚合 delta 并归档；
+3. 持久化结构化 MessageContent 和 textContent 投影；
+4. 增加唯一索引 `(sessionId, messageId)` 与唯一 runId；
+5. 明确请求重试策略：已完成则返回/回放结果，运行中返回状态，不能重复执行。
+
+**验收**
+
+- UI 乐观消息与历史消息使用同一个 ID；
+- SSE 断开重试不产生重复 USER/ASSISTANT 消息；
+- 标题只由首条有效 USER 消息生成一次；
+- 压缩 AgentState 后 Mongo 原始消息仍完整。
+
+### 17.4 客户端切换到官方 AG-UI
+
+**改造**
+
+1. 引入 `@ag-ui/client`；
+2. 由官方 client 维护 thread、run、messages 和事件状态；
+3. 使用 `crypto.randomUUID()` 生成 runId/messageId，停止使用短 `Math.random()` ID；
+4. 删除手写 fetch SSE parser、`eventMapper` 候选字段兼容和自定义 run while 循环；
+5. 保留 Pinia 作为 UI 投影，不再让它定义 wire protocol。
+
+**验收**
+
+- DevTools 中请求体为标准 `RunAgentInput`；
+- UI 可正确聚合 messageId、toolCallId 和终态；
+- `RUN_ERROR` 不被误判为正常完成；
+- 打开助手恢复 latest thread，无历史时创建并绑定新 thread。
+
+### 17.5 Frontend tool 与 HITL
+
+**改造**
+
+1. Electron 本地工具通过 `RunAgentInput.tools[]` 暴露；
+2. 服务端对工具定义做 allowlist、schema 和风险校验，禁止客户端扩大工具能力；
+3. `RUN_FINISHED.outcome.interrupts[]` 驱动确认或本地执行；
+4. 客户端执行 IPC 后以相同 threadId、新 runId、`resume[]` 恢复；
+5. ASK 写工具确认后、真正执行前重新 IAM 鉴权并检查幂等。
+
+**验收**
+
+- 只读本地工具完成“调用—中断—执行—resume—最终回答”；
+- 写工具覆盖同意、拒绝、编辑参数、超时和权限撤销；
+- resume 缺失、重复或引用错误 interruptId 时拒绝；
+- 客户端篡改工具 schema、toolName 或参数不能越权。
+
+### 17.6 运行保障与清理
+
+**改造**
+
+1. status、stop、reconnect 和事件回放作为 AG-UI 之外的运行保障 API，不改变 `RunAgentInput` 或 `AguiEvent`；
+2. 运行锁继续按 userId + threadId，活跃记录保存 canonical runId；
+3. 完成灰度后删除旧协议、旧类型和兼容分支；
+4. 更新接口文档、契约测试和端到端测试。
+
+**验收**
+
+- stop 能终止正确的 active run；
+- reconnect 不重复消息且终态一致；
+- 多副本切换后仍能查询运行状态；
+- 真机完成至少一轮普通对话、本地工具、确认写操作和历史恢复后再推送。
 
 

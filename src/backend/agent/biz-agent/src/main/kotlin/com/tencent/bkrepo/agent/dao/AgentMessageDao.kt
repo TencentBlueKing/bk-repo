@@ -31,6 +31,7 @@ import com.tencent.bkrepo.agent.model.TAgentMessage
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -42,6 +43,27 @@ import org.springframework.stereotype.Repository
  */
 @Repository
 class AgentMessageDao : SimpleMongoDao<TAgentMessage>() {
+
+    fun findBySessionAndMessageId(sessionId: String, messageId: String): TAgentMessage? {
+        val query = Query(
+            Criteria.where(TAgentMessage::sessionId.name).`is`(sessionId)
+                .and(TAgentMessage::messageId.name).`is`(messageId),
+        )
+        return findOne(query)
+    }
+
+    /** @return true 表示新插入，false 表示 (sessionId, messageId) 已存在 */
+    fun insertIfAbsent(message: TAgentMessage): Boolean {
+        if (findBySessionAndMessageId(message.sessionId, message.messageId) != null) {
+            return false
+        }
+        return try {
+            insert(message)
+            true
+        } catch (_: DuplicateKeyException) {
+            false
+        }
+    }
 
     fun pageBySessionId(sessionId: String, pageNumber: Int, pageSize: Int): Page<TAgentMessage> {
         val query = Query(Criteria.where(TAgentMessage::sessionId.name).`is`(sessionId))

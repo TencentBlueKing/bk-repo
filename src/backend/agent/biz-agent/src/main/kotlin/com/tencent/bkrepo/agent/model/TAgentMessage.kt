@@ -37,6 +37,12 @@ import java.time.LocalDateTime
 @Document("agent_message")
 @CompoundIndexes(
     CompoundIndex(
+        name = "sessionId_messageId_idx",
+        def = "{'sessionId': 1, 'messageId': 1}",
+        unique = true,
+        background = true,
+    ),
+    CompoundIndex(
         name = "sessionId_createdAt_idx",
         def = "{'sessionId': 1, 'createdAt': 1}",
         background = true,
@@ -53,7 +59,10 @@ data class TAgentMessage(
     var sessionId: String,
     var runId: String?,
     var role: AgentMessageRole,
+    /** textContent 投影，供历史 API 与标题生成。 */
     var content: String,
+    /** AG-UI MessageContent 结构化快照。 */
+    var structuredContent: Map<String, Any>? = null,
     var agentId: String? = null,
     var toolCallId: String? = null,
     var createdAt: LocalDateTime,

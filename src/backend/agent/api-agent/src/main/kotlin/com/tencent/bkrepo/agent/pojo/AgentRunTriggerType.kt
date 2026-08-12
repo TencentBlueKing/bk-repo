@@ -29,5 +29,5 @@ package com.tencent.bkrepo.agent.pojo
 
 enum class AgentRunTriggerType {
     USER_INPUT,
-    EXTERNAL_TOOL_RESUME,
+    AGUI_RESUME,
 }

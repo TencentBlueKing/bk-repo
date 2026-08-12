@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.agent.service
 
 import com.tencent.bkrepo.agent.pojo.AgentMessageInfo
-import com.tencent.bkrepo.agent.pojo.AgentRunRequest
+import io.agentscope.core.agui.model.RunAgentInput
 import com.tencent.bkrepo.agent.pojo.AgentSessionDeleteRequest
 import com.tencent.bkrepo.agent.pojo.AgentSessionCreateResult
 import com.tencent.bkrepo.agent.pojo.AgentSessionInfo
@@ -51,11 +51,15 @@ interface AgentRunService {
     fun createSession(userId: String, projectId: String): AgentSessionCreateResult
 
     /**
-     * 执行一轮对话，将 AgentScope 事件流转为 SSE 推送给客户端。
-     *
-     * 详见 [com.tencent.bkrepo.agent.service.impl.AgentRunServiceImpl.run]。
+     * 执行一轮 AG-UI run，将官方 [io.agentscope.core.agui.event.AguiEvent] 编码为 SSE 推送。
      */
-    fun run(userId: String, projectId: String, deviceId: String?, request: AgentRunRequest): SseEmitter
+    fun run(
+        userId: String,
+        projectId: String,
+        deviceId: String?,
+        traceId: String?,
+        input: RunAgentInput,
+    ): SseEmitter
 
     /**
      * 分页查询当前用户在指定项目下的活跃会话列表，按最近更新时间倒序。

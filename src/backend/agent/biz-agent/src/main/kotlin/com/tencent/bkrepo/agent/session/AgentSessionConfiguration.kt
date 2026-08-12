@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.agent.session
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
 import com.tencent.bkrepo.common.redis.RedisOperation
 import org.slf4j.LoggerFactory
@@ -67,6 +68,40 @@ class AgentSessionConfiguration {
         return RedisAgentRunLock(
             redisOperation = redis,
             lockTtlSeconds = properties.runLockTtl.seconds,
+        )
+    }
+
+    @Bean
+    fun agentPendingInterruptStore(
+        properties: AgentProperties,
+        redisOperation: ObjectProvider<RedisOperation>,
+        objectMapper: ObjectMapper,
+    ): AgentPendingInterruptStore {
+        val redis = redisOperation.getIfAvailable()
+        if (redis == null) {
+            logger.warn("No RedisOperation available, falling back to in-memory pending interrupt store")
+            return InMemoryAgentPendingInterruptStore()
+        }
+        return RedisAgentPendingInterruptStore(
+            redisOperation = redis,
+            objectMapper = objectMapper,
+            ttlSeconds = properties.sessionTtl.seconds,
+        )
+    }
+
+    @Bean
+    fun agentResumeIdempotencyStore(
+        properties: AgentProperties,
+        redisOperation: ObjectProvider<RedisOperation>,
+    ): AgentResumeIdempotencyStore {
+        val redis = redisOperation.getIfAvailable()
+        if (redis == null) {
+            logger.warn("No RedisOperation available, falling back to in-memory resume idempotency store")
+            return InMemoryAgentResumeIdempotencyStore()
+        }
+        return RedisAgentResumeIdempotencyStore(
+            redisOperation = redis,
+            ttlSeconds = properties.runLockTtl.seconds,
         )
     }
 

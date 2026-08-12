@@ -72,5 +72,5 @@ object Versions {
     const val CommonsNet = "3.9.0"
     const val JuniversalCharDet = "1.0.3"
     const val EmbeddedMongo = "4.11.0"
-    const val AgentScope = "2.0.0"
+    const val AgentScope = "2.0.1"
 }

@@ -40,4 +40,7 @@ dependencies {
     api("io.agentscope:agentscope-extensions-redis") {
         exclude(group = "com.squareup.okhttp3", module = "okhttp-jvm")
     }
+    api("io.agentscope:agentscope-extensions-agui") {
+        exclude(group = "com.squareup.okhttp3", module = "okhttp-jvm")
+    }
 }

@@ -57,6 +57,7 @@ import java.time.LocalDateTime
 data class TAgentRun(
     var id: String? = null,
     var runId: String,
+    var executionId: String? = null,
     var sessionId: String,
     var userId: String,
     var projectId: String,

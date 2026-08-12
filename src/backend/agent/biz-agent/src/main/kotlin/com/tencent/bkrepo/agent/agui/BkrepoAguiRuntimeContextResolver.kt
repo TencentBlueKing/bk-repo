@@ -25,31 +25,43 @@
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.agent.service
+package com.tencent.bkrepo.agent.agui
+
+import com.tencent.bkrepo.agent.constant.RUNTIME_CONTEXT_DEVICE_ID
+import com.tencent.bkrepo.agent.constant.RUNTIME_CONTEXT_EXECUTION_ID
+import com.tencent.bkrepo.agent.constant.RUNTIME_CONTEXT_PROJECT_ID
+import com.tencent.bkrepo.agent.constant.RUNTIME_CONTEXT_RUN_ID
+import com.tencent.bkrepo.agent.constant.RUNTIME_CONTEXT_TRACE_ID
+import io.agentscope.core.agent.RuntimeContext
+import io.agentscope.core.agui.model.RunAgentInput
+import org.springframework.stereotype.Component
 
 /**
- * 会话消息 Mongo 归档，与 AgentScope AgentState 分离。
- *
- * 写入失败不向上抛出，由实现层记录日志并重试。
+ * 将已认证 HTTP 上下文写入 AG-UI [RuntimeContext]，不信任 [RunAgentInput.context] / forwardedProps 中的身份字段。
  */
-interface AgentMessageArchiveService {
+@Component
+class BkrepoAguiRuntimeContextResolver {
 
-    /** 归档用户消息；[messageId] 来自客户端 [RunAgentInput.messages] 的 canonical id。 */
-    fun archiveUserMessage(
-        sessionId: String,
-        runId: String,
-        messageId: String,
-        textContent: String,
-        structuredContent: Map<String, Any>? = null,
-    )
-
-    /** 归档 assistant 消息；[messageId] 来自 AG-UI TEXT_MESSAGE_START。 */
-    fun archiveAssistantMessage(
-        sessionId: String,
-        runId: String,
-        messageId: String,
-        textContent: String,
-        agentId: String? = null,
-        structuredContent: Map<String, Any>? = null,
-    )
+    fun resolve(
+        userId: String,
+        projectId: String,
+        input: RunAgentInput,
+        deviceId: String?,
+        executionId: String,
+        traceId: String?,
+    ): RuntimeContext {
+        val builder = RuntimeContext.builder()
+            .userId(userId)
+            .sessionId(input.threadId)
+            .put(RUNTIME_CONTEXT_PROJECT_ID, projectId)
+            .put(RUNTIME_CONTEXT_RUN_ID, input.runId)
+            .put(RUNTIME_CONTEXT_EXECUTION_ID, executionId)
+        deviceId?.takeIf { it.isNotBlank() }?.let {
+            builder.put(RUNTIME_CONTEXT_DEVICE_ID, it)
+        }
+        traceId?.takeIf { it.isNotBlank() }?.let {
+            builder.put(RUNTIME_CONTEXT_TRACE_ID, it)
+        }
+        return builder.build()
+    }
 }

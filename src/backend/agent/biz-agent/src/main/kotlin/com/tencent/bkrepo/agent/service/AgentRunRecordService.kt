@@ -27,13 +27,17 @@
 
 package com.tencent.bkrepo.agent.service
 
+import com.tencent.bkrepo.agent.model.TAgentRun
 import com.tencent.bkrepo.agent.pojo.AgentRunStatus
 import com.tencent.bkrepo.agent.pojo.AgentRunTriggerType
 
 interface AgentRunRecordService {
 
+    fun findByRunId(runId: String): TAgentRun?
+
     fun startRun(
         runId: String,
+        executionId: String,
         sessionId: String,
         userId: String,
         projectId: String,

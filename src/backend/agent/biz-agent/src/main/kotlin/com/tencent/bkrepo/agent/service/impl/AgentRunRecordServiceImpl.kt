@@ -45,8 +45,11 @@ class AgentRunRecordServiceImpl(
     private val startedAtByRunId = ConcurrentHashMap<String, LocalDateTime>()
     private val finishedRunIds = ConcurrentHashMap.newKeySet<String>()
 
+    override fun findByRunId(runId: String): TAgentRun? = agentRunDao.findByRunId(runId)
+
     override fun startRun(
         runId: String,
+        executionId: String,
         sessionId: String,
         userId: String,
         projectId: String,
@@ -60,6 +63,7 @@ class AgentRunRecordServiceImpl(
             agentRunDao.insertRun(
                 TAgentRun(
                     runId = runId,
+                    executionId = executionId,
                     sessionId = sessionId,
                     userId = userId,
                     projectId = projectId,

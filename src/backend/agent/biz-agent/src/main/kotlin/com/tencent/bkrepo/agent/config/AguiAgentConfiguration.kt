@@ -27,34 +27,55 @@
 
 package com.tencent.bkrepo.agent.config
 
+import com.tencent.bkrepo.agent.agui.StatelessHarnessAgentResolver
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
-import io.agentscope.core.model.Model
-import io.agentscope.core.permission.PermissionContextState
-import io.agentscope.core.state.AgentStateStore
-import io.agentscope.core.tool.Toolkit
+import io.agentscope.core.agui.adapter.AguiAdapterConfig
+import io.agentscope.core.agui.adapter.ToolMergeMode
+import io.agentscope.core.agui.processor.AguiRequestProcessor
+import io.agentscope.core.agui.registry.AguiAgentRegistry
 import io.agentscope.harness.agent.HarnessAgent
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration(proxyBeanMethods = false)
-class HarnessAgentConfiguration {
+class AguiAgentConfiguration {
 
-    /**
-     * agent 实例在两次调用之间无状态，会话状态由 [AgentStateStore] 按 (userId, sessionId) 寻址，因此单例即可服务并发请求。
-     */
     @Bean
-    fun harnessAgent(
+    fun aguiAgentRegistry(harnessAgent: HarnessAgent, properties: AgentProperties): AguiAgentRegistry {
+        val registry = AguiAgentRegistry()
+        registry.register(properties.name, harnessAgent)
+        return registry
+    }
+
+    @Bean
+    fun statelessHarnessAgentResolver(
+        registry: AguiAgentRegistry,
         properties: AgentProperties,
-        model: Model,
-        stateStore: AgentStateStore,
-        toolkit: Toolkit,
-        permissionContext: PermissionContextState,
-        agentHarnessConfigurer: AgentHarnessConfigurer,
-    ): HarnessAgent = agentHarnessConfigurer.configure(
-        properties = properties,
-        model = model,
-        stateStore = stateStore,
-        toolkit = toolkit,
-        permissionContext = permissionContext,
-    )
+    ): StatelessHarnessAgentResolver = StatelessHarnessAgentResolver(registry, properties)
+
+    @Bean
+    fun aguiAdapterConfig(properties: AgentProperties): AguiAdapterConfig {
+        val toolMergeMode = if (properties.localToolsEnabled) {
+            ToolMergeMode.FRONTEND_ONLY
+        } else {
+            ToolMergeMode.AGENT_ONLY
+        }
+        return AguiAdapterConfig.builder()
+            .defaultAgentId(properties.name)
+            .runTimeout(properties.sseTimeout)
+            .enableReasoning(false)
+            .emitTokenUsage(false)
+            .emitToolCallArgs(true)
+            .toolMergeMode(toolMergeMode)
+            .build()
+    }
+
+    @Bean
+    fun aguiRequestProcessor(
+        agentResolver: StatelessHarnessAgentResolver,
+        config: AguiAdapterConfig,
+    ): AguiRequestProcessor = AguiRequestProcessor.builder()
+        .agentResolver(agentResolver)
+        .config(config)
+        .build()
 }

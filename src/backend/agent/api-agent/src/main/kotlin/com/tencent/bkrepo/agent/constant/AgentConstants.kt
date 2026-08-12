@@ -48,6 +48,16 @@ const val RUNTIME_CONTEXT_PROJECT_ID = "projectId"
 const val RUNTIME_CONTEXT_RUN_ID = "runId"
 
 /**
+ * 服务端内部 HTTP 执行尝试号，与 AG-UI canonical [RUNTIME_CONTEXT_RUN_ID] 分离。
+ */
+const val RUNTIME_CONTEXT_EXECUTION_ID = "executionId"
+
+/** 可选 traceId，来自受信任 HTTP Header。 */
+const val RUNTIME_CONTEXT_TRACE_ID = "traceId"
+
+const val HEADER_TRACE_ID = "X-Trace-Id"
+
+/**
  * SSE 发送失败等场景下，middleware 在 [reactor.core.publisher.SignalType.CANCEL] 时仍归档 assistant 片段。
  */
 const val RUNTIME_CONTEXT_FORCE_ARCHIVE_ASSISTANT = "forceArchiveAssistant"
@@ -78,3 +88,9 @@ const val AGENT_SESSION_OWNER_KEY_PREFIX = "bkrepo:agent:session-owner:"
 
 /** Redis 中同会话 run 互斥锁 key 前缀 */
 const val AGENT_RUN_LOCK_KEY_PREFIX = "bkrepo:agent:run-lock:"
+
+/** Redis 中 thread pending interrupt 快照 key 前缀 */
+const val AGENT_PENDING_INTERRUPT_KEY_PREFIX = "bkrepo:agent:pending-interrupt:"
+
+/** Redis 中 resume 幂等指纹 key 前缀 */
+const val AGENT_RESUME_IDEMPOTENCY_KEY_PREFIX = "bkrepo:agent:resume-idempotent:"

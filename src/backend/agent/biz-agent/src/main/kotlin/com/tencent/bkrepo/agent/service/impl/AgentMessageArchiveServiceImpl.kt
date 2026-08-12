@@ -27,12 +27,11 @@
 
 package com.tencent.bkrepo.agent.service.impl
 
-import com.tencent.bkrepo.agent.constant.AGENT_MESSAGE_ID_PREFIX
 import com.tencent.bkrepo.agent.dao.AgentMessageDao
+import com.tencent.bkrepo.agent.dao.AgentSessionDao
 import com.tencent.bkrepo.agent.model.TAgentMessage
 import com.tencent.bkrepo.agent.pojo.AgentMessageRole
 import com.tencent.bkrepo.agent.service.AgentMessageArchiveService
-import com.tencent.bkrepo.common.api.constant.StringPool
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -40,69 +39,113 @@ import java.time.LocalDateTime
 /**
  * 将 USER/ASSISTANT 原文写入 Mongo，供历史 API 查询。
  *
- * 归档失败不阻塞主流程，但会记录日志并在写入层重试一次。
+ * 以 (sessionId, messageId) 幂等写入；归档失败不阻塞主流程。
  */
 @Service
 class AgentMessageArchiveServiceImpl(
     private val agentMessageDao: AgentMessageDao,
+    private val agentSessionDao: AgentSessionDao,
 ) : AgentMessageArchiveService {
 
-    override fun archiveUserMessage(sessionId: String, runId: String, content: String) {
-        archiveMessage(
+    override fun archiveUserMessage(
+        sessionId: String,
+        runId: String,
+        messageId: String,
+        textContent: String,
+        structuredContent: Map<String, Any>?,
+    ) {
+        if (textContent.isBlank()) return
+        val inserted = archiveMessage(
             sessionId = sessionId,
             runId = runId,
+            messageId = messageId,
             role = AgentMessageRole.USER,
-            content = content,
+            textContent = textContent,
+            structuredContent = structuredContent,
         )
+        if (!inserted) return
+        try {
+            agentSessionDao.updateTitleIfBlank(
+                sessionId = sessionId,
+                title = deriveSessionTitle(textContent),
+                updatedAt = LocalDateTime.now(),
+            )
+        } catch (exception: Exception) {
+            logger.warn("auto-set session title failed, session[$sessionId]", exception)
+        }
     }
 
-    override fun archiveAssistantMessage(sessionId: String, runId: String, content: String, agentId: String?) {
+    override fun archiveAssistantMessage(
+        sessionId: String,
+        runId: String,
+        messageId: String,
+        textContent: String,
+        agentId: String?,
+        structuredContent: Map<String, Any>?,
+    ) {
         archiveMessage(
             sessionId = sessionId,
             runId = runId,
+            messageId = messageId,
             role = AgentMessageRole.ASSISTANT,
-            content = content,
+            textContent = textContent,
             agentId = agentId,
+            structuredContent = structuredContent,
         )
     }
 
     private fun archiveMessage(
         sessionId: String,
         runId: String,
+        messageId: String,
         role: AgentMessageRole,
-        content: String,
+        textContent: String,
         agentId: String? = null,
-    ) {
-        if (content.isBlank()) {
-            return
-        }
+        structuredContent: Map<String, Any>? = null,
+    ): Boolean {
+        if (textContent.isBlank()) return false
         val message = TAgentMessage(
-            messageId = AGENT_MESSAGE_ID_PREFIX + StringPool.uniqueId(),
+            messageId = messageId,
             sessionId = sessionId,
             runId = runId,
             role = role,
-            content = content,
+            content = textContent,
+            structuredContent = structuredContent,
             agentId = agentId,
             createdAt = LocalDateTime.now(),
         )
-        insertWithRetry(message)
+        return insertWithRetry(message)
     }
 
     /** 归档为尽力而为：失败记录日志并补偿重试，不向上抛出以免中断 SSE。 */
-    private fun insertWithRetry(message: TAgentMessage) {
+    private fun insertWithRetry(message: TAgentMessage): Boolean {
         try {
-            agentMessageDao.insert(message)
+            return agentMessageDao.insertIfAbsent(message)
         } catch (first: Exception) {
             logger.warn("agent message archive failed once, retrying message[${message.messageId}]", first)
             try {
-                agentMessageDao.insert(message)
+                return agentMessageDao.insertIfAbsent(message)
             } catch (second: Exception) {
                 logger.error("agent message archive failed, message[${message.messageId}]", second)
+                return false
             }
         }
     }
 
     companion object {
+        private const val MAX_TITLE_LENGTH = 40
         private val logger = LoggerFactory.getLogger(AgentMessageArchiveServiceImpl::class.java)
+
+        private fun deriveSessionTitle(text: String): String {
+            val normalized = text.trim().replace(Regex("\\s+"), " ")
+            if (normalized.isBlank()) {
+                return "新对话"
+            }
+            return if (normalized.length > MAX_TITLE_LENGTH) {
+                normalized.take(MAX_TITLE_LENGTH) + "…"
+            } else {
+                normalized
+            }
+        }
     }
 }

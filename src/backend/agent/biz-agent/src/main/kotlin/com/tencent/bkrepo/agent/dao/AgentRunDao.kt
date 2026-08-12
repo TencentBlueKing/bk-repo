@@ -42,6 +42,11 @@ class AgentRunDao : SimpleMongoDao<TAgentRun>() {
 
     fun insertRun(run: TAgentRun): TAgentRun = insert(run)
 
+    fun findByRunId(runId: String): TAgentRun? {
+        val query = Query(Criteria.where(TAgentRun::runId.name).`is`(runId))
+        return findOne(query)
+    }
+
     /**
      * 将仍处于 [AgentRunStatus.RUNNING] 的记录更新为终态。
      *

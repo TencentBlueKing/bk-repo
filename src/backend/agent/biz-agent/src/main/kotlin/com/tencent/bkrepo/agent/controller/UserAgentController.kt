@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.agent.controller
 
 import com.tencent.bkrepo.agent.constant.HEADER_DEVICE_ID
+import com.tencent.bkrepo.agent.constant.HEADER_TRACE_ID
 import com.tencent.bkrepo.agent.constant.LOG_OPERATE_RUN
 import com.tencent.bkrepo.agent.constant.LOG_OPERATE_SESSION_CREATE
 import com.tencent.bkrepo.agent.constant.LOG_OPERATE_SESSION_DELETE
@@ -35,7 +36,7 @@ import com.tencent.bkrepo.agent.constant.LOG_OPERATE_SESSION_LIST
 import com.tencent.bkrepo.agent.constant.LOG_OPERATE_SESSION_MESSAGES
 import com.tencent.bkrepo.agent.constant.LOG_OPERATE_SESSION_UPDATE
 import com.tencent.bkrepo.agent.pojo.AgentMessageInfo
-import com.tencent.bkrepo.agent.pojo.AgentRunRequest
+import io.agentscope.core.agui.model.RunAgentInput
 import com.tencent.bkrepo.agent.pojo.AgentSessionDeleteRequest
 import com.tencent.bkrepo.agent.pojo.AgentSessionCreateResult
 import com.tencent.bkrepo.agent.pojo.AgentSessionInfo
@@ -171,11 +172,11 @@ class UserAgentController(
     }
 
     /**
-     * 发起一轮对话，响应为 SSE 事件流。
+     * 发起一轮 AG-UI run，响应为 SSE [io.agentscope.core.agui.event.AguiEvent] 流。
      *
-     * `POST /api/agent/run?projectId=`；支持用户输入与本地工具续跑（externalExecutionResults）。
+     * `POST /api/agent/run?projectId=`；请求体为标准 [RunAgentInput]。
      */
-    @Operation(summary = "发起一轮对话，以SSE返回agent事件流")
+    @Operation(summary = "发起一轮 AG-UI run，以SSE返回AguiEvent事件流")
     @PostMapping("/run", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
     @LogOperate(type = LOG_OPERATE_RUN, desensitize = true)
     fun run(
@@ -183,8 +184,9 @@ class UserAgentController(
         @Parameter(name = "项目ID", required = true)
         @RequestParam projectId: String,
         @RequestHeader(HEADER_DEVICE_ID, required = false) deviceId: String?,
-        @RequestBody request: AgentRunRequest,
+        @RequestHeader(HEADER_TRACE_ID, required = false) traceId: String?,
+        @RequestBody input: RunAgentInput,
     ): SseEmitter {
-        return agentRunService.run(userId, projectId, deviceId, request)
+        return agentRunService.run(userId, projectId, deviceId, traceId, input)
     }
 }

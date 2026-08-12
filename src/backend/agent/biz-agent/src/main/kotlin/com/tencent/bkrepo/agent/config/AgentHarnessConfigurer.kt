@@ -33,28 +33,46 @@ import io.agentscope.core.permission.PermissionContextState
 import io.agentscope.core.state.AgentStateStore
 import io.agentscope.core.tool.Toolkit
 import io.agentscope.harness.agent.HarnessAgent
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import org.springframework.stereotype.Component
+import java.nio.file.Paths
 
-@Configuration(proxyBeanMethods = false)
-class HarnessAgentConfiguration {
+/**
+ * 集中装配 [HarnessAgent]，显式固定自定义 Middleware 与框架内置 Middleware 的相对顺序。
+ *
+ * 消息归档已迁移至 AG-UI 事件层（[com.tencent.bkrepo.agent.agui.AguiMessageArchiveHandler]），
+ * 不再经由 AgentScope Middleware 双写。
+ */
+@Component
+class AgentHarnessConfigurer(
+    private val agentCompactionConfigurer: AgentCompactionConfigurer,
+) {
 
-    /**
-     * agent 实例在两次调用之间无状态，会话状态由 [AgentStateStore] 按 (userId, sessionId) 寻址，因此单例即可服务并发请求。
-     */
-    @Bean
-    fun harnessAgent(
+    fun configure(
         properties: AgentProperties,
         model: Model,
         stateStore: AgentStateStore,
         toolkit: Toolkit,
         permissionContext: PermissionContextState,
-        agentHarnessConfigurer: AgentHarnessConfigurer,
-    ): HarnessAgent = agentHarnessConfigurer.configure(
-        properties = properties,
-        model = model,
-        stateStore = stateStore,
-        toolkit = toolkit,
-        permissionContext = permissionContext,
-    )
+    ): HarnessAgent {
+        var builder = HarnessAgent.builder()
+            .name(properties.name)
+            .sysPrompt(properties.sysPrompt)
+            .model(model)
+            .maxIters(properties.maxIters)
+            .stateStore(stateStore)
+            .workspace(Paths.get(properties.workspace))
+            .toolkit(toolkit)
+            .permissionContext(permissionContext)
+            .enablePendingToolRecovery(true)
+            .disableFilesystemTools()
+            .disableShellTool()
+            .disableSubagents()
+            .disableDynamicSkills()
+            .disableMemoryTools()
+            .disableWorkspaceContext()
+
+        builder = agentCompactionConfigurer.apply(builder)
+
+        return builder.build()
+    }
 }

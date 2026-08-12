@@ -91,6 +91,8 @@ allprojects {
                 entry("agentscope-harness")
                 entry("agentscope-extensions-model-openai")
                 entry("agentscope-extensions-redis")
+                entry("agentscope-extensions-agui")
+                entry("agentscope-agui-spring-boot-starter")
             }
         }
     }

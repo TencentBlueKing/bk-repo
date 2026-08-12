@@ -21,23 +21,36 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
  * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
  * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.agent.pojo
+package com.tencent.bkrepo.agent.agui
 
-import io.swagger.v3.oas.annotations.media.Schema
+import com.tencent.bkrepo.agent.config.properties.AgentProperties
+import io.agentscope.core.agui.AguiException
+import io.agentscope.core.agui.processor.AgentResolver
+import io.agentscope.core.agui.registry.AguiAgentRegistry
+import io.agentscope.harness.agent.HarnessAgent
 
 /**
- * 发起一次 agent 对话。userId、deviceId 等身份信息取自已认证的请求上下文。
+ * 无实例缓存的 [AgentResolver]：会话状态由 [io.agentscope.core.state.AgentStateStore] 承载，
+ * 单例 [HarnessAgent] 即可服务所有 thread。
  */
-@Schema(title = "Agent对话请求")
-data class AgentRunRequest(
-    @get:Schema(title = "会话ID，由创建会话接口返回")
-    val sessionId: String,
-    @get:Schema(title = "用户输入；外部工具续跑时可留空")
-    val content: String = "",
-    @get:Schema(title = "本地工具执行结果；Agent 挂起在外部执行时携带以恢复")
-    val externalExecutionResults: List<AgentExternalExecutionResult>? = null,
-)
+class StatelessHarnessAgentResolver(
+    private val registry: AguiAgentRegistry,
+    private val properties: AgentProperties,
+) : AgentResolver {
+
+    override fun resolveAgent(agentId: String, threadId: String?) =
+        registry.getAgent(agentId).orElseThrow {
+            AguiException.AgentNotFoundException(agentId)
+        }
+
+    /**
+     * 启用 server-side memory：历史由 AgentStateStore 恢复，请求侧只保留最新 USER 消息或 resume[]。
+     */
+    override fun hasMemory(threadId: String?): Boolean = !threadId.isNullOrBlank()
+
+    fun defaultAgentId(): String = properties.name
+}
