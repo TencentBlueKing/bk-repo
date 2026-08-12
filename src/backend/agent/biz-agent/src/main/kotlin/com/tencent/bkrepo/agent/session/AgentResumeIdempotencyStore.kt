@@ -11,5 +11,5 @@ package com.tencent.bkrepo.agent.session
 interface AgentResumeIdempotencyStore {
 
     /** @return true 表示首次见到该 resume 指纹，false 表示重复提交 */
-    fun tryMark(sessionId: String, interruptId: String, fingerprint: String): Boolean
+    fun tryMark(threadId: String, interruptId: String, fingerprint: String): Boolean
 }

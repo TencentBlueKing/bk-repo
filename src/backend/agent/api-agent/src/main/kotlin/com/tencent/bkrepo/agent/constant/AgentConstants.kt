@@ -62,7 +62,7 @@ const val RUNTIME_CONTEXT_FORCE_ARCHIVE_ASSISTANT = "forceArchiveAssistant"
 /** middleware 内部 per-call 归档状态在 [RuntimeContext] 中的 key */
 const val RUNTIME_CONTEXT_MESSAGE_ARCHIVE_STATE = "messageArchiveState"
 
-const val AGENT_SESSION_ID_PREFIX = "s-"
+const val AGENT_THREAD_ID_PREFIX = "s-"
 
 const val AGENT_MESSAGE_ID_PREFIX = "m-"
 
@@ -80,7 +80,7 @@ const val LOG_OPERATE_SESSION_DELETE = "AGENT_SESSION_DELETE"
 
 const val LOG_OPERATE_RUN = "AGENT_RUN"
 
-/** Redis 中 sessionId -> userId 归属映射的 key 前缀 */
+/** Redis 中 threadId -> userId 归属映射的 key 前缀 */
 const val AGENT_SESSION_OWNER_KEY_PREFIX = "bkrepo:agent:session-owner:"
 
 /** Redis 中同会话 run 互斥锁 key 前缀 */

@@ -32,18 +32,18 @@ class AguiResumeValidator(
 ) {
 
     fun validateAndPrepare(userId: String, projectId: String, input: RunAgentInput) {
-        val sessionId = input.threadId
-        val pending = pendingInterruptStore.get(sessionId)
+        val threadId = input.threadId
+        val pending = pendingInterruptStore.get(threadId)
 
         if (pending != null && !input.hasResume()) {
-            throw ParameterInvalidException("resume", "thread[$sessionId] has pending interrupts")
+            throw ParameterInvalidException("resume", "thread[$threadId] has pending interrupts")
         }
         if (!input.hasResume()) {
             return
         }
 
         if (pending == null) {
-            throw ParameterInvalidException("resume", "no pending interrupts for thread[$sessionId]")
+            throw ParameterInvalidException("resume", "no pending interrupts for thread[$threadId]")
         }
 
         val resumeEntries = input.resume
@@ -55,18 +55,18 @@ class AguiResumeValidator(
 
         for (entry in resumeEntries) {
             val snapshot = pending.interrupts.first { it.id == entry.interruptId }
-            validateEntry(userId, projectId, sessionId, snapshot, entry)
+            validateEntry(userId, projectId, threadId, snapshot, entry)
         }
     }
 
     private fun validateEntry(
         userId: String,
         projectId: String,
-        sessionId: String,
+        threadId: String,
         snapshot: PendingInterruptSnapshot,
         entry: AguiResume,
     ) {
-        if (!resumeIdempotencyStore.tryMark(sessionId, entry.interruptId, fingerprint(entry))) {
+        if (!resumeIdempotencyStore.tryMark(threadId, entry.interruptId, fingerprint(entry))) {
             throw ParameterInvalidException("resume", "duplicate resume for interrupt[${entry.interruptId}]")
         }
 

@@ -44,8 +44,8 @@ class RedisAgentRunLock(
 
     private val activeLocks = ConcurrentHashMap<String, RedisLock>()
 
-    override fun tryAcquire(userId: String, sessionId: String): Boolean {
-        val key = lockKey(userId, sessionId)
+    override fun tryAcquire(userId: String, threadId: String): Boolean {
+        val key = lockKey(userId, threadId)
         val lock = RedisLock(redisOperation, key, lockTtlSeconds)
         if (!lock.tryLock()) {
             return false
@@ -54,15 +54,15 @@ class RedisAgentRunLock(
         return true
     }
 
-    override fun release(userId: String, sessionId: String) {
-        activeLocks.remove(lockKey(userId, sessionId))?.unlock()
+    override fun release(userId: String, threadId: String) {
+        activeLocks.remove(lockKey(userId, threadId))?.unlock()
     }
 
-    override fun isRunning(userId: String, sessionId: String): Boolean {
-        return redisOperation.get(lockKey(userId, sessionId)) != null
+    override fun isRunning(userId: String, threadId: String): Boolean {
+        return redisOperation.get(lockKey(userId, threadId)) != null
     }
 
-    private fun lockKey(userId: String, sessionId: String): String {
-        return "$AGENT_RUN_LOCK_KEY_PREFIX$userId:$sessionId"
+    private fun lockKey(userId: String, threadId: String): String {
+        return "$AGENT_RUN_LOCK_KEY_PREFIX$userId:$threadId"
     }
 }

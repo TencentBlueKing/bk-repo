@@ -223,7 +223,7 @@ Knowledge Agent 只拥有检索工具。检索结果必须带来源、版本和�
 - `AgentState`、`AgentStateStore`、`RedisAgentStateStore`：运行时状态；
 - `CompactionMiddleware`、`CompactionConfig`：上下文压缩；
 - `ToolResultEvictionMiddleware`：超大工具结果外置；
-- `InterruptControl` 和 `agent.interrupt(userId, sessionId)`：中断；
+- `InterruptControl` 和 `agent.interrupt(userId, threadId)`：中断；
 - `MiddlewareBase`：Agent、reasoning、acting、model call 和 system prompt 扩展；
 - `OtelTracingMiddleware`：Agent、模型和工具追踪；
 - `ModelRegistry`、`fallbackModel`、`maxRetries`：模型解析、重试和单级降级；
@@ -322,7 +322,7 @@ HTTP 入口复用 bk-repo `common-security`：
 `@Principal(PrincipalType.GENERAL)` 只保证当前请求来自非匿名登录用户。它不检查：
 
 - 用户是否在当前 `projectId` 拥有项目读权限（`project_view` / `PROJECT + READ`）；
-- `sessionId` 是否属于当前用户；
+- `threadId` 是否属于当前用户；
 - 用户是否有权访问某个项目、仓库或路径；
 - 某个写操作是否需要用户确认。
 
@@ -567,7 +567,7 @@ AgentScope 权限不能代替 IAM；IAM 也不能代替用户确认。
 
 三个 ID 不能混用：
 
-- `threadId`：AG-UI 对话线程 ID，bk-repo 对外 API 与 `RunAgentInput` 统一使用该字段名；Mongo 集合内部列名仍为 `sessionId`；
+- `threadId`：AG-UI 对话线程 ID，bk-repo 对外 API、Mongo 持久化与 `RunAgentInput` 统一使用该字段名；
 - `runId`：一次 AG-UI 执行，由客户端在发请求前生成，并由请求、SSE、运行记录和 trace 全链路复用；
 - `messageId`：一条消息的稳定 ID。客户端生成 USER 消息 ID；助手消息 ID 来自 `TEXT_MESSAGE_START`；工具调用使用独立的 `toolCallId`。
 
@@ -602,7 +602,7 @@ AgentScope 权限不能代替 IAM；IAM 也不能代替用户确认。
 消息规则：
 
 - 客户端发送本轮新增消息即可；服务端已有 AgentState 时不要求重传完整历史；
-- USER 消息必须有 `messageId`，相同 `(sessionId, messageId)` 重试不得重复归档或重复触发执行；
+- USER 消息必须有 `messageId`，相同 `(threadId, messageId)` 重试不得重复归档或重复触发执行；
 - 客户端不得发送 `system` 或伪造 `assistant` 消息；允许的 role 由服务端白名单校验；
 - AgentScope 2.0.1 使用类型化 `MessageContent`，归档必须保留结构化内容，同时提供纯文本投影用于标题和搜索；
 - SSE 增量按 `messageId` 聚合；`TEXT_MESSAGE_END` 后形成完整助手消息；
@@ -640,7 +640,7 @@ Electron 本地能力使用 AG-UI frontend tool：
 
 AgentScope 提供单 JVM 的同会话串行，但不能覆盖多个服务实例。需要 Redis 分布式锁：
 
-- 锁键包含 `userId + sessionId`；
+- 锁键包含 `userId + threadId`；
 - 获取失败立即返回“会话正在运行”，不堆积排队；
 - 锁有租约和续期；
 - run 结束、异常和取消均释放；
@@ -666,7 +666,7 @@ AgentScope 支持 `agent_spawn(timeout_seconds=0)` 和后台任务，但框架�
 
 ### 9.4 中断与超时
 
-- 会话取消调用 `agent.interrupt(userId, sessionId)`；
+- 会话取消调用 `agent.interrupt(userId, threadId)`；
 - 模型调用和工具调用分别配置 `ExecutionConfig` 超时；
 - 子 Agent 使用 `SubagentDeclaration.steps` 限制迭代；
 - Coordinator 设置最大模型调用、委派数、工具调用和总时长；
@@ -777,26 +777,26 @@ AgentScope `AgentEvent` 是内部事件源，必须由官方 `AguiAgentAdapter` 
 
 ### 12.1 agent_session
 
-- `sessionId`（即 AG-UI `threadId`）、`userId`、`projectId`、`title`、`status`；
+- `threadId`、`userId`、`projectId`、`title`、`status`；
 - `createdAt`、`updatedAt`；
 - `lastRunId`、`deleted`、`promptVersion`。
 
-创建接口返回服务端真实的 `sessionId`、`title`、`status`、`createdTime` 和 `updatedTime`，客户端不自行虚构时间。索引：唯一 `sessionId`，以及 `userId + projectId + updatedAt`。
+创建接口返回服务端真实的 `threadId`、`title`、`status`、`createdTime` 和 `updatedTime`，客户端不自行虚构时间。索引：唯一 `threadId`，以及 `userId + projectId + updatedAt`。
 
 ### 12.2 agent_message
 
-- `messageId`、`sessionId`、`runId`；
+- `messageId`、`threadId`、`runId`；
 - `role`、结构化 `content`、可搜索 `textContent`、`agentId`；
 - `toolCallId`、`createdAt`；
 - `metadata`、`redactionVersion`。
 
-索引：唯一 `sessionId + messageId`，以及 `sessionId + createdAt`、`runId`。客户端重试相同 messageId 时返回已有结果或当前状态，不重复写入。
+索引：唯一 `threadId + messageId`，以及 `threadId + createdAt`、`runId`。客户端重试相同 messageId 时返回已有结果或当前状态，不重复写入。
 
-**索引迁移**：若从旧版无 `(sessionId, messageId)` 唯一索引升级，可直接清空 `agent_message` 集合后重建索引，无需数据迁移脚本（历史消息可丢弃）。
+**开发阶段重建**：字段或索引变更时，可直接 `drop` 相关集合后重启服务自动建索引，无需迁移脚本。
 
 ### 12.3 agent_run
 
-- `runId`（来自 `RunAgentInput`）、`sessionId`、`userId`、`projectId`；
+- `runId`（来自 `RunAgentInput`）、`threadId`、`userId`、`projectId`；
 - `status`、`outcome`、`entryAgentId`、`triggerType`；
 - `startedAt`、`finishedAt`；
 - `cancelReason`、`errorCode`、`traceId`；
@@ -898,7 +898,7 @@ Redis 仅保存：
 - 未认证请求拒绝；
 - 当前项目无 `project_view` 请求拒绝；
 - 请求体伪造 userId 不生效；
-- 相同 sessionId 不能被其他用户使用；
+- 相同 threadId 不能被其他用户使用；
 - userId 不进入工具 schema 和系统提示词；
 - 主 Agent、子 Agent 和工具取得相同的 `RuntimeContext.userId`；
 - `context` 或 `forwardedProps` 伪造 userId/projectId 不生效；
@@ -1010,7 +1010,7 @@ Redis 仅保存：
 
 - `AgentState`；
 - `RedisAgentStateStore`；
-- `(userId, sessionId)` 状态命名空间；
+- `(userId, threadId)` 状态命名空间；
 - `MiddlewareBase.onAgent`。
 
 **自建设计**
@@ -1022,13 +1022,13 @@ Redis 仅保存：
 - 归档 middleware 对失败进行补偿；
 - USER 消息沿用客户端 AG-UI `messageId`，助手消息沿用 `TEXT_MESSAGE_START.messageId`；
 - `runId` 使用 `RunAgentInput.runId`，不再生成第二套后台 runId；
-- 为 `(sessionId, messageId)` 和 `runId` 建唯一约束。
+- 为 `(threadId, messageId)` 和 `runId` 建唯一约束。
 
 **验收**
 
 - 重启后能继续对话；
 - 历史原文不因上下文压缩丢失；
-- 不同用户使用相同 sessionId 不能互相访问；
+- 不同用户使用相同 threadId 不能互相访问；
 - 删除会话时按策略清理 Mongo 和 Redis；
 - 同一 messageId 网络重试不会产生重复消息或重复 run；
 - 历史 API 返回与 AG-UI 流一致的 messageId。
@@ -1362,7 +1362,7 @@ Agent 适合需要语言理解、证据综合和不确定性推理的任务。�
 - 可用标准 AG-UI 客户端直接发起 run；
 - 所有 SSE 事件均属于 AG-UI 事件集合；
 - 请求体或 context 伪造身份不影响 RuntimeContext；
-- sessionId/threadId、runId、messageId 可贯穿日志、Mongo 和 trace。
+- threadId、runId、messageId 可贯穿日志、Mongo 和 trace。
 
 ### 17.3 消息与幂等
 
@@ -1371,7 +1371,7 @@ Agent 适合需要语言理解、证据综合和不确定性推理的任务。�
 1. USER 消息以 `messages[].id` 作为 canonical messageId；
 2. 助手消息以 `TEXT_MESSAGE_START.messageId` 聚合 delta 并归档；
 3. 持久化结构化 MessageContent 和 textContent 投影；
-4. 增加唯一索引 `(sessionId, messageId)` 与唯一 runId；
+4. 增加唯一索引 `(threadId, messageId)` 与唯一 runId；
 5. 明确请求重试策略：已完成则返回/回放结果，运行中返回状态，不能重复执行。
 
 **验收**
@@ -1426,7 +1426,7 @@ Agent 适合需要语言理解、证据综合和不确定性推理的任务。�
 
 **已实现 API**
 
-约定：`projectId` 一律走 query；对外字段统一使用 AG-UI `threadId`（Mongo 持久化层内部列名仍为 `sessionId`）；`deviceId` / `traceId` 经 `RunAgentInput.forwardedProps` 传递。
+约定：`projectId` 一律走 query；对外与 Mongo 字段统一使用 AG-UI `threadId`；`deviceId` / `traceId` 经 `RunAgentInput.forwardedProps` 传递。
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |

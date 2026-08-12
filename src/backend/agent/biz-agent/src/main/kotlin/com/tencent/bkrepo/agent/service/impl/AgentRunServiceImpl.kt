@@ -34,7 +34,7 @@ import com.tencent.bkrepo.agent.agui.AguiRunInputProcessor
 import com.tencent.bkrepo.agent.agui.BkrepoAguiRuntimeContextResolver
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
 import com.tencent.bkrepo.agent.constant.AGENT_RUN_ID_PREFIX
-import com.tencent.bkrepo.agent.constant.AGENT_SESSION_ID_PREFIX
+import com.tencent.bkrepo.agent.constant.AGENT_THREAD_ID_PREFIX
 import com.tencent.bkrepo.agent.model.TAgentRun
 import com.tencent.bkrepo.agent.pojo.AgentMessageInfo
 import com.tencent.bkrepo.agent.pojo.AgentRunStatus
@@ -104,12 +104,12 @@ class AgentRunServiceImpl(
 
     override fun createSession(userId: String, projectId: String): AgentSessionCreateResult {
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
-        val sessionId = AGENT_SESSION_ID_PREFIX + StringPool.uniqueId()
-        agentSessionStore.bindSession(userId, projectId, sessionId)
+        val threadId = AGENT_THREAD_ID_PREFIX + StringPool.uniqueId()
+        agentSessionStore.bindSession(userId, projectId, threadId)
         return try {
-            agentSessionService.createSessionRecord(sessionId, userId, projectId)
+            agentSessionService.createSessionRecord(threadId, userId, projectId)
         } catch (ex: Exception) {
-            agentSessionStore.removeSession(projectId, sessionId)
+            agentSessionStore.removeSession(projectId, threadId)
             throw ex
         }
     }
@@ -152,7 +152,7 @@ class AgentRunServiceImpl(
         agentRunRecordService.startRun(
             runId = runId,
             executionId = executionId,
-            sessionId = threadId,
+            threadId = threadId,
             userId = userId,
             projectId = projectId,
             deviceId = transport.deviceId,
@@ -221,7 +221,7 @@ class AgentRunServiceImpl(
         runHandleRegistry.register(
             AgentRunHandleRegistry.Handle(
                 userId = userId,
-                sessionId = threadId,
+                threadId = threadId,
                 runId = runId,
                 runtimeContext = runtimeContext,
                 abort = {
@@ -347,7 +347,7 @@ class AgentRunServiceImpl(
         agentSessionService.assertActiveSession(userId, projectId, threadId)
         val running = agentRunLock.isRunning(userId, threadId)
         val activeRunId = activeRunStore.get(userId, threadId)
-        val latestRun = agentRunRecordService.findLatestBySessionId(threadId)
+        val latestRun = agentRunRecordService.findLatestByThreadId(threadId)
         val runId = activeRunId ?: latestRun?.runId
         val status = when {
             running -> AgentRunStatus.RUNNING
@@ -367,7 +367,7 @@ class AgentRunServiceImpl(
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
         agentSessionService.assertActiveSession(userId, projectId, request.threadId)
         val activeRunId = activeRunStore.get(userId, request.threadId)
-            ?: agentRunRecordService.findLatestBySessionId(request.threadId)
+            ?: agentRunRecordService.findLatestByThreadId(request.threadId)
                 ?.takeIf { it.status == AgentRunStatus.RUNNING }
                 ?.runId
         if (activeRunId == null) {
@@ -393,7 +393,7 @@ class AgentRunServiceImpl(
         Preconditions.checkNotBlank(request.runId, "runId")
         val existingRun = agentRunRecordService.findByRunId(request.runId)
             ?: throw ParameterInvalidException("runId", "run[${request.runId}] not found")
-        if (existingRun.sessionId != request.threadId) {
+        if (existingRun.threadId != request.threadId) {
             throw ParameterInvalidException("threadId", "run does not belong to thread[${request.threadId}]")
         }
         if (existingRun.status == AgentRunStatus.RUNNING) {
@@ -461,7 +461,7 @@ class AgentRunServiceImpl(
 
     private fun validate(input: RunAgentInput) {
         Preconditions.checkNotBlank(input.threadId, "threadId")
-        Preconditions.checkArgument(input.threadId.length <= properties.maxSessionIdLength, "threadId")
+        Preconditions.checkArgument(input.threadId.length <= properties.maxThreadIdLength, "threadId")
         Preconditions.checkNotBlank(input.runId, "runId")
         Preconditions.checkArgument(input.hasMessages() || input.hasResume(), "messages or resume")
         if (input.hasMessages()) {

@@ -59,13 +59,13 @@ class AguiMessageArchiveHandler(
         val text: StringBuilder = StringBuilder(),
     )
 
-    fun archiveIncomingUserMessages(input: RunAgentInput, sessionId: String, runId: String) {
+    fun archiveIncomingUserMessages(input: RunAgentInput, threadId: String, runId: String) {
         if (!input.hasMessages()) return
         for (message in input.messages) {
             if (!message.isUserMessage()) continue
             val text = message.textContent?.takeIf { it.isNotBlank() } ?: continue
             agentMessageArchiveService.archiveUserMessage(
-                sessionId = sessionId,
+                threadId = threadId,
                 runId = runId,
                 messageId = message.id,
                 textContent = text,
@@ -74,7 +74,7 @@ class AguiMessageArchiveHandler(
         }
     }
 
-    fun onEvent(event: AguiEvent, sessionId: String, runId: String, state: State) {
+    fun onEvent(event: AguiEvent, threadId: String, runId: String, state: State) {
         when (event) {
             is AguiEvent.TextMessageStart -> {
                 state.currentAssistant = AssistantBuffer(event.messageId())
@@ -83,14 +83,14 @@ class AguiMessageArchiveHandler(
                 state.currentAssistant?.text?.append(event.delta())
             }
             is AguiEvent.TextMessageEnd -> {
-                finalizeAssistant(sessionId, runId, state)
+                finalizeAssistant(threadId, runId, state)
             }
             is AguiEvent.RunFinished -> {
                 if (event.outcome() is AguiEvent.RunFinishedInterruptOutcome) {
                     state.skipAssistantArchive = true
                     state.currentAssistant = null
                 } else {
-                    finalizeAssistant(sessionId, runId, state)
+                    finalizeAssistant(threadId, runId, state)
                 }
             }
             is AguiEvent.RunError -> {
@@ -102,19 +102,19 @@ class AguiMessageArchiveHandler(
     }
 
     /** SSE 断开且已请求强制归档时，尽力保存已流出的 assistant 文本。 */
-    fun forceFinalizeAssistant(sessionId: String, runId: String, state: State) {
+    fun forceFinalizeAssistant(threadId: String, runId: String, state: State) {
         if (state.skipAssistantArchive) return
-        finalizeAssistant(sessionId, runId, state)
+        finalizeAssistant(threadId, runId, state)
     }
 
-    private fun finalizeAssistant(sessionId: String, runId: String, state: State) {
+    private fun finalizeAssistant(threadId: String, runId: String, state: State) {
         if (state.skipAssistantArchive) return
         val buffer = state.currentAssistant ?: return
         state.currentAssistant = null
         val text = buffer.text.toString()
         if (text.isBlank()) return
         agentMessageArchiveService.archiveAssistantMessage(
-            sessionId = sessionId,
+            threadId = threadId,
             runId = runId,
             messageId = buffer.messageId,
             textContent = text,

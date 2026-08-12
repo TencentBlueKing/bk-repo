@@ -48,13 +48,13 @@ class AgentSessionDao : SimpleMongoDao<TAgentSession>() {
     /**
      * 写入会话元数据。返回 Mongo [insert] 结果（含 `_id`）。
      *
-     * 命中 `sessionId` 唯一索引冲突时，仅在同归属下返回已有记录以支持幂等重试；
+     * 命中 `threadId` 唯一索引冲突时，仅在同归属下返回已有记录以支持幂等重试；
      * 否则重新抛出异常，避免误返回他人会话。
      */
-    fun insertSession(sessionId: String, userId: String, projectId: String): TAgentSession {
+    fun insertSession(threadId: String, userId: String, projectId: String): TAgentSession {
         val now = LocalDateTime.now()
         val session = TAgentSession(
-            sessionId = sessionId,
+            threadId = threadId,
             userId = userId,
             projectId = projectId,
             title = null,
@@ -65,8 +65,8 @@ class AgentSessionDao : SimpleMongoDao<TAgentSession>() {
         return try {
             insert(session)
         } catch (exception: DuplicateKeyException) {
-            logger.warn("duplicate agent session insert, sessionId[$sessionId]", exception)
-            val existing = findBySessionId(sessionId)
+            logger.warn("duplicate agent session insert, threadId[$threadId]", exception)
+            val existing = findByThreadId(threadId)
             if (existing != null && existing.userId == userId && existing.projectId == projectId) {
                 existing
             } else {
@@ -75,8 +75,8 @@ class AgentSessionDao : SimpleMongoDao<TAgentSession>() {
         }
     }
 
-    fun findBySessionId(sessionId: String): TAgentSession? {
-        return findOne(Query(Criteria.where(TAgentSession::sessionId.name).`is`(sessionId)))
+    fun findByThreadId(threadId: String): TAgentSession? {
+        return findOne(Query(Criteria.where(TAgentSession::threadId.name).`is`(threadId)))
     }
 
     fun pageByUserAndProject(userId: String, projectId: String, pageNumber: Int, pageSize: Int): Page<TAgentSession> {
@@ -91,8 +91,8 @@ class AgentSessionDao : SimpleMongoDao<TAgentSession>() {
         return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
-    fun updateTitle(sessionId: String, title: String, updatedAt: LocalDateTime) {
-        val query = Query(Criteria.where(TAgentSession::sessionId.name).`is`(sessionId))
+    fun updateTitle(threadId: String, title: String, updatedAt: LocalDateTime) {
+        val query = Query(Criteria.where(TAgentSession::threadId.name).`is`(threadId))
         val update = Update()
             .set(TAgentSession::title.name, title)
             .set(TAgentSession::updatedAt.name, updatedAt)
@@ -100,9 +100,9 @@ class AgentSessionDao : SimpleMongoDao<TAgentSession>() {
     }
 
     /** 仅在 title 为空时写入，避免覆盖用户或后续手动改过的标题。 */
-    fun updateTitleIfBlank(sessionId: String, title: String, updatedAt: LocalDateTime) {
+    fun updateTitleIfBlank(threadId: String, title: String, updatedAt: LocalDateTime) {
         val query = Query(
-            Criteria.where(TAgentSession::sessionId.name).`is`(sessionId)
+            Criteria.where(TAgentSession::threadId.name).`is`(threadId)
                 .andOperator(
                     Criteria().orOperator(
                         Criteria.where(TAgentSession::title.name).exists(false),
@@ -118,16 +118,16 @@ class AgentSessionDao : SimpleMongoDao<TAgentSession>() {
     }
 
     /** 记录最近一次 run，并刷新列表排序用的 [TAgentSession.updatedAt]。 */
-    fun touchSession(sessionId: String, lastRunId: String, updatedAt: LocalDateTime) {
-        val query = Query(Criteria.where(TAgentSession::sessionId.name).`is`(sessionId))
+    fun touchSession(threadId: String, lastRunId: String, updatedAt: LocalDateTime) {
+        val query = Query(Criteria.where(TAgentSession::threadId.name).`is`(threadId))
         val update = Update()
             .set(TAgentSession::lastRunId.name, lastRunId)
             .set(TAgentSession::updatedAt.name, updatedAt)
         updateFirst(query, update)
     }
 
-    fun markDeleted(sessionId: String, updatedAt: LocalDateTime) {
-        val query = Query(Criteria.where(TAgentSession::sessionId.name).`is`(sessionId))
+    fun markDeleted(threadId: String, updatedAt: LocalDateTime) {
+        val query = Query(Criteria.where(TAgentSession::threadId.name).`is`(threadId))
         val update = Update()
             .set(TAgentSession::status.name, AgentSessionStatus.DELETED)
             .set(TAgentSession::updatedAt.name, updatedAt)

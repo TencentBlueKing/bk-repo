@@ -44,8 +44,8 @@ import java.time.LocalDateTime
         background = true,
     ),
     CompoundIndex(
-        name = "sessionId_startedAt_idx",
-        def = "{'sessionId': 1, 'startedAt': -1}",
+        name = "threadId_startedAt_idx",
+        def = "{'threadId': 1, 'startedAt': -1}",
         background = true,
     ),
     CompoundIndex(
@@ -58,7 +58,7 @@ data class TAgentRun(
     var id: String? = null,
     var runId: String,
     var executionId: String? = null,
-    var sessionId: String,
+    var threadId: String,
     var userId: String,
     var projectId: String,
     var deviceId: String? = null,

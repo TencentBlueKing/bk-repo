@@ -47,13 +47,13 @@ class AgentRunRecordServiceImpl(
 
     override fun findByRunId(runId: String): TAgentRun? = agentRunDao.findByRunId(runId)
 
-    override fun findLatestBySessionId(sessionId: String): TAgentRun? =
-        agentRunDao.findLatestBySessionId(sessionId)
+    override fun findLatestByThreadId(threadId: String): TAgentRun? =
+        agentRunDao.findLatestByThreadId(threadId)
 
     override fun startRun(
         runId: String,
         executionId: String,
-        sessionId: String,
+        threadId: String,
         userId: String,
         projectId: String,
         deviceId: String?,
@@ -67,7 +67,7 @@ class AgentRunRecordServiceImpl(
                 TAgentRun(
                     runId = runId,
                     executionId = executionId,
-                    sessionId = sessionId,
+                    threadId = threadId,
                     userId = userId,
                     projectId = projectId,
                     deviceId = deviceId,
@@ -110,8 +110,8 @@ class AgentRunRecordServiceImpl(
         }
     }
 
-    override fun removeBySessionId(sessionId: String) {
-        agentRunDao.removeBySessionId(sessionId)
+    override fun removeByThreadId(threadId: String) {
+        agentRunDao.removeByThreadId(threadId)
     }
 
     companion object {

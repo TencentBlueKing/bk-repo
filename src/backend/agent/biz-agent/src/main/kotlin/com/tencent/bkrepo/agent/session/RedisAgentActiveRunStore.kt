@@ -16,17 +16,17 @@ class RedisAgentActiveRunStore(
     private val ttlSeconds: Long,
 ) : AgentActiveRunStore {
 
-    override fun bind(userId: String, sessionId: String, runId: String) {
-        redisOperation.set(key(userId, sessionId), runId, ttlSeconds)
+    override fun bind(userId: String, threadId: String, runId: String) {
+        redisOperation.set(key(userId, threadId), runId, ttlSeconds)
     }
 
-    override fun get(userId: String, sessionId: String): String? =
-        redisOperation.get(key(userId, sessionId))
+    override fun get(userId: String, threadId: String): String? =
+        redisOperation.get(key(userId, threadId))
 
-    override fun clear(userId: String, sessionId: String) {
-        redisOperation.delete(key(userId, sessionId))
+    override fun clear(userId: String, threadId: String) {
+        redisOperation.delete(key(userId, threadId))
     }
 
-    private fun key(userId: String, sessionId: String): String =
-        "$AGENT_ACTIVE_RUN_KEY_PREFIX$userId:$sessionId"
+    private fun key(userId: String, threadId: String): String =
+        "$AGENT_ACTIVE_RUN_KEY_PREFIX$userId:$threadId"
 }

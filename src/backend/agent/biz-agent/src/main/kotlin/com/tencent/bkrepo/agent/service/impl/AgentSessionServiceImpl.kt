@@ -62,32 +62,32 @@ class AgentSessionServiceImpl(
 ) : AgentSessionService {
 
     override fun createSessionRecord(
-        sessionId: String,
+        threadId: String,
         userId: String,
         projectId: String,
     ): AgentSessionCreateResult {
-        val session = agentSessionDao.insertSession(sessionId, userId, projectId)
+        val session = agentSessionDao.insertSession(threadId, userId, projectId)
         if (session.status != AgentSessionStatus.ACTIVE) {
-            throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, "Session[$sessionId]")
+            throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, "Thread[$threadId]")
         }
         return AgentSessionCreateResult(
-            threadId = session.sessionId,
+            threadId = session.threadId,
             title = session.title,
             createdAt = session.createdAt,
         )
     }
 
-    override fun assertActiveSession(userId: String, projectId: String, sessionId: String) {
-        val session = agentSessionDao.findBySessionId(sessionId)
-            ?: agentSessionDao.insertSession(sessionId, userId, projectId)
+    override fun assertActiveSession(userId: String, projectId: String, threadId: String) {
+        val session = agentSessionDao.findByThreadId(threadId)
+            ?: agentSessionDao.insertSession(threadId, userId, projectId)
         if (session.status != AgentSessionStatus.ACTIVE) {
-            throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, "Session[$sessionId]")
+            throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, "Thread[$threadId]")
         }
         if (session.userId != userId || session.projectId != projectId) {
-            throw PermissionException("Session[$sessionId] does not belong to user[$userId] in project[$projectId]")
+            throw PermissionException("Thread[$threadId] does not belong to user[$userId] in project[$projectId]")
         }
         // Mongo 校验通过后同步 Redis 归属并刷新 TTL，避免 Redis 过期后 run 失败。
-        agentSessionStore.bindSession(userId, projectId, sessionId)
+        agentSessionStore.bindSession(userId, projectId, threadId)
     }
 
     override fun listSessions(
@@ -103,43 +103,43 @@ class AgentSessionServiceImpl(
     override fun listMessages(
         userId: String,
         projectId: String,
-        sessionId: String,
+        threadId: String,
         pageNumber: Int,
         pageSize: Int,
     ): Page<AgentMessageInfo> {
-        assertActiveSession(userId, projectId, sessionId)
-        val page = agentMessageDao.pageBySessionId(sessionId, pageNumber, pageSize)
+        assertActiveSession(userId, projectId, threadId)
+        val page = agentMessageDao.pageByThreadId(threadId, pageNumber, pageSize)
         return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { toMessageInfo(it) })
     }
 
-    override fun updateTitle(userId: String, projectId: String, sessionId: String, title: String) {
-        assertActiveSession(userId, projectId, sessionId)
+    override fun updateTitle(userId: String, projectId: String, threadId: String, title: String) {
+        assertActiveSession(userId, projectId, threadId)
         val normalizedTitle = title.trim()
         Preconditions.checkNotBlank(normalizedTitle, "title")
         Preconditions.checkArgument(normalizedTitle.length <= properties.maxMessageLength, "title")
-        agentSessionDao.updateTitle(sessionId, normalizedTitle, LocalDateTime.now())
+        agentSessionDao.updateTitle(threadId, normalizedTitle, LocalDateTime.now())
     }
 
-    override fun deleteSession(userId: String, projectId: String, sessionId: String) {
-        assertActiveSession(userId, projectId, sessionId)
-        if (agentRunLock.isRunning(userId, sessionId)) {
-            throw TooManyRequestsException("Session[$sessionId] is running")
+    override fun deleteSession(userId: String, projectId: String, threadId: String) {
+        assertActiveSession(userId, projectId, threadId)
+        if (agentRunLock.isRunning(userId, threadId)) {
+            throw TooManyRequestsException("Thread[$threadId] is running")
         }
         val now = LocalDateTime.now()
-        agentSessionDao.markDeleted(sessionId, now)
-        agentMessageDao.removeBySessionId(sessionId)
-        agentRunRecordService.removeBySessionId(sessionId)
-        agentSessionStore.removeSession(projectId, sessionId)
-        agentRuntimeStateCleaner.clear(userId, sessionId)
+        agentSessionDao.markDeleted(threadId, now)
+        agentMessageDao.removeByThreadId(threadId)
+        agentRunRecordService.removeByThreadId(threadId)
+        agentSessionStore.removeSession(projectId, threadId)
+        agentRuntimeStateCleaner.clear(userId, threadId)
     }
 
-    override fun touchSession(sessionId: String, runId: String) {
-        agentSessionDao.touchSession(sessionId, runId, LocalDateTime.now())
+    override fun touchSession(threadId: String, runId: String) {
+        agentSessionDao.touchSession(threadId, runId, LocalDateTime.now())
     }
 
     private fun toInfo(session: TAgentSession): AgentSessionInfo {
         return AgentSessionInfo(
-            threadId = session.sessionId,
+            threadId = session.threadId,
             userId = session.userId,
             projectId = session.projectId,
             title = session.title,
@@ -152,7 +152,7 @@ class AgentSessionServiceImpl(
     private fun toMessageInfo(message: TAgentMessage): AgentMessageInfo {
         return AgentMessageInfo(
             messageId = message.messageId,
-            threadId = message.sessionId,
+            threadId = message.threadId,
             runId = message.runId,
             role = message.role,
             content = message.content,

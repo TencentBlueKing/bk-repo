@@ -44,17 +44,17 @@ import org.springframework.stereotype.Repository
 @Repository
 class AgentMessageDao : SimpleMongoDao<TAgentMessage>() {
 
-    fun findBySessionAndMessageId(sessionId: String, messageId: String): TAgentMessage? {
+    fun findByThreadAndMessageId(threadId: String, messageId: String): TAgentMessage? {
         val query = Query(
-            Criteria.where(TAgentMessage::sessionId.name).`is`(sessionId)
+            Criteria.where(TAgentMessage::threadId.name).`is`(threadId)
                 .and(TAgentMessage::messageId.name).`is`(messageId),
         )
         return findOne(query)
     }
 
-    /** @return true 表示新插入，false 表示 (sessionId, messageId) 已存在 */
+    /** @return true 表示新插入，false 表示 (threadId, messageId) 已存在 */
     fun insertIfAbsent(message: TAgentMessage): Boolean {
-        if (findBySessionAndMessageId(message.sessionId, message.messageId) != null) {
+        if (findByThreadAndMessageId(message.threadId, message.messageId) != null) {
             return false
         }
         return try {
@@ -65,8 +65,8 @@ class AgentMessageDao : SimpleMongoDao<TAgentMessage>() {
         }
     }
 
-    fun pageBySessionId(sessionId: String, pageNumber: Int, pageSize: Int): Page<TAgentMessage> {
-        val query = Query(Criteria.where(TAgentMessage::sessionId.name).`is`(sessionId))
+    fun pageByThreadId(threadId: String, pageNumber: Int, pageSize: Int): Page<TAgentMessage> {
+        val query = Query(Criteria.where(TAgentMessage::threadId.name).`is`(threadId))
             .with(Sort.by(Sort.Direction.ASC, TAgentMessage::createdAt.name))
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val totalRecords = count(query)
@@ -74,7 +74,7 @@ class AgentMessageDao : SimpleMongoDao<TAgentMessage>() {
         return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
-    fun removeBySessionId(sessionId: String) {
-        remove(Query(Criteria.where(TAgentMessage::sessionId.name).`is`(sessionId)))
+    fun removeByThreadId(threadId: String) {
+        remove(Query(Criteria.where(TAgentMessage::threadId.name).`is`(threadId)))
     }
 }

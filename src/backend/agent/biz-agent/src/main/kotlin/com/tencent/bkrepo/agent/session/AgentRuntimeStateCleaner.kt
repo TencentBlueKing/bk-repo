@@ -41,11 +41,11 @@ class AgentRuntimeStateCleaner(
     private val agentStateStore: AgentStateStore,
 ) {
 
-    fun clear(userId: String, sessionId: String) {
+    fun clear(userId: String, threadId: String) {
         try {
-            agentStateStore.delete(userId, sessionId)
+            agentStateStore.delete(userId, threadId)
         } catch (exception: Exception) {
-            logger.warn("failed to clear agent runtime state for user[$userId] session[$sessionId]", exception)
+            logger.warn("failed to clear agent runtime state for user[$userId] thread[$threadId]", exception)
         }
     }
 

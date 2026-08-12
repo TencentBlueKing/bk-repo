@@ -36,30 +36,30 @@ class RedisAgentSessionStore(
     private val sessionTtlSeconds: Long,
 ) : AgentSessionStore {
 
-    override fun bindSession(userId: String, projectId: String, sessionId: String) {
-        redisOperation.set(sessionKey(projectId, sessionId), userId, sessionTtlSeconds)
+    override fun bindSession(userId: String, projectId: String, threadId: String) {
+        redisOperation.set(sessionKey(projectId, threadId), userId, sessionTtlSeconds)
     }
 
-    override fun assertSessionOwner(userId: String, projectId: String, sessionId: String) {
-        val owner = redisOperation.get(sessionKey(projectId, sessionId))
-            ?: throw PermissionException("Session[$sessionId] does not exist in project[$projectId]")
+    override fun assertSessionOwner(userId: String, projectId: String, threadId: String) {
+        val owner = redisOperation.get(sessionKey(projectId, threadId))
+            ?: throw PermissionException("Session[$threadId] does not exist in project[$projectId]")
         if (owner != userId) {
-            throw PermissionException("Session[$sessionId] does not belong to user[$userId] in project[$projectId]")
+            throw PermissionException("Session[$threadId] does not belong to user[$userId] in project[$projectId]")
         }
     }
 
-    override fun touchSessionOwner(userId: String, projectId: String, sessionId: String) {
-        val key = sessionKey(projectId, sessionId)
+    override fun touchSessionOwner(userId: String, projectId: String, threadId: String) {
+        val key = sessionKey(projectId, threadId)
         if (redisOperation.get(key) == userId) {
             redisOperation.expire(key, sessionTtlSeconds)
         }
     }
 
-    override fun removeSession(projectId: String, sessionId: String) {
-        redisOperation.delete(sessionKey(projectId, sessionId))
+    override fun removeSession(projectId: String, threadId: String) {
+        redisOperation.delete(sessionKey(projectId, threadId))
     }
 
-    private fun sessionKey(projectId: String, sessionId: String): String {
-        return "$AGENT_SESSION_OWNER_KEY_PREFIX$projectId:$sessionId"
+    private fun sessionKey(projectId: String, threadId: String): String {
+        return "$AGENT_SESSION_OWNER_KEY_PREFIX$projectId:$threadId"
     }
 }

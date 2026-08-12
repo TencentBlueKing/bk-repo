@@ -14,13 +14,13 @@ class InMemoryAgentPendingInterruptStore : AgentPendingInterruptStore {
 
     private val sessions = ConcurrentHashMap<String, PendingInterruptSession>()
 
-    override fun save(sessionId: String, session: PendingInterruptSession) {
-        sessions[sessionId] = session
+    override fun save(threadId: String, session: PendingInterruptSession) {
+        sessions[threadId] = session
     }
 
-    override fun get(sessionId: String): PendingInterruptSession? = sessions[sessionId]
+    override fun get(threadId: String): PendingInterruptSession? = sessions[threadId]
 
-    override fun clear(sessionId: String) {
-        sessions.remove(sessionId)
+    override fun clear(threadId: String) {
+        sessions.remove(threadId)
     }
 }

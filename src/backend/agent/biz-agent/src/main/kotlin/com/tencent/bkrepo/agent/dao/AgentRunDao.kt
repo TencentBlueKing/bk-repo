@@ -47,8 +47,8 @@ class AgentRunDao : SimpleMongoDao<TAgentRun>() {
         return findOne(query)
     }
 
-    fun findLatestBySessionId(sessionId: String): TAgentRun? {
-        val query = Query(Criteria.where(TAgentRun::sessionId.name).`is`(sessionId))
+    fun findLatestByThreadId(threadId: String): TAgentRun? {
+        val query = Query(Criteria.where(TAgentRun::threadId.name).`is`(threadId))
             .with(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, TAgentRun::startedAt.name))
             .limit(1)
         return findOne(query)
@@ -85,7 +85,7 @@ class AgentRunDao : SimpleMongoDao<TAgentRun>() {
         return updateFirst(query, update).modifiedCount > 0
     }
 
-    fun removeBySessionId(sessionId: String) {
-        remove(Query(Criteria.where(TAgentRun::sessionId.name).`is`(sessionId)))
+    fun removeByThreadId(threadId: String) {
+        remove(Query(Criteria.where(TAgentRun::threadId.name).`is`(threadId)))
     }
 }

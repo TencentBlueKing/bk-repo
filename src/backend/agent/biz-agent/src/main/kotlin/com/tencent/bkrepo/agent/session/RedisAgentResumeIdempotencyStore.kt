@@ -16,8 +16,8 @@ class RedisAgentResumeIdempotencyStore(
     private val ttlSeconds: Long,
 ) : AgentResumeIdempotencyStore {
 
-    override fun tryMark(sessionId: String, interruptId: String, fingerprint: String): Boolean {
-        val key = "$AGENT_RESUME_IDEMPOTENCY_KEY_PREFIX$sessionId:$interruptId:$fingerprint"
+    override fun tryMark(threadId: String, interruptId: String, fingerprint: String): Boolean {
+        val key = "$AGENT_RESUME_IDEMPOTENCY_KEY_PREFIX$threadId:$interruptId:$fingerprint"
         val existing = redisOperation.getAndSet(key, "1", ttlSeconds)
         return existing == null
     }

@@ -37,8 +37,8 @@ import java.time.LocalDateTime
 @Document("agent_session")
 @CompoundIndexes(
     CompoundIndex(
-        name = "sessionId_idx",
-        def = "{'sessionId': 1}",
+        name = "threadId_idx",
+        def = "{'threadId': 1}",
         unique = true,
         background = true,
     ),
@@ -50,7 +50,7 @@ import java.time.LocalDateTime
 )
 data class TAgentSession(
     var id: String? = null,
-    var sessionId: String,
+    var threadId: String,
     var userId: String,
     var projectId: String,
     var title: String? = null,

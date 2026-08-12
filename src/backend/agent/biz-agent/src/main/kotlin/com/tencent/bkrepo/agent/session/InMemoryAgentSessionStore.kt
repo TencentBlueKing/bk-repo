@@ -34,25 +34,25 @@ class InMemoryAgentSessionStore : AgentSessionStore {
 
     private val owners = ConcurrentHashMap<String, String>()
 
-    override fun bindSession(userId: String, projectId: String, sessionId: String) {
-        owners[sessionKey(projectId, sessionId)] = userId
+    override fun bindSession(userId: String, projectId: String, threadId: String) {
+        owners[sessionKey(projectId, threadId)] = userId
     }
 
-    override fun assertSessionOwner(userId: String, projectId: String, sessionId: String) {
-        val owner = owners[sessionKey(projectId, sessionId)]
-            ?: throw PermissionException("Session[$sessionId] does not exist in project[$projectId]")
+    override fun assertSessionOwner(userId: String, projectId: String, threadId: String) {
+        val owner = owners[sessionKey(projectId, threadId)]
+            ?: throw PermissionException("Session[$threadId] does not exist in project[$projectId]")
         if (owner != userId) {
-            throw PermissionException("Session[$sessionId] does not belong to user[$userId] in project[$projectId]")
+            throw PermissionException("Session[$threadId] does not belong to user[$userId] in project[$projectId]")
         }
     }
 
-    override fun touchSessionOwner(userId: String, projectId: String, sessionId: String) {
+    override fun touchSessionOwner(userId: String, projectId: String, threadId: String) {
         // 进程内存储无 TTL，无需续期
     }
 
-    override fun removeSession(projectId: String, sessionId: String) {
-        owners.remove(sessionKey(projectId, sessionId))
+    override fun removeSession(projectId: String, threadId: String) {
+        owners.remove(sessionKey(projectId, threadId))
     }
 
-    private fun sessionKey(projectId: String, sessionId: String): String = "$projectId:$sessionId"
+    private fun sessionKey(projectId: String, threadId: String): String = "$projectId:$threadId"
 }

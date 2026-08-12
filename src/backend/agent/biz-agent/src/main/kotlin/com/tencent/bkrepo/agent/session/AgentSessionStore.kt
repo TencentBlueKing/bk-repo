@@ -30,17 +30,17 @@ package com.tencent.bkrepo.agent.session
 /**
  * 会话归属存储（Redis / 内存）。
  *
- * 热路径鉴权用：run 前快速校验 `(projectId, sessionId) -> userId`。
+ * 热路径鉴权用：run 前快速校验 `(projectId, threadId) -> userId`。
  * 会话元数据与消息历史在 Mongo，由 [com.tencent.bkrepo.agent.service.AgentSessionService] 管理。
  */
 interface AgentSessionStore {
 
-    fun bindSession(userId: String, projectId: String, sessionId: String)
+    fun bindSession(userId: String, projectId: String, threadId: String)
 
-    fun assertSessionOwner(userId: String, projectId: String, sessionId: String)
+    fun assertSessionOwner(userId: String, projectId: String, threadId: String)
 
     /** 续期 Redis 归属 key TTL；key 不存在时不写入。 */
-    fun touchSessionOwner(userId: String, projectId: String, sessionId: String)
+    fun touchSessionOwner(userId: String, projectId: String, threadId: String)
 
-    fun removeSession(projectId: String, sessionId: String)
+    fun removeSession(projectId: String, threadId: String)
 }

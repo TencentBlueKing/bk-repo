@@ -36,7 +36,7 @@ interface AgentMessageArchiveService {
 
     /** 归档用户消息；[messageId] 来自客户端 [RunAgentInput.messages] 的 canonical id。 */
     fun archiveUserMessage(
-        sessionId: String,
+        threadId: String,
         runId: String,
         messageId: String,
         textContent: String,
@@ -45,7 +45,7 @@ interface AgentMessageArchiveService {
 
     /** 归档 assistant 消息；[messageId] 来自 AG-UI TEXT_MESSAGE_START。 */
     fun archiveAssistantMessage(
-        sessionId: String,
+        threadId: String,
         runId: String,
         messageId: String,
         textContent: String,

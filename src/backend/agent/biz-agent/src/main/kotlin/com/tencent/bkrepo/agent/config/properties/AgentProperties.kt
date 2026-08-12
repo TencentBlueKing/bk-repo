@@ -61,9 +61,9 @@ data class AgentProperties(
      */
     var maxMessageLength: Int = DEFAULT_MAX_MESSAGE_LENGTH,
     /**
-     * 会话 ID 允许的最大长度
+     * threadId 允许的最大长度
      */
-    var maxSessionIdLength: Int = DEFAULT_MAX_SESSION_ID_LENGTH,
+    var maxThreadIdLength: Int = DEFAULT_MAX_THREAD_ID_LENGTH,
     /**
      * 会话归属记录在 Redis 中的 TTL；未配置 Redis 时退化为进程内存储
      */
@@ -83,7 +83,7 @@ data class AgentProperties(
         const val DEFAULT_WORKSPACE = "/data/workspace/agent"
         val DEFAULT_SSE_TIMEOUT: Duration = Duration.ofMinutes(10)
         const val DEFAULT_MAX_MESSAGE_LENGTH = 32 * 1024
-        const val DEFAULT_MAX_SESSION_ID_LENGTH = 128
+        const val DEFAULT_MAX_THREAD_ID_LENGTH = 128
         val DEFAULT_SESSION_TTL: Duration = Duration.ofDays(30)
         val DEFAULT_RUN_LOCK_TTL: Duration = Duration.ofMinutes(11)
         const val DEFAULT_LOCAL_TOOLS_ENABLED = true

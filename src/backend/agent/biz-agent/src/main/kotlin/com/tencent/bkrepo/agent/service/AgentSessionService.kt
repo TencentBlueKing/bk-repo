@@ -41,12 +41,12 @@ import com.tencent.bkrepo.common.api.pojo.Page
 interface AgentSessionService {
 
     /**
-     * 将已生成 [sessionId] 的会话元数据写入 Mongo。
+     * 将已生成 [threadId] 的会话元数据写入 Mongo。
      *
-     * 调用方须已写入 Redis 归属；返回 DAO insert 结果中的 sessionId。
+     * 调用方须已写入 Redis 归属；返回 DAO insert 结果中的 threadId。
      */
     fun createSessionRecord(
-        sessionId: String,
+        threadId: String,
         userId: String,
         projectId: String,
     ): AgentSessionCreateResult
@@ -59,7 +59,7 @@ interface AgentSessionService {
      * @throws com.tencent.bkrepo.common.security.exception.PermissionException 归属不匹配
      * @throws com.tencent.bkrepo.common.api.exception.NotFoundException 会话已删除或不存在
      */
-    fun assertActiveSession(userId: String, projectId: String, sessionId: String)
+    fun assertActiveSession(userId: String, projectId: String, threadId: String)
 
     /**
      * 分页列出用户在项目下的 ACTIVE 会话。
@@ -72,7 +72,7 @@ interface AgentSessionService {
     fun listMessages(
         userId: String,
         projectId: String,
-        sessionId: String,
+        threadId: String,
         pageNumber: Int,
         pageSize: Int,
     ): Page<AgentMessageInfo>
@@ -80,15 +80,15 @@ interface AgentSessionService {
     /**
      * 更新会话标题；内部会先 [assertActiveSession]。
      */
-    fun updateTitle(userId: String, projectId: String, sessionId: String, title: String)
+    fun updateTitle(userId: String, projectId: String, threadId: String, title: String)
 
     /**
      * 删除会话并级联清理 Mongo 消息、Redis 归属与 AgentState。
      */
-    fun deleteSession(userId: String, projectId: String, sessionId: String)
+    fun deleteSession(userId: String, projectId: String, threadId: String)
 
     /**
      * 记录最近一次 runId，并刷新 [com.tencent.bkrepo.agent.model.TAgentSession.updatedAt] 供列表排序。
      */
-    fun touchSession(sessionId: String, runId: String)
+    fun touchSession(threadId: String, runId: String)
 }

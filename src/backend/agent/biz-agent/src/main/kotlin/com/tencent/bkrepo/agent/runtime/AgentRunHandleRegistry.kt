@@ -18,7 +18,7 @@ class AgentRunHandleRegistry {
 
     data class Handle(
         val userId: String,
-        val sessionId: String,
+        val threadId: String,
         val runId: String,
         val runtimeContext: RuntimeContext,
         val abort: () -> Unit,
@@ -27,14 +27,14 @@ class AgentRunHandleRegistry {
     private val bySession = ConcurrentHashMap<String, Handle>()
 
     fun register(handle: Handle) {
-        bySession[key(handle.userId, handle.sessionId)] = handle
+        bySession[key(handle.userId, handle.threadId)] = handle
     }
 
-    fun remove(userId: String, sessionId: String) {
-        bySession.remove(key(userId, sessionId))
+    fun remove(userId: String, threadId: String) {
+        bySession.remove(key(userId, threadId))
     }
 
-    fun find(userId: String, sessionId: String): Handle? = bySession[key(userId, sessionId)]
+    fun find(userId: String, threadId: String): Handle? = bySession[key(userId, threadId)]
 
-    private fun key(userId: String, sessionId: String): String = "$userId:$sessionId"
+    private fun key(userId: String, threadId: String): String = "$userId:$threadId"
 }

@@ -14,15 +14,15 @@ class InMemoryAgentActiveRunStore : AgentActiveRunStore {
 
     private val runs = ConcurrentHashMap<String, String>()
 
-    override fun bind(userId: String, sessionId: String, runId: String) {
-        runs[key(userId, sessionId)] = runId
+    override fun bind(userId: String, threadId: String, runId: String) {
+        runs[key(userId, threadId)] = runId
     }
 
-    override fun get(userId: String, sessionId: String): String? = runs[key(userId, sessionId)]
+    override fun get(userId: String, threadId: String): String? = runs[key(userId, threadId)]
 
-    override fun clear(userId: String, sessionId: String) {
-        runs.remove(key(userId, sessionId))
+    override fun clear(userId: String, threadId: String) {
+        runs.remove(key(userId, threadId))
     }
 
-    private fun key(userId: String, sessionId: String): String = "$userId:$sessionId"
+    private fun key(userId: String, threadId: String): String = "$userId:$threadId"
 }

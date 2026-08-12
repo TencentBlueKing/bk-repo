@@ -25,9 +25,9 @@ data class PendingInterruptSession(
 
 interface AgentPendingInterruptStore {
 
-    fun save(sessionId: String, session: PendingInterruptSession)
+    fun save(threadId: String, session: PendingInterruptSession)
 
-    fun get(sessionId: String): PendingInterruptSession?
+    fun get(threadId: String): PendingInterruptSession?
 
-    fun clear(sessionId: String)
+    fun clear(threadId: String)
 }

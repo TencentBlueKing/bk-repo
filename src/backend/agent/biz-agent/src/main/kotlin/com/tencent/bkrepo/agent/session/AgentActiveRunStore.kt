@@ -11,9 +11,9 @@ package com.tencent.bkrepo.agent.session
 /** thread 级活跃 canonical runId，供 status/stop 与多副本查询。 */
 interface AgentActiveRunStore {
 
-    fun bind(userId: String, sessionId: String, runId: String)
+    fun bind(userId: String, threadId: String, runId: String)
 
-    fun get(userId: String, sessionId: String): String?
+    fun get(userId: String, threadId: String): String?
 
-    fun clear(userId: String, sessionId: String)
+    fun clear(userId: String, threadId: String)
 }

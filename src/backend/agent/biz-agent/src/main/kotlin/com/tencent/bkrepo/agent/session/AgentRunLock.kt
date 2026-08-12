@@ -34,10 +34,10 @@ package com.tencent.bkrepo.agent.session
  */
 interface AgentRunLock {
 
-    fun tryAcquire(userId: String, sessionId: String): Boolean
+    fun tryAcquire(userId: String, threadId: String): Boolean
 
-    fun release(userId: String, sessionId: String)
+    fun release(userId: String, threadId: String)
 
     /** 是否有进行中的前台 run（任意实例持有锁）。 */
-    fun isRunning(userId: String, sessionId: String): Boolean
+    fun isRunning(userId: String, threadId: String): Boolean
 }

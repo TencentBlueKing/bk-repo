@@ -42,13 +42,13 @@ class RuntimeContextFactory {
     fun create(
         userId: String,
         projectId: String,
-        sessionId: String,
+        threadId: String,
         deviceId: String? = null,
         runId: String? = null,
     ): RuntimeContext {
         val builder = RuntimeContext.builder()
             .userId(userId)
-            .sessionId(sessionId)
+            .sessionId(threadId)
             .put(RUNTIME_CONTEXT_PROJECT_ID, projectId)
         deviceId?.takeIf { it.isNotBlank() }?.let {
             builder.put(RUNTIME_CONTEXT_DEVICE_ID, it)

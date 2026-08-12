@@ -14,7 +14,7 @@ class InMemoryAgentResumeIdempotencyStore : AgentResumeIdempotencyStore {
 
     private val keys = ConcurrentHashMap.newKeySet<String>()
 
-    override fun tryMark(sessionId: String, interruptId: String, fingerprint: String): Boolean {
-        return keys.add("$sessionId:$interruptId:$fingerprint")
+    override fun tryMark(threadId: String, interruptId: String, fingerprint: String): Boolean {
+        return keys.add("$threadId:$interruptId:$fingerprint")
     }
 }

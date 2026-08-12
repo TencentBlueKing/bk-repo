@@ -33,18 +33,18 @@ class InMemoryAgentRunLock : AgentRunLock {
 
     private val locks = ConcurrentHashMap<String, String>()
 
-    override fun tryAcquire(userId: String, sessionId: String): Boolean {
-        val key = lockKey(userId, sessionId)
+    override fun tryAcquire(userId: String, threadId: String): Boolean {
+        val key = lockKey(userId, threadId)
         return locks.putIfAbsent(key, key) == null
     }
 
-    override fun release(userId: String, sessionId: String) {
-        locks.remove(lockKey(userId, sessionId))
+    override fun release(userId: String, threadId: String) {
+        locks.remove(lockKey(userId, threadId))
     }
 
-    override fun isRunning(userId: String, sessionId: String): Boolean {
-        return locks.containsKey(lockKey(userId, sessionId))
+    override fun isRunning(userId: String, threadId: String): Boolean {
+        return locks.containsKey(lockKey(userId, threadId))
     }
 
-    private fun lockKey(userId: String, sessionId: String): String = "$userId:$sessionId"
+    private fun lockKey(userId: String, threadId: String): String = "$userId:$threadId"
 }

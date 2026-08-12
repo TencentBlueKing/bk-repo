@@ -18,18 +18,18 @@ class RedisAgentPendingInterruptStore(
     private val ttlSeconds: Long,
 ) : AgentPendingInterruptStore {
 
-    override fun save(sessionId: String, session: PendingInterruptSession) {
-        redisOperation.set(key(sessionId), objectMapper.writeValueAsString(session), ttlSeconds)
+    override fun save(threadId: String, session: PendingInterruptSession) {
+        redisOperation.set(key(threadId), objectMapper.writeValueAsString(session), ttlSeconds)
     }
 
-    override fun get(sessionId: String): PendingInterruptSession? {
-        val raw = redisOperation.get(key(sessionId)) ?: return null
+    override fun get(threadId: String): PendingInterruptSession? {
+        val raw = redisOperation.get(key(threadId)) ?: return null
         return objectMapper.readValue(raw, PendingInterruptSession::class.java)
     }
 
-    override fun clear(sessionId: String) {
-        redisOperation.delete(key(sessionId))
+    override fun clear(threadId: String) {
+        redisOperation.delete(key(threadId))
     }
 
-    private fun key(sessionId: String): String = "$AGENT_PENDING_INTERRUPT_KEY_PREFIX$sessionId"
+    private fun key(threadId: String): String = "$AGENT_PENDING_INTERRUPT_KEY_PREFIX$threadId"
 }

@@ -39,7 +39,7 @@ import java.time.LocalDateTime
 /**
  * 将 USER/ASSISTANT 原文写入 Mongo，供历史 API 查询。
  *
- * 以 (sessionId, messageId) 幂等写入；归档失败不阻塞主流程。
+ * 以 (threadId, messageId) 幂等写入；归档失败不阻塞主流程。
  */
 @Service
 class AgentMessageArchiveServiceImpl(
@@ -48,7 +48,7 @@ class AgentMessageArchiveServiceImpl(
 ) : AgentMessageArchiveService {
 
     override fun archiveUserMessage(
-        sessionId: String,
+        threadId: String,
         runId: String,
         messageId: String,
         textContent: String,
@@ -56,7 +56,7 @@ class AgentMessageArchiveServiceImpl(
     ) {
         if (textContent.isBlank()) return
         val inserted = archiveMessage(
-            sessionId = sessionId,
+            threadId = threadId,
             runId = runId,
             messageId = messageId,
             role = AgentMessageRole.USER,
@@ -66,17 +66,17 @@ class AgentMessageArchiveServiceImpl(
         if (!inserted) return
         try {
             agentSessionDao.updateTitleIfBlank(
-                sessionId = sessionId,
+                threadId = threadId,
                 title = deriveSessionTitle(textContent),
                 updatedAt = LocalDateTime.now(),
             )
         } catch (exception: Exception) {
-            logger.warn("auto-set session title failed, session[$sessionId]", exception)
+            logger.warn("auto-set session title failed, thread[$threadId]", exception)
         }
     }
 
     override fun archiveAssistantMessage(
-        sessionId: String,
+        threadId: String,
         runId: String,
         messageId: String,
         textContent: String,
@@ -84,7 +84,7 @@ class AgentMessageArchiveServiceImpl(
         structuredContent: Map<String, Any>?,
     ) {
         archiveMessage(
-            sessionId = sessionId,
+            threadId = threadId,
             runId = runId,
             messageId = messageId,
             role = AgentMessageRole.ASSISTANT,
@@ -95,7 +95,7 @@ class AgentMessageArchiveServiceImpl(
     }
 
     private fun archiveMessage(
-        sessionId: String,
+        threadId: String,
         runId: String,
         messageId: String,
         role: AgentMessageRole,
@@ -106,7 +106,7 @@ class AgentMessageArchiveServiceImpl(
         if (textContent.isBlank()) return false
         val message = TAgentMessage(
             messageId = messageId,
-            sessionId = sessionId,
+            threadId = threadId,
             runId = runId,
             role = role,
             content = textContent,

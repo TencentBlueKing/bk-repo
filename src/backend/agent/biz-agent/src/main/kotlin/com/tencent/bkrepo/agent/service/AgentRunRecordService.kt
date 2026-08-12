@@ -35,12 +35,12 @@ interface AgentRunRecordService {
 
     fun findByRunId(runId: String): TAgentRun?
 
-    fun findLatestBySessionId(sessionId: String): TAgentRun?
+    fun findLatestByThreadId(threadId: String): TAgentRun?
 
     fun startRun(
         runId: String,
         executionId: String,
-        sessionId: String,
+        threadId: String,
         userId: String,
         projectId: String,
         deviceId: String?,
@@ -55,5 +55,5 @@ interface AgentRunRecordService {
         errorCode: String? = null,
     )
 
-    fun removeBySessionId(sessionId: String)
+    fun removeByThreadId(threadId: String)
 }
