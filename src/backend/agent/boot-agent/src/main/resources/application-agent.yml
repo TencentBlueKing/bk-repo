@@ -14,8 +14,11 @@ agent:
   tool-result-eviction:
     enabled: true
   model:
+    auth-type: bk-gateway
     base-url:
     api-key:
+    bk-app-code:
+    bk-app-secret:
     model-name:
 
 rate:

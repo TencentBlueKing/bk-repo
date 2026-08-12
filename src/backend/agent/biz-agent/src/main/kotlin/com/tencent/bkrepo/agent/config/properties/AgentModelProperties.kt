@@ -21,8 +21,8 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
  * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
  * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 package com.tencent.bkrepo.agent.config.properties
@@ -30,18 +30,30 @@ package com.tencent.bkrepo.agent.config.properties
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 /**
- * Agent 模型网关配置。通过 OpenAI 兼容协议接入蓝鲸模型网关
+ * Agent 模型网关配置。通过 OpenAI 兼容协议接入蓝鲸模型网关或直连上游。
  */
 @ConfigurationProperties("agent.model")
 data class AgentModelProperties(
+    /**
+     * 认证方式，默认 [AgentModelAuthType.BK_GATEWAY]。
+     */
+    var authType: AgentModelAuthType = AgentModelAuthType.BK_GATEWAY,
     /**
      * 模型网关 OpenAI 兼容接口地址，例如 https://bkapi.example.com/prod/openai/v1
      */
     var baseUrl: String = "",
     /**
-     * 模型网关 API Key。生产环境建议通过配置中心或密钥服务注入
+     * [AgentModelAuthType.API_KEY] 模式的 API Key。
      */
     var apiKey: String = "",
+    /**
+     * [AgentModelAuthType.BK_GATEWAY] 模式的 bk_app_code。
+     */
+    var bkAppCode: String = "",
+    /**
+     * [AgentModelAuthType.BK_GATEWAY] 模式的 bk_app_secret。
+     */
+    var bkAppSecret: String = "",
     /**
      * 模型名称，例如 gpt-4o / qwen-max
      */

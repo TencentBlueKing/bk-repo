@@ -520,6 +520,8 @@ class AgentRunServiceImpl(
     private fun trackTerminalStatus(event: AguiEvent, terminalStatus: AtomicReference<AgentRunStatus>) {
         when (event) {
             is AguiEvent.RunFinished -> {
+                // 2.0.1 legacy：errorEvents() 可能在 RUN_ERROR 后再发 RUN_FINISHED，终态以 FAILED 为准。
+                if (terminalStatus.get() == AgentRunStatus.FAILED) return
                 val outcome = event.outcome()
                 terminalStatus.set(
                     if (outcome is AguiEvent.RunFinishedInterruptOutcome) {

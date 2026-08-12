@@ -53,6 +53,13 @@ class AguiAgentConfiguration {
         properties: AgentProperties,
     ): StatelessHarnessAgentResolver = StatelessHarnessAgentResolver(registry, properties)
 
+    /**
+     * AG-UI 适配配置。
+     *
+     * 错误终态：AgentScope 2.0.1 的 [AguiAgentAdapter.errorEvents] 会在 RUN_ERROR 后无条件追加
+     * RUN_FINISHED（legacy 行为）。#2646 起可通过 [AguiAdapterConfig.Builder.emitRunFinishedAfterError]
+     * 关闭；升级后应显式设为 false。
+     */
     @Bean
     fun aguiAdapterConfig(properties: AgentProperties): AguiAdapterConfig {
         val toolMergeMode = if (properties.localToolsEnabled) {

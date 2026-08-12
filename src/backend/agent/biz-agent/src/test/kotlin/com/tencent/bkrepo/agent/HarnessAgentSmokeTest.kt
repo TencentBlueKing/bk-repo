@@ -33,6 +33,7 @@ import com.tencent.bkrepo.agent.config.AgentCompactionConfigurer
 import com.tencent.bkrepo.agent.config.AgentHarnessConfigurer
 import com.tencent.bkrepo.agent.config.AgentModelConfiguration
 import com.tencent.bkrepo.agent.config.properties.AgentCompactionProperties
+import com.tencent.bkrepo.agent.config.properties.AgentModelAuthType
 import com.tencent.bkrepo.agent.config.properties.AgentModelProperties
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
 import com.tencent.bkrepo.agent.config.properties.AgentToolResultEvictionProperties
@@ -86,6 +87,7 @@ class HarnessAgentSmokeTest {
             maxIters = 3
         }
         val modelProperties = AgentModelProperties(
+            authType = AgentModelAuthType.API_KEY,
             baseUrl = "http://127.0.0.1:${server.address.port}/v1",
             apiKey = "stub-api-key",
             modelName = "stub-model",

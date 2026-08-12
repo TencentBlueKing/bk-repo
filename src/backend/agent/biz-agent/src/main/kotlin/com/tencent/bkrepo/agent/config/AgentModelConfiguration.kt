@@ -21,15 +21,18 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
  * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
  * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 package com.tencent.bkrepo.agent.config
 
+import com.tencent.bkrepo.agent.config.properties.AgentModelAuthType
 import com.tencent.bkrepo.agent.config.properties.AgentModelProperties
+import io.agentscope.core.model.GenerateOptions
 import io.agentscope.core.model.Model
 import io.agentscope.extensions.model.openai.OpenAIChatModel
+import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -40,12 +43,49 @@ class AgentModelConfiguration {
     fun agentChatModel(properties: AgentModelProperties): Model {
         require(properties.baseUrl.isNotBlank()) { "agent.model.base-url is required" }
         require(properties.modelName.isNotBlank()) { "agent.model.model-name is required" }
-        return OpenAIChatModel.builder()
+
+        logger.info(
+            "Initializing agent chat model: baseUrl={}, modelName={}, authType={}",
+            properties.baseUrl,
+            properties.modelName,
+            properties.authType,
+        )
+
+        val builder = OpenAIChatModel.builder()
             .baseUrl(properties.baseUrl)
-            .apiKey(properties.apiKey)
             .modelName(properties.modelName)
             .stream(properties.stream)
             .contextWindowSize(properties.contextWindowSize)
-            .build()
+
+        when (properties.authType) {
+            AgentModelAuthType.BK_GATEWAY -> {
+                require(properties.bkAppCode.isNotBlank()) {
+                    "agent.model.bk-app-code is required when auth-type=bk-gateway"
+                }
+                require(properties.bkAppSecret.isNotBlank()) {
+                    "agent.model.bk-app-secret is required when auth-type=bk-gateway"
+                }
+                val authJson =
+                    """{"bk_app_code":"${properties.bkAppCode}","bk_app_secret":"${properties.bkAppSecret}"}"""
+                builder
+                    .generateOptions(
+                        GenerateOptions.builder()
+                            .additionalHeader("X-Bkapi-Authorization", authJson)
+                            .build(),
+                    )
+                    .endpointPath("")
+            }
+            AgentModelAuthType.API_KEY -> {
+                require(properties.apiKey.isNotBlank()) {
+                    "agent.model.api-key is required when auth-type=api-key"
+                }
+                builder.apiKey(properties.apiKey)
+            }
+        }
+        return builder.build()
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(AgentModelConfiguration::class.java)
     }
 }
