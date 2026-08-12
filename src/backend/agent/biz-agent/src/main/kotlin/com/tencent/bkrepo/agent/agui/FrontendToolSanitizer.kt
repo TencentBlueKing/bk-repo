@@ -26,7 +26,7 @@ class FrontendToolSanitizer(
     fun sanitize(input: RunAgentInput): RunAgentInput {
         if (!properties.localToolsEnabled) {
             if (input.hasTools()) {
-                throw ParameterInvalidException("tools", "local tools are disabled")
+                throw ParameterInvalidException("tools: local tools are disabled")
             }
             return sanitizeForwardedProps(input)
         }
@@ -74,13 +74,13 @@ class FrontendToolSanitizer(
         for (tool in clientTools) {
             val name = tool.name?.trim().orEmpty()
             if (name.isBlank()) {
-                throw ParameterInvalidException("tools", "tool name is blank")
+                throw ParameterInvalidException("tools: tool name is blank")
             }
             if (!requestedNames.add(name)) {
-                throw ParameterInvalidException("tools", "duplicate tool name[$name]")
+                throw ParameterInvalidException("tools: duplicate tool name[$name]")
             }
             if (catalog.find(name) == null) {
-                throw ParameterInvalidException("tools", "tool[$name] is not allowed")
+                throw ParameterInvalidException("tools: tool[$name] is not allowed")
             }
         }
         return requestedNames.mapNotNull { catalog.find(it)?.toAguiTool() }

@@ -36,21 +36,21 @@ class AguiResumeValidator(
         val pending = pendingInterruptStore.get(threadId)
 
         if (pending != null && !input.hasResume()) {
-            throw ParameterInvalidException("resume", "thread[$threadId] has pending interrupts")
+            throw ParameterInvalidException("resume: thread[$threadId] has pending interrupts")
         }
         if (!input.hasResume()) {
             return
         }
 
         if (pending == null) {
-            throw ParameterInvalidException("resume", "no pending interrupts for thread[$threadId]")
+            throw ParameterInvalidException("resume: no pending interrupts for thread[$threadId]")
         }
 
         val resumeEntries = input.resume
         val resumeIds = resumeEntries.map { it.interruptId }.toSet()
         val pendingIds = pending.interrupts.map { it.id }.toSet()
         if (resumeIds != pendingIds) {
-            throw ParameterInvalidException("resume", "resume must cover all pending interrupts exactly once")
+            throw ParameterInvalidException("resume: resume must cover all pending interrupts exactly once")
         }
 
         for (entry in resumeEntries) {
@@ -67,7 +67,7 @@ class AguiResumeValidator(
         entry: AguiResume,
     ) {
         if (!resumeIdempotencyStore.tryMark(threadId, entry.interruptId, fingerprint(entry))) {
-            throw ParameterInvalidException("resume", "duplicate resume for interrupt[${entry.interruptId}]")
+            throw ParameterInvalidException("resume: duplicate resume for interrupt[${entry.interruptId}]")
         }
 
         if (!isResolved(entry)) {
@@ -80,7 +80,7 @@ class AguiResumeValidator(
         }
 
         if (frontendToolCatalog.find(toolName) == null) {
-            throw ParameterInvalidException("resume", "tool[$toolName] is not allowed")
+            throw ParameterInvalidException("resume: tool[$toolName] is not allowed")
         }
 
         val approved = extractApproved(entry.payload)

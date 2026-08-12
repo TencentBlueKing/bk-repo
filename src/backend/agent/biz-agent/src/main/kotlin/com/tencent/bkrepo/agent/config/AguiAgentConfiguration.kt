@@ -30,7 +30,7 @@ package com.tencent.bkrepo.agent.config
 import com.tencent.bkrepo.agent.agui.StatelessHarnessAgentResolver
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
 import io.agentscope.core.agui.adapter.AguiAdapterConfig
-import io.agentscope.core.agui.adapter.ToolMergeMode
+import io.agentscope.core.agui.model.ToolMergeMode
 import io.agentscope.core.agui.processor.AguiRequestProcessor
 import io.agentscope.core.agui.registry.AguiAgentRegistry
 import io.agentscope.harness.agent.HarnessAgent

@@ -30,8 +30,9 @@ package com.tencent.bkrepo.agent.service.impl
 import com.tencent.bkrepo.agent.agui.AgentForwardedPropsSupport
 import com.tencent.bkrepo.agent.agui.AguiInterruptTracker
 import com.tencent.bkrepo.agent.agui.AguiMessageArchiveHandler
-import com.tencent.bkrepo.agent.agui.AguiRunInputProcessor
+import com.tencent.bkrepo.agent.agui.AguiResumeValidator
 import com.tencent.bkrepo.agent.agui.BkrepoAguiRuntimeContextResolver
+import com.tencent.bkrepo.agent.agui.FrontendToolSanitizer
 import com.tencent.bkrepo.agent.config.properties.AgentProperties
 import com.tencent.bkrepo.agent.constant.AGENT_RUN_ID_PREFIX
 import com.tencent.bkrepo.agent.constant.AGENT_THREAD_ID_PREFIX
@@ -90,7 +91,8 @@ class AgentRunServiceImpl(
     private val agentSessionInterruptor: AgentSessionInterruptor,
     private val agentRunRecordService: AgentRunRecordService,
     private val aguiRequestProcessor: AguiRequestProcessor,
-    private val aguiRunInputProcessor: AguiRunInputProcessor,
+    private val aguiResumeValidator: AguiResumeValidator,
+    private val frontendToolSanitizer: FrontendToolSanitizer,
     private val aguiInterruptTracker: AguiInterruptTracker,
     private val pendingInterruptStore: AgentPendingInterruptStore,
     private val activeRunStore: AgentActiveRunStore,
@@ -125,7 +127,8 @@ class AgentRunServiceImpl(
         input: RunAgentInput,
     ): SseEmitter {
         validate(input)
-        val processedInput = aguiRunInputProcessor.prepare(userId, projectId, input)
+        aguiResumeValidator.validateAndPrepare(userId, projectId, input)
+        val processedInput = frontendToolSanitizer.sanitize(input)
         val threadId = processedInput.threadId
         val runId = processedInput.runId
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
@@ -167,7 +170,7 @@ class AgentRunServiceImpl(
         val archiveState = AguiMessageArchiveHandler.State()
         aguiMessageArchiveHandler.archiveIncomingUserMessages(processedInput, threadId, runId)
 
-        aguiInterruptTracker.reset()
+        val interruptState = AguiInterruptTracker.State()
 
         val runtimeContext = aguiRuntimeContextResolver.resolve(
             userId = userId,
@@ -248,9 +251,9 @@ class AgentRunServiceImpl(
                             )
                             return@subscribe
                         }
-                        aguiInterruptTracker.onEvent(event)
+                        aguiInterruptTracker.onEvent(event, interruptState)
                         trackTerminalStatus(event, terminalStatus)
-                        handlePendingInterrupt(threadId, runId, event, terminalStatus.get())
+                        handlePendingInterrupt(threadId, runId, event, terminalStatus.get(), interruptState)
                         aguiMessageArchiveHandler.onEvent(event, threadId, runId, archiveState)
                         emitter.send(
                             SseEmitter.event()
@@ -374,7 +377,7 @@ class AgentRunServiceImpl(
             return false
         }
         if (request.runId != null && request.runId != activeRunId) {
-            throw ParameterInvalidException("runId", "run[${request.runId}] is not active")
+            throw ParameterInvalidException("runId: run[${request.runId}] is not active")
         }
         runCancelStore.requestCancel(activeRunId)
         runHandleRegistry.find(userId, request.threadId)
@@ -392,9 +395,9 @@ class AgentRunServiceImpl(
         agentSessionService.assertActiveSession(userId, projectId, request.threadId)
         Preconditions.checkNotBlank(request.runId, "runId")
         val existingRun = agentRunRecordService.findByRunId(request.runId)
-            ?: throw ParameterInvalidException("runId", "run[${request.runId}] not found")
+            ?: throw ParameterInvalidException("runId: run[${request.runId}] not found")
         if (existingRun.threadId != request.threadId) {
-            throw ParameterInvalidException("threadId", "run does not belong to thread[${request.threadId}]")
+            throw ParameterInvalidException("threadId: run does not belong to thread[${request.threadId}]")
         }
         if (existingRun.status == AgentRunStatus.RUNNING) {
             throw TooManyRequestsException("Run[${request.runId}] is still running")
@@ -431,7 +434,7 @@ class AgentRunServiceImpl(
                             input.threadId,
                             input.runId,
                             null,
-                            AguiEvent.RunFinishedInterruptOutcome(emptyList()),
+                            AguiEvent.RunFinishedInterruptOutcome(pendingInterrupts(input.threadId)),
                         ),
                     )
                     else -> sendEncoded(
@@ -450,6 +453,25 @@ class AgentRunServiceImpl(
             }
         }
         return emitter
+    }
+
+    /**
+     * 从 [AgentPendingInterruptStore] 还原完整的 AG-UI [AguiEvent.Interrupt] 列表，
+     * 供 reconnect 时重放，使前端能重新渲染审批 UI（而不是空的 interrupt 事件）。
+     */
+    private fun pendingInterrupts(threadId: String): List<AguiEvent.Interrupt> {
+        val snapshots = pendingInterruptStore.get(threadId)?.interrupts ?: return emptyList()
+        return snapshots.map { snapshot ->
+            AguiEvent.Interrupt(
+                snapshot.id,
+                snapshot.reason,
+                snapshot.message,
+                snapshot.toolCallId,
+                snapshot.responseSchema,
+                snapshot.expiresAt,
+                snapshot.metadata,
+            )
+        }
     }
 
     private fun sendEncoded(emitter: SseEmitter, event: AguiEvent) {
@@ -481,11 +503,12 @@ class AgentRunServiceImpl(
         runId: String,
         event: AguiEvent,
         terminalStatus: AgentRunStatus,
+        interruptState: AguiInterruptTracker.State,
     ) {
         if (event !is AguiEvent.RunFinished) return
         when (terminalStatus) {
             AgentRunStatus.SUSPENDED -> {
-                aguiInterruptTracker.captureSuspendedSession(runId, event)?.let { session ->
+                aguiInterruptTracker.captureSuspendedSession(runId, event, interruptState)?.let { session ->
                     pendingInterruptStore.save(threadId, session)
                 }
             }
