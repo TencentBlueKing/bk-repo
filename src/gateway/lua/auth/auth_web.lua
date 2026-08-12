@@ -21,6 +21,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 --- 获取Cookie中bk_token 和 bk_ticket
 local token, username, display_name, tenant_id
 
+--- 是否强制刷新用户信息缓存（前端在需要感知最新租户/时区时通过 ?forceRefresh=1 触发）
+local force_refresh = ngx.var.arg_forceRefresh == "1" or ngx.var.arg_forceRefresh == "true"
+
 --- standalone模式下校验bkrepo_ticket
 if config.mode == "standalone" or config.mode == "" or config.mode == nil then
     --- 跳过登录请求
@@ -34,7 +37,11 @@ if config.mode == "standalone" or config.mode == "" or config.mode == nil then
         ngx.exit(401)
         return
     end
-    username = oauthUtil:verify_bkrepo_token(bkrepo_login_token)
+    username, time_zone = oauthUtil:verify_bkrepo_token(bkrepo_login_token, force_refresh)
+    --- 单租户模式下，若后端返回了 time_zone，则透传给下游服务 --
+    if time_zone ~= nil and time_zone ~= "" then
+        ngx.header["x-bkrepo-time-zone"] = time_zone
+    end
     token = bkrepo_login_token
 elseif config.auth_mode == "" or config.auth_mode == "token" then
     local bk_token = cookieUtil:get_cookie("bk_token")
@@ -43,7 +50,7 @@ elseif config.auth_mode == "" or config.auth_mode == "token" then
         return
     end
     if config.enable_multi_tenant_mode ~= nil and config.enable_multi_tenant_mode == "true" then
-        username, display_name, tenant_id, time_zone = oauthUtil:verify_bk_token_muti_tenant(config.oauth.apigw_url, bk_token)
+        username, display_name, tenant_id, time_zone = oauthUtil:verify_bk_token_muti_tenant(config.oauth.apigw_url, bk_token, force_refresh)
         -- 设置多租户相关信息 --
         ngx.header["x-bkrepo-display-name"] = ngx.encode_base64(display_name)
         ngx.header["x-bkrepo-tenant-id"] = tenant_id

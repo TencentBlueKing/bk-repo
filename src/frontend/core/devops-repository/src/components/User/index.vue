@@ -6,6 +6,7 @@
         trigger="click"
         :disabled="!enableClick"
         ref="popoverRef"
+        @show="onPopoverShow"
     >
         <div class="user-entry">
             {{ userInfo.displayName || userInfo.name || userInfo.username }}
@@ -49,7 +50,8 @@
         name: 'bkrepoUser',
         data () {
             return {
-                enableClick: true
+                enableClick: true,
+                lastRefreshAt: 0
             }
         },
         computed: {
@@ -90,10 +92,20 @@
             }
         },
         methods: {
-            ...mapActions(['logout']),
+            ...mapActions(['logout', 'ajaxUserInfo']),
             changeRoute (route) {
                 this.$router.push({
                     name: route
+                })
+            },
+            // 用户点开下拉面板时惰性刷新一次用户信息（含 tenantId / timeZone）
+            // 1s 防抖，避免用户反复点击；带 forceRefresh=1 击穿网关侧 180s 缓存；失败静默
+            onPopoverShow () {
+                const now = Date.now()
+                if (now - this.lastRefreshAt < 1000) return
+                this.lastRefreshAt = now
+                this.ajaxUserInfo({ forceRefresh: true }).catch(() => {
+                    // 静默失败，保持面板显示旧值
                 })
             }
         }

@@ -4,9 +4,10 @@ const authPrefix = 'auth/api'
 
 export default {
     // 查询用户信息
-    ajaxUserInfo ({ dispatch, commit }) {
+    ajaxUserInfo ({ dispatch, commit }, { forceRefresh = false } = {}) {
         return Vue.prototype.$ajax.get(
-            `${authPrefix}/user/info`
+            `${authPrefix}/user/info`,
+            forceRefresh ? { params: { forceRefresh: 1 } } : undefined
         ).then(res => {
             commit('SET_USER_INFO', {
                 displayName: res.displayName ? res.displayName : '',
