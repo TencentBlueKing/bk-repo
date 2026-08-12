@@ -126,6 +126,25 @@ class AguiMessageArchiveHandler(
     @Suppress("UNCHECKED_CAST")
     private fun toStructuredMap(content: MessageContent?): Map<String, Any>? {
         if (content == null) return null
-        return objectMapper.convertValue(content, Map::class.java) as Map<String, Any>
+        // AG-UI user message content 允许 plain string（见 UserMessageSchema.content:
+        // z.union([z.string(), z.array(InputContentSchema)]））。AgentScope 反序列化后
+        // 这里可能是 String，不能直接 convertValue 成 Map。
+        if (content is String) {
+            return mapOf("type" to "text", "text" to content)
+        }
+        if (content is Map<*, *>) {
+            return content.entries
+                .mapNotNull { (key, value) ->
+                    key?.toString()?.takeIf { it.isNotBlank() }?.let { it to value as Any }
+                }
+                .toMap()
+                .takeIf { it.isNotEmpty() }
+        }
+        if (content is List<*>) {
+            return mapOf("type" to "multipart", "parts" to content)
+        }
+        return runCatching {
+            objectMapper.convertValue(content, Map::class.java) as Map<String, Any>
+        }.getOrNull()
     }
 }
