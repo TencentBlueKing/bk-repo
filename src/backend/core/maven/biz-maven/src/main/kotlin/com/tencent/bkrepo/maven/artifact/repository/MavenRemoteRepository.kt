@@ -57,6 +57,7 @@ import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
 import com.tencent.bkrepo.maven.pojo.MavenGAVC
 import com.tencent.bkrepo.maven.service.MavenMetadataService
 import com.tencent.bkrepo.maven.service.MavenService
+import com.tencent.bkrepo.maven.util.MavenActiveContentHeaders.applyIfActiveContent
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.toMavenGAVC
 import com.tencent.bkrepo.maven.util.MavenStringUtils.checksumType
@@ -88,6 +89,11 @@ class MavenRemoteRepository(
     private val mavenService: MavenService,
 ) : RemoteRepository() {
 
+
+    override fun onDownloadBefore(context: ArtifactDownloadContext) {
+        super.onDownloadBefore(context)
+        applyIfActiveContent(context.artifactInfo.getResponseName())
+    }
 
     /**
      * 针对索引文件`maven-metadata.xml` 每次都尝试从远程拉取最新的索引文件，
