@@ -34,8 +34,8 @@ import java.time.LocalDateTime
 data class AgentMessageInfo(
     @get:Schema(title = "消息ID")
     val messageId: String,
-    @get:Schema(title = "会话ID")
-    val sessionId: String,
+    @get:Schema(title = "AG-UI threadId")
+    val threadId: String,
     @get:Schema(title = "运行ID")
     val runId: String?,
     @get:Schema(title = "消息角色")

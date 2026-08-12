@@ -49,7 +49,7 @@ interface AgentRunService {
     /**
      * 创建归属于 [userId] 与 [projectId] 的新会话。
      *
-     * 写入 Redis 归属映射与 Mongo 会话元数据，返回 [AgentSessionCreateResult.sessionId] 供后续 run 使用。
+     * 写入 Redis 归属映射与 Mongo 会话元数据，返回 [AgentSessionCreateResult.threadId] 供后续 run 使用。
      */
     fun createSession(userId: String, projectId: String): AgentSessionCreateResult
 
@@ -73,7 +73,7 @@ interface AgentRunService {
     fun listMessages(
         userId: String,
         projectId: String,
-        sessionId: String,
+        threadId: String,
         pageNumber: Int,
         pageSize: Int,
     ): Page<AgentMessageInfo>

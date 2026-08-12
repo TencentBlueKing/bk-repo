@@ -12,7 +12,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "Agent run 运行状态")
 data class AgentRunStatusInfo(
-    @get:Schema(title = "AG-UI threadId（等同 sessionId）")
+    @get:Schema(title = "AG-UI threadId")
     val threadId: String,
     @get:Schema(title = "canonical runId")
     val runId: String?,

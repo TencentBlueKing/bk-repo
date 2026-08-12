@@ -12,7 +12,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "Agent run 重连请求")
 data class AgentRunReconnectRequest(
-    @get:Schema(title = "AG-UI threadId（等同 sessionId）", required = true)
+    @get:Schema(title = "AG-UI threadId", required = true)
     val threadId: String,
     @get:Schema(title = "canonical runId", required = true)
     val runId: String,

@@ -322,24 +322,24 @@ class AgentRunServiceImpl(
     override fun listMessages(
         userId: String,
         projectId: String,
-        sessionId: String,
+        threadId: String,
         pageNumber: Int,
         pageSize: Int,
     ): Page<AgentMessageInfo> {
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
-        return agentSessionService.listMessages(userId, projectId, sessionId, pageNumber, pageSize)
+        return agentSessionService.listMessages(userId, projectId, threadId, pageNumber, pageSize)
     }
 
     override fun updateSessionTitle(userId: String, projectId: String, request: AgentSessionUpdateRequest) {
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
-        agentSessionService.updateTitle(userId, projectId, request.sessionId, request.title)
+        agentSessionService.updateTitle(userId, projectId, request.threadId, request.title)
     }
 
     override fun deleteSession(userId: String, projectId: String, request: AgentSessionDeleteRequest) {
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
-        pendingInterruptStore.clear(request.sessionId)
-        activeRunStore.clear(userId, request.sessionId)
-        agentSessionService.deleteSession(userId, projectId, request.sessionId)
+        pendingInterruptStore.clear(request.threadId)
+        activeRunStore.clear(userId, request.threadId)
+        agentSessionService.deleteSession(userId, projectId, request.threadId)
     }
 
     override fun getRunStatus(userId: String, projectId: String, threadId: String): AgentRunStatusInfo {

@@ -567,7 +567,7 @@ AgentScope 权限不能代替 IAM；IAM 也不能代替用户确认。
 
 三个 ID 不能混用：
 
-- `threadId`：AG-UI 对话线程，等于 bk-repo 创建会话返回的 `sessionId`；
+- `threadId`：AG-UI 对话线程 ID，bk-repo 对外 API 与 `RunAgentInput` 统一使用该字段名；Mongo 集合内部列名仍为 `sessionId`；
 - `runId`：一次 AG-UI 执行，由客户端在发请求前生成，并由请求、SSE、运行记录和 trace 全链路复用；
 - `messageId`：一条消息的稳定 ID。客户端生成 USER 消息 ID；助手消息 ID 来自 `TEXT_MESSAGE_START`；工具调用使用独立的 `toolCallId`。
 
@@ -1426,15 +1426,15 @@ Agent 适合需要语言理解、证据综合和不确定性推理的任务。�
 
 **已实现 API**
 
-约定：`projectId` 一律走 query；会话 CRUD 用 `sessionId`；run 相关用 AG-UI `threadId`（等同 `sessionId`）；`deviceId` / `traceId` 经 `RunAgentInput.forwardedProps` 传递，不用 Header。
+约定：`projectId` 一律走 query；对外字段统一使用 AG-UI `threadId`（Mongo 持久化层内部列名仍为 `sessionId`）；`deviceId` / `traceId` 经 `RunAgentInput.forwardedProps` 传递。
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| POST | `/api/agent/session/create?projectId=` | 创建会话 |
-| GET | `/api/agent/session/list?projectId=&pageNumber=&pageSize=` | 会话列表 |
-| GET | `/api/agent/session/messages?projectId=&sessionId=&pageNumber=&pageSize=` | 消息历史 |
-| POST | `/api/agent/session/update?projectId=` | 更新标题（body: `{ sessionId, title }`） |
-| POST | `/api/agent/session/delete?projectId=` | 删除会话（body: `{ sessionId }`） |
+| POST | `/api/agent/session/create?projectId=` | 创建会话，返回 `{ threadId, title, createdAt }` |
+| GET | `/api/agent/session/list?projectId=&pageNumber=&pageSize=` | 会话列表（含 `threadId`） |
+| GET | `/api/agent/session/messages?projectId=&threadId=&pageNumber=&pageSize=` | 消息历史 |
+| POST | `/api/agent/session/update?projectId=` | 更新标题（body: `{ threadId, title }`） |
+| POST | `/api/agent/session/delete?projectId=` | 删除会话（body: `{ threadId }`） |
 | POST | `/api/agent/run?projectId=` | AG-UI run SSE（body: 标准 `RunAgentInput`） |
 | GET | `/api/agent/run/status?projectId=&threadId=` | 查询 run 状态 |
 | POST | `/api/agent/run/stop?projectId=` | 停止 active run（body: `{ threadId, runId? }`） |

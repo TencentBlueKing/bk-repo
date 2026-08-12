@@ -31,6 +31,6 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "Agent会话删除请求")
 data class AgentSessionDeleteRequest(
-    @get:Schema(title = "会话ID", required = true)
-    val sessionId: String,
+    @get:Schema(title = "AG-UI threadId", required = true)
+    val threadId: String,
 )

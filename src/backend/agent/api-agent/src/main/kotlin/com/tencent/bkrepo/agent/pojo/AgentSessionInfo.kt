@@ -33,8 +33,8 @@ import java.time.LocalDateTime
 /** 会话列表/详情用；创建会话仅返回 [AgentSessionCreateResult]。 */
 @Schema(title = "Agent会话信息")
 data class AgentSessionInfo(
-    @get:Schema(title = "会话ID")
-    val sessionId: String,
+    @get:Schema(title = "AG-UI threadId")
+    val threadId: String,
     @get:Schema(title = "会话归属用户")
     val userId: String,
     @get:Schema(title = "会话归属项目")

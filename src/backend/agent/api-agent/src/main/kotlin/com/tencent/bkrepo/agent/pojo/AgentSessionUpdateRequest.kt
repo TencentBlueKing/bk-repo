@@ -31,8 +31,8 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "Agent会话更新请求")
 data class AgentSessionUpdateRequest(
-    @get:Schema(title = "会话ID", required = true)
-    val sessionId: String,
+    @get:Schema(title = "AG-UI threadId", required = true)
+    val threadId: String,
     @get:Schema(title = "会话标题", required = true)
     val title: String,
 )

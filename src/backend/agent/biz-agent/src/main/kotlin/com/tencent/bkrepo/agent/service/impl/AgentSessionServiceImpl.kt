@@ -71,7 +71,7 @@ class AgentSessionServiceImpl(
             throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, "Session[$sessionId]")
         }
         return AgentSessionCreateResult(
-            sessionId = session.sessionId,
+            threadId = session.sessionId,
             title = session.title,
             createdAt = session.createdAt,
         )
@@ -139,7 +139,7 @@ class AgentSessionServiceImpl(
 
     private fun toInfo(session: TAgentSession): AgentSessionInfo {
         return AgentSessionInfo(
-            sessionId = session.sessionId,
+            threadId = session.sessionId,
             userId = session.userId,
             projectId = session.projectId,
             title = session.title,
@@ -152,7 +152,7 @@ class AgentSessionServiceImpl(
     private fun toMessageInfo(message: TAgentMessage): AgentMessageInfo {
         return AgentMessageInfo(
             messageId = message.messageId,
-            sessionId = message.sessionId,
+            threadId = message.sessionId,
             runId = message.runId,
             role = message.role,
             content = message.content,

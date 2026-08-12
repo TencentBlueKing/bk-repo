@@ -117,7 +117,7 @@ class UserAgentController(
     /**
      * 分页查询会话消息历史（Mongo 归档原文）。
      *
-     * `GET /api/agent/session/messages?projectId=&sessionId=&pageNumber=&pageSize=`
+     * `GET /api/agent/session/messages?projectId=&threadId=&pageNumber=&pageSize=`
      */
     @Operation(summary = "查询会话消息历史")
     @GetMapping("/session/messages")
@@ -126,15 +126,15 @@ class UserAgentController(
         @RequestAttribute userId: String,
         @Parameter(name = "项目ID", required = true)
         @RequestParam projectId: String,
-        @Parameter(name = "会话ID", required = true)
-        @RequestParam sessionId: String,
+        @Parameter(name = "AG-UI threadId", required = true)
+        @RequestParam threadId: String,
         @Parameter(name = "页码，从1开始")
         @RequestParam(defaultValue = "1") pageNumber: Int,
         @Parameter(name = "分页大小")
         @RequestParam(defaultValue = "50") pageSize: Int,
     ): Response<Page<AgentMessageInfo>> {
         return ResponseBuilder.success(
-            agentRunService.listMessages(userId, projectId, sessionId, pageNumber, pageSize),
+            agentRunService.listMessages(userId, projectId, threadId, pageNumber, pageSize),
         )
     }
 
@@ -203,7 +203,7 @@ class UserAgentController(
         @RequestAttribute userId: String,
         @Parameter(name = "项目ID", required = true)
         @RequestParam projectId: String,
-        @Parameter(name = "AG-UI threadId（等同 sessionId）", required = true)
+        @Parameter(name = "AG-UI threadId", required = true)
         @RequestParam threadId: String,
     ): Response<AgentRunStatusInfo> {
         return ResponseBuilder.success(agentRunService.getRunStatus(userId, projectId, threadId))
