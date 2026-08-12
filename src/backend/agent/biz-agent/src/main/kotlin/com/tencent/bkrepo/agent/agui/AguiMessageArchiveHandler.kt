@@ -52,12 +52,12 @@ class AguiMessageArchiveHandler(
     class State {
         var skipAssistantArchive: Boolean = false
         var currentAssistant: AssistantBuffer? = null
-    }
 
-    private data class AssistantBuffer(
-        val messageId: String,
-        val text: StringBuilder = StringBuilder(),
-    )
+        data class AssistantBuffer(
+            val messageId: String,
+            val text: StringBuilder = StringBuilder(),
+        )
+    }
 
     fun archiveIncomingUserMessages(input: RunAgentInput, threadId: String, runId: String) {
         if (!input.hasMessages()) return
@@ -77,7 +77,7 @@ class AguiMessageArchiveHandler(
     fun onEvent(event: AguiEvent, threadId: String, runId: String, state: State) {
         when (event) {
             is AguiEvent.TextMessageStart -> {
-                state.currentAssistant = AssistantBuffer(event.messageId())
+                state.currentAssistant = State.AssistantBuffer(event.messageId())
             }
             is AguiEvent.TextMessageContent -> {
                 state.currentAssistant?.text?.append(event.delta())
