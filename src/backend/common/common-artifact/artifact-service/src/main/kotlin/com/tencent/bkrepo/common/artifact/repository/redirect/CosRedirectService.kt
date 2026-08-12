@@ -64,6 +64,30 @@ class CosRedirectService(
     private val storageProperties: StorageProperties,
     private val storageService: StorageService,
 ) : DownloadRedirectService {
+
+    /**
+     * 配置门控（不查 node）。仅供 remapper 在路径解析前调用；判定结果不等价于 [doShouldRedirect]。
+     */
+    override fun mayRedirect(context: ArtifactDownloadContext): Boolean {
+        if (!storageProperties.redirect.enabled) {
+            return false
+        }
+        val storageCredentials = context.repositoryDetail.storageCredentials
+            ?: storageProperties.defaultStorageCredentials()
+        if (storageCredentials !is InnerCosCredentials) {
+            return false
+        }
+        if (!isProjectAllowed(context.projectId)) {
+            return false
+        }
+        val redirectSettings = DownloadRedirectSettings.from(context.repositoryDetail.configuration)
+        val repoSupportRedirectTo = redirectSettings?.redirectTo == RedirectTo.INNERCOS.name
+        val redirectTo = HttpContextHolder.getRequest().getHeader("X-BKREPO-DOWNLOAD-REDIRECT-TO")
+        return repoSupportRedirectTo ||
+            redirectTo == RedirectTo.INNERCOS.name ||
+            storageProperties.redirect.redirectAllDownload
+    }
+
     override fun doShouldRedirect(context: ArtifactDownloadContext): Boolean {
         if (!storageProperties.redirect.enabled) {
             return false
@@ -145,7 +169,8 @@ class CosRedirectService(
             ?: node.metadata[HttpHeaders.CACHE_CONTROL.lowercase(Locale.getDefault())]?.toString()
             ?: StringPool.NO_CACHE
         request.parameters["response-cache-control"] = cacheControl
-        val mime = determineMediaType(filename, storageProperties.response.mimeMappings)
+        val mime = context.getStringAttribute(ATTR_RESPONSE_CONTENT_TYPE)
+            ?: determineMediaType(filename, storageProperties.response.mimeMappings)
         request.parameters["response-content-type"] = mime
 
         if (context.useDisposition) {
@@ -177,5 +202,8 @@ class CosRedirectService(
 
     companion object {
         private val logger = LoggerFactory.getLogger(CosRedirectService::class.java)
+
+        /** 依赖源协议要求的 Content-Type（如 OCI mediaType），优先于按文件名推断 */
+        const val ATTR_RESPONSE_CONTENT_TYPE = "cos.redirect.responseContentType"
     }
 }
