@@ -47,6 +47,9 @@ class AgentRunRecordServiceImpl(
 
     override fun findByRunId(runId: String): TAgentRun? = agentRunDao.findByRunId(runId)
 
+    override fun findLatestBySessionId(sessionId: String): TAgentRun? =
+        agentRunDao.findLatestBySessionId(sessionId)
+
     override fun startRun(
         runId: String,
         executionId: String,

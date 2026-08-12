@@ -30,6 +30,12 @@ package com.tencent.bkrepo.agent.controller
 import com.tencent.bkrepo.agent.constant.HEADER_DEVICE_ID
 import com.tencent.bkrepo.agent.constant.HEADER_TRACE_ID
 import com.tencent.bkrepo.agent.constant.LOG_OPERATE_RUN
+import com.tencent.bkrepo.agent.constant.LOG_OPERATE_RUN_RECONNECT
+import com.tencent.bkrepo.agent.constant.LOG_OPERATE_RUN_STATUS
+import com.tencent.bkrepo.agent.constant.LOG_OPERATE_RUN_STOP
+import com.tencent.bkrepo.agent.pojo.AgentRunReconnectRequest
+import com.tencent.bkrepo.agent.pojo.AgentRunStatusInfo
+import com.tencent.bkrepo.agent.pojo.AgentRunStopRequest
 import com.tencent.bkrepo.agent.constant.LOG_OPERATE_SESSION_CREATE
 import com.tencent.bkrepo.agent.constant.LOG_OPERATE_SESSION_DELETE
 import com.tencent.bkrepo.agent.constant.LOG_OPERATE_SESSION_LIST
@@ -188,5 +194,57 @@ class UserAgentController(
         @RequestBody input: RunAgentInput,
     ): SseEmitter {
         return agentRunService.run(userId, projectId, deviceId, traceId, input)
+    }
+
+    /**
+     * 查询 thread 当前 run 状态。
+     *
+     * `GET /api/agent/run/status?projectId=&sessionId=`
+     */
+    @Operation(summary = "查询 run 运行状态")
+    @GetMapping("/run/status")
+    @LogOperate(type = LOG_OPERATE_RUN_STATUS)
+    fun getRunStatus(
+        @RequestAttribute userId: String,
+        @Parameter(name = "项目ID", required = true)
+        @RequestParam projectId: String,
+        @Parameter(name = "会话ID", required = true)
+        @RequestParam sessionId: String,
+    ): Response<AgentRunStatusInfo> {
+        return ResponseBuilder.success(agentRunService.getRunStatus(userId, projectId, sessionId))
+    }
+
+    /**
+     * 停止指定 thread 的 active run。
+     *
+     * `POST /api/agent/run/stop?projectId=`
+     */
+    @Operation(summary = "停止 active run")
+    @PostMapping("/run/stop")
+    @LogOperate(type = LOG_OPERATE_RUN_STOP)
+    fun stopRun(
+        @RequestAttribute userId: String,
+        @Parameter(name = "项目ID", required = true)
+        @RequestParam projectId: String,
+        @RequestBody request: AgentRunStopRequest,
+    ): Response<Boolean> {
+        return ResponseBuilder.success(agentRunService.stopRun(userId, projectId, request))
+    }
+
+    /**
+     * 对已终态 run 重放 AG-UI 事件（SSE），不重新执行 agent。
+     *
+     * `POST /api/agent/run/reconnect?projectId=`
+     */
+    @Operation(summary = "重连并重放终态 run 事件")
+    @PostMapping("/run/reconnect", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
+    @LogOperate(type = LOG_OPERATE_RUN_RECONNECT)
+    fun reconnectRun(
+        @RequestAttribute userId: String,
+        @Parameter(name = "项目ID", required = true)
+        @RequestParam projectId: String,
+        @RequestBody request: AgentRunReconnectRequest,
+    ): SseEmitter {
+        return agentRunService.reconnectRun(userId, projectId, request)
     }
 }

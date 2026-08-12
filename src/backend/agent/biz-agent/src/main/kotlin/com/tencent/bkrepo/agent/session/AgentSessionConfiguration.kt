@@ -105,6 +105,38 @@ class AgentSessionConfiguration {
         )
     }
 
+    @Bean
+    fun agentActiveRunStore(
+        properties: AgentProperties,
+        redisOperation: ObjectProvider<RedisOperation>,
+    ): AgentActiveRunStore {
+        val redis = redisOperation.getIfAvailable()
+        if (redis == null) {
+            logger.warn("No RedisOperation available, falling back to in-memory active run store")
+            return InMemoryAgentActiveRunStore()
+        }
+        return RedisAgentActiveRunStore(
+            redisOperation = redis,
+            ttlSeconds = properties.runLockTtl.seconds,
+        )
+    }
+
+    @Bean
+    fun agentRunCancelStore(
+        properties: AgentProperties,
+        redisOperation: ObjectProvider<RedisOperation>,
+    ): AgentRunCancelStore {
+        val redis = redisOperation.getIfAvailable()
+        if (redis == null) {
+            logger.warn("No RedisOperation available, falling back to in-memory run cancel store")
+            return InMemoryAgentRunCancelStore()
+        }
+        return RedisAgentRunCancelStore(
+            redisOperation = redis,
+            ttlSeconds = properties.runLockTtl.seconds,
+        )
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(AgentSessionConfiguration::class.java)
     }

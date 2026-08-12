@@ -94,3 +94,15 @@ const val AGENT_PENDING_INTERRUPT_KEY_PREFIX = "bkrepo:agent:pending-interrupt:"
 
 /** Redis 中 resume 幂等指纹 key 前缀 */
 const val AGENT_RESUME_IDEMPOTENCY_KEY_PREFIX = "bkrepo:agent:resume-idempotent:"
+
+/** Redis 中 thread 活跃 canonical runId key 前缀 */
+const val AGENT_ACTIVE_RUN_KEY_PREFIX = "bkrepo:agent:active-run:"
+
+/** Redis 中 run 取消信号 key 前缀 */
+const val AGENT_RUN_CANCEL_KEY_PREFIX = "bkrepo:agent:run-cancel:"
+
+const val LOG_OPERATE_RUN_STATUS = "AGENT_RUN_STATUS"
+
+const val LOG_OPERATE_RUN_STOP = "AGENT_RUN_STOP"
+
+const val LOG_OPERATE_RUN_RECONNECT = "AGENT_RUN_RECONNECT"

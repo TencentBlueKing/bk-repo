@@ -28,6 +28,9 @@
 package com.tencent.bkrepo.agent.service
 
 import com.tencent.bkrepo.agent.pojo.AgentMessageInfo
+import com.tencent.bkrepo.agent.pojo.AgentRunReconnectRequest
+import com.tencent.bkrepo.agent.pojo.AgentRunStatusInfo
+import com.tencent.bkrepo.agent.pojo.AgentRunStopRequest
 import io.agentscope.core.agui.model.RunAgentInput
 import com.tencent.bkrepo.agent.pojo.AgentSessionDeleteRequest
 import com.tencent.bkrepo.agent.pojo.AgentSessionCreateResult
@@ -86,4 +89,15 @@ interface AgentRunService {
      * 删除会话：软删 Mongo 元数据、清除消息归档、Redis 归属与 AgentState 运行时状态。
      */
     fun deleteSession(userId: String, projectId: String, request: AgentSessionDeleteRequest)
+
+    /** 查询 thread 当前 run 状态（Mongo + 运行锁 + pending interrupt）。 */
+    fun getRunStatus(userId: String, projectId: String, sessionId: String): AgentRunStatusInfo
+
+    /** 请求停止 active run；跨副本通过 cancel 信号 + 本机 handle 中断。 */
+    fun stopRun(userId: String, projectId: String, request: AgentRunStopRequest): Boolean
+
+    /**
+     * 对已终态 run 重放 AG-UI 事件序列；RUNNING 时拒绝，避免重复执行。
+     */
+    fun reconnectRun(userId: String, projectId: String, request: AgentRunReconnectRequest): SseEmitter
 }

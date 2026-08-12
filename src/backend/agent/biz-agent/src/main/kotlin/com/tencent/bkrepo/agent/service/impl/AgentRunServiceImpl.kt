@@ -42,15 +42,22 @@ import com.tencent.bkrepo.agent.pojo.AgentSessionDeleteRequest
 import com.tencent.bkrepo.agent.pojo.AgentSessionCreateResult
 import com.tencent.bkrepo.agent.pojo.AgentSessionInfo
 import com.tencent.bkrepo.agent.pojo.AgentSessionUpdateRequest
+import com.tencent.bkrepo.agent.pojo.AgentRunReconnectRequest
+import com.tencent.bkrepo.agent.pojo.AgentRunStatusInfo
+import com.tencent.bkrepo.agent.pojo.AgentRunStopRequest
+import com.tencent.bkrepo.agent.runtime.AgentRunHandleRegistry
 import com.tencent.bkrepo.agent.runtime.AgentSessionInterruptor
 import com.tencent.bkrepo.agent.service.AgentRunRecordService
 import com.tencent.bkrepo.agent.service.AgentRunService
 import com.tencent.bkrepo.agent.service.AgentSessionService
+import com.tencent.bkrepo.agent.session.AgentActiveRunStore
 import com.tencent.bkrepo.agent.session.AgentPendingInterruptStore
+import com.tencent.bkrepo.agent.session.AgentRunCancelStore
 import com.tencent.bkrepo.agent.session.AgentRunLock
 import com.tencent.bkrepo.agent.session.AgentSessionStore
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
 import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
@@ -85,6 +92,9 @@ class AgentRunServiceImpl(
     private val aguiRunInputProcessor: AguiRunInputProcessor,
     private val aguiInterruptTracker: AguiInterruptTracker,
     private val pendingInterruptStore: AgentPendingInterruptStore,
+    private val activeRunStore: AgentActiveRunStore,
+    private val runCancelStore: AgentRunCancelStore,
+    private val runHandleRegistry: AgentRunHandleRegistry,
     private val aguiRuntimeContextResolver: BkrepoAguiRuntimeContextResolver,
     private val aguiMessageArchiveHandler: AguiMessageArchiveHandler,
 ) : AgentRunService {
@@ -151,6 +161,8 @@ class AgentRunServiceImpl(
         )
         agentSessionService.touchSession(threadId, runId)
         agentSessionStore.touchSessionOwner(userId, projectId, threadId)
+        activeRunStore.bind(userId, threadId, runId)
+        runCancelStore.clear(runId)
 
         val archiveState = AguiMessageArchiveHandler.State()
         aguiMessageArchiveHandler.archiveIncomingUserMessages(processedInput, threadId, runId)
@@ -179,6 +191,13 @@ class AgentRunServiceImpl(
             agentSessionInterruptor.interrupt(runtimeContext)
         }
 
+        fun cleanupRunResources() {
+            releaseRunLock()
+            activeRunStore.clear(userId, threadId)
+            runCancelStore.clear(runId)
+            runHandleRegistry.remove(userId, threadId)
+        }
+
         fun finishSse(
             disposeSubscription: Boolean = true,
             abortAgent: Boolean = false,
@@ -195,15 +214,40 @@ class AgentRunServiceImpl(
                 cancelReason = cancelReason,
                 errorCode = errorCode,
             )
-            releaseRunLock()
+            cleanupRunResources()
             emitter.complete()
         }
+
+        runHandleRegistry.register(
+            AgentRunHandleRegistry.Handle(
+                userId = userId,
+                sessionId = threadId,
+                runId = runId,
+                runtimeContext = runtimeContext,
+                abort = {
+                    finishSse(
+                        abortAgent = true,
+                        runStatus = AgentRunStatus.CANCELLED,
+                        cancelReason = "user_stop",
+                    )
+                },
+            ),
+        )
 
         val subscription = processResult.events()
             .subscribeOn(Schedulers.boundedElastic())
             .subscribe(
                 { event ->
                     try {
+                        if (runCancelStore.isCancelled(runId)) {
+                            aguiMessageArchiveHandler.forceFinalizeAssistant(threadId, runId, archiveState)
+                            finishSse(
+                                abortAgent = true,
+                                runStatus = AgentRunStatus.CANCELLED,
+                                cancelReason = "user_stop",
+                            )
+                            return@subscribe
+                        }
                         aguiInterruptTracker.onEvent(event)
                         trackTerminalStatus(event, terminalStatus)
                         handlePendingInterrupt(threadId, runId, event, terminalStatus.get())
@@ -232,7 +276,7 @@ class AgentRunServiceImpl(
                             status = AgentRunStatus.FAILED,
                             errorCode = error.javaClass.simpleName,
                         )
-                        releaseRunLock()
+                        cleanupRunResources()
                         emitter.completeWithError(error)
                     }
                 },
@@ -243,14 +287,14 @@ class AgentRunServiceImpl(
             if (sseFinished.compareAndSet(false, true)) {
                 abortInflightAgentRun()
                 subscription.dispose()
-                releaseRunLock()
+                cleanupRunResources()
             }
         }
         emitter.onError {
             if (sseFinished.compareAndSet(false, true)) {
                 abortInflightAgentRun()
                 subscription.dispose()
-                releaseRunLock()
+                cleanupRunResources()
             }
         }
         emitter.onTimeout {
@@ -263,7 +307,7 @@ class AgentRunServiceImpl(
                     status = AgentRunStatus.CANCELLED,
                     cancelReason = "timeout",
                 )
-                releaseRunLock()
+                cleanupRunResources()
                 emitter.complete()
             }
         }
@@ -293,7 +337,73 @@ class AgentRunServiceImpl(
 
     override fun deleteSession(userId: String, projectId: String, request: AgentSessionDeleteRequest) {
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
+        pendingInterruptStore.clear(request.sessionId)
+        activeRunStore.clear(userId, request.sessionId)
         agentSessionService.deleteSession(userId, projectId, request.sessionId)
+    }
+
+    override fun getRunStatus(userId: String, projectId: String, sessionId: String): AgentRunStatusInfo {
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
+        agentSessionService.assertActiveSession(userId, projectId, sessionId)
+        val running = agentRunLock.isRunning(userId, sessionId)
+        val activeRunId = activeRunStore.get(userId, sessionId)
+        val latestRun = agentRunRecordService.findLatestBySessionId(sessionId)
+        val runId = activeRunId ?: latestRun?.runId
+        val status = when {
+            running -> AgentRunStatus.RUNNING
+            latestRun != null -> latestRun.status
+            else -> null
+        }
+        return AgentRunStatusInfo(
+            sessionId = sessionId,
+            runId = runId,
+            status = status,
+            running = running,
+            hasPendingInterrupt = pendingInterruptStore.get(sessionId) != null,
+        )
+    }
+
+    override fun stopRun(userId: String, projectId: String, request: AgentRunStopRequest): Boolean {
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
+        agentSessionService.assertActiveSession(userId, projectId, request.sessionId)
+        val activeRunId = activeRunStore.get(userId, request.sessionId)
+            ?: agentRunRecordService.findLatestBySessionId(request.sessionId)
+                ?.takeIf { it.status == AgentRunStatus.RUNNING }
+                ?.runId
+        if (activeRunId == null) {
+            return false
+        }
+        if (request.runId != null && request.runId != activeRunId) {
+            throw ParameterInvalidException("runId", "run[${request.runId}] is not active")
+        }
+        runCancelStore.requestCancel(activeRunId)
+        runHandleRegistry.find(userId, request.sessionId)
+            ?.takeIf { it.runId == activeRunId }
+            ?.abort()
+        return true
+    }
+
+    override fun reconnectRun(
+        userId: String,
+        projectId: String,
+        request: AgentRunReconnectRequest,
+    ): SseEmitter {
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
+        agentSessionService.assertActiveSession(userId, projectId, request.threadId)
+        Preconditions.checkNotBlank(request.runId, "runId")
+        val existingRun = agentRunRecordService.findByRunId(request.runId)
+            ?: throw ParameterInvalidException("runId", "run[${request.runId}] not found")
+        if (existingRun.sessionId != request.threadId) {
+            throw ParameterInvalidException("threadId", "run does not belong to thread[${request.threadId}]")
+        }
+        if (existingRun.status == AgentRunStatus.RUNNING) {
+            throw TooManyRequestsException("Run[${request.runId}] is still running")
+        }
+        val input = RunAgentInput.builder()
+            .threadId(request.threadId)
+            .runId(request.runId)
+            .build()
+        return replayTerminalRun(input, existingRun)
     }
 
     /**

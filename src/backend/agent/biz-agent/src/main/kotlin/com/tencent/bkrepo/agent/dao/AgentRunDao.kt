@@ -47,6 +47,13 @@ class AgentRunDao : SimpleMongoDao<TAgentRun>() {
         return findOne(query)
     }
 
+    fun findLatestBySessionId(sessionId: String): TAgentRun? {
+        val query = Query(Criteria.where(TAgentRun::sessionId.name).`is`(sessionId))
+            .with(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, TAgentRun::startedAt.name))
+            .limit(1)
+        return findOne(query)
+    }
+
     /**
      * 将仍处于 [AgentRunStatus.RUNNING] 的记录更新为终态。
      *

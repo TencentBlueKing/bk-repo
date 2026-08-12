@@ -1,0 +1,18 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ *
+ * Copyright (C) 2026 Tencent.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ */
+
+package com.tencent.bkrepo.agent.pojo
+
+/** AG-UI 之外的 run 运行状态查询结果。 */
+data class AgentRunStatusInfo(
+    val sessionId: String,
+    val runId: String?,
+    val status: AgentRunStatus?,
+    val running: Boolean,
+    val hasPendingInterrupt: Boolean,
+)

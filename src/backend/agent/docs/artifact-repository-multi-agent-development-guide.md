@@ -1417,9 +1417,17 @@ Agent 适合需要语言理解、证据综合和不确定性推理的任务。�
 **改造**
 
 1. status、stop、reconnect 和事件回放作为 AG-UI 之外的运行保障 API，不改变 `RunAgentInput` 或 `AguiEvent`；
-2. 运行锁继续按 userId + threadId，活跃记录保存 canonical runId；
+2. 运行锁继续按 userId + threadId，活跃记录保存 canonical runId（Redis `active-run` + Mongo `agent_run`）；
 3. 完成灰度后删除旧协议、旧类型和兼容分支；
 4. 更新接口文档、契约测试和端到端测试。
+
+**已实现 API**
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/agent/run/status?projectId=&sessionId=` | 查询 thread 运行状态、canonical runId、pending interrupt |
+| POST | `/api/agent/run/stop?projectId=` | 停止 active run（body: `{ sessionId, runId? }`） |
+| POST | `/api/agent/run/reconnect?projectId=` | 对已终态 run SSE 重放事件，不重新执行 |
 
 **验收**
 

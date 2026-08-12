@@ -35,6 +35,8 @@ interface AgentRunRecordService {
 
     fun findByRunId(runId: String): TAgentRun?
 
+    fun findLatestBySessionId(sessionId: String): TAgentRun?
+
     fun startRun(
         runId: String,
         executionId: String,
