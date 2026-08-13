@@ -27,9 +27,9 @@
 
 package com.tencent.bkrepo.agent.config
 
-import com.tencent.bkrepo.agent.agui.StatelessHarnessAgentResolver
-import com.tencent.bkrepo.agent.config.properties.AgentModelProperties
-import com.tencent.bkrepo.agent.config.properties.AgentProperties
+import com.tencent.bkrepo.agent.session.HarnessAgentResolver
+import com.tencent.bkrepo.agent.config.properties.EffectiveAgentLlmProperties
+import com.tencent.bkrepo.agent.config.properties.EffectiveAgentRuntimeProperties
 import io.agentscope.core.agui.adapter.AguiAdapterConfig
 import io.agentscope.core.agui.model.ToolMergeMode
 import io.agentscope.core.agui.processor.AguiRequestProcessor
@@ -42,17 +42,17 @@ import org.springframework.context.annotation.Configuration
 class AguiAgentConfiguration {
 
     @Bean
-    fun aguiAgentRegistry(harnessAgent: HarnessAgent, properties: AgentProperties): AguiAgentRegistry {
+    fun aguiAgentRegistry(harnessAgent: HarnessAgent, properties: EffectiveAgentRuntimeProperties): AguiAgentRegistry {
         val registry = AguiAgentRegistry()
         registry.register(properties.name, harnessAgent)
         return registry
     }
 
     @Bean
-    fun statelessHarnessAgentResolver(
+    fun harnessAgentResolver(
         registry: AguiAgentRegistry,
-        properties: AgentProperties,
-    ): StatelessHarnessAgentResolver = StatelessHarnessAgentResolver(registry, properties)
+        properties: EffectiveAgentRuntimeProperties,
+    ): HarnessAgentResolver = HarnessAgentResolver(registry, properties)
 
     /**
      * AG-UI 适配配置。
@@ -63,15 +63,15 @@ class AguiAgentConfiguration {
      */
     @Bean
     fun aguiAdapterConfig(
-        properties: AgentProperties,
-        modelProperties: AgentModelProperties,
+        properties: EffectiveAgentRuntimeProperties,
+        llmProperties: EffectiveAgentLlmProperties,
     ): AguiAdapterConfig {
-        val toolMergeMode = if (properties.localToolsEnabled) {
+        val toolMergeMode = if (properties.frontendToolsEnabled) {
             ToolMergeMode.FRONTEND_ONLY
         } else {
             ToolMergeMode.AGENT_ONLY
         }
-        val enableReasoning = modelProperties.effectiveReasoningEffort() != null
+        val enableReasoning = llmProperties.effectiveReasoningEffort() != null
         return AguiAdapterConfig.builder()
             .defaultAgentId(properties.name)
             .runTimeout(properties.sseTimeout)
@@ -84,7 +84,7 @@ class AguiAgentConfiguration {
 
     @Bean
     fun aguiRequestProcessor(
-        agentResolver: StatelessHarnessAgentResolver,
+        agentResolver: HarnessAgentResolver,
         config: AguiAdapterConfig,
     ): AguiRequestProcessor = AguiRequestProcessor.builder()
         .agentResolver(agentResolver)

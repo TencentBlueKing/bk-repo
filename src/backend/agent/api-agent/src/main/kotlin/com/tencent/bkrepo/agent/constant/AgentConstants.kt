@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.agent.constant
 
+const val AGENT_API_PREFIX = "/api/agent"
+
 /** 设备标识，经 [RunAgentInput.forwardedProps] 传递，写入 RuntimeContext 与 agent_run。 */
 const val FORWARDED_PROP_DEVICE_ID = "deviceId"
 

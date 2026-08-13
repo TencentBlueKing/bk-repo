@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.agent.permission
 
-import com.tencent.bkrepo.agent.config.properties.AgentProperties
+import com.tencent.bkrepo.agent.config.properties.EffectiveAgentRuntimeProperties
 import com.tencent.bkrepo.agent.tool.local.LocalToolDefinitions
 import io.agentscope.core.permission.PermissionBehavior
 import io.agentscope.core.permission.PermissionContextState
@@ -39,9 +39,9 @@ import org.springframework.context.annotation.Configuration
 class AgentPermissionRulesConfiguration {
 
     @Bean
-    fun agentPermissionContext(properties: AgentProperties): PermissionContextState {
+    fun agentPermissionContext(properties: EffectiveAgentRuntimeProperties): PermissionContextState {
         val builder = PermissionContextState.builder()
-        if (properties.localToolsEnabled) {
+        if (properties.frontendToolsEnabled) {
             LocalToolDefinitions.allTools().forEach { definition ->
                 registerRule(builder, definition.name, definition.riskLevel)
             }

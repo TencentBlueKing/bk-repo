@@ -1,0 +1,5 @@
+# Copy to local.properties (gitignored) for machine-specific Gradle settings.
+# Gradle loads this file from settings.gradle.kts before configuring projects.
+
+# JDK 17+ required for bk-repo backend (agent module uses Kotlin 2.x / Spring Boot 3).
+org.gradle.java.home=C\:\\Users\\YOUR_USER\\.jdks\\ms-17.0.19

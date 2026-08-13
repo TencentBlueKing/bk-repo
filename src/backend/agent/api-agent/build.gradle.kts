@@ -26,5 +26,10 @@
  */
 
 dependencies {
-    implementation(project(":common:common-api"))
+    api(project(":common:common-api"))
+    compileOnly("org.springframework:spring-web")
+    compileOnly("org.springframework:spring-webmvc")
+    api("io.agentscope:agentscope-extensions-agui") {
+        exclude(group = "com.squareup.okhttp3", module = "okhttp-jvm")
+    }
 }

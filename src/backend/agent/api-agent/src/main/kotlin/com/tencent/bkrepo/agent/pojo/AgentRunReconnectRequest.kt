@@ -16,4 +16,6 @@ data class AgentRunReconnectRequest(
     val threadId: String,
     @get:Schema(title = "canonical runId", required = true)
     val runId: String,
+    @get:Schema(title = "已收到的最大 eventIndex；省略时从首条事件重放")
+    val lastEventIndex: Long? = null,
 )

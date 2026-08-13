@@ -29,14 +29,24 @@ package com.tencent.bkrepo.agent
 
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
-import com.tencent.bkrepo.agent.config.AgentCompactionConfigurer
+import com.tencent.bkrepo.agent.agent.AgentCatalog
+import com.tencent.bkrepo.agent.agent.AgentFactory
+import com.tencent.bkrepo.agent.agent.discovery.ArtifactDiscoveryAgentDefinition
+import com.tencent.bkrepo.agent.agent.transfer.TransferDiagnosticsAgentDefinition
 import com.tencent.bkrepo.agent.config.AgentHarnessConfigurer
-import com.tencent.bkrepo.agent.config.AgentModelConfiguration
+import com.tencent.bkrepo.agent.config.AgentMemoryConfig
+import com.tencent.bkrepo.agent.config.AgentModelConfig
 import com.tencent.bkrepo.agent.config.properties.AgentCompactionProperties
-import com.tencent.bkrepo.agent.config.properties.AgentModelAuthType
+import com.tencent.bkrepo.agent.config.properties.AgentLlmProperties
+import com.tencent.bkrepo.agent.config.properties.AgentLlmPropertiesResolver
+import com.tencent.bkrepo.agent.config.properties.AgentMemoryProperties
+import com.tencent.bkrepo.agent.config.properties.AgentMemoryPropertiesResolver
 import com.tencent.bkrepo.agent.config.properties.AgentModelProperties
-import com.tencent.bkrepo.agent.config.properties.AgentProperties
 import com.tencent.bkrepo.agent.config.properties.AgentToolResultEvictionProperties
+import com.tencent.bkrepo.agent.config.properties.EffectiveAgentRuntimeProperties
+import com.tencent.bkrepo.agent.config.properties.EffectiveAgentTopology
+import com.tencent.bkrepo.agent.tool.domain.DomainToolNames
+import com.tencent.bkrepo.agent.tool.domain.RegisteredDomainTools
 import io.agentscope.core.agent.RuntimeContext
 import io.agentscope.core.event.AgentEvent
 import io.agentscope.core.event.TextBlockDeltaEvent
@@ -82,32 +92,63 @@ class HarnessAgentSmokeTest {
 
     @Test
     fun `模型返回纯文本时ReAct循环应自然结束并流出文本增量`(@TempDir workspace: Path) {
-        val agentProperties = AgentProperties().apply {
-            this.workspace = workspace.toString()
-            maxIters = 3
-        }
-        val modelProperties = AgentModelProperties(
-            authType = AgentModelAuthType.API_KEY,
+        val runtimeProperties = EffectiveAgentRuntimeProperties(
+            name = "smoke-agent",
+            sysPrompt = "test",
+            maxIters = 3,
+            workspace = workspace.toString(),
+            sseTimeout = java.time.Duration.ofMinutes(10),
+            maxMessageLength = 32 * 1024,
+            maxThreadIdLength = 128,
+            sessionTtl = java.time.Duration.ofDays(30),
+            activeRunTtl = java.time.Duration.ofMinutes(11),
+            runEventTtl = java.time.Duration.ofDays(7),
+            reconnectPollInterval = java.time.Duration.ofMillis(500),
+            reconnectTimeout = java.time.Duration.ofMinutes(10),
+            stateKeyPrefix = "bkrepo:agent:state:",
+            requireRedis = false,
+            frontendToolsEnabled = true,
+            topology = EffectiveAgentTopology.defaults(),
+        )
+        val legacyModel = AgentModelProperties(
             baseUrl = "http://127.0.0.1:${server.address.port}/v1",
             apiKey = "stub-api-key",
             modelName = "stub-model",
             stream = true,
         )
-        val modelConfiguration = AgentModelConfiguration()
+        val llmProperties = AgentLlmPropertiesResolver.resolve(AgentLlmProperties(), legacyModel)
+        val memoryProperties = AgentMemoryPropertiesResolver.resolve(
+            memory = AgentMemoryProperties(),
+            legacyCompaction = AgentCompactionProperties(enabled = false),
+            legacyEviction = AgentToolResultEvictionProperties(enabled = false),
+            legacyModel = legacyModel,
+        )
+        val modelConfiguration = AgentModelConfig()
+        val agentCatalog = AgentCatalog(
+            definitions = listOf(ArtifactDiscoveryAgentDefinition(), TransferDiagnosticsAgentDefinition()),
+            runtimeProperties = runtimeProperties,
+            agentFactory = AgentFactory(),
+            domainToolRegistrar = object : RegisteredDomainTools {
+                override val registeredToolNames = setOf(
+                    DomainToolNames.LIST_REPOSITORIES,
+                    DomainToolNames.GET_REPOSITORY_DETAIL,
+                    DomainToolNames.GET_TRANSFER_TASK_STATUS,
+                    DomainToolNames.GET_TRANSFER_ERROR_DETAIL,
+                )
+            },
+        )
         val agentHarnessConfigurer = AgentHarnessConfigurer(
-            agentCompactionConfigurer = AgentCompactionConfigurer(
-                compactionProperties = AgentCompactionProperties(enabled = false),
-                toolResultEvictionProperties = AgentToolResultEvictionProperties(enabled = false),
-                modelProperties = modelProperties,
-            ),
+            agentMemoryConfig = AgentMemoryConfig(),
+            agentCatalog = agentCatalog,
         )
         val permissionContext = io.agentscope.core.permission.PermissionContextState.builder().build()
         val toolkit = io.agentscope.core.tool.Toolkit(
             io.agentscope.core.tool.ToolkitConfig.builder().parallel(false).build(),
         )
         val agent = agentHarnessConfigurer.configure(
-            properties = agentProperties,
-            model = modelConfiguration.agentChatModel(modelProperties),
+            properties = runtimeProperties,
+            memory = memoryProperties,
+            model = modelConfiguration.agentChatModel(llmProperties),
             stateStore = InMemoryAgentStateStore(),
             toolkit = toolkit,
             permissionContext = permissionContext,

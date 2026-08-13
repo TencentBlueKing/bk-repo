@@ -8,8 +8,6 @@
 
 package com.tencent.bkrepo.agent.agui
 
-import io.agentscope.core.agui.model.RunAgentInput
-
 /** [RunAgentInput.forwardedProps] 白名单键：仅允许客户端传递设备与追踪元数据。 */
 object AgentForwardedPropsKeys {
     const val DEVICE_ID = "deviceId"
@@ -17,9 +15,9 @@ object AgentForwardedPropsKeys {
 }
 
 /**
- * 从 AG-UI [RunAgentInput.forwardedProps] 提取运行元数据。
+ * 清洗 AG-UI [RunAgentInput.forwardedProps]：去掉不可信身份键与已由服务端接管的 transport 键。
  *
- * 身份字段（userId、projectId 等）必须由服务端认证链路注入，忽略客户端同名键。
+ * deviceId/traceId 提取见 [com.tencent.bkrepo.agent.context.AgentChatContextResolver]。
  */
 object AgentForwardedPropsSupport {
 
@@ -32,20 +30,6 @@ object AgentForwardedPropsSupport {
         AgentForwardedPropsKeys.TRACE_ID,
     )
 
-    data class Extracted(
-        val deviceId: String?,
-        val traceId: String?,
-    )
-
-    fun extract(input: RunAgentInput): Extracted {
-        val props = asStringMap(input.forwardedProps) ?: return Extracted(null, null)
-        return Extracted(
-            deviceId = readString(props, AgentForwardedPropsKeys.DEVICE_ID),
-            traceId = readString(props, AgentForwardedPropsKeys.TRACE_ID),
-        )
-    }
-
-    /** 去掉不可信身份键与已服务端接管的 transport 键，剩余 forwardedProps 原样留给 adapter。 */
     fun sanitizeForwardedProps(forwardedProps: Any?): Map<String, Any>? {
         val props = asStringMap(forwardedProps) ?: return null
         val sanitized = props.filterKeys { key -> key !in BLOCKED_KEYS }
@@ -63,9 +47,5 @@ object AgentForwardedPropsSupport {
             }
             .toMap()
             .takeIf { it.isNotEmpty() }
-    }
-
-    private fun readString(props: Map<String, Any>, key: String): String? {
-        return props[key]?.toString()?.trim()?.takeIf { it.isNotBlank() }
     }
 }

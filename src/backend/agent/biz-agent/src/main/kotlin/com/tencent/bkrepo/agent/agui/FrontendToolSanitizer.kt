@@ -8,7 +8,7 @@
 
 package com.tencent.bkrepo.agent.agui
 
-import com.tencent.bkrepo.agent.config.properties.AgentProperties
+import com.tencent.bkrepo.agent.config.properties.EffectiveAgentRuntimeProperties
 import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
 import io.agentscope.core.agui.model.AguiTool
 import io.agentscope.core.agui.model.RunAgentInput
@@ -19,12 +19,12 @@ import org.springframework.stereotype.Component
  */
 @Component
 class FrontendToolSanitizer(
-    private val properties: AgentProperties,
+    private val properties: EffectiveAgentRuntimeProperties,
     private val catalog: FrontendToolCatalog,
 ) {
 
     fun sanitize(input: RunAgentInput): RunAgentInput {
-        if (!properties.localToolsEnabled) {
+        if (!properties.frontendToolsEnabled) {
             if (input.hasTools()) {
                 throw ParameterInvalidException("tools: local tools are disabled")
             }

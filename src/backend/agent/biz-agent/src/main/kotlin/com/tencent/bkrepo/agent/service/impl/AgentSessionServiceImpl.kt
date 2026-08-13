@@ -4,64 +4,119 @@
  * Copyright (C) 2026 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
- *
- * A copy of the MIT License is included in this file.
- *
- *
- * Terms of the MIT License:
- * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
- * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
- * the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
- * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
- * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
- * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 package com.tencent.bkrepo.agent.service.impl
 
-import com.tencent.bkrepo.agent.config.properties.AgentProperties
+import com.tencent.bkrepo.agent.config.properties.EffectiveAgentRuntimeProperties
+import com.tencent.bkrepo.agent.constant.AGENT_THREAD_ID_PREFIX
 import com.tencent.bkrepo.agent.dao.AgentMessageDao
 import com.tencent.bkrepo.agent.dao.AgentSessionDao
 import com.tencent.bkrepo.agent.model.TAgentMessage
 import com.tencent.bkrepo.agent.model.TAgentSession
 import com.tencent.bkrepo.agent.pojo.AgentMessageInfo
 import com.tencent.bkrepo.agent.pojo.AgentSessionCreateResult
+import com.tencent.bkrepo.agent.pojo.AgentSessionDeleteRequest
 import com.tencent.bkrepo.agent.pojo.AgentSessionInfo
 import com.tencent.bkrepo.agent.pojo.AgentSessionStatus
+import com.tencent.bkrepo.agent.pojo.AgentSessionUpdateRequest
+import com.tencent.bkrepo.agent.runtime.ActiveRunManager
+import com.tencent.bkrepo.agent.runtime.ActiveRunScope
 import com.tencent.bkrepo.agent.service.AgentRunRecordService
 import com.tencent.bkrepo.agent.service.AgentSessionService
-import com.tencent.bkrepo.agent.session.AgentRunLock
-import com.tencent.bkrepo.agent.session.AgentRuntimeStateCleaner
+import com.tencent.bkrepo.agent.session.AgentPendingInterruptStore
 import com.tencent.bkrepo.agent.session.AgentSessionStore
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
 class AgentSessionServiceImpl(
+    private val permissionManager: PermissionManager,
     private val agentSessionDao: AgentSessionDao,
     private val agentMessageDao: AgentMessageDao,
     private val agentRunRecordService: AgentRunRecordService,
     private val agentSessionStore: AgentSessionStore,
-    private val agentRunLock: AgentRunLock,
-    private val agentRuntimeStateCleaner: AgentRuntimeStateCleaner,
-    private val properties: AgentProperties,
+    private val activeRunManager: ActiveRunManager,
+    private val pendingInterruptStore: AgentPendingInterruptStore,
+    private val properties: EffectiveAgentRuntimeProperties,
 ) : AgentSessionService {
 
-    override fun createSessionRecord(
+    override fun createSession(userId: String, projectId: String): AgentSessionCreateResult {
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
+        val threadId = AGENT_THREAD_ID_PREFIX + StringPool.uniqueId()
+        agentSessionStore.bindSession(userId, projectId, threadId)
+        return try {
+            insertSessionRecord(threadId, userId, projectId)
+        } catch (ex: Exception) {
+            agentSessionStore.removeSession(projectId, threadId)
+            throw ex
+        }
+    }
+
+    override fun listSessions(
+        userId: String,
+        projectId: String,
+        pageNumber: Int,
+        pageSize: Int,
+    ): Page<AgentSessionInfo> {
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
+        val page = agentSessionDao.pageByUserAndProject(userId, projectId, pageNumber, pageSize)
+        return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { toInfo(it) })
+    }
+
+    override fun listMessages(
+        userId: String,
+        projectId: String,
+        threadId: String,
+        pageNumber: Int,
+        pageSize: Int,
+    ): Page<AgentMessageInfo> {
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
+        assertActiveSession(userId, projectId, threadId)
+        val page = agentMessageDao.pageByThreadId(threadId, pageNumber, pageSize)
+        return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { toMessageInfo(it) })
+    }
+
+    override fun updateSession(userId: String, projectId: String, request: AgentSessionUpdateRequest) {
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
+        assertActiveSession(userId, projectId, request.threadId)
+        val normalizedTitle = request.title.trim()
+        Preconditions.checkNotBlank(normalizedTitle, "title")
+        Preconditions.checkArgument(normalizedTitle.length <= properties.maxMessageLength, "title")
+        agentSessionDao.updateTitle(request.threadId, normalizedTitle, LocalDateTime.now())
+    }
+
+    override fun deleteSession(userId: String, projectId: String, request: AgentSessionDeleteRequest) {
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
+        deleteSessionInternal(userId, projectId, request.threadId)
+    }
+
+    override fun assertActiveSession(userId: String, projectId: String, threadId: String) {
+        val session = agentSessionDao.findByThreadId(threadId)
+            ?: agentSessionDao.insertSession(threadId, userId, projectId)
+        if (session.status != AgentSessionStatus.ACTIVE) {
+            throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, "Thread[$threadId]")
+        }
+        if (session.userId != userId || session.projectId != projectId) {
+            throw PermissionException("Thread[$threadId] does not belong to user[$userId] in project[$projectId]")
+        }
+        agentSessionStore.bindSession(userId, projectId, threadId)
+    }
+
+    override fun touchSession(threadId: String, runId: String) {
+        agentSessionDao.touchSession(threadId, runId, LocalDateTime.now())
+    }
+
+    private fun insertSessionRecord(
         threadId: String,
         userId: String,
         projectId: String,
@@ -77,64 +132,19 @@ class AgentSessionServiceImpl(
         )
     }
 
-    override fun assertActiveSession(userId: String, projectId: String, threadId: String) {
-        val session = agentSessionDao.findByThreadId(threadId)
-            ?: agentSessionDao.insertSession(threadId, userId, projectId)
-        if (session.status != AgentSessionStatus.ACTIVE) {
-            throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, "Thread[$threadId]")
-        }
-        if (session.userId != userId || session.projectId != projectId) {
-            throw PermissionException("Thread[$threadId] does not belong to user[$userId] in project[$projectId]")
-        }
-        // Mongo 校验通过后同步 Redis 归属并刷新 TTL，避免 Redis 过期后 run 失败。
-        agentSessionStore.bindSession(userId, projectId, threadId)
-    }
-
-    override fun listSessions(
-        userId: String,
-        projectId: String,
-        pageNumber: Int,
-        pageSize: Int,
-    ): Page<AgentSessionInfo> {
-        val page = agentSessionDao.pageByUserAndProject(userId, projectId, pageNumber, pageSize)
-        return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { toInfo(it) })
-    }
-
-    override fun listMessages(
-        userId: String,
-        projectId: String,
-        threadId: String,
-        pageNumber: Int,
-        pageSize: Int,
-    ): Page<AgentMessageInfo> {
+    private fun deleteSessionInternal(userId: String, projectId: String, threadId: String) {
         assertActiveSession(userId, projectId, threadId)
-        val page = agentMessageDao.pageByThreadId(threadId, pageNumber, pageSize)
-        return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { toMessageInfo(it) })
-    }
-
-    override fun updateTitle(userId: String, projectId: String, threadId: String, title: String) {
-        assertActiveSession(userId, projectId, threadId)
-        val normalizedTitle = title.trim()
-        Preconditions.checkNotBlank(normalizedTitle, "title")
-        Preconditions.checkArgument(normalizedTitle.length <= properties.maxMessageLength, "title")
-        agentSessionDao.updateTitle(threadId, normalizedTitle, LocalDateTime.now())
-    }
-
-    override fun deleteSession(userId: String, projectId: String, threadId: String) {
-        assertActiveSession(userId, projectId, threadId)
-        if (agentRunLock.isRunning(userId, threadId)) {
+        if (activeRunManager.isRunning(ActiveRunScope(userId, projectId, threadId))) {
             throw TooManyRequestsException("Thread[$threadId] is running")
         }
+        pendingInterruptStore.clear(threadId)
+        activeRunManager.clearActiveRunBinding(ActiveRunScope(userId, projectId, threadId))
         val now = LocalDateTime.now()
         agentSessionDao.markDeleted(threadId, now)
         agentMessageDao.removeByThreadId(threadId)
         agentRunRecordService.removeByThreadId(threadId)
         agentSessionStore.removeSession(projectId, threadId)
-        agentRuntimeStateCleaner.clear(userId, threadId)
-    }
-
-    override fun touchSession(threadId: String, runId: String) {
-        agentSessionDao.touchSession(threadId, runId, LocalDateTime.now())
+        activeRunManager.clearAgentRuntimeState(userId, threadId)
     }
 
     private fun toInfo(session: TAgentSession): AgentSessionInfo {

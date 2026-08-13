@@ -9,6 +9,7 @@ reports/
 .DS_Store
 *.log
 node_modules/
+local.properties
 
 data/
 http-client.private.env.json

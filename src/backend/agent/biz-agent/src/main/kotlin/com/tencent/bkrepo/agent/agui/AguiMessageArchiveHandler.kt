@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.agent.agui
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.tencent.bkrepo.agent.config.properties.AgentProperties
+import com.tencent.bkrepo.agent.config.properties.EffectiveAgentRuntimeProperties
 import com.tencent.bkrepo.agent.service.AgentMessageArchiveService
 import io.agentscope.core.agui.event.AguiEvent
 import io.agentscope.core.agui.model.MessageContent
@@ -44,7 +44,7 @@ import org.springframework.stereotype.Component
 @Component
 class AguiMessageArchiveHandler(
     private val agentMessageArchiveService: AgentMessageArchiveService,
-    private val agentProperties: AgentProperties,
+    private val agentProperties: EffectiveAgentRuntimeProperties,
     private val objectMapper: ObjectMapper,
 ) {
 

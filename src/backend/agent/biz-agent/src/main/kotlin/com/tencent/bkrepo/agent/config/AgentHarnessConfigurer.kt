@@ -27,7 +27,9 @@
 
 package com.tencent.bkrepo.agent.config
 
-import com.tencent.bkrepo.agent.config.properties.AgentProperties
+import com.tencent.bkrepo.agent.agent.AgentCatalog
+import com.tencent.bkrepo.agent.config.properties.EffectiveAgentMemoryProperties
+import com.tencent.bkrepo.agent.config.properties.EffectiveAgentRuntimeProperties
 import io.agentscope.core.model.Model
 import io.agentscope.core.permission.PermissionContextState
 import io.agentscope.core.state.AgentStateStore
@@ -44,11 +46,13 @@ import java.nio.file.Paths
  */
 @Component
 class AgentHarnessConfigurer(
-    private val agentCompactionConfigurer: AgentCompactionConfigurer,
+    private val agentMemoryConfig: AgentMemoryConfig,
+    private val agentCatalog: AgentCatalog,
 ) {
 
     fun configure(
-        properties: AgentProperties,
+        properties: EffectiveAgentRuntimeProperties,
+        memory: EffectiveAgentMemoryProperties,
         model: Model,
         stateStore: AgentStateStore,
         toolkit: Toolkit,
@@ -66,12 +70,22 @@ class AgentHarnessConfigurer(
             .enablePendingToolRecovery(true)
             .disableFilesystemTools()
             .disableShellTool()
-            .disableSubagents()
             .disableDynamicSkills()
+            .disableDynamicSubagents()
             .disableMemoryTools()
             .disableWorkspaceContext()
 
-        builder = agentCompactionConfigurer.apply(builder)
+        if (properties.topology.coordinator.enabled) {
+            builder = builder.enableTaskList(properties.topology.coordinator.taskListEnabled)
+            val subagents = agentCatalog.resolveSubagentDeclarations()
+            if (subagents.isNotEmpty()) {
+                builder = builder.subagents(subagents)
+            }
+        } else {
+            builder = builder.disableSubagents()
+        }
+
+        builder = agentMemoryConfig.apply(builder, memory)
 
         return builder.build()
     }

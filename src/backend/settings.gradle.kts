@@ -29,6 +29,15 @@
  * SOFTWARE.
  */
 
+val localPropertiesFile = file("local.properties")
+if (localPropertiesFile.exists()) {
+    java.util.Properties().apply {
+        localPropertiesFile.inputStream().use { load(it) }
+    }.getProperty("org.gradle.java.home")?.let { jdkHome ->
+        System.setProperty("org.gradle.java.home", jdkHome)
+    }
+}
+
 rootProject.name = "bk-repo-backend"
 
 pluginManagement {

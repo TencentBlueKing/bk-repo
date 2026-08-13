@@ -27,7 +27,8 @@
 
 package com.tencent.bkrepo.agent.config
 
-import com.tencent.bkrepo.agent.config.properties.AgentProperties
+import com.tencent.bkrepo.agent.config.properties.EffectiveAgentMemoryProperties
+import com.tencent.bkrepo.agent.config.properties.EffectiveAgentRuntimeProperties
 import io.agentscope.core.model.Model
 import io.agentscope.core.permission.PermissionContextState
 import io.agentscope.core.state.AgentStateStore
@@ -44,7 +45,8 @@ class HarnessAgentConfiguration {
      */
     @Bean
     fun harnessAgent(
-        properties: AgentProperties,
+        properties: EffectiveAgentRuntimeProperties,
+        memory: EffectiveAgentMemoryProperties,
         model: Model,
         stateStore: AgentStateStore,
         toolkit: Toolkit,
@@ -52,6 +54,7 @@ class HarnessAgentConfiguration {
         agentHarnessConfigurer: AgentHarnessConfigurer,
     ): HarnessAgent = agentHarnessConfigurer.configure(
         properties = properties,
+        memory = memory,
         model = model,
         stateStore = stateStore,
         toolkit = toolkit,

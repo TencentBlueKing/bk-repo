@@ -73,6 +73,18 @@ data class AgentProperties(
      */
     var runLockTtl: Duration = DEFAULT_RUN_LOCK_TTL,
     /**
+     * AG-UI run 事件 Mongo TTL；到期后由 Mongo 自动清理 [TAgentRunEvent]。
+     */
+    var runEventTtl: Duration = DEFAULT_RUN_EVENT_TTL,
+    /**
+     * reconnect 跨实例增量轮询 Mongo 的间隔。
+     */
+    var reconnectPollInterval: Duration = DEFAULT_RECONNECT_POLL_INTERVAL,
+    /**
+     * reconnect SSE 最长保持时长。
+     */
+    var reconnectTimeout: Duration = DEFAULT_RECONNECT_TIMEOUT,
+    /**
      * 是否启用客户端本地 frontend tools（经 RunAgentInput.tools[] + AG-UI run-scoped 注入）。
      */
     var localToolsEnabled: Boolean = DEFAULT_LOCAL_TOOLS_ENABLED,
@@ -86,6 +98,9 @@ data class AgentProperties(
         const val DEFAULT_MAX_THREAD_ID_LENGTH = 128
         val DEFAULT_SESSION_TTL: Duration = Duration.ofDays(30)
         val DEFAULT_RUN_LOCK_TTL: Duration = Duration.ofMinutes(11)
+        val DEFAULT_RUN_EVENT_TTL: Duration = Duration.ofDays(7)
+        val DEFAULT_RECONNECT_POLL_INTERVAL: Duration = Duration.ofMillis(500)
+        val DEFAULT_RECONNECT_TIMEOUT: Duration = Duration.ofMinutes(10)
         const val DEFAULT_LOCAL_TOOLS_ENABLED = true
     }
 }

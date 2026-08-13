@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.agent.session
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.tencent.bkrepo.agent.config.properties.AgentProperties
+import com.tencent.bkrepo.agent.config.properties.EffectiveAgentRuntimeProperties
 import com.tencent.bkrepo.common.redis.RedisOperation
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
@@ -41,7 +41,7 @@ class AgentSessionConfiguration {
     /** 无 Redis 时退化为进程内实现，便于本地开发；生产多副本应配置 Redis。 */
     @Bean
     fun agentSessionStore(
-        properties: AgentProperties,
+        properties: EffectiveAgentRuntimeProperties,
         redisOperation: ObjectProvider<RedisOperation>,
     ): AgentSessionStore {
         val redis = redisOperation.getIfAvailable()
@@ -56,24 +56,8 @@ class AgentSessionConfiguration {
     }
 
     @Bean
-    fun agentRunLock(
-        properties: AgentProperties,
-        redisOperation: ObjectProvider<RedisOperation>,
-    ): AgentRunLock {
-        val redis = redisOperation.getIfAvailable()
-        if (redis == null) {
-            logger.warn("No RedisOperation available, falling back to in-memory agent run lock")
-            return InMemoryAgentRunLock()
-        }
-        return RedisAgentRunLock(
-            redisOperation = redis,
-            lockTtlSeconds = properties.runLockTtl.seconds,
-        )
-    }
-
-    @Bean
     fun agentPendingInterruptStore(
-        properties: AgentProperties,
+        properties: EffectiveAgentRuntimeProperties,
         redisOperation: ObjectProvider<RedisOperation>,
         objectMapper: ObjectMapper,
     ): AgentPendingInterruptStore {
@@ -91,7 +75,7 @@ class AgentSessionConfiguration {
 
     @Bean
     fun agentResumeIdempotencyStore(
-        properties: AgentProperties,
+        properties: EffectiveAgentRuntimeProperties,
         redisOperation: ObjectProvider<RedisOperation>,
     ): AgentResumeIdempotencyStore {
         val redis = redisOperation.getIfAvailable()
@@ -101,39 +85,7 @@ class AgentSessionConfiguration {
         }
         return RedisAgentResumeIdempotencyStore(
             redisOperation = redis,
-            ttlSeconds = properties.runLockTtl.seconds,
-        )
-    }
-
-    @Bean
-    fun agentActiveRunStore(
-        properties: AgentProperties,
-        redisOperation: ObjectProvider<RedisOperation>,
-    ): AgentActiveRunStore {
-        val redis = redisOperation.getIfAvailable()
-        if (redis == null) {
-            logger.warn("No RedisOperation available, falling back to in-memory active run store")
-            return InMemoryAgentActiveRunStore()
-        }
-        return RedisAgentActiveRunStore(
-            redisOperation = redis,
-            ttlSeconds = properties.runLockTtl.seconds,
-        )
-    }
-
-    @Bean
-    fun agentRunCancelStore(
-        properties: AgentProperties,
-        redisOperation: ObjectProvider<RedisOperation>,
-    ): AgentRunCancelStore {
-        val redis = redisOperation.getIfAvailable()
-        if (redis == null) {
-            logger.warn("No RedisOperation available, falling back to in-memory run cancel store")
-            return InMemoryAgentRunCancelStore()
-        }
-        return RedisAgentRunCancelStore(
-            redisOperation = redis,
-            ttlSeconds = properties.runLockTtl.seconds,
+            ttlSeconds = properties.activeRunTtl.seconds,
         )
     }
 

@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.agent.config
 
-import com.tencent.bkrepo.agent.config.properties.AgentStateProperties
+import com.tencent.bkrepo.agent.config.properties.EffectiveAgentRuntimeProperties
 import io.agentscope.core.state.AgentStateStore
 import io.agentscope.core.state.InMemoryAgentStateStore
 import io.agentscope.extensions.redis.state.RedisAgentStateStore
@@ -51,7 +51,7 @@ class AgentStateConfiguration {
      */
     @Bean
     fun agentStateStore(
-        properties: AgentStateProperties,
+        properties: EffectiveAgentRuntimeProperties,
         connectionFactory: ObjectProvider<RedisConnectionFactory>,
     ): AgentStateStore {
         val client = (connectionFactory.getIfAvailable() as? LettuceConnectionFactory)?.nativeClient as? RedisClient
@@ -64,7 +64,7 @@ class AgentStateConfiguration {
         }
         return RedisAgentStateStore.builder()
             .lettuceClient(client)
-            .keyPrefix(properties.keyPrefix)
+            .keyPrefix(properties.stateKeyPrefix)
             .build()
     }
 
