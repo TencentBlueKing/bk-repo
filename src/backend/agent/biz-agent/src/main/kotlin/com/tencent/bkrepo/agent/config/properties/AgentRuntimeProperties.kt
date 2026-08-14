@@ -8,7 +8,7 @@
 
 package com.tencent.bkrepo.agent.config.properties
 
-import com.tencent.bkrepo.agent.agent.bkrepo.BkrepoAssistantPrompt
+import com.tencent.bkrepo.agent.config.AgentSystemPrompts
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.time.Duration
 
@@ -20,7 +20,7 @@ import java.time.Duration
 @ConfigurationProperties("agent.runtime")
 data class AgentRuntimeProperties(
     var name: String = AgentProperties.DEFAULT_NAME,
-    var sysPrompt: String = BkrepoAssistantPrompt.DEFAULT,
+    var sysPrompt: String = AgentSystemPrompts.DEFAULT,
     var maxIters: Int = AgentProperties.DEFAULT_MAX_ITERS,
     var workspace: String = AgentProperties.DEFAULT_WORKSPACE,
     var sseTimeout: Duration = AgentProperties.DEFAULT_SSE_TIMEOUT,
@@ -161,7 +161,7 @@ object AgentRuntimePropertiesResolver {
         val usesNewPrefix = runtime != defaultRuntime()
         return EffectiveAgentRuntimeProperties(
             name = pick(runtime.name, legacy.name, usesNewPrefix, AgentProperties.DEFAULT_NAME),
-            sysPrompt = pick(runtime.sysPrompt, legacy.sysPrompt, usesNewPrefix, BkrepoAssistantPrompt.DEFAULT),
+            sysPrompt = resolveSysPrompt(runtime, legacy, usesNewPrefix),
             maxIters = pick(runtime.maxIters, legacy.maxIters, usesNewPrefix, AgentProperties.DEFAULT_MAX_ITERS),
             workspace = pick(runtime.workspace, legacy.workspace, usesNewPrefix, AgentProperties.DEFAULT_WORKSPACE),
             sseTimeout = pickDuration(runtime.sseTimeout, legacy.sseTimeout, usesNewPrefix, AgentProperties.DEFAULT_SSE_TIMEOUT),
@@ -251,6 +251,22 @@ object AgentRuntimePropertiesResolver {
     }
 
     private fun defaultRuntime(): AgentRuntimeProperties = AgentRuntimeProperties()
+
+    /**
+     * sys-prompt 不能用通用 [pick]（空 Consul 占位会覆盖默认值）；空白一律回退 [AgentSystemPrompts.DEFAULT]。
+     */
+    private fun resolveSysPrompt(
+        runtime: AgentRuntimeProperties,
+        legacy: AgentProperties,
+        usesNewPrefix: Boolean,
+    ): String {
+        val raw = when {
+            usesNewPrefix -> runtime.sysPrompt
+            legacy.sysPrompt != AgentSystemPrompts.DEFAULT -> legacy.sysPrompt
+            else -> AgentSystemPrompts.DEFAULT
+        }
+        return raw.takeIf { it.isNotBlank() } ?: AgentSystemPrompts.DEFAULT
+    }
 
     private fun <T> pick(newValue: T, legacyValue: T, usesNewPrefix: Boolean, defaultValue: T): T =
         if (usesNewPrefix && newValue != defaultValue) newValue else legacyValue

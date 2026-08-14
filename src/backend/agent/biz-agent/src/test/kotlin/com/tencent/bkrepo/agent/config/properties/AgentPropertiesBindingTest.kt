@@ -8,6 +8,7 @@
 
 package com.tencent.bkrepo.agent.config.properties
 
+import com.tencent.bkrepo.agent.config.AgentSystemPrompts
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -112,5 +113,53 @@ class AgentPropertiesBindingTest {
         assertEquals(java.time.Duration.ofMinutes(15), runtime.activeRunTtl)
         assertEquals(16_000, runtime.maxMessageLength)
         assertEquals("bkrepo:agent:custom:", runtime.stateKeyPrefix)
+    }
+
+    @Test
+    fun `未配置 agent runtime 时应默认使用 AgentSystemPrompts`() {
+        val runtime = AgentRuntimePropertiesResolver.resolve(
+            runtime = AgentRuntimeProperties(),
+            legacy = AgentProperties(),
+            legacyState = AgentStateProperties(),
+        )
+
+        assertEquals(AgentSystemPrompts.DEFAULT, runtime.sysPrompt)
+    }
+
+    @Test
+    fun `agent runtime sys-prompt 等于代码默认值时仍应生效而非回退 legacy 空串`() {
+        val runtime = AgentRuntimePropertiesResolver.resolve(
+            runtime = AgentRuntimeProperties().apply {
+                topology = AgentRuntimeProperties.Topology(
+                    coordinator = AgentRuntimeProperties.Topology.Coordinator(taskListEnabled = false),
+                )
+            },
+            legacy = AgentProperties().apply { sysPrompt = "" },
+            legacyState = AgentStateProperties(),
+        )
+
+        assertEquals(AgentSystemPrompts.DEFAULT, runtime.sysPrompt)
+    }
+
+    @Test
+    fun `agent runtime sys-prompt 在 Consul 占位为空时应回退代码默认`() {
+        val runtime = AgentRuntimePropertiesResolver.resolve(
+            runtime = AgentRuntimeProperties().apply { sysPrompt = "" },
+            legacy = AgentProperties(),
+            legacyState = AgentStateProperties(),
+        )
+
+        assertEquals(AgentSystemPrompts.DEFAULT, runtime.sysPrompt)
+    }
+
+    @Test
+    fun `legacy agent sys-prompt 显式配置时应优先于新默认`() {
+        val runtime = AgentRuntimePropertiesResolver.resolve(
+            runtime = AgentRuntimeProperties(),
+            legacy = AgentProperties().apply { sysPrompt = "legacy-custom-prompt" },
+            legacyState = AgentStateProperties(),
+        )
+
+        assertEquals("legacy-custom-prompt", runtime.sysPrompt)
     }
 }

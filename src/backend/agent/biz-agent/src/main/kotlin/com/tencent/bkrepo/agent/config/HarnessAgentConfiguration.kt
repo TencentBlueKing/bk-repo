@@ -34,6 +34,7 @@ import io.agentscope.core.permission.PermissionContextState
 import io.agentscope.core.state.AgentStateStore
 import io.agentscope.core.tool.Toolkit
 import io.agentscope.harness.agent.HarnessAgent
+import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -52,12 +53,29 @@ class HarnessAgentConfiguration {
         toolkit: Toolkit,
         permissionContext: PermissionContextState,
         agentHarnessConfigurer: AgentHarnessConfigurer,
-    ): HarnessAgent = agentHarnessConfigurer.configure(
-        properties = properties,
-        memory = memory,
-        model = model,
-        stateStore = stateStore,
-        toolkit = toolkit,
-        permissionContext = permissionContext,
-    )
+    ): HarnessAgent {
+        val agent = agentHarnessConfigurer.configure(
+            properties = properties,
+            memory = memory,
+            model = model,
+            stateStore = stateStore,
+            toolkit = toolkit,
+            permissionContext = permissionContext,
+        )
+        val preview = properties.sysPrompt.lines().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
+        logger.info(
+            "HarnessAgent ready: agentId={}, sysPromptChars={}, preview=\"{}\"",
+            properties.name,
+            properties.sysPrompt.length,
+            preview.take(80),
+        )
+        check(properties.sysPrompt.isNotBlank()) {
+            "agent.runtime.sys-prompt must not be blank; check Consul/YAML for empty agent.sys-prompt override"
+        }
+        return agent
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(HarnessAgentConfiguration::class.java)
+    }
 }
