@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.auth.config
 
 import com.tencent.bkrepo.auth.interceptor.AuthInterceptor
+import com.tencent.bkrepo.auth.interceptor.FederationWriteInterceptor
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration
@@ -39,7 +40,7 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
-@EnableConfigurationProperties(OauthProperties::class)
+@EnableConfigurationProperties(OauthProperties::class, AuthProperties::class)
 class AuthConfig : WebMvcConfigurer {
 
     var prefixEnabled = true
@@ -63,6 +64,21 @@ class AuthConfig : WebMvcConfigurer {
             .addPathPatterns(httpAuthSecurity.getIncludedPatterns())
             .excludePathPatterns(httpAuthSecurity.getExcludedPatterns())
             .order(0)
+        // 仅匹配联邦写相关路径，避免扫过全部 /service/**
+        registry.addInterceptor(FederationWriteInterceptor())
+            .addPathPatterns(
+                "/service/**/federation/**",
+                "/service/permission/upsertForFederation",
+                "/service/permission/create",
+                "/service/permission/delete/**",
+                "/service/permission/personalPath/**",
+                "/service/key/**",
+                "/service/mode/repo/**",
+                "/service/user/update/**",
+                "/service/user/delete/**",
+                "/service/temporary/token/**",
+            )
+            .order(1)
         super.addInterceptors(registry)
     }
 }

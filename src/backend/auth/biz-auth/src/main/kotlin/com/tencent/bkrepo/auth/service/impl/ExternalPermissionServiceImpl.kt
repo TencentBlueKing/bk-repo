@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.auth.service.impl
 
+import com.tencent.bkrepo.auth.config.AuthProperties
+import com.tencent.bkrepo.auth.context.FederationWriteContext
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TExternalPermission
 import com.tencent.bkrepo.auth.pojo.externalPermission.CreateExtPermissionRequest
@@ -37,8 +39,11 @@ import com.tencent.bkrepo.auth.dao.repository.ExternalPermissionRepository
 import com.tencent.bkrepo.auth.service.ExternalPermissionService
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
@@ -50,8 +55,10 @@ import java.time.LocalDateTime
 @Service
 class ExternalPermissionServiceImpl(
     private val externalPermissionRepository: ExternalPermissionRepository,
-    private val mongoTemplate: MongoTemplate
-): ExternalPermissionService {
+    private val mongoTemplate: MongoTemplate,
+    private val messageSupplier: MessageSupplier,
+    private val authProperties: AuthProperties,
+) : ExternalPermissionService {
     override fun createExtPermission(request: CreateExtPermissionRequest) {
         with(request) {
             val userId = SecurityUtils.getUserId()
@@ -68,7 +75,8 @@ class ExternalPermissionServiceImpl(
                 lastModifiedDate = LocalDateTime.now(),
                 lastModifiedBy = userId
             )
-            externalPermissionRepository.insert(tExternalPermission)
+            val saved = externalPermissionRepository.insert(tExternalPermission)
+            publishEvent(EventType.EXT_PERMISSION_CREAT, saved.id!!, saved.projectId, saved.repoName)
         }
     }
 
@@ -87,11 +95,21 @@ class ExternalPermissionServiceImpl(
             tExternalPermission.lastModifiedDate = LocalDateTime.now()
             tExternalPermission.lastModifiedBy = userId
             externalPermissionRepository.save(tExternalPermission)
+            publishEvent(
+                EventType.EXT_PERMISSION_UPDATE,
+                id,
+                tExternalPermission.projectId,
+                tExternalPermission.repoName
+            )
         }
     }
 
     override fun listExtPermission(): List<ExternalPermission> {
         return externalPermissionRepository.findAll().map { convert(it) }
+    }
+
+    override fun getExtPermission(id: String): ExternalPermission? {
+        return externalPermissionRepository.findById(id).orElse(null)?.let { convert(it) }
     }
 
     override fun listExtPermissionPage(listExtPermissionOption: ListExtPermissionOption): Page<ExternalPermission> {
@@ -112,14 +130,30 @@ class ExternalPermissionServiceImpl(
 
     override fun deleteExtPermission(id: String) {
         val userId = SecurityUtils.getUserId()
-        externalPermissionRepository.findById(id)
+        val existing = externalPermissionRepository.findById(id)
             .orElseThrow { NotFoundException(AuthMessageCode.AUTH_EXT_PERMISSION_NOT_EXIST, id) }
         externalPermissionRepository.deleteById(id)
+        publishEvent(EventType.EXT_PERMISSION_DELETE, id, existing.projectId, existing.repoName)
         logger.info("$userId delete external permission[$id]")
+    }
+
+    private fun publishEvent(type: EventType, resourceKey: String, projectId: String, repoName: String) {
+        if (!authProperties.federationEventEnabled || FederationWriteContext.isFederationWrite()) return
+        val event = ArtifactEvent(
+            type = type,
+            projectId = projectId,
+            repoName = repoName,
+            resourceKey = resourceKey,
+            userId = runCatching { SecurityUtils.getUserId() }.getOrDefault(""),
+            data = mapOf("projectId" to projectId, "repoName" to repoName),
+            eventId = ArtifactEvent.generateEventId()
+        )
+        messageSupplier.delegateToSupplier(event, topic = BINDING_OUT_NAME)
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ExternalPermissionServiceImpl::class.java)
+        private const val BINDING_OUT_NAME = "artifactEvent-out-0"
         fun convert(tExternalPermission: TExternalPermission): ExternalPermission {
             with(tExternalPermission) {
                 return ExternalPermission(

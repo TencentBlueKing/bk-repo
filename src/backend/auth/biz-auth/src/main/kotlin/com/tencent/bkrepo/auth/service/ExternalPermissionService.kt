@@ -54,6 +54,11 @@ interface ExternalPermissionService {
     fun listExtPermission(): List<ExternalPermission>
 
     /**
+     * 按 id 查询外部权限（联邦增量同步）
+     */
+    fun getExtPermission(id: String): ExternalPermission?
+
+    /**
      * 分页查询外部权限
      */
     fun listExtPermissionPage(listExtPermissionOption: ListExtPermissionOption): Page<ExternalPermission>

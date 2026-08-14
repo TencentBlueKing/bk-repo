@@ -32,6 +32,8 @@
 package com.tencent.bkrepo.auth.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
+import com.tencent.bkrepo.auth.dao.AuthTemporaryTokenDao
+import com.tencent.bkrepo.auth.model.TTemporaryToken
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.service.TemporaryTokenService
@@ -44,7 +46,8 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 class ServiceTemporaryTokenController(
-    private val temporaryTokenService: TemporaryTokenService
+    private val temporaryTokenService: TemporaryTokenService,
+    private val authTemporaryTokenDao: AuthTemporaryTokenDao,
 ) : ServiceTemporaryTokenClient {
 
     override fun createToken(request: TemporaryTokenCreateRequest): Response<List<TemporaryTokenInfo>> {
@@ -64,4 +67,29 @@ class ServiceTemporaryTokenController(
         temporaryTokenService.decrementPermits(token)
         return ResponseBuilder.success()
     }
+
+    override fun listActiveByProject(projectId: String): Response<List<TemporaryTokenInfo>> {
+        val tokens = authTemporaryTokenDao.listActiveByProject(projectId)
+        return ResponseBuilder.success(tokens.map { it.toTokenInfo() })
+    }
+
+    override fun listActiveByProjectPage(
+        projectId: String, pageNumber: Int, pageSize: Int
+    ): Response<List<TemporaryTokenInfo>> {
+        val tokens = authTemporaryTokenDao.listActiveByProjectPage(projectId, pageNumber, pageSize)
+        return ResponseBuilder.success(tokens.map { it.toTokenInfo() })
+    }
+
+    private fun TTemporaryToken.toTokenInfo() = TemporaryTokenInfo(
+        projectId = projectId,
+        repoName = repoName,
+        fullPath = fullPath,
+        token = token,
+        authorizedUserList = authorizedUserList,
+        authorizedIpList = authorizedIpList,
+        expireDate = expireDate?.toString(),
+        permits = permits,
+        type = type,
+        createdBy = createdBy
+    )
 }

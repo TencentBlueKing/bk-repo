@@ -27,14 +27,20 @@
 
 package com.tencent.bkrepo.auth.service.impl.center
 
+import com.tencent.bkrepo.auth.config.AuthProperties
 import com.tencent.bkrepo.auth.dao.AuthTemporaryTokenDao
 import com.tencent.bkrepo.auth.service.impl.TemporaryTokenServiceImpl
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
 @Service
 @Conditional(CommitEdgeCenterCondition::class)
 class CommitEdgeCenterTemporaryTokenServiceImpl(
-    temporaryTokenRepository: AuthTemporaryTokenDao
-) : TemporaryTokenServiceImpl(temporaryTokenRepository)
+    temporaryTokenRepository: AuthTemporaryTokenDao,
+    messageSupplier: MessageSupplier,
+    authProperties: AuthProperties
+) : TemporaryTokenServiceImpl(
+    temporaryTokenRepository, messageSupplier, authProperties
+)

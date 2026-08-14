@@ -31,8 +31,10 @@
 
 package com.tencent.bkrepo.auth.service.local
 
+import com.tencent.bkrepo.auth.config.AuthProperties
 import com.tencent.bkrepo.auth.config.DevopsAuthConfig
 import com.tencent.bkrepo.auth.constant.DEFAULT_PASSWORD
+import com.tencent.bkrepo.auth.context.FederationWriteContext
 import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.helper.UserHelper
@@ -45,6 +47,7 @@ import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToRepoRequest
 import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
+import com.tencent.bkrepo.auth.pojo.user.UserFederationInfo
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.DataDigestUtils
@@ -53,10 +56,14 @@ import com.tencent.bkrepo.auth.util.request.UserRequestUtil.validate
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.util.DesensitizedUtils
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
@@ -67,7 +74,9 @@ import java.util.Base64
 
 class UserServiceImpl constructor(
     private val roleRepository: RoleRepository,
-    private val userDao: UserDao
+    private val userDao: UserDao,
+    private val messageSupplier: MessageSupplier,
+    private val authProperties: AuthProperties
 ) : UserService {
 
     @Autowired
@@ -110,6 +119,7 @@ class UserServiceImpl constructor(
         val userRequest = UserRequestUtil.convToTUser(request, hashPwd, tenantId)
         try {
             userDao.insert(userRequest)
+            publishEvent(EventType.USER_CREATED, request.userId)
         } catch (ignore: DuplicateKeyException) {
         }
 
@@ -178,10 +188,36 @@ class UserServiceImpl constructor(
         }
     }
 
+    override fun listUserPage(tenantId: String?, pageNumber: Int, pageSize: Int): List<User> {
+        return userDao.getUserNotLockedPage(tenantId, pageNumber, pageSize).map { UserRequestUtil.convToUser(it) }
+    }
+
+    override fun listUsersForFederationPage(
+        tenantId: String?, pageNumber: Int, pageSize: Int
+    ): List<UserFederationInfo> {
+        return userDao.getUserPageForFederation(tenantId, pageNumber, pageSize).map { u ->
+            UserFederationInfo(
+                userId = u.userId,
+                name = u.name,
+                hashedPwd = u.pwd,
+                admin = u.admin,
+                group = u.group,
+                asstUsers = u.asstUsers,
+                email = u.email,
+                phone = u.phone,
+                tenantId = u.tenantId,
+                locked = u.locked,
+                tokens = u.tokens,
+            )
+        }
+    }
+
     override fun deleteById(userId: String): Boolean {
         logger.info("delete user userId : [$userId]")
         userHelper.checkUserExist(userId)
-        return userDao.removeByUserId(userId)
+        val result = userDao.removeByUserId(userId)
+        if (result) publishEvent(EventType.USER_DELETED, userId)
+        return result
     }
 
     override fun addUserToRole(userId: String, roleId: String): User? {
@@ -192,12 +228,15 @@ class UserServiceImpl constructor(
         if (!userHelper.checkUserRoleBind(userId, roleId)) {
             userHelper.addUserToRoleBatchCommon(listOf(userId), roleId)
         }
+        publishRoleMemberChanged(roleId)
         return getUserById(userId)
     }
 
     override fun addUserToRoleBatch(idList: List<String>, roleId: String): Boolean {
         logger.info("delete user to role batch : [$idList, $roleId]")
-        return userHelper.addUserToRoleBatchCommon(idList, roleId)
+        val result = userHelper.addUserToRoleBatchCommon(idList, roleId)
+        if (result) publishRoleMemberChanged(roleId)
+        return result
     }
 
     override fun removeUserFromRole(userId: String, roleId: String): User? {
@@ -207,18 +246,23 @@ class UserServiceImpl constructor(
         // check role
         userHelper.checkRoleExist(roleId)
         userDao.removeUserFromRole(userId, roleId)
+        publishRoleMemberChanged(roleId)
         return getUserById(userId)
     }
 
     override fun removeUserFromRoleBatch(idList: List<String>, roleId: String): Boolean {
         logger.info("remove user from role batch : [$idList, $roleId]")
-        return userHelper.removeUserFromRoleBatchCommon(idList, roleId)
+        val result = userHelper.removeUserFromRoleBatchCommon(idList, roleId)
+        if (result) publishRoleMemberChanged(roleId)
+        return result
     }
 
     override fun updateUserById(userId: String, request: UpdateUserRequest): Boolean {
         logger.info("update user userId : [$userId]")
         userHelper.checkUserExist(userId)
-        return userDao.updateUserById(userId, request)
+        val result = userDao.updateUserById(userId, request)
+        if (result) publishEvent(EventType.USER_UPDATED, userId)
+        return result
     }
 
     override fun createToken(userId: String): Token? {
@@ -293,7 +337,17 @@ class UserServiceImpl constructor(
             val userInfo = userDao.findFirstByUserId(userId)
             val tokens = userInfo!!.tokens
             tokens.forEach {
-                if (it.name == name) return userToken
+                if (it.name == name) {
+                    publishEvent(
+                        EventType.USER_TOKEN_CREATED, name,
+                        data = mapOf(
+                            "userId" to userId, "hashedTokenId" to sm3Id,
+                            "createdAt" to createdTime.toString(), "expiredAt" to (expiredTime?.toString()
+                            ?: "")
+                        )
+                    )
+                    return userToken
+                }
             }
             return null
         } catch (ignored: DateTimeParseException) {
@@ -320,6 +374,7 @@ class UserServiceImpl constructor(
         logger.info("remove token userId : [$userId] ,name : [$name]")
         userHelper.checkUserExist(userId)
         userDao.removeTokenFromUser(userId, name)
+        publishEvent(EventType.USER_TOKEN_DELETED, name, data = mapOf("userId" to userId))
         return true
     }
 
@@ -393,7 +448,9 @@ class UserServiceImpl constructor(
         val hashNewPwd = DataDigestUtils.md5FromStr(newPwd)
         val user = userDao.getByUserIdAndPassword(userId, hashOldPwd)
         user?.let {
-            return userDao.updatePasswordByUserId(userId, hashNewPwd)
+            val result = userDao.updatePasswordByUserId(userId, hashNewPwd)
+            if (result) publishEvent(EventType.USER_UPDATED, userId)
+            return result
         }
         throw ErrorCodeException(CommonMessageCode.MODIFY_PASSWORD_FAILED, "modify password failed!")
     }
@@ -401,7 +458,9 @@ class UserServiceImpl constructor(
     override fun resetPassword(userId: String): Boolean {
         // todo 鉴权
         val newHashPwd = DataDigestUtils.md5FromStr(DEFAULT_PASSWORD)
-        return userDao.updatePasswordByUserId(userId, newHashPwd)
+        val result = userDao.updatePasswordByUserId(userId, newHashPwd)
+        if (result) publishEvent(EventType.USER_UPDATED, userId)
+        return result
     }
 
     override fun repeatUid(userId: String): Boolean {
@@ -432,6 +491,86 @@ class UserServiceImpl constructor(
         return userDao.findAllAdminUsers().map { it.userId }
     }
 
+    private fun publishRoleMemberChanged(roleId: String) {
+        val role = roleRepository.findFirstById(roleId) ?: return
+        publishEvent(EventType.ROLE_UPDATED, roleId, role.projectId.orEmpty())
+    }
+
+    private fun publishEvent(
+        type: EventType,
+        resourceKey: String,
+        projectId: String = "",
+        data: Map<String, Any> = emptyMap()
+    ) {
+        if (!authProperties.federationEventEnabled || FederationWriteContext.isFederationWrite()) return
+        val event = ArtifactEvent(
+            type = type,
+            projectId = projectId,
+            repoName = "",
+            resourceKey = resourceKey,
+            userId = runCatching { SecurityUtils.getUserId() }.getOrDefault(""),
+            eventId = ArtifactEvent.generateEventId(),
+            data = data
+        )
+        messageSupplier.delegateToSupplier(event, topic = BINDING_OUT_NAME)
+    }
+
+    override fun upsertUserForFederation(request: CreateUserRequest) {
+        val hashedPwd = request.pwd
+        val existing = userDao.findFirstByUserId(request.userId)
+        val tenantIdFromHeader = userHelper.getTenantId()
+        val tenantId = if (tenantIdFromHeader.isNullOrEmpty()) request.tenantId else tenantIdFromHeader
+        if (existing == null) {
+            val pwd = hashedPwd ?: userHelper.randomPassWord()
+            val tUser = UserRequestUtil.convToTUser(request, pwd, tenantId)
+            try {
+                userDao.insert(tUser)
+            } catch (ignore: DuplicateKeyException) {
+            }
+        } else {
+            userDao.updateUserById(
+                request.userId, UpdateUserRequest(
+                name = request.name.takeIf { it.isNotBlank() },
+                admin = request.admin,
+                asstUsers = request.asstUsers,
+                email = request.email,
+                phone = request.phone,
+                tenantId = tenantId,
+                locked = request.locked,
+            )
+            )
+            if (hashedPwd != null) {
+                userDao.updatePasswordByUserId(request.userId, hashedPwd)
+            }
+        }
+    }
+
+    override fun addUserTokenForFederation(
+        userId: String,
+        tokenName: String,
+        hashedTokenId: String,
+        createdAt: String?,
+        expiredAt: String?
+    ) {
+        userHelper.checkUserExist(userId)
+        val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+        val createdTime = if (!createdAt.isNullOrEmpty()) {
+            runCatching { LocalDateTime.parse(createdAt, formatter) }.getOrDefault(LocalDateTime.now())
+        } else {
+            LocalDateTime.now()
+        }
+        val expiredTime = if (!expiredAt.isNullOrEmpty()) {
+            runCatching { LocalDateTime.parse(expiredAt, formatter) }.getOrNull()
+        } else {
+            null
+        }
+        // 联邦同步直接写入已 hash 的 token id，跳过二次 hash
+        val dataToken = Token(name = tokenName, id = hashedTokenId, createdAt = createdTime, expiredAt = expiredTime)
+        // 先移除同名旧 token，再写入（upsert 语义）
+        userDao.removeTokenFromUser(userId, tokenName)
+        userDao.addUserToken(userId, dataToken)
+    }
+
     /**
      * 根据 userId 与明文 token 构造可直接放入 HTTP `Authorization` 头的凭证串。
      *
@@ -447,6 +586,7 @@ class UserServiceImpl constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(UserServiceImpl::class.java)
+        private const val BINDING_OUT_NAME = "artifactEvent-out-0"
     }
 }
 

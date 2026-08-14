@@ -45,6 +45,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
 @Tag(name = "临时token服务接口")
 @Primary
@@ -75,4 +76,18 @@ interface ServiceTemporaryTokenClient {
     fun decrementPermits(
         @PathVariable token: String
     ): Response<Void>
+
+    @Operation(summary = "查询项目下的有效临时token（联邦同步）")
+    @GetMapping("/federation/list/{projectId}")
+    fun listActiveByProject(
+        @PathVariable projectId: String
+    ): Response<List<TemporaryTokenInfo>>
+
+    @Operation(summary = "分页查询项目下的有效临时token（联邦同步）")
+    @GetMapping("/federation/list/page/{projectId}")
+    fun listActiveByProjectPage(
+        @PathVariable projectId: String,
+        @RequestParam(defaultValue = "1") pageNumber: Int,
+        @RequestParam(defaultValue = "500") pageSize: Int,
+    ): Response<List<TemporaryTokenInfo>>
 }

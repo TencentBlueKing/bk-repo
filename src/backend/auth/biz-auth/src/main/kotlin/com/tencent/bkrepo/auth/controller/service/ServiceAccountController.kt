@@ -33,6 +33,7 @@ package com.tencent.bkrepo.auth.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceAccountClient
 import com.tencent.bkrepo.auth.controller.OpenResource
+import com.tencent.bkrepo.auth.pojo.account.FederationAccountInfo
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.PermissionService
@@ -61,8 +62,58 @@ class ServiceAccountController @Autowired constructor(
         val result = accountService.checkCredential(accesskey, secretkey, authorizationGrantType)
         return ResponseBuilder.success(result)
     }
+
     override fun findSecretKey(appId: String, accessKey: String): Response<String?> {
         val result = accountService.findSecretKey(appId, accessKey)
         return ResponseBuilder.success(result)
+    }
+
+    override fun listAccountsForFederation(): Response<List<FederationAccountInfo>> {
+        val accounts = accountService.listAccount(displaySecretKey = true)
+        val result = accounts.map { acc ->
+            FederationAccountInfo(
+                id = acc.id,
+                appId = acc.appId,
+                locked = acc.locked,
+                authorizationGrantTypes = acc.authorizationGrantTypes.map { it.name }.toSet(),
+                homepageUrl = acc.homepageUrl,
+                redirectUri = acc.redirectUri,
+                avatarUrl = acc.avatarUrl,
+                scope = acc.scope?.map { it.name }?.toSet(),
+                limit = acc.limit,
+                description = acc.description,
+                credentials = acc.credentials
+            )
+        }
+        return ResponseBuilder.success(result)
+    }
+
+    override fun getAccountForFederation(appId: String): Response<FederationAccountInfo?> {
+        val acc = accountService.getAccountForFederation(appId) ?: return ResponseBuilder.success(null)
+        return ResponseBuilder.success(
+            FederationAccountInfo(
+                id = acc.id,
+                appId = acc.appId,
+                locked = acc.locked,
+                authorizationGrantTypes = acc.authorizationGrantTypes.map { it.name }.toSet(),
+                homepageUrl = acc.homepageUrl,
+                redirectUri = acc.redirectUri,
+                avatarUrl = acc.avatarUrl,
+                scope = acc.scope?.map { it.name }?.toSet(),
+                limit = acc.limit,
+                description = acc.description,
+                credentials = acc.credentials
+            )
+        )
+    }
+
+    override fun deleteAccountForFederation(appId: String): Response<Boolean> {
+        val result = accountService.deleteAccountForFederation(appId)
+        return ResponseBuilder.success(result)
+    }
+
+    override fun upsertAccountForFederation(accountInfo: FederationAccountInfo): Response<Void> {
+        accountService.upsertAccountForFederation(accountInfo)
+        return ResponseBuilder.success()
     }
 }

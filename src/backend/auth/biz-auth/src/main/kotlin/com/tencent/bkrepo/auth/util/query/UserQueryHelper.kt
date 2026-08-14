@@ -30,6 +30,19 @@ object UserQueryHelper {
         return query
     }
 
+    fun filterUserForFederation(tenantId: String?): Query {
+        val query = Query()
+        tenantId?.let {
+            query.addCriteria(
+                Criteria().orOperator(
+                    Criteria.where(TUser::tenantId.name).`is`(tenantId),
+                    Criteria.where(TUser::tenantId.name).`is`(null)
+                )
+            )
+        }
+        return query
+    }
+
     fun getUserById(userId: String): Query {
         val query = Query()
         return query.addCriteria(Criteria.where(TUser::userId.name).`is`(userId))

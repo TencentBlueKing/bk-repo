@@ -33,19 +33,25 @@ package com.tencent.bkrepo.auth.controller.service
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.controller.OpenResource
+import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.ListPathResult
+import com.tencent.bkrepo.auth.pojo.permission.Permission
+import com.tencent.bkrepo.auth.pojo.permission.PersonalPathInfo
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ServicePermissionController @Autowired constructor(
-    private val permissionService: PermissionService
+    private val permissionService: PermissionService,
+    private val personalPathDao: PersonalPathDao,
 ) : ServicePermissionClient, OpenResource(permissionService) {
 
 
@@ -98,4 +104,66 @@ class ServicePermissionController @Autowired constructor(
         return ResponseBuilder.success(permissionService.listPermissionProject(userId))
     }
 
+    override fun listPermission(
+        projectId: String, repoName: String?, resourceType: String
+    ): Response<List<Permission>> {
+        return ResponseBuilder.success(permissionService.listPermission(projectId, repoName, resourceType))
+    }
+
+    override fun listAllPermissionByProject(projectId: String): Response<List<Permission>> {
+        return ResponseBuilder.success(permissionService.listAllPermissionByProject(projectId))
+    }
+
+    override fun listSystemPermissions(): Response<List<Permission>> {
+        return ResponseBuilder.success(permissionService.listSystemPermissions())
+    }
+
+    override fun createPermission(request: CreatePermissionRequest): Response<Boolean> {
+        return ResponseBuilder.success(permissionService.createPermission(request))
+    }
+
+    override fun upsertPermissionForFederation(request: CreatePermissionRequest): Response<Boolean> {
+        return ResponseBuilder.success(permissionService.upsertPermissionForFederation(request))
+    }
+
+    @DeleteMapping("/delete/{id}")
+    override fun deletePermission(id: String): Response<Boolean> {
+        return ResponseBuilder.success(permissionService.deletePermission(id))
+    }
+
+    override fun getPermissionById(id: String): Response<Permission?> {
+        return ResponseBuilder.success(permissionService.getPermission(id))
+    }
+
+    override fun getPermissionByName(
+        projectId: String?, resourceType: String, permName: String
+    ): Response<Permission?> {
+        return ResponseBuilder.success(permissionService.getPermissionByName(projectId, resourceType, permName))
+    }
+
+    // TODO: listPersonalPath 应通过 PermissionService 操作
+    override fun listPersonalPath(projectId: String): Response<List<PersonalPathInfo>> {
+        val paths = personalPathDao.listByProject(projectId)
+        val result = paths.map { p ->
+            PersonalPathInfo(
+                userId = p.userId,
+                projectId = p.projectId,
+                repoName = p.repoName,
+                fullPath = p.fullPath
+            )
+        }
+        return ResponseBuilder.success(result)
+    }
+
+    override fun createPersonalPath(request: PersonalPathInfo): Response<Boolean> {
+        return ResponseBuilder.success(
+            permissionService.createPersonalPath(
+                request.userId, request.projectId, request.repoName, request.fullPath
+            )
+        )
+    }
+
+    override fun deletePersonalPath(projectId: String, repoName: String, userId: String): Response<Boolean> {
+        return ResponseBuilder.success(permissionService.deletePersonalPath(projectId, repoName, userId))
+    }
 }

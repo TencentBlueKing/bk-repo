@@ -56,6 +56,7 @@ import com.tencent.bkrepo.auth.service.local.RoleServiceImpl
 import com.tencent.bkrepo.auth.service.local.UserServiceImpl
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -77,13 +78,17 @@ class AuthServiceConfig {
     @Lazy
     private lateinit var projectService: ProjectService
 
+    @Autowired
+    private lateinit var authProperties: AuthProperties
+
     @Bean
     @ConditionalOnMissingBean(AccountService::class)
     fun accountService(
         accountDao: AccountDao,
         oauthTokenRepository: OauthTokenRepository,
-        userDao: UserDao
-    ) = AccountServiceImpl(accountDao, oauthTokenRepository, userDao)
+        userDao: UserDao,
+        messageSupplier: MessageSupplier
+    ) = AccountServiceImpl(accountDao, oauthTokenRepository, userDao, messageSupplier, authProperties)
 
     @Bean
     @Conditional(LocalAuthCondition::class)
@@ -93,7 +98,8 @@ class AuthServiceConfig {
         permissionDao: PermissionDao,
         userDao: UserDao,
         personalPathDao: PersonalPathDao,
-        repoAuthConfigDao: RepoAuthConfigDao
+        repoAuthConfigDao: RepoAuthConfigDao,
+        messageSupplier: MessageSupplier
     ): PermissionService {
         return PermissionServiceImpl(
             roleRepository,
@@ -103,7 +109,9 @@ class AuthServiceConfig {
             personalPathDao,
             repoAuthConfigDao,
             repositoryService,
-            projectService
+            projectService,
+            messageSupplier,
+            authProperties
         )
     }
 
@@ -116,6 +124,7 @@ class AuthServiceConfig {
         roleRepository: RoleRepository,
         accountDao: AccountDao,
         permissionDao: PermissionDao,
+        messageSupplier: MessageSupplier
     ): PermissionService {
         return BkIamV3PermissionServiceImpl(
             bkiamV3Service,
@@ -126,7 +135,9 @@ class AuthServiceConfig {
             personalPathDao,
             repoAuthConfigDao,
             repositoryService,
-            projectService
+            projectService,
+            messageSupplier,
+            authProperties
         )
     }
 
@@ -142,7 +153,8 @@ class AuthServiceConfig {
         bkAuthConfig: DevopsAuthConfig,
         bkAuthPipelineService: DevopsPipelineService,
         bkAuthProjectService: DevopsProjectService,
-        bkiamV3Service: BkIamV3Service
+        bkiamV3Service: BkIamV3Service,
+        messageSupplier: MessageSupplier
     ): PermissionService {
         return DevopsPermissionServiceImpl(
             roleRepository,
@@ -156,7 +168,9 @@ class AuthServiceConfig {
             bkAuthProjectService,
             repositoryService,
             projectService,
-            bkiamV3Service
+            bkiamV3Service,
+            messageSupplier,
+            authProperties
         )
     }
 
@@ -165,13 +179,15 @@ class AuthServiceConfig {
     fun roleService(
         roleRepository: RoleRepository,
         userService: UserService,
-        userDao: UserDao
-    ) = RoleServiceImpl(roleRepository, userService, userDao)
+        userDao: UserDao,
+        messageSupplier: MessageSupplier
+    ) = RoleServiceImpl(roleRepository, userService, userDao, messageSupplier, authProperties)
 
     @Bean
     @ConditionalOnMissingBean(UserService::class)
     fun userService(
         roleRepository: RoleRepository,
-        userDao: UserDao
-    ) = UserServiceImpl(roleRepository, userDao)
+        userDao: UserDao,
+        messageSupplier: MessageSupplier
+    ) = UserServiceImpl(roleRepository, userDao, messageSupplier, authProperties)
 }

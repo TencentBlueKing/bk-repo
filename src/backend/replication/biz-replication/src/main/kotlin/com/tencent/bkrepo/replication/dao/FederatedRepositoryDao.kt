@@ -48,6 +48,11 @@ class FederatedRepositoryDao : SimpleMongoDao<TFederatedRepository>() {
         return find(Query(criteria))
     }
 
+    fun findByProjectId(projectId: String): List<TFederatedRepository> {
+        val criteria = Criteria.where(TFederatedRepository::projectId.name).`is`(projectId)
+        return find(Query(criteria))
+    }
+
     /**
      * 根据名称查询联邦仓库
      */

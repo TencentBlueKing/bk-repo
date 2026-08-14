@@ -86,7 +86,7 @@ object UserRequestUtil {
             name = request.name,
             pwd = hashPwd,
             admin = request.admin,
-            locked = false,
+            locked = request.locked ?: false,
             tokens = emptyList(),
             roles = emptyList(),
             asstUsers = request.asstUsers,

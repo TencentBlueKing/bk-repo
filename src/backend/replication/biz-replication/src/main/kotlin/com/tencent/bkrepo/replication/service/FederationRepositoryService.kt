@@ -187,4 +187,15 @@ interface FederationRepositoryService {
         maxDepth: Int = 3
     ): List<String>
 
+    /**
+     * 自动为仓库开启联邦同步（由 REPO_CREATED 事件或批量迁移 Job 调用）
+     * 使用镜像命名策略：对端 projectId/repoName 与本端相同
+     */
+    fun autoEnableFederation(
+        projectId: String,
+        repoName: String,
+        federationGroupId: String,
+        currentClusterId: String,
+        clusterIds: List<String>
+    )
 }

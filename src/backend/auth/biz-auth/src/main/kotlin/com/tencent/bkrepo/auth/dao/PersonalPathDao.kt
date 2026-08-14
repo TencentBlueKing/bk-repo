@@ -32,4 +32,19 @@ class PersonalPathDao : SimpleMongoDao<TPersonalPath>() {
         return this.find(query)
     }
 
+    fun listByProject(projectId: String): List<TPersonalPath> {
+        val query = Query.query(Criteria.where(TPersonalPath::projectId.name).`is`(projectId))
+        return this.find(query)
+    }
+
+    fun deleteByProjectAndRepoAndUser(projectId: String, repoName: String, userId: String) {
+        val query = Query.query(
+            Criteria().andOperator(
+                Criteria.where(TPersonalPath::projectId.name).`is`(projectId),
+                Criteria.where(TPersonalPath::repoName.name).`is`(repoName),
+                Criteria.where(TPersonalPath::userId.name).`is`(userId),
+            )
+        )
+        this.remove(query)
+    }
 }
