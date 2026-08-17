@@ -28,6 +28,7 @@ class DevxProperties {
     var key: String = ""
     var devops: DevopsProperties = DevopsProperties()
     var srtUrl: String = ""
+    var srtOpen: Boolean = true
     var mediaMode: String = MediaMod.ALL.name
     var enableDecodeResync: Boolean = true
     var snapshot: List<SnapshotConfig> = mutableListOf()
