@@ -6,7 +6,7 @@
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  */
 
-package com.tencent.bkrepo.agent.agui
+package com.tencent.bkrepo.agent.hitl
 
 import com.tencent.bkrepo.agent.session.PendingInterruptSession
 import com.tencent.bkrepo.agent.session.PendingInterruptSnapshot

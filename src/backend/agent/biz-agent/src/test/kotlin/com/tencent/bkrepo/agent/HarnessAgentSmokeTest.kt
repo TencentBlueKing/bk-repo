@@ -31,22 +31,22 @@ import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import com.tencent.bkrepo.agent.agent.AgentCatalog
 import com.tencent.bkrepo.agent.agent.AgentFactory
+import com.tencent.bkrepo.agent.agent.client.ClientAgentDefinition
 import com.tencent.bkrepo.agent.agent.discovery.ArtifactDiscoveryAgentDefinition
 import com.tencent.bkrepo.agent.agent.transfer.TransferDiagnosticsAgentDefinition
 import com.tencent.bkrepo.agent.config.AgentHarnessConfigurer
 import com.tencent.bkrepo.agent.config.AgentMemoryConfig
 import com.tencent.bkrepo.agent.config.AgentModelConfig
-import com.tencent.bkrepo.agent.config.properties.AgentCompactionProperties
 import com.tencent.bkrepo.agent.config.properties.AgentLlmProperties
 import com.tencent.bkrepo.agent.config.properties.AgentLlmPropertiesResolver
 import com.tencent.bkrepo.agent.config.properties.AgentMemoryProperties
 import com.tencent.bkrepo.agent.config.properties.AgentMemoryPropertiesResolver
-import com.tencent.bkrepo.agent.config.properties.AgentModelProperties
-import com.tencent.bkrepo.agent.config.properties.AgentToolResultEvictionProperties
 import com.tencent.bkrepo.agent.config.properties.EffectiveAgentRuntimeProperties
 import com.tencent.bkrepo.agent.config.properties.EffectiveAgentTopology
 import com.tencent.bkrepo.agent.tool.domain.DomainToolNames
 import com.tencent.bkrepo.agent.tool.domain.RegisteredDomainTools
+import com.tencent.bkrepo.agent.tool.frontend.RegisteredFrontendTools
+import com.tencent.bkrepo.agent.tool.local.LocalToolDefinitions
 import io.agentscope.core.agent.RuntimeContext
 import io.agentscope.core.event.AgentEvent
 import io.agentscope.core.event.TextBlockDeltaEvent
@@ -110,22 +110,27 @@ class HarnessAgentSmokeTest {
             frontendToolsEnabled = true,
             topology = EffectiveAgentTopology.defaults(),
         )
-        val legacyModel = AgentModelProperties(
-            baseUrl = "http://127.0.0.1:${server.address.port}/v1",
-            apiKey = "stub-api-key",
-            modelName = "stub-model",
-            stream = true,
+        val llmProperties = AgentLlmPropertiesResolver.resolve(
+            AgentLlmProperties(
+                baseUrl = "http://127.0.0.1:${server.address.port}/v1",
+                apiKey = "stub-api-key",
+                modelName = "stub-model",
+                stream = true,
+            ),
         )
-        val llmProperties = AgentLlmPropertiesResolver.resolve(AgentLlmProperties(), legacyModel)
         val memoryProperties = AgentMemoryPropertiesResolver.resolve(
-            memory = AgentMemoryProperties(),
-            legacyCompaction = AgentCompactionProperties(enabled = false),
-            legacyEviction = AgentToolResultEvictionProperties(enabled = false),
-            legacyModel = legacyModel,
+            AgentMemoryProperties(
+                compactionEnabled = false,
+                toolResultEvictionEnabled = false,
+            ),
         )
         val modelConfiguration = AgentModelConfig()
         val agentCatalog = AgentCatalog(
-            definitions = listOf(ArtifactDiscoveryAgentDefinition(), TransferDiagnosticsAgentDefinition()),
+            definitions = listOf(
+                ClientAgentDefinition(),
+                ArtifactDiscoveryAgentDefinition(),
+                TransferDiagnosticsAgentDefinition(),
+            ),
             runtimeProperties = runtimeProperties,
             agentFactory = AgentFactory(),
             domainToolRegistrar = object : RegisteredDomainTools {
@@ -135,6 +140,10 @@ class HarnessAgentSmokeTest {
                     DomainToolNames.GET_TRANSFER_TASK_STATUS,
                     DomainToolNames.GET_TRANSFER_ERROR_DETAIL,
                 )
+            },
+            frontendToolRegistrar = object : RegisteredFrontendTools {
+                override val registeredToolNames =
+                    LocalToolDefinitions.allTools().map { it.name }.toSet()
             },
         )
         val agentHarnessConfigurer = AgentHarnessConfigurer(

@@ -8,10 +8,10 @@
 
 package com.tencent.bkrepo.agent.service.run
 
-import com.tencent.bkrepo.agent.agui.AguiInterruptTracker
 import com.tencent.bkrepo.agent.agui.AguiMessageArchiveHandler
-import com.tencent.bkrepo.agent.agui.AguiResumeValidator
-import com.tencent.bkrepo.agent.agui.FrontendToolSanitizer
+import com.tencent.bkrepo.agent.hitl.AguiInterruptTracker
+import com.tencent.bkrepo.agent.hitl.AguiResumeValidator
+import com.tencent.bkrepo.agent.tool.frontend.FrontendToolSanitizer
 import com.tencent.bkrepo.agent.context.AgentChatContext
 import com.tencent.bkrepo.agent.context.AgentChatContextResolver
 import com.tencent.bkrepo.agent.config.properties.EffectiveAgentRuntimeProperties
@@ -54,7 +54,7 @@ class AgentRunOrchestrator(
     private val agentChatContextResolver: AgentChatContextResolver,
     private val aguiRequestProcessor: AguiRequestProcessor,
     private val messageArchiveHandler: AguiMessageArchiveHandler,
-    private val terminalRunReplayer: TerminalRunReplayer,
+    private val agentRunStreamOrchestrator: AgentRunStreamOrchestrator,
     private val lifecycleManager: AgentRunLifecycleManager,
     private val eventPipeline: AgentRunEventPipeline,
 ) {
@@ -69,7 +69,7 @@ class AgentRunOrchestrator(
     }
 
     fun replayTerminal(input: RunAgentInput, existingRun: TAgentRun): SseEmitter {
-        return terminalRunReplayer.replay(input, existingRun)
+        return agentRunStreamOrchestrator.replayTerminalForRun(input, existingRun)
     }
 
     private data class PreparedInput(
@@ -91,7 +91,7 @@ class AgentRunOrchestrator(
         val existingRun = agentRunRecordService.findByRunId(input.runId) ?: return null
         return when (existingRun.status) {
             AgentRunStatus.RUNNING -> throw TooManyRequestsException("Run[${input.runId}] is already running")
-            else -> terminalRunReplayer.replay(input, existingRun)
+            else -> agentRunStreamOrchestrator.replayTerminalForRun(input, existingRun)
         }
     }
 

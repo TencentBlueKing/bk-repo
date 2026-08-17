@@ -8,12 +8,15 @@
 
 package com.tencent.bkrepo.agent.agent
 
+import com.tencent.bkrepo.agent.agent.client.ClientAgentDefinition
 import com.tencent.bkrepo.agent.agent.discovery.ArtifactDiscoveryAgentDefinition
 import com.tencent.bkrepo.agent.agent.transfer.TransferDiagnosticsAgentDefinition
 import com.tencent.bkrepo.agent.config.properties.EffectiveAgentRuntimeProperties
 import com.tencent.bkrepo.agent.config.properties.EffectiveAgentTopology
 import com.tencent.bkrepo.agent.tool.domain.DomainToolNames
 import com.tencent.bkrepo.agent.tool.domain.RegisteredDomainTools
+import com.tencent.bkrepo.agent.tool.frontend.RegisteredFrontendTools
+import com.tencent.bkrepo.agent.tool.local.LocalToolDefinitions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -23,24 +26,41 @@ import org.junit.jupiter.api.Test
 @DisplayName("AgentCatalog 拓扑校验")
 class AgentCatalogTest {
 
+    private val client = ClientAgentDefinition()
     private val discovery = ArtifactDiscoveryAgentDefinition()
     private val transfer = TransferDiagnosticsAgentDefinition()
-    private val registeredTools = setOf(
+    private val registeredDomainTools = setOf(
         DomainToolNames.LIST_REPOSITORIES,
         DomainToolNames.GET_REPOSITORY_DETAIL,
         DomainToolNames.GET_TRANSFER_TASK_STATUS,
         DomainToolNames.GET_TRANSFER_ERROR_DETAIL,
     )
+    private val registeredFrontendTools = LocalToolDefinitions.allTools().map { it.name }.toSet()
 
     @Test
-    fun `默认拓扑应启用 discovery 并禁用 transfer-diagnostics`() {
+    fun `默认拓扑应启用 client 与 discovery 并禁用 transfer-diagnostics`() {
         val catalog = catalog(
-            definitions = listOf(discovery, transfer),
+            definitions = listOf(client, discovery, transfer),
             topology = EffectiveAgentTopology.defaults(),
         )
 
+        assertEquals(
+            listOf(AgentIds.CLIENT, AgentIds.DISCOVERY),
+            catalog.enabledDefinitions().map { it.agentId },
+        )
+        assertEquals(2, catalog.resolveSubagentDeclarations().size)
+    }
+
+    @Test
+    fun `frontend tools 关闭时不应启用 client 子 Agent`() {
+        val runtime = EffectiveAgentRuntimeProperties.defaults().copy(frontendToolsEnabled = false)
+        val catalog = catalog(
+            definitions = listOf(client, discovery, transfer),
+            topology = EffectiveAgentTopology.defaults(),
+            runtime = runtime,
+        )
+
         assertEquals(listOf(AgentIds.DISCOVERY), catalog.enabledDefinitions().map { it.agentId })
-        assertEquals(1, catalog.resolveSubagentDeclarations().size)
     }
 
     @Test
@@ -103,8 +123,12 @@ class AgentCatalogTest {
                 ),
             ),
         )
-        val catalog = catalog(definitions = listOf(discovery, transfer), topology = topology)
+        val catalog = catalog(
+            definitions = listOf(client, discovery, transfer),
+            topology = topology,
+        )
         val enabledIds = catalog.enabledDefinitions().map { it.agentId }
+        assertTrue(enabledIds.contains(AgentIds.CLIENT))
         assertTrue(enabledIds.contains(AgentIds.DISCOVERY))
         assertTrue(enabledIds.contains(AgentIds.TRANSFER_DIAGNOSTICS))
     }
@@ -112,17 +136,20 @@ class AgentCatalogTest {
     private fun catalog(
         definitions: List<DomainAgentDefinition>,
         topology: EffectiveAgentTopology,
-    ): AgentCatalog {
-        val runtime = EffectiveAgentRuntimeProperties.defaults().copy(topology = topology)
-        return AgentCatalog(
-            definitions = definitions,
-            runtimeProperties = runtime,
-            agentFactory = AgentFactory(),
-            domainToolRegistrar = StubDomainToolRegistrar(registeredTools),
-        )
-    }
+        runtime: EffectiveAgentRuntimeProperties = EffectiveAgentRuntimeProperties.defaults().copy(topology = topology),
+    ): AgentCatalog = AgentCatalog(
+        definitions = definitions,
+        runtimeProperties = runtime,
+        agentFactory = AgentFactory(),
+        domainToolRegistrar = StubDomainToolRegistrar(registeredDomainTools),
+        frontendToolRegistrar = StubFrontendToolRegistrar(registeredFrontendTools),
+    )
 
     private class StubDomainToolRegistrar(
         override val registeredToolNames: Set<String>,
     ) : RegisteredDomainTools
+
+    private class StubFrontendToolRegistrar(
+        override val registeredToolNames: Set<String>,
+    ) : RegisteredFrontendTools
 }

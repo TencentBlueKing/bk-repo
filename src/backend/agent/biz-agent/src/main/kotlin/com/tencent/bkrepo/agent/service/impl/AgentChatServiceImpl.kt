@@ -18,7 +18,7 @@ import com.tencent.bkrepo.agent.service.AgentChatService
 import com.tencent.bkrepo.agent.service.AgentRunRecordService
 import com.tencent.bkrepo.agent.service.AgentSessionService
 import com.tencent.bkrepo.agent.service.run.AgentRunOrchestrator
-import com.tencent.bkrepo.agent.service.run.AgentRunReconnectOrchestrator
+import com.tencent.bkrepo.agent.service.run.AgentRunStreamOrchestrator
 import com.tencent.bkrepo.agent.session.AgentPendingInterruptStore
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
@@ -33,7 +33,7 @@ class AgentChatServiceImpl(
     private val permissionManager: PermissionManager,
     private val agentSessionService: AgentSessionService,
     private val agentRunOrchestrator: AgentRunOrchestrator,
-    private val agentRunReconnectOrchestrator: AgentRunReconnectOrchestrator,
+    private val agentRunStreamOrchestrator: AgentRunStreamOrchestrator,
     private val agentRunRecordService: AgentRunRecordService,
     private val activeRunManager: ActiveRunManager,
     private val pendingInterruptStore: AgentPendingInterruptStore,
@@ -83,19 +83,28 @@ class AgentChatServiceImpl(
         return true
     }
 
+    override fun streamRun(
+        userId: String,
+        projectId: String,
+        threadId: String,
+        runId: String?,
+        lastEventIndex: Long?,
+    ): SseEmitter {
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
+        agentSessionService.assertActiveSession(userId, projectId, threadId)
+        return agentRunStreamOrchestrator.stream(userId, projectId, threadId, runId, lastEventIndex)
+    }
+
+    @Deprecated("Use GET /run/stream", ReplaceWith("streamRun(userId, projectId, request.threadId, request.runId, request.lastEventIndex)"))
     override fun reconnectRun(
         userId: String,
         projectId: String,
         request: AgentRunReconnectRequest,
-    ): SseEmitter {
-        permissionManager.checkProjectPermission(PermissionAction.READ, projectId, userId)
-        agentSessionService.assertActiveSession(userId, projectId, request.threadId)
-        Preconditions.checkNotBlank(request.runId, "runId")
-        val existingRun = agentRunRecordService.findByRunId(request.runId)
-            ?: throw ParameterInvalidException("runId: run[${request.runId}] not found")
-        if (existingRun.threadId != request.threadId) {
-            throw ParameterInvalidException("threadId: run does not belong to thread[${request.threadId}]")
-        }
-        return agentRunReconnectOrchestrator.reconnect(userId, projectId, request, existingRun)
-    }
+    ): SseEmitter = streamRun(
+        userId = userId,
+        projectId = projectId,
+        threadId = request.threadId,
+        runId = request.runId,
+        lastEventIndex = request.lastEventIndex,
+    )
 }

@@ -11,7 +11,7 @@ package com.tencent.bkrepo.agent.agent.client
 /**
  * BKArtifacts 客户端专业 Agent 系统提示词：处理用户本机下载客户端与 aria2 任务。
  *
- * 工具经 AG-UI frontend tools 注入；待 client 子 Agent 拓扑接入后由 [com.tencent.bkrepo.agent.agent.AgentIds.CLIENT] 使用。
+ * 工具经 AG-UI frontend SchemaOnlyTool 注入，由 [com.tencent.bkrepo.agent.agent.AgentIds.CLIENT] 子 Agent allowlist 继承。
  */
 object ClientAgentPrompt {
 

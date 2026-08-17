@@ -66,11 +66,9 @@ class AguiAgentConfiguration {
         properties: EffectiveAgentRuntimeProperties,
         llmProperties: EffectiveAgentLlmProperties,
     ): AguiAdapterConfig {
-        val toolMergeMode = if (properties.frontendToolsEnabled) {
-            ToolMergeMode.FRONTEND_ONLY
-        } else {
-            ToolMergeMode.AGENT_ONLY
-        }
+        // frontend tools 经 SchemaOnlyTool 注册到 toolkit，Coordinator live toolkit 在 HarnessAgent 构建后剥离；
+        // AG-UI 使用 AGENT_ONLY，RunAgentInput.tools[] 仅做 allowlist 校验（§17.5 / Phase G-26）。
+        val toolMergeMode = ToolMergeMode.AGENT_ONLY
         val enableReasoning = llmProperties.effectiveReasoningEffort() != null
         return AguiAdapterConfig.builder()
             .defaultAgentId(properties.name)

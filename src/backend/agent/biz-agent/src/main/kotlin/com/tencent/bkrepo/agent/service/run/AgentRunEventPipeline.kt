@@ -8,7 +8,7 @@
 
 package com.tencent.bkrepo.agent.service.run
 
-import com.tencent.bkrepo.agent.agui.AguiInterruptTracker
+import com.tencent.bkrepo.agent.hitl.AguiInterruptTracker
 import com.tencent.bkrepo.agent.agui.AguiMessageArchiveHandler
 import com.tencent.bkrepo.agent.pojo.AgentRunStatus
 import com.tencent.bkrepo.agent.runtime.ActiveRunManager

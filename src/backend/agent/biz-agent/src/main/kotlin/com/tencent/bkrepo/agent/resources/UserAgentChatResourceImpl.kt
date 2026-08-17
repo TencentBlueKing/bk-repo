@@ -11,6 +11,7 @@ package com.tencent.bkrepo.agent.resources
 import com.tencent.bkrepo.agent.api.user.UserAgentChatResource
 import com.tencent.bkrepo.agent.constant.LOG_OPERATE_RUN
 import com.tencent.bkrepo.agent.constant.LOG_OPERATE_RUN_RECONNECT
+import com.tencent.bkrepo.agent.constant.LOG_OPERATE_RUN_STREAM
 import com.tencent.bkrepo.agent.constant.LOG_OPERATE_RUN_STATUS
 import com.tencent.bkrepo.agent.constant.LOG_OPERATE_RUN_STOP
 import com.tencent.bkrepo.agent.pojo.AgentRunReconnectRequest
@@ -47,6 +48,18 @@ class UserAgentChatResourceImpl(
         return ResponseBuilder.success(agentChatService.stopRun(userId, projectId, request))
     }
 
+    @LogOperate(type = LOG_OPERATE_RUN_STREAM)
+    override fun streamRun(
+        userId: String,
+        projectId: String,
+        threadId: String,
+        runId: String?,
+        lastEventIndex: Long?,
+    ): SseEmitter {
+        return agentChatService.streamRun(userId, projectId, threadId, runId, lastEventIndex)
+    }
+
+    @Deprecated("Use GET /run/stream")
     @LogOperate(type = LOG_OPERATE_RUN_RECONNECT)
     override fun reconnectRun(
         userId: String,

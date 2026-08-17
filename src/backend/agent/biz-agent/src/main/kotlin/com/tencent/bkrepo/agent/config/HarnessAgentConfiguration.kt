@@ -29,6 +29,7 @@ package com.tencent.bkrepo.agent.config
 
 import com.tencent.bkrepo.agent.config.properties.EffectiveAgentMemoryProperties
 import com.tencent.bkrepo.agent.config.properties.EffectiveAgentRuntimeProperties
+import com.tencent.bkrepo.agent.tool.frontend.RegisteredFrontendTools
 import io.agentscope.core.model.Model
 import io.agentscope.core.permission.PermissionContextState
 import io.agentscope.core.state.AgentStateStore
@@ -53,6 +54,7 @@ class HarnessAgentConfiguration {
         toolkit: Toolkit,
         permissionContext: PermissionContextState,
         agentHarnessConfigurer: AgentHarnessConfigurer,
+        frontendTools: RegisteredFrontendTools,
     ): HarnessAgent {
         val agent = agentHarnessConfigurer.configure(
             properties = properties,
@@ -62,6 +64,14 @@ class HarnessAgentConfiguration {
             toolkit = toolkit,
             permissionContext = permissionContext,
         )
+        if (properties.frontendToolsEnabled && properties.topology.coordinator.enabled) {
+            val removed = frontendTools.registeredToolNames.filter { toolkit.getTool(it) != null }
+            removed.forEach { toolkit.removeTool(it) }
+            logger.info(
+                "coordinator live toolkit: removed {} frontend tools (subagent factory retains build-time copy)",
+                removed.size,
+            )
+        }
         val preview = properties.sysPrompt.lines().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
         logger.info(
             "HarnessAgent ready: agentId={}, sysPromptChars={}, preview=\"{}\"",
@@ -70,7 +80,7 @@ class HarnessAgentConfiguration {
             preview.take(80),
         )
         check(properties.sysPrompt.isNotBlank()) {
-            "agent.runtime.sys-prompt must not be blank; check Consul/YAML for empty agent.sys-prompt override"
+            "agent.runtime.sys-prompt must not be blank; check Consul/YAML for empty agent.runtime.sys-prompt override"
         }
         return agent
     }

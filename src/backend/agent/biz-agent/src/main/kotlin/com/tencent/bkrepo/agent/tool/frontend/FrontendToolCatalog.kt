@@ -6,7 +6,7 @@
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  */
 
-package com.tencent.bkrepo.agent.agui
+package com.tencent.bkrepo.agent.tool.frontend
 
 import com.tencent.bkrepo.agent.permission.ToolRiskLevel
 import com.tencent.bkrepo.agent.tool.local.LocalToolDefinition
@@ -14,14 +14,17 @@ import com.tencent.bkrepo.agent.tool.local.LocalToolDefinitions
 import io.agentscope.core.agui.model.AguiTool
 import org.springframework.stereotype.Component
 
-/** 服务端 authoritative 本地工具目录（allowlist），供 AG-UI frontend tool 注入。 */
+/** 服务端 authoritative 本地工具目录（allowlist），供 AG-UI frontend tool 注入与 HITL 校验。 */
 @Component
 class FrontendToolCatalog {
 
-    private val byName: Map<String, LocalToolDefinition> =
-        LocalToolDefinitions.allTools().associateBy { it.name }
+    private val tools: List<LocalToolDefinition> = LocalToolDefinitions.allTools()
 
-    fun allAguiTools(): List<AguiTool> = LocalToolDefinitions.allTools().map { it.toAguiTool() }
+    val registeredToolNames: Set<String> = tools.map { it.name }.toSet()
+
+    private val byName: Map<String, LocalToolDefinition> = tools.associateBy { it.name }
+
+    fun allAguiTools(): List<AguiTool> = tools.map { it.toAguiTool() }
 
     fun find(name: String): LocalToolDefinition? = byName[name]
 

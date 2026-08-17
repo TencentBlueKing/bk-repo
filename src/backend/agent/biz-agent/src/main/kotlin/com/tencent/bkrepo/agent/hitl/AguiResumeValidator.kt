@@ -6,12 +6,13 @@
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  */
 
-package com.tencent.bkrepo.agent.agui
+package com.tencent.bkrepo.agent.hitl
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.tencent.bkrepo.agent.session.AgentPendingInterruptStore
-import com.tencent.bkrepo.agent.session.AgentResumeIdempotencyStore
+import com.tencent.bkrepo.agent.hitl.AgentInterruptStateRepository
+import com.tencent.bkrepo.agent.hitl.AguiResumeValidator
 import com.tencent.bkrepo.agent.session.PendingInterruptSnapshot
+import com.tencent.bkrepo.agent.tool.frontend.FrontendToolCatalog
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
@@ -24,8 +25,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 class AguiResumeValidator(
-    private val pendingInterruptStore: AgentPendingInterruptStore,
-    private val resumeIdempotencyStore: AgentResumeIdempotencyStore,
+    private val interruptStateRepository: AgentInterruptStateRepository,
     private val frontendToolCatalog: FrontendToolCatalog,
     private val permissionManager: PermissionManager,
     private val objectMapper: ObjectMapper,
@@ -33,7 +33,7 @@ class AguiResumeValidator(
 
     fun validateAndPrepare(userId: String, projectId: String, input: RunAgentInput) {
         val threadId = input.threadId
-        val pending = pendingInterruptStore.get(threadId)
+        val pending = interruptStateRepository.getPendingInterrupt(threadId)
 
         if (pending != null && !input.hasResume()) {
             throw ParameterInvalidException("resume: thread[$threadId] has pending interrupts")
@@ -66,7 +66,7 @@ class AguiResumeValidator(
         snapshot: PendingInterruptSnapshot,
         entry: AguiResume,
     ) {
-        if (!resumeIdempotencyStore.tryMark(threadId, entry.interruptId, fingerprint(entry))) {
+        if (!interruptStateRepository.tryMarkResume(threadId, entry.interruptId, fingerprint(entry))) {
             throw ParameterInvalidException("resume: duplicate resume for interrupt[${entry.interruptId}]")
         }
 

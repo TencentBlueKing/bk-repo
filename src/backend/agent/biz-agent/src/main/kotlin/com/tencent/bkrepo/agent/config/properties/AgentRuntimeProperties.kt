@@ -15,33 +15,37 @@ import java.time.Duration
 /**
  * Agent 运行时配置（`agent.runtime`）。
  *
- * 收敛 run 生命周期、输入限制、state 与 feature 开关；迁移期仍可从 legacy `agent.*` 回退。
+ * 收敛 run 生命周期、输入限制、state 与 feature 开关。
  */
 @ConfigurationProperties("agent.runtime")
 data class AgentRuntimeProperties(
-    var name: String = AgentProperties.DEFAULT_NAME,
+    var name: String = DEFAULT_NAME,
     var sysPrompt: String = AgentSystemPrompts.DEFAULT,
-    var maxIters: Int = AgentProperties.DEFAULT_MAX_ITERS,
-    var workspace: String = AgentProperties.DEFAULT_WORKSPACE,
-    var sseTimeout: Duration = AgentProperties.DEFAULT_SSE_TIMEOUT,
-    var maxMessageLength: Int = AgentProperties.DEFAULT_MAX_MESSAGE_LENGTH,
-    var maxThreadIdLength: Int = AgentProperties.DEFAULT_MAX_THREAD_ID_LENGTH,
-    var sessionTtl: Duration = AgentProperties.DEFAULT_SESSION_TTL,
-    var activeRunTtl: Duration = AgentProperties.DEFAULT_RUN_LOCK_TTL,
-    var runEventTtl: Duration = AgentProperties.DEFAULT_RUN_EVENT_TTL,
-    var reconnectPollInterval: Duration = AgentProperties.DEFAULT_RECONNECT_POLL_INTERVAL,
-    var reconnectTimeout: Duration = AgentProperties.DEFAULT_RECONNECT_TIMEOUT,
+    var maxIters: Int = DEFAULT_MAX_ITERS,
+    var workspace: String = DEFAULT_WORKSPACE,
+    var sseTimeout: Duration = DEFAULT_SSE_TIMEOUT,
+    var maxMessageLength: Int = DEFAULT_MAX_MESSAGE_LENGTH,
+    var maxThreadIdLength: Int = DEFAULT_MAX_THREAD_ID_LENGTH,
+    var sessionTtl: Duration = DEFAULT_SESSION_TTL,
+    var activeRunTtl: Duration = DEFAULT_ACTIVE_RUN_TTL,
+    var runEventTtl: Duration = DEFAULT_RUN_EVENT_TTL,
+    var reconnectPollInterval: Duration = DEFAULT_RECONNECT_POLL_INTERVAL,
+    var reconnectTimeout: Duration = DEFAULT_RECONNECT_TIMEOUT,
     var state: State = State(),
     var features: Features = Features(),
     var topology: Topology = Topology(),
 ) {
     data class State(
-        var keyPrefix: String = AgentStateProperties.DEFAULT_KEY_PREFIX,
+        var keyPrefix: String = DEFAULT_KEY_PREFIX,
         var requireRedis: Boolean = DEFAULT_REQUIRE_REDIS,
-    )
+    ) {
+        companion object {
+            const val DEFAULT_KEY_PREFIX = "bkrepo:agent:state:"
+        }
+    }
 
     data class Features(
-        var frontendToolsEnabled: Boolean = AgentProperties.DEFAULT_LOCAL_TOOLS_ENABLED,
+        var frontendToolsEnabled: Boolean = DEFAULT_FRONTEND_TOOLS_ENABLED,
     )
 
     data class Topology(
@@ -56,6 +60,7 @@ data class AgentRuntimeProperties(
         )
 
         data class Agents(
+            var client: AgentBinding = AgentBinding(enabled = true, maxSteps = 10),
             var discovery: AgentBinding = AgentBinding(enabled = true),
             var transferDiagnostics: AgentBinding = AgentBinding(enabled = false, maxSteps = 10),
         )
@@ -68,6 +73,18 @@ data class AgentRuntimeProperties(
     }
 
     companion object {
+        const val DEFAULT_NAME = "bkrepo-assistant"
+        const val DEFAULT_MAX_ITERS = 10
+        const val DEFAULT_WORKSPACE = "/data/workspace/agent"
+        val DEFAULT_SSE_TIMEOUT: Duration = Duration.ofMinutes(10)
+        const val DEFAULT_MAX_MESSAGE_LENGTH = 32 * 1024
+        const val DEFAULT_MAX_THREAD_ID_LENGTH = 128
+        val DEFAULT_SESSION_TTL: Duration = Duration.ofDays(30)
+        val DEFAULT_ACTIVE_RUN_TTL: Duration = Duration.ofMinutes(11)
+        val DEFAULT_RUN_EVENT_TTL: Duration = Duration.ofDays(7)
+        val DEFAULT_RECONNECT_POLL_INTERVAL: Duration = Duration.ofMillis(500)
+        val DEFAULT_RECONNECT_TIMEOUT: Duration = Duration.ofMinutes(10)
+        const val DEFAULT_FRONTEND_TOOLS_ENABLED = true
         const val DEFAULT_REQUIRE_REDIS = false
         const val DEFAULT_MAX_DELEGATIONS = 8
         const val DEFAULT_MAX_PARALLEL_DELEGATIONS = 1
@@ -94,6 +111,7 @@ data class EffectiveAgentTopology(
     )
 
     data class Agents(
+        val client: AgentBinding,
         val discovery: AgentBinding,
         val transferDiagnostics: AgentBinding,
     )
@@ -107,6 +125,11 @@ data class EffectiveAgentTopology(
                 taskListEnabled = topology.coordinator.taskListEnabled,
             ),
             agents = Agents(
+                client = AgentBinding(
+                    enabled = topology.agents.client.enabled,
+                    modelProfile = topology.agents.client.modelProfile,
+                    maxSteps = topology.agents.client.maxSteps,
+                ),
                 discovery = AgentBinding(
                     enabled = topology.agents.discovery.enabled,
                     modelProfile = topology.agents.discovery.modelProfile,
@@ -143,134 +166,29 @@ data class EffectiveAgentRuntimeProperties(
     val topology: EffectiveAgentTopology,
 ) {
     companion object {
-        fun defaults(): EffectiveAgentRuntimeProperties = AgentRuntimePropertiesResolver.resolve(
-            runtime = AgentRuntimeProperties(),
-            legacy = AgentProperties(),
-            legacyState = AgentStateProperties(),
-        )
+        fun defaults(): EffectiveAgentRuntimeProperties = AgentRuntimePropertiesResolver.resolve(AgentRuntimeProperties())
     }
 }
 
 object AgentRuntimePropertiesResolver {
 
-    fun resolve(
-        runtime: AgentRuntimeProperties,
-        legacy: AgentProperties,
-        legacyState: AgentStateProperties,
-    ): EffectiveAgentRuntimeProperties {
-        val usesNewPrefix = runtime != defaultRuntime()
-        return EffectiveAgentRuntimeProperties(
-            name = pick(runtime.name, legacy.name, usesNewPrefix, AgentProperties.DEFAULT_NAME),
-            sysPrompt = resolveSysPrompt(runtime, legacy, usesNewPrefix),
-            maxIters = pick(runtime.maxIters, legacy.maxIters, usesNewPrefix, AgentProperties.DEFAULT_MAX_ITERS),
-            workspace = pick(runtime.workspace, legacy.workspace, usesNewPrefix, AgentProperties.DEFAULT_WORKSPACE),
-            sseTimeout = pickDuration(runtime.sseTimeout, legacy.sseTimeout, usesNewPrefix, AgentProperties.DEFAULT_SSE_TIMEOUT),
-            maxMessageLength = pick(
-                runtime.maxMessageLength,
-                legacy.maxMessageLength,
-                usesNewPrefix,
-                AgentProperties.DEFAULT_MAX_MESSAGE_LENGTH,
-            ),
-            maxThreadIdLength = pick(
-                runtime.maxThreadIdLength,
-                legacy.maxThreadIdLength,
-                usesNewPrefix,
-                AgentProperties.DEFAULT_MAX_THREAD_ID_LENGTH,
-            ),
-            sessionTtl = pickDuration(runtime.sessionTtl, legacy.sessionTtl, usesNewPrefix, AgentProperties.DEFAULT_SESSION_TTL),
-            activeRunTtl = if (usesNewPrefix) {
-                runtime.activeRunTtl
-            } else {
-                legacy.runLockTtl
-            },
-            runEventTtl = pickDuration(runtime.runEventTtl, legacy.runEventTtl, usesNewPrefix, AgentProperties.DEFAULT_RUN_EVENT_TTL),
-            reconnectPollInterval = pickDuration(
-                runtime.reconnectPollInterval,
-                legacy.reconnectPollInterval,
-                usesNewPrefix,
-                AgentProperties.DEFAULT_RECONNECT_POLL_INTERVAL,
-            ),
-            reconnectTimeout = pickDuration(
-                runtime.reconnectTimeout,
-                legacy.reconnectTimeout,
-                usesNewPrefix,
-                AgentProperties.DEFAULT_RECONNECT_TIMEOUT,
-            ),
-            stateKeyPrefix = if (usesNewPrefix && runtime.state.keyPrefix != AgentStateProperties.DEFAULT_KEY_PREFIX) {
-                runtime.state.keyPrefix
-            } else {
-                legacyState.keyPrefix
-            },
-            requireRedis = if (usesNewPrefix) runtime.state.requireRedis else AgentRuntimeProperties.DEFAULT_REQUIRE_REDIS,
-            frontendToolsEnabled = if (usesNewPrefix) {
-                runtime.features.frontendToolsEnabled
-            } else {
-                legacy.localToolsEnabled
-            },
-            topology = if (usesNewPrefix) {
-                EffectiveAgentTopology.from(runtime.topology)
-            } else {
-                EffectiveAgentTopology.defaults()
-            },
+    fun resolve(runtime: AgentRuntimeProperties): EffectiveAgentRuntimeProperties =
+        EffectiveAgentRuntimeProperties(
+            name = runtime.name,
+            sysPrompt = runtime.sysPrompt.takeIf { it.isNotBlank() } ?: AgentSystemPrompts.DEFAULT,
+            maxIters = runtime.maxIters,
+            workspace = runtime.workspace,
+            sseTimeout = runtime.sseTimeout,
+            maxMessageLength = runtime.maxMessageLength,
+            maxThreadIdLength = runtime.maxThreadIdLength,
+            sessionTtl = runtime.sessionTtl,
+            activeRunTtl = runtime.activeRunTtl,
+            runEventTtl = runtime.runEventTtl,
+            reconnectPollInterval = runtime.reconnectPollInterval,
+            reconnectTimeout = runtime.reconnectTimeout,
+            stateKeyPrefix = runtime.state.keyPrefix,
+            requireRedis = runtime.state.requireRedis,
+            frontendToolsEnabled = runtime.features.frontendToolsEnabled,
+            topology = EffectiveAgentTopology.from(runtime.topology),
         )
-    }
-
-    fun detectLegacyUsage(runtime: AgentRuntimeProperties, legacy: AgentProperties): List<AgentLegacyConfigurationUsage> {
-        if (runtime != defaultRuntime()) {
-            return emptyList()
-        }
-        val usages = mutableListOf<AgentLegacyConfigurationUsage>()
-        if (legacy.name != AgentProperties.DEFAULT_NAME) {
-            usages += AgentLegacyConfigurationUsage("agent.name", "agent.runtime.name")
-        }
-        if (legacy.workspace != AgentProperties.DEFAULT_WORKSPACE) {
-            usages += AgentLegacyConfigurationUsage("agent.workspace", "agent.runtime.workspace")
-        }
-        if (legacy.maxIters != AgentProperties.DEFAULT_MAX_ITERS) {
-            usages += AgentLegacyConfigurationUsage("agent.max-iters", "agent.runtime.max-iters")
-        }
-        if (legacy.runLockTtl != AgentProperties.DEFAULT_RUN_LOCK_TTL) {
-            usages += AgentLegacyConfigurationUsage("agent.run-lock-ttl", "agent.runtime.active-run-ttl")
-        }
-        if (legacy.localToolsEnabled != AgentProperties.DEFAULT_LOCAL_TOOLS_ENABLED) {
-            usages += AgentLegacyConfigurationUsage(
-                "agent.local-tools-enabled",
-                "agent.runtime.features.frontend-tools-enabled",
-            )
-        }
-        if (legacy.maxMessageLength != AgentProperties.DEFAULT_MAX_MESSAGE_LENGTH) {
-            usages += AgentLegacyConfigurationUsage("agent.max-message-length", "agent.runtime.max-message-length")
-        }
-        if (legacy.reconnectPollInterval != AgentProperties.DEFAULT_RECONNECT_POLL_INTERVAL) {
-            usages += AgentLegacyConfigurationUsage(
-                "agent.reconnect-poll-interval",
-                "agent.runtime.reconnect-poll-interval",
-            )
-        }
-        return usages
-    }
-
-    private fun defaultRuntime(): AgentRuntimeProperties = AgentRuntimeProperties()
-
-    /**
-     * sys-prompt 不能用通用 [pick]（空 Consul 占位会覆盖默认值）；空白一律回退 [AgentSystemPrompts.DEFAULT]。
-     */
-    private fun resolveSysPrompt(
-        runtime: AgentRuntimeProperties,
-        legacy: AgentProperties,
-        usesNewPrefix: Boolean,
-    ): String {
-        val raw = when {
-            usesNewPrefix -> runtime.sysPrompt
-            legacy.sysPrompt != AgentSystemPrompts.DEFAULT -> legacy.sysPrompt
-            else -> AgentSystemPrompts.DEFAULT
-        }
-        return raw.takeIf { it.isNotBlank() } ?: AgentSystemPrompts.DEFAULT
-    }
-
-    private fun <T> pick(newValue: T, legacyValue: T, usesNewPrefix: Boolean, defaultValue: T): T =
-        if (usesNewPrefix && newValue != defaultValue) newValue else legacyValue
-
-    private fun pickDuration(newValue: Duration, legacyValue: Duration, usesNewPrefix: Boolean, defaultValue: Duration): Duration =
-        if (usesNewPrefix && newValue != defaultValue) newValue else legacyValue
 }

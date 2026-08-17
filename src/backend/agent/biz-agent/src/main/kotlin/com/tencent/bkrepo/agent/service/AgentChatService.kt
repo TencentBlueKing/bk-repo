@@ -32,7 +32,16 @@ interface AgentChatService {
     fun stopRun(userId: String, projectId: String, request: AgentRunStopRequest): Boolean
 
     /**
-     * 衔接活跃 run 事件流或重放已持久化 AG-UI 事件；不重新执行 Agent。
+     * 衔接活跃 run 事件流或从 Mongo 增量/全量重放 AG-UI 事件；不重新执行 Agent。
      */
+    fun streamRun(
+        userId: String,
+        projectId: String,
+        threadId: String,
+        runId: String? = null,
+        lastEventIndex: Long? = null,
+    ): SseEmitter
+
+    @Deprecated("Use streamRun", ReplaceWith("streamRun(userId, projectId, request.threadId, request.runId, request.lastEventIndex)"))
     fun reconnectRun(userId: String, projectId: String, request: AgentRunReconnectRequest): SseEmitter
 }

@@ -63,7 +63,22 @@ interface UserAgentChatResource {
         @RequestBody request: AgentRunStopRequest,
     ): Response<Boolean>
 
-    @Operation(summary = "重连并重放 run 事件")
+    @Operation(summary = "衔接 run 事件流或重放已持久化 AG-UI 事件")
+    @GetMapping("/run/stream", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
+    fun streamRun(
+        @RequestAttribute userId: String,
+        @Parameter(name = "项目ID", required = true)
+        @RequestParam projectId: String,
+        @Parameter(name = "AG-UI threadId", required = true)
+        @RequestParam threadId: String,
+        @Parameter(name = "canonical runId；省略时使用 thread 当前/最新 run")
+        @RequestParam(required = false) runId: String?,
+        @Parameter(name = "已收到的最大 eventIndex；省略时从首条事件重放")
+        @RequestParam(required = false) lastEventIndex: Long?,
+    ): SseEmitter
+
+    @Deprecated("Use GET /run/stream")
+    @Operation(summary = "重连并重放 run 事件（已废弃，请使用 GET /run/stream）")
     @PostMapping("/run/reconnect", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
     fun reconnectRun(
         @RequestAttribute userId: String,

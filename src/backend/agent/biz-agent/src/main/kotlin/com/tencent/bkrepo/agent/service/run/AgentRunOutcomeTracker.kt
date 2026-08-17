@@ -8,9 +8,9 @@
 
 package com.tencent.bkrepo.agent.service.run
 
-import com.tencent.bkrepo.agent.agui.AguiInterruptTracker
+import com.tencent.bkrepo.agent.hitl.AguiInterruptTracker
+import com.tencent.bkrepo.agent.hitl.AgentInterruptStateRepository
 import com.tencent.bkrepo.agent.pojo.AgentRunStatus
-import com.tencent.bkrepo.agent.session.AgentPendingInterruptStore
 import io.agentscope.core.agui.event.AguiEvent
 import org.springframework.stereotype.Component
 import java.util.concurrent.atomic.AtomicReference
@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReference
 @Component
 class AgentRunOutcomeTracker(
     private val aguiInterruptTracker: AguiInterruptTracker,
-    private val pendingInterruptStore: AgentPendingInterruptStore,
+    private val interruptStateRepository: AgentInterruptStateRepository,
 ) {
 
     fun applyTerminalEvent(event: AguiEvent, terminalStatus: AtomicReference<AgentRunStatus>) {
@@ -51,10 +51,10 @@ class AgentRunOutcomeTracker(
         when (terminalStatus) {
             AgentRunStatus.SUSPENDED -> {
                 aguiInterruptTracker.captureSuspendedSession(runId, event, interruptState)?.let { session ->
-                    pendingInterruptStore.save(threadId, session)
+                    interruptStateRepository.savePendingInterrupt(threadId, session)
                 }
             }
-            AgentRunStatus.COMPLETED -> pendingInterruptStore.clear(threadId)
+            AgentRunStatus.COMPLETED -> interruptStateRepository.clearPendingInterrupt(threadId)
             else -> Unit
         }
     }

@@ -6,10 +6,12 @@
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  */
 
-package com.tencent.bkrepo.agent.agui
+package com.tencent.bkrepo.agent.tool.frontend
 
+import com.tencent.bkrepo.agent.agui.AgentForwardedPropsSupport
 import com.tencent.bkrepo.agent.config.properties.EffectiveAgentRuntimeProperties
 import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
+import com.tencent.bkrepo.agent.tool.local.LocalToolDefinition
 import io.agentscope.core.agui.model.AguiTool
 import io.agentscope.core.agui.model.RunAgentInput
 import org.springframework.stereotype.Component
@@ -86,6 +88,6 @@ class FrontendToolSanitizer(
         return requestedNames.mapNotNull { catalog.find(it)?.toAguiTool() }
     }
 
-    private fun com.tencent.bkrepo.agent.tool.local.LocalToolDefinition.toAguiTool(): AguiTool =
+    private fun LocalToolDefinition.toAguiTool(): AguiTool =
         AguiTool(name, description, inputSchema)
 }

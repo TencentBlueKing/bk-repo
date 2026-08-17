@@ -1,35 +1,35 @@
-spring:
-  application:
-    name: agent
-server:
-  port: 25915
-
-# 本地开发时可在此覆盖；生产环境通常由配置中心注入 model 与限流
-agent:
-  local-tools-enabled: true
-  compaction:
-    enabled: true
-    flush-before-compact: false
-    offload-before-compact: false
-  tool-result-eviction:
-    enabled: true
-  model:
-    auth-type: bk-gateway
-    base-url:
-    api-key:
-    bk-app-code:
-    bk-app-secret:
-    model-name:
-    # reasoning-effort: high  # no_think | low | high；非空时开启深度思考请求与 REASONING_* SSE
-
-rate:
-  limiter:
-    enabled: false
-    rules:
-      - algo: TOKEN_BUCKET
-        resource: "*:/api/agent/run"
-        limitDimension: USER_URL
-        limit: 10
-        duration: 60s
-        capacity: 20
-        scope: GLOBAL
+spring:
+  application:
+    name: agent
+server:
+  port: 25915
+
+# 本地开发时可在此覆盖；生产环境通常由配置中心注入 llm / memory / runtime 与限流
+agent:
+  llm:
+    base-url:
+    api-key:
+    bk-app-code:
+    bk-app-secret:
+    model-name:
+    # reasoning-effort: high  # no_think | low | high；非空时开启深度思考请求与 REASONING_* SSE
+  memory:
+    compaction-enabled: true
+    flush-before-compact: false
+    offload-before-compact: false
+    tool-result-eviction-enabled: true
+  runtime:
+    features:
+      frontend-tools-enabled: true
+
+rate:
+  limiter:
+    enabled: false
+    rules:
+      - algo: TOKEN_BUCKET
+        resource: "*:/api/agent/run"
+        limitDimension: USER_URL
+        limit: 10
+        duration: 60s
+        capacity: 20
+        scope: GLOBAL

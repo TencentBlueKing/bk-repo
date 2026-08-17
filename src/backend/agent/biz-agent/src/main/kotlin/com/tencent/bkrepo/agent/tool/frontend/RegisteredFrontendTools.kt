@@ -6,9 +6,8 @@
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  */
 
-package com.tencent.bkrepo.agent.config.properties
+package com.tencent.bkrepo.agent.tool.frontend
 
-data class AgentLegacyConfigurationUsage(
-    val key: String,
-    val newKey: String,
-)
+interface RegisteredFrontendTools {
+    val registeredToolNames: Set<String>
+}

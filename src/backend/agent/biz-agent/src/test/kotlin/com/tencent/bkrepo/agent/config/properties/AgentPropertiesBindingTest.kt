@@ -15,18 +15,18 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
-@DisplayName("Agent 配置绑定与迁移")
+@DisplayName("Agent 配置绑定")
 class AgentPropertiesBindingTest {
 
     @Test
-    fun `legacy model 应单向迁移到 effective llm`() {
-        val legacy = AgentModelProperties(
+    fun `agent llm 绑定应解析为 effective llm`() {
+        val llm = AgentLlmProperties(
             baseUrl = "https://gateway.example/v1",
             apiKey = "secret-api-key",
             modelName = "qwen-max",
             reasoningEffort = "high",
         )
-        val effective = AgentLlmPropertiesResolver.resolve(AgentLlmProperties(), legacy)
+        val effective = AgentLlmPropertiesResolver.resolve(llm)
 
         assertEquals("https://gateway.example/v1", effective.baseUrl)
         assertEquals("qwen-max", effective.modelName)
@@ -42,25 +42,9 @@ class AgentPropertiesBindingTest {
             bkAppSecret = "secret-value",
             modelName = "qwen-max",
         )
-        val effective = AgentLlmPropertiesResolver.resolve(llm, AgentModelProperties())
+        val effective = AgentLlmPropertiesResolver.resolve(llm)
 
         assertEquals(AgentLlmAuthMode.BK_GATEWAY, effective.authMode)
-    }
-
-    @Test
-    fun `agent llm 优先于 legacy model`() {
-        val llm = AgentLlmProperties(
-            baseUrl = "https://new.example/v1",
-            modelName = "new-model",
-        )
-        val legacy = AgentModelProperties(
-            baseUrl = "https://old.example/v1",
-            modelName = "old-model",
-        )
-        val effective = AgentLlmPropertiesResolver.resolve(llm, legacy)
-
-        assertEquals("https://new.example/v1", effective.baseUrl)
-        assertEquals("new-model", effective.modelName)
     }
 
     @Test
@@ -83,12 +67,14 @@ class AgentPropertiesBindingTest {
     }
 
     @Test
-    fun `legacy compaction 应迁移到 effective memory`() {
+    fun `agent memory 绑定应解析为 effective memory`() {
         val memory = AgentMemoryPropertiesResolver.resolve(
-            memory = AgentMemoryProperties(),
-            legacyCompaction = AgentCompactionProperties(enabled = false, reserved = 15_000),
-            legacyEviction = AgentToolResultEvictionProperties(enabled = false),
-            legacyModel = AgentModelProperties(contextWindowSize = 64_000),
+            AgentMemoryProperties(
+                contextWindowSize = 64_000,
+                compactionEnabled = false,
+                reserved = 15_000,
+                toolResultEvictionEnabled = false,
+            ),
         )
 
         assertFalse(memory.compactionEnabled)
@@ -98,15 +84,14 @@ class AgentPropertiesBindingTest {
     }
 
     @Test
-    fun `legacy agent 应迁移到 effective runtime`() {
+    fun `agent runtime 绑定应解析为 effective runtime`() {
         val runtime = AgentRuntimePropertiesResolver.resolve(
-            runtime = AgentRuntimeProperties(),
-            legacy = AgentProperties().apply {
-                localToolsEnabled = false
-                runLockTtl = java.time.Duration.ofMinutes(15)
+            AgentRuntimeProperties().apply {
+                features = AgentRuntimeProperties.Features(frontendToolsEnabled = false)
+                activeRunTtl = java.time.Duration.ofMinutes(15)
                 maxMessageLength = 16_000
+                state = AgentRuntimeProperties.State(keyPrefix = "bkrepo:agent:custom:")
             },
-            legacyState = AgentStateProperties(keyPrefix = "bkrepo:agent:custom:"),
         )
 
         assertFalse(runtime.frontendToolsEnabled)
@@ -116,27 +101,8 @@ class AgentPropertiesBindingTest {
     }
 
     @Test
-    fun `未配置 agent runtime 时应默认使用 AgentSystemPrompts`() {
-        val runtime = AgentRuntimePropertiesResolver.resolve(
-            runtime = AgentRuntimeProperties(),
-            legacy = AgentProperties(),
-            legacyState = AgentStateProperties(),
-        )
-
-        assertEquals(AgentSystemPrompts.DEFAULT, runtime.sysPrompt)
-    }
-
-    @Test
-    fun `agent runtime sys-prompt 等于代码默认值时仍应生效而非回退 legacy 空串`() {
-        val runtime = AgentRuntimePropertiesResolver.resolve(
-            runtime = AgentRuntimeProperties().apply {
-                topology = AgentRuntimeProperties.Topology(
-                    coordinator = AgentRuntimeProperties.Topology.Coordinator(taskListEnabled = false),
-                )
-            },
-            legacy = AgentProperties().apply { sysPrompt = "" },
-            legacyState = AgentStateProperties(),
-        )
+    fun `未配置 sys-prompt 时应默认使用 AgentSystemPrompts`() {
+        val runtime = AgentRuntimePropertiesResolver.resolve(AgentRuntimeProperties())
 
         assertEquals(AgentSystemPrompts.DEFAULT, runtime.sysPrompt)
     }
@@ -144,22 +110,22 @@ class AgentPropertiesBindingTest {
     @Test
     fun `agent runtime sys-prompt 在 Consul 占位为空时应回退代码默认`() {
         val runtime = AgentRuntimePropertiesResolver.resolve(
-            runtime = AgentRuntimeProperties().apply { sysPrompt = "" },
-            legacy = AgentProperties(),
-            legacyState = AgentStateProperties(),
+            AgentRuntimeProperties().apply { sysPrompt = "" },
         )
 
         assertEquals(AgentSystemPrompts.DEFAULT, runtime.sysPrompt)
     }
 
     @Test
-    fun `legacy agent sys-prompt 显式配置时应优先于新默认`() {
+    fun `agent runtime topology 应透传到 effective topology`() {
         val runtime = AgentRuntimePropertiesResolver.resolve(
-            runtime = AgentRuntimeProperties(),
-            legacy = AgentProperties().apply { sysPrompt = "legacy-custom-prompt" },
-            legacyState = AgentStateProperties(),
+            AgentRuntimeProperties().apply {
+                topology = AgentRuntimeProperties.Topology(
+                    coordinator = AgentRuntimeProperties.Topology.Coordinator(taskListEnabled = false),
+                )
+            },
         )
 
-        assertEquals("legacy-custom-prompt", runtime.sysPrompt)
+        assertFalse(runtime.topology.coordinator.taskListEnabled)
     }
 }

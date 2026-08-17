@@ -8,7 +8,11 @@
 
 package com.tencent.bkrepo.agent.service.run
 
+import com.tencent.bkrepo.agent.hitl.AguiInterruptTracker
+import com.tencent.bkrepo.agent.hitl.DefaultAgentInterruptStateRepository
 import com.tencent.bkrepo.agent.pojo.AgentRunStatus
+import com.tencent.bkrepo.agent.session.InMemoryAgentPendingInterruptStore
+import com.tencent.bkrepo.agent.session.InMemoryAgentResumeIdempotencyStore
 import io.agentscope.core.agui.event.AguiEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -17,8 +21,11 @@ import java.util.concurrent.atomic.AtomicReference
 class AgentRunOutcomeTrackerTest {
 
     private val tracker = AgentRunOutcomeTracker(
-        aguiInterruptTracker = com.tencent.bkrepo.agent.agui.AguiInterruptTracker(),
-        pendingInterruptStore = com.tencent.bkrepo.agent.session.InMemoryAgentPendingInterruptStore(),
+        aguiInterruptTracker = AguiInterruptTracker(),
+        interruptStateRepository = DefaultAgentInterruptStateRepository(
+            pendingInterruptStore = InMemoryAgentPendingInterruptStore(),
+            resumeIdempotencyStore = InMemoryAgentResumeIdempotencyStore(),
+        ),
     )
 
     @Test

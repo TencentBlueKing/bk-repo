@@ -19,17 +19,22 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class AgentMemoryProperties(
     var contextWindowSize: Int = DEFAULT_CONTEXT_WINDOW_SIZE,
     var compactionEnabled: Boolean = DEFAULT_COMPACTION_ENABLED,
-    var triggerMessages: Int = AgentCompactionProperties.DEFAULT_TRIGGER_MESSAGES,
-    var keepMessages: Int = AgentCompactionProperties.DEFAULT_KEEP_MESSAGES,
-    var reserved: Int = AgentCompactionProperties.DEFAULT_RESERVED,
-    var flushBeforeCompact: Boolean = AgentCompactionProperties().flushBeforeCompact,
-    var offloadBeforeCompact: Boolean = AgentCompactionProperties().offloadBeforeCompact,
+    var triggerMessages: Int = DEFAULT_TRIGGER_MESSAGES,
+    var keepMessages: Int = DEFAULT_KEEP_MESSAGES,
+    var reserved: Int = DEFAULT_RESERVED,
+    var flushBeforeCompact: Boolean = DEFAULT_FLUSH_BEFORE_COMPACT,
+    var offloadBeforeCompact: Boolean = DEFAULT_OFFLOAD_BEFORE_COMPACT,
     var toolResultEvictionEnabled: Boolean = DEFAULT_TOOL_RESULT_EVICTION_ENABLED,
 ) {
     companion object {
-        const val DEFAULT_CONTEXT_WINDOW_SIZE = AgentModelProperties.DEFAULT_CONTEXT_WINDOW_SIZE
+        const val DEFAULT_CONTEXT_WINDOW_SIZE = 128_000
         const val DEFAULT_COMPACTION_ENABLED = true
         const val DEFAULT_TOOL_RESULT_EVICTION_ENABLED = true
+        const val DEFAULT_TRIGGER_MESSAGES = 0
+        const val DEFAULT_KEEP_MESSAGES = 0
+        const val DEFAULT_RESERVED = 20_000
+        const val DEFAULT_FLUSH_BEFORE_COMPACT = false
+        const val DEFAULT_OFFLOAD_BEFORE_COMPACT = false
     }
 }
 
@@ -44,54 +49,20 @@ data class EffectiveAgentMemoryProperties(
     val toolResultEvictionEnabled: Boolean,
 ) {
     companion object {
-        fun defaults(): EffectiveAgentMemoryProperties = AgentMemoryPropertiesResolver.resolve(
-            memory = AgentMemoryProperties(),
-            legacyCompaction = AgentCompactionProperties(),
-            legacyEviction = AgentToolResultEvictionProperties(),
-            legacyModel = AgentModelProperties(),
-        )
+        fun defaults(): EffectiveAgentMemoryProperties = AgentMemoryPropertiesResolver.resolve(AgentMemoryProperties())
     }
 }
 
 object AgentMemoryPropertiesResolver {
 
-    fun resolve(
-        memory: AgentMemoryProperties,
-        legacyCompaction: AgentCompactionProperties,
-        legacyEviction: AgentToolResultEvictionProperties,
-        legacyModel: AgentModelProperties,
-    ): EffectiveAgentMemoryProperties {
-        val usesNewPrefix = memory != AgentMemoryProperties()
-        return EffectiveAgentMemoryProperties(
-            contextWindowSize = if (usesNewPrefix && memory.contextWindowSize != AgentMemoryProperties.DEFAULT_CONTEXT_WINDOW_SIZE) {
-                memory.contextWindowSize
-            } else if (legacyModel.contextWindowSize != AgentModelProperties.DEFAULT_CONTEXT_WINDOW_SIZE) {
-                legacyModel.contextWindowSize
-            } else {
-                memory.contextWindowSize
-            },
-            compactionEnabled = if (usesNewPrefix) memory.compactionEnabled else legacyCompaction.enabled,
-            triggerMessages = if (usesNewPrefix) memory.triggerMessages else legacyCompaction.triggerMessages,
-            keepMessages = if (usesNewPrefix) memory.keepMessages else legacyCompaction.keepMessages,
-            reserved = if (usesNewPrefix) memory.reserved else legacyCompaction.reserved,
-            flushBeforeCompact = if (usesNewPrefix) memory.flushBeforeCompact else legacyCompaction.flushBeforeCompact,
-            offloadBeforeCompact = if (usesNewPrefix) memory.offloadBeforeCompact else legacyCompaction.offloadBeforeCompact,
-            toolResultEvictionEnabled = if (usesNewPrefix) {
-                memory.toolResultEvictionEnabled
-            } else {
-                legacyEviction.enabled
-            },
-        )
-    }
-
-    fun detectLegacyUsage(memory: AgentMemoryProperties): List<AgentLegacyConfigurationUsage> {
-        if (memory != AgentMemoryProperties()) {
-            return emptyList()
-        }
-        return listOf(
-            AgentLegacyConfigurationUsage("agent.compaction.*", "agent.memory.*"),
-            AgentLegacyConfigurationUsage("agent.tool-result-eviction.*", "agent.memory.tool-result-eviction-enabled"),
-            AgentLegacyConfigurationUsage("agent.model.context-window-size", "agent.memory.context-window-size"),
-        )
-    }
+    fun resolve(memory: AgentMemoryProperties): EffectiveAgentMemoryProperties = EffectiveAgentMemoryProperties(
+        contextWindowSize = memory.contextWindowSize,
+        compactionEnabled = memory.compactionEnabled,
+        triggerMessages = memory.triggerMessages,
+        keepMessages = memory.keepMessages,
+        reserved = memory.reserved,
+        flushBeforeCompact = memory.flushBeforeCompact,
+        offloadBeforeCompact = memory.offloadBeforeCompact,
+        toolResultEvictionEnabled = memory.toolResultEvictionEnabled,
+    )
 }

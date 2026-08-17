@@ -11,6 +11,7 @@ package com.tencent.bkrepo.agent.agent
 import com.tencent.bkrepo.agent.config.properties.EffectiveAgentRuntimeProperties
 import com.tencent.bkrepo.agent.config.properties.EffectiveAgentTopology
 import com.tencent.bkrepo.agent.tool.domain.RegisteredDomainTools
+import com.tencent.bkrepo.agent.tool.frontend.RegisteredFrontendTools
 import io.agentscope.harness.agent.subagent.SubagentDeclaration
 import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
@@ -22,11 +23,16 @@ class AgentCatalog(
     private val runtimeProperties: EffectiveAgentRuntimeProperties,
     private val agentFactory: AgentFactory,
     domainToolRegistrar: RegisteredDomainTools,
+    frontendToolRegistrar: RegisteredFrontendTools,
 ) {
     private val definitionsById: Map<String, DomainAgentDefinition> = definitions.associateBy { it.agentId }
 
     init {
-        validateDefinitions(definitions, domainToolRegistrar.registeredToolNames)
+        validateDefinitions(
+            definitions = definitions,
+            registeredDomainToolNames = domainToolRegistrar.registeredToolNames,
+            registeredFrontendToolNames = frontendToolRegistrar.registeredToolNames,
+        )
     }
 
     @PostConstruct
@@ -48,7 +54,9 @@ class AgentCatalog(
         if (!runtimeProperties.topology.coordinator.enabled) {
             return emptyList()
         }
-        return definitionsById.values.filter { bindingFor(it).enabled }
+        return definitionsById.values.filter { definition ->
+            bindingFor(definition).enabled && runtimeEligible(definition)
+        }
     }
 
     fun resolveSubagentDeclarations(): List<SubagentDeclaration> =
@@ -58,14 +66,23 @@ class AgentCatalog(
 
     fun bindingFor(definition: DomainAgentDefinition): EffectiveAgentTopology.AgentBinding =
         when (definition.agentId) {
+            AgentIds.CLIENT -> runtimeProperties.topology.agents.client
             AgentIds.DISCOVERY -> runtimeProperties.topology.agents.discovery
             AgentIds.TRANSFER_DIAGNOSTICS -> runtimeProperties.topology.agents.transferDiagnostics
             else -> error("Unknown agent id: ${definition.agentId}")
         }
 
+    private fun runtimeEligible(definition: DomainAgentDefinition): Boolean {
+        if (definition.agentId == AgentIds.CLIENT) {
+            return runtimeProperties.frontendToolsEnabled
+        }
+        return true
+    }
+
     private fun validateDefinitions(
         definitions: List<DomainAgentDefinition>,
         registeredDomainToolNames: Set<String>,
+        registeredFrontendToolNames: Set<String>,
     ) {
         require(definitions.isNotEmpty()) { "At least one DomainAgentDefinition bean is required" }
 
@@ -82,7 +99,8 @@ class AgentCatalog(
                 "Agent '${definition.agentId}' must declare a non-empty tool allowlist"
             }
             definition.allowedToolNames.forEach { toolName ->
-                require(toolName in registeredDomainToolNames) {
+                val known = toolName in registeredDomainToolNames || toolName in registeredFrontendToolNames
+                require(known) {
                     "Agent '${definition.agentId}' references unknown tool '$toolName'"
                 }
             }
