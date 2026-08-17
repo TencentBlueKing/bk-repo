@@ -108,7 +108,7 @@ class ReplicaNodeDispatchServiceImpl(
         return findReplicaClientByRule(mapOf(DispatchRuleIndex.RULE_WITH_HOST.value to baseUrl.host), target)
     }
 
-    private fun buildValuesToMatch(taskDetail: ReplicaTaskDetail): Map<String, Any> {
+    internal fun buildValuesToMatch(taskDetail: ReplicaTaskDetail): Map<String, Any> {
         val valuesToMatch = mutableMapOf<String, Any>()
         DispatchRuleIndex.values().forEach {
             when (it) {
@@ -125,7 +125,9 @@ class ReplicaNodeDispatchServiceImpl(
                 DispatchRuleIndex.RULE_WITH_SIZE -> {
                     valuesToMatch[DispatchRuleIndex.RULE_WITH_SIZE.value] = taskDetail.task.totalBytes ?: 0
                 }
-                else -> throw UnsupportedOperationException()
+                DispatchRuleIndex.RULE_WITH_TASK_NAME -> {
+                    valuesToMatch[DispatchRuleIndex.RULE_WITH_TASK_NAME.value] = taskDetail.task.name
+                }
             }
         }
         return valuesToMatch
