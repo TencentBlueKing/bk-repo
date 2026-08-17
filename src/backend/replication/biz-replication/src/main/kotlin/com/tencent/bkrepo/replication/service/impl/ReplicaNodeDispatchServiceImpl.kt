@@ -102,10 +102,15 @@ class ReplicaNodeDispatchServiceImpl(
         val valuesToMatch = buildValuesToMatch(taskDetail)
         return findReplicaClientByRule(valuesToMatch, target)
     }
-    override fun <T> findReplicaClientByHost(host: String, target: Class<T>): T? {
+    override fun <T> findReplicaClientByHost(host: String, target: Class<T>, taskName: String?): T? {
         if (!checkProperties()) return null
-        val baseUrl = URL(host)
-        return findReplicaClientByRule(mapOf(DispatchRuleIndex.RULE_WITH_HOST.value to baseUrl.host), target)
+        val valuesToMatch = mutableMapOf<String, Any>(
+            DispatchRuleIndex.RULE_WITH_HOST.value to URL(host).host
+        )
+        if (!taskName.isNullOrEmpty()) {
+            valuesToMatch[DispatchRuleIndex.RULE_WITH_TASK_NAME.value] = taskName
+        }
+        return findReplicaClientByRule(valuesToMatch, target)
     }
 
     internal fun buildValuesToMatch(taskDetail: ReplicaTaskDetail): Map<String, Any> {
@@ -147,9 +152,11 @@ class ReplicaNodeDispatchServiceImpl(
 
     private fun <T> findReplicaClientByRule(valuesToMatch: Map<String, Any>, target: Class<T>): T? {
         if (valuesToMatch.isEmpty()) return null
-        val configNodes = listEnableReplicaNodeDispatchConfig().filter {
-            RuleMatcher.match(it.rule, valuesToMatch)
-        }
+        val configNodes = mostSpecific(
+            listEnableReplicaNodeDispatchConfig().filter {
+                RuleMatcher.match(it.rule, valuesToMatch)
+            }
+        )
         val filterNode = filterNodes(configNodes) ?: return null
         logger.info("task will be executed with node ${filterNode.nodeUrl}")
         val clusterInfo = ClusterInfo(
@@ -242,6 +249,22 @@ class ReplicaNodeDispatchServiceImpl(
                 rule = request.rule.toJsonString(),
                 enable = request.enable
             )
+        }
+
+        internal fun ruleSpecificity(rule: Rule): Int {
+            return when (rule) {
+                is Rule.QueryRule -> 1
+                is Rule.FixedRule -> ruleSpecificity(rule.wrapperRule)
+                is Rule.NestedRule -> rule.rules.sumOf { ruleSpecificity(it) }
+            }
+        }
+
+        internal fun mostSpecific(
+            configs: List<ReplicaNodeDispatchConfigInfo>
+        ): List<ReplicaNodeDispatchConfigInfo> {
+            if (configs.size <= 1) return configs
+            val max = configs.maxOf { ruleSpecificity(it.rule) }
+            return configs.filter { ruleSpecificity(it.rule) == max }
         }
 
         fun convertTo(config: TReplicaNodeDispatchConfig): ReplicaNodeDispatchConfigInfo {

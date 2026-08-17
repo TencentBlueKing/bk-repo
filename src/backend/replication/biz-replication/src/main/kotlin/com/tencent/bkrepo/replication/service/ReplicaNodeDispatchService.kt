@@ -65,8 +65,9 @@ interface ReplicaNodeDispatchService {
 
 
     /**
-     * 根据host读取对应配置的执行client信息
+     * 根据host读取对应配置的执行client信息。
+     * [taskName] 非空时参与规则匹配，便于 create 与 execute 命中同一条更具体的规则。
      */
-    fun <T> findReplicaClientByHost(host: String, target: Class<T>): T?
+    fun <T> findReplicaClientByHost(host: String, target: Class<T>, taskName: String? = null): T?
 }
 

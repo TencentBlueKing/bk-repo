@@ -8,6 +8,7 @@ import com.tencent.bkrepo.replication.dao.ReplicaNodeDispatchConfigDao
 import com.tencent.bkrepo.replication.enums.DispatchRuleIndex
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
+import com.tencent.bkrepo.replication.pojo.dispatch.ReplicaNodeDispatchConfigInfo
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
@@ -113,6 +114,75 @@ class ReplicaNodeDispatchServiceImplTest {
             Rule.NestedRule.RelationType.OR
         )
         assertFalse(RuleMatcher.match(miss, values))
+    }
+
+    @Test
+    fun `mostSpecific prefers host AND taskName over host IN`() {
+        val hostOnly = config(
+            "old",
+            "http://xxxx:25903",
+            Rule.QueryRule(
+                DispatchRuleIndex.RULE_WITH_HOST.value,
+                listOf("dev.a.b.com", "test.a.b.com", "prod.a.b.com"),
+                OperationType.IN
+            )
+        )
+        val hostAndName = config(
+            "new",
+            "http://yyyy:25903",
+            Rule.NestedRule(
+                mutableListOf(
+                    Rule.QueryRule(
+                        DispatchRuleIndex.RULE_WITH_HOST.value,
+                        listOf("dev.a.b.com"),
+                        OperationType.IN
+                    ),
+                    Rule.QueryRule(
+                        DispatchRuleIndex.RULE_WITH_TASK_NAME.value, "p-aaaa", OperationType.CONTAINS
+                    )
+                ),
+                Rule.NestedRule.RelationType.AND
+            )
+        )
+        val picked = ReplicaNodeDispatchServiceImpl.mostSpecific(listOf(hostOnly, hostAndName))
+        assertEquals(1, picked.size)
+        assertEquals("new", picked[0].id)
+    }
+
+    @Test
+    fun `host IN still matches when taskName missing p-aaaa`() {
+        val hostRule = Rule.QueryRule(
+            DispatchRuleIndex.RULE_WITH_HOST.value,
+            listOf("dev.a.b.com", "test.a.b.com"),
+            OperationType.IN
+        )
+        val nameRule = Rule.NestedRule(
+            mutableListOf(
+                Rule.QueryRule(
+                    DispatchRuleIndex.RULE_WITH_HOST.value, listOf("dev.a.b.com"), OperationType.IN
+                ),
+                Rule.QueryRule(
+                    DispatchRuleIndex.RULE_WITH_TASK_NAME.value, "p-aaaa", OperationType.CONTAINS
+                )
+            ),
+            Rule.NestedRule.RelationType.AND
+        )
+        val withKeyword = mapOf(
+            DispatchRuleIndex.RULE_WITH_HOST.value to "dev.a.b.com",
+            DispatchRuleIndex.RULE_WITH_TASK_NAME.value to "p1/generic/p-aaaa-job"
+        )
+        val withoutKeyword = mapOf(
+            DispatchRuleIndex.RULE_WITH_HOST.value to "dev.a.b.com",
+            DispatchRuleIndex.RULE_WITH_TASK_NAME.value to "p1/generic/other-job"
+        )
+        assertTrue(RuleMatcher.match(hostRule, withKeyword))
+        assertTrue(RuleMatcher.match(nameRule, withKeyword))
+        assertTrue(RuleMatcher.match(hostRule, withoutKeyword))
+        assertFalse(RuleMatcher.match(nameRule, withoutKeyword))
+    }
+
+    private fun config(id: String, nodeUrl: String, rule: Rule): ReplicaNodeDispatchConfigInfo {
+        return ReplicaNodeDispatchConfigInfo(id = id, nodeUrl = nodeUrl, rule = rule, enable = true)
     }
 
     private fun taskDetail(name: String = TASK_NAME): ReplicaTaskDetail {
