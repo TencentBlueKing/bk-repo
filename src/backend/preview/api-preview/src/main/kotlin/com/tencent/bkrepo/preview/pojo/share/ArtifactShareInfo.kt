@@ -33,7 +33,7 @@ data class ArtifactShareInfo(
     val conversationId: String? = null,
     @get:Schema(title = "作品名")
     val artifactName: String? = null,
-    @get:Schema(title = "作品类型（IMATE_ARTIFACT_TYPE，如 html/image/pdf）")
+    @get:Schema(title = "作品类型（IMATE_ARTIFACT_TYPE，如 html/image/pdf/video/audio）")
     val type: String? = null,
     @get:Schema(title = "短链路径，如 /a/{shareId}")
     val sharePath: String,

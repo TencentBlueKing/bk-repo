@@ -153,3 +153,8 @@ export function customizePreviewRemoteOfficeFile (extraParam) {
         xsrfHeaderName: 'X-CSRFToken' // 注入csrfToken
     })
 }
+
+export function buildLocalOnlinePreviewUrl (projectId, repoName, fullPath) {
+    const url = projectId + '/' + repoName + fullPath
+    return appendPreviewTokenToUrl(BASE_URL + 'web/preview/api/file/onlinePreview/' + url)
+}

@@ -52,6 +52,7 @@ import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.preview.constant.PREVIEW_ARTIFACT_TO_FILE
+import com.tencent.bkrepo.preview.constant.PREVIEW_RESPONSE_CONTENT_TYPE
 import com.tencent.bkrepo.preview.constant.PREVIEW_TMP_FILE_SAVE_PATH
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -114,6 +115,8 @@ class PreviewArtifactResourceWriter(
         response.setHeader(HttpHeaders.CONTENT_RANGE, "${StringPool.BYTES} $range")
         if (resource.useDisposition) {
             response.setHeader(HttpHeaders.CONTENT_DISPOSITION, HttpHeaderUtils.encodeDisposition(name))
+        } else if (request.getAttribute(PREVIEW_RESPONSE_CONTENT_TYPE) != null) {
+            response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "inline")
         }
 
         resource.node?.let {

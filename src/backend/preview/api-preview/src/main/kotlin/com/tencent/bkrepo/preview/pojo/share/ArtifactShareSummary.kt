@@ -17,7 +17,7 @@ data class ArtifactShareSummary(
     val resourceId: Long,
     @get:Schema(title = "作品名")
     val artifactName: String? = null,
-    @get:Schema(title = "作品类型（IMATE_ARTIFACT_TYPE，如 html/image/pdf）")
+    @get:Schema(title = "作品类型（IMATE_ARTIFACT_TYPE，如 html/image/pdf/video/audio）")
     val type: String? = null,
     @get:Schema(title = "完整路径，供拼接 Drive 临时下载 URL")
     val fullPath: String,

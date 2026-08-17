@@ -910,6 +910,11 @@
     "selectAllTip": "{0} pieces of total data have been selected，",
     "clearSelectTip":"Clear selection",
     "previewErrorTip": "File Preview Fail",
+    "previewMediaErrorTip": "The current browser cannot play this file",
+    "previewMediaPlay": "Play",
+    "previewMediaPause": "Pause",
+    "previewMediaProgress": "Playback progress",
+    "previewMediaScrub": "Seek",
     "helps": {
         "documentation": "Documentation",
         "releaseNote": "Release Notes",
