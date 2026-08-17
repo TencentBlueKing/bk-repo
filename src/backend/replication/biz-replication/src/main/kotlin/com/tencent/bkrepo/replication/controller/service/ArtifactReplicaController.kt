@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
@@ -43,6 +44,7 @@ import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.util.BlockNodeUploadId
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.Principal
@@ -153,14 +155,45 @@ class ArtifactReplicaController(
 
         val resultNode = when (checkResult.action) {
             FederatedNodeAction.CREATE -> nodeService.createNode(request)
-            FederatedNodeAction.SKIP -> checkResult.existNode!!
+            FederatedNodeAction.SKIP -> {
+                discardReplicaSession(request)
+                checkResult.existNode!!
+            }
             FederatedNodeAction.OVERWRITE -> nodeService.createNode(request.copy(overwrite = true))
             FederatedNodeAction.MERGE_METADATA -> {
                 mergeNodeMetadata(request)
+                discardReplicaSession(request)
                 checkResult.existNode!!
             }
         }
+        // 与本地 completeSeparateBlockUpload 一致：先清已完成块，再 finish 当前会话。
+        // 目标 node.createdDate 是源端拷贝，listener 按该时间删不掉上次 replica finish 的块。
+        if (shouldCompleteReplicaBlocks(checkResult.action, request)) {
+            blockNodeService.deleteBlocks(request.projectId, request.repoName, request.fullPath)
+            blockNodeService.completeLatestUnexpiredSession(
+                request.projectId, request.repoName, request.fullPath
+            )
+        }
         return ResponseBuilder.success(resultNode)
+    }
+
+    private fun shouldCompleteReplicaBlocks(action: FederatedNodeAction, request: NodeCreateRequest): Boolean {
+        if (request.folder || request.sha256 != FAKE_SHA256) return false
+        return action == FederatedNodeAction.CREATE || action == FederatedNodeAction.OVERWRITE
+    }
+
+    /**
+     * 联邦 SKIP/MERGE 不覆盖 node。此时块已按新会话写入，若再 finish 会与上一轮已完成块叠 startPos。
+     * 只软删本次会话（uploadId 非空），已完成块不动。
+     */
+    private fun discardReplicaSession(request: NodeCreateRequest) {
+        if (request.folder || request.sha256 != FAKE_SHA256) return
+        val session = request.nodeMetadata
+            ?.firstOrNull { it.key == BlockNodeUploadId.KEY }
+            ?.value?.toString()
+            ?.takeIf { it.isNotEmpty() }
+            ?: return
+        blockNodeService.deleteBlocks(request.projectId, request.repoName, request.fullPath, session)
     }
 
     /** 合并节点元数据 */
@@ -406,12 +439,16 @@ class ArtifactReplicaController(
     @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaBlockNodeCreateFinishRequest(request: BlockNodeCreateFinishRequest): Response<Void> {
         with(request) {
-            blockNodeService.updateBlockUploadId(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                uploadId = uploadId
-            )
+            val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
+            val nodeUploadId = node?.metadata?.get(BlockNodeUploadId.KEY)?.toString()
+            BlockNodeUploadId.finishSession(nodeUploadId, uploadId)?.let { session ->
+                blockNodeService.updateBlockUploadId(
+                    projectId = projectId,
+                    repoName = repoName,
+                    fullPath = fullPath,
+                    uploadId = session
+                )
+            }
             return ResponseBuilder.success()
         }
     }
@@ -519,8 +556,8 @@ class ArtifactReplicaController(
      *
      * 处理场景：
      * 1. 目标节点不存在 -> CREATE
-     * 2. sha256 相同 -> MERGE_METADATA（只合并元数据）
-     * 3. sha256 不同，比较 lastModifiedDate：
+     * 2. sha256 相同且非分块节点 -> MERGE_METADATA
+     * 3. sha256 不同，或均为分块节点(FAKE_SHA256)，比较 lastModifiedDate：
      *    - 源节点更新 -> OVERWRITE
      *    - 目标节点更新或相等 -> SKIP
      */
@@ -536,8 +573,8 @@ class ArtifactReplicaController(
                 return FederatedNodeCheckResult.skip(existNode, "Folder node, skip overwrite")
             }
 
-            // sha256 相同，只合并元数据
-            if (sha256 == existNode.sha256) {
+            // 普通文件 sha256 相同只合并元数据；分块节点 sha256 恒为 FAKE，必须按时间覆盖
+            if (sha256 == existNode.sha256 && sha256 != FAKE_SHA256) {
                 return FederatedNodeCheckResult.mergeMetadata(existNode, "Same sha256 [$sha256]")
             }
 

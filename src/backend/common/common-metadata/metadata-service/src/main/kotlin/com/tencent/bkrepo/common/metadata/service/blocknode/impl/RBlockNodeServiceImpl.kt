@@ -187,7 +187,8 @@ class RBlockNodeServiceImpl(
                 fullPath = nodeFullPath,
                 startPos = startPos,
                 sha256 = sha256,
-                deleted = deleted
+                deleted = deleted,
+                uploadId = uploadId,
             )
             return rBlockNodeDao.exists(Query(criteria))
         }

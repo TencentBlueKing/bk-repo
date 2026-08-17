@@ -29,12 +29,12 @@ package com.tencent.bkrepo.replication.replica.replicator.standalone
 
 import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.util.BlockNodeUploadId
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
@@ -275,14 +275,17 @@ class FederationReplicator(
     private fun replicaBlockNode(context: ReplicaContext, node: NodeInfo): Boolean {
         with(context) {
             val blockNodeList = validateAndGetBlockNodeList(context, node) ?: return false
-            val uploadId = "${StringPool.uniqueId()}/${node.id}"
+            val uploadId = BlockNodeUploadId.replicaSession(node.id)
 
-            // 传输所有blocknode元数据
+            // 传输所有blocknode元数据（此时仍带 uploadId，避免覆盖 node 时被 NODE_DELETED 误删）
             blockNodeList.forEach { blockNode ->
                 buildBlockNodeCreateRequest(this, blockNode, uploadId)?.let { blockNodeCreateRequest ->
                     context.artifactReplicaClient!!.replicaBlockNodeCreateRequest(blockNodeCreateRequest)
                 }
             }
+
+            // 同步节点（覆盖会删旧 node）。finish 必须在这之后。
+            if (!syncNodeToFederatedCluster(this, node, uploadId)) return false
             artifactReplicaClient!!.replicaBlockNodeCreateFinishRequest(
                 BlockNodeCreateFinishRequest(
                     projectId = remoteProjectId!!,
@@ -291,9 +294,6 @@ class FederationReplicator(
                     fullPath = node.fullPath
                 )
             )
-
-            // 同步节点
-            if (!syncNodeToFederatedCluster(this, node)) return false
 
             // 2. 记录文件传输开始标识
             recordFileTransferStart(this, node)
@@ -760,14 +760,18 @@ class FederationReplicator(
         }
     }
 
-    private fun syncNodeToFederatedCluster(context: ReplicaContext, node: NodeInfo): Boolean {
+    private fun syncNodeToFederatedCluster(
+        context: ReplicaContext,
+        node: NodeInfo,
+        blockUploadId: String? = null,
+    ): Boolean {
         with(context) {
             val request = if (node.deleted != null) {
                 buildDeletedNodeReplicaRequest(this, node)?.also {
                     logger.info("The deleted node [${node.fullPath}] will be pushed to the federated cluster server!")
                 }
             } else {
-                buildNodeCreateRequest(this, node)?.also {
+                buildNodeCreateRequest(this, node, blockUploadId)?.also {
                     logger.info("The node [${node.fullPath}] will be pushed to the federated cluster server!")
                 }
             } ?: return false
@@ -781,7 +785,11 @@ class FederationReplicator(
         }
     }
 
-    private fun buildNodeCreateRequest(context: ReplicaContext, node: NodeInfo): NodeCreateRequest? {
+    private fun buildNodeCreateRequest(
+        context: ReplicaContext,
+        node: NodeInfo,
+        blockUploadId: String? = null,
+    ): NodeCreateRequest? {
         with(context) {
             if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return null
             val metadata = if (task.setting.includeMetadata) {
@@ -789,8 +797,13 @@ class FederationReplicator(
             } else {
                 emptyList()
             }
+            val withUploadId = if (blockUploadId.isNullOrEmpty()) {
+                metadata
+            } else {
+                BlockNodeUploadId.replaceMetadata(metadata, blockUploadId)
+            }
             val updatedMetadata = mergeMetadata(
-                metadata, mutableListOf(MetadataModel(FEDERATED, false, true))
+                withUploadId, mutableListOf(MetadataModel(FEDERATED, false, true))
             )
 
             return NodeCreateRequest(
