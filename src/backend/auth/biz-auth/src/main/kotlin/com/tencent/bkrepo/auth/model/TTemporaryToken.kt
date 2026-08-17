@@ -55,6 +55,10 @@ data class TTemporaryToken(
     var fullPath: String,
     var token: String,
     var authorizedUserList: Set<String>,
+    /**
+     * 授权组织 ID 集合，与用户组织 scopeValue 做交集匹配。
+     */
+    var authorizedOrgList: Set<String> = emptySet(),
     var authorizedIpList: Set<String>,
     var expireDate: LocalDateTime? = null,
     var permits: Int? = null,

@@ -33,6 +33,12 @@ import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 interface DownloadRedirectService {
 
     /**
+     * 配置层面是否可能重定向（禁止访问 node / DB）。
+     * URI≠存储路径的仓必须先调此方法：为 false 时禁止做路径解析，直接降级。
+     */
+    fun mayRedirect(context: ArtifactDownloadContext): Boolean = false
+
+    /**
      * 支持重定向的请求方法，默认只支持GET请求
      */
     fun supportedMethods(): Set<HttpMethod> {

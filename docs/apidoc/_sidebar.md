@@ -28,6 +28,8 @@
   - [文件操作](/apidoc/drive/file.md)
   - [节点操作](/apidoc/drive/node.md)
   - [快照操作](/apidoc/drive/snapshot.md)
+- **预览/作品分享**
+  - [作品分享接口](/apidoc/preview/artifact-share.md)
 - **认证服务**
   - [用户相关](/apidoc/auth/user.md)
   - [用户token相关](/apidoc/auth/token.md)

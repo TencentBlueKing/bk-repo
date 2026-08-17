@@ -218,6 +218,20 @@ class ComposerLocalRepository(private val stageService: StageService) : LocalRep
         }
     }
 
+    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        if (!redirectManager.mayRedirect(context)) {
+            return false
+        }
+        with(context) {
+            artifactInfo.setArtifactMappingUri(artifactInfo.getArtifactFullPath().removePrefix("/$DIRECT_DISTS"))
+            return redirectAfterPrepare(context)
+        }
+    }
+
+    override fun beforeRedirect(context: ArtifactDownloadContext, node: NodeDetail) {
+        packageVersion(node)?.let { downloadIntercept(context, it) }
+    }
+
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
             artifactInfo.setArtifactMappingUri(artifactInfo.getArtifactFullPath().removePrefix("/$DIRECT_DISTS"))

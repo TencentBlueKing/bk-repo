@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
@@ -91,6 +92,31 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
 
     @Autowired
     lateinit var metadataService: MetadataService
+
+    /**
+     * 与 Generic 一致：直接交由 [com.tencent.bkrepo.common.artifact.repository.redirect.DownloadRedirectManager.redirect]。
+     * 未缓存（node 不存在）时 Cos 侧不重定向；URI≠存储路径的子类先 mayRedirect 再 mapping。
+     */
+    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        return redirectManager.redirect(context)
+    }
+
+    /**
+     * remapper 在完成路径 mapping 后调用：shouldRedirect → beforeRedirect → redirect。
+     */
+    protected fun redirectAfterPrepare(context: ArtifactDownloadContext): Boolean {
+        if (!redirectManager.shouldRedirect(context)) {
+            return false
+        }
+        val node = ArtifactContextHolder.getNodeDetail(context.artifactInfo) ?: return false
+        beforeRedirect(context, node)
+        return redirectManager.redirect(context)
+    }
+
+    /**
+     * 确认会重定向后、真正 302 前（协议头等）。
+     */
+    protected open fun beforeRedirect(context: ArtifactDownloadContext, node: NodeDetail) = Unit
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         return getCacheArtifactResource(context) ?: run {

@@ -78,6 +78,7 @@ import com.tencent.bkrepo.maven.pojo.MavenRepoConf
 import com.tencent.bkrepo.maven.pojo.response.MavenArtifactResponse
 import com.tencent.bkrepo.maven.service.MavenMetadataService
 import com.tencent.bkrepo.maven.service.MavenService
+import com.tencent.bkrepo.maven.util.MavenActiveContentHeaders.applyIfActiveContent
 import com.tencent.bkrepo.maven.util.MavenConfiguration.toMavenRepoConf
 import com.tencent.bkrepo.maven.util.MavenConfiguration.versionBehaviorConflict
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
@@ -456,6 +457,33 @@ class MavenLocalRepository(
         }
     }
 
+
+    override fun onDownloadBefore(context: ArtifactDownloadContext) {
+        super.onDownloadBefore(context)
+        applyIfActiveContent(context.artifactInfo.getResponseName())
+    }
+
+    /**
+     * 未配置 redirect 时禁止 getNodeInfoForDownload；可能 302 时再解析路径并拦截。
+     */
+    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        if (!redirectManager.mayRedirect(context)) {
+            return false
+        }
+        return try {
+            getNodeInfoForDownload(context) ?: return false
+            redirectAfterPrepare(context)
+        } catch (ignore: MavenArtifactNotFoundException) {
+            false
+        }
+    }
+
+    override fun beforeRedirect(context: ArtifactDownloadContext, node: NodeDetail) {
+        node.metadata?.get(HashType.SHA1.ext)?.let {
+            context.response.addHeader(X_CHECKSUM_SHA1, it.toString())
+        }
+        packageVersion(node)?.let { downloadIntercept(context, it) }
+    }
 
     /**
      * checksum 文件不存在时，系统生成

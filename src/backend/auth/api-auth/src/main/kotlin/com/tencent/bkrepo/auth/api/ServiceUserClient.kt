@@ -35,6 +35,7 @@ import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_USER_PREFIX
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.User
+import com.tencent.bkrepo.auth.pojo.user.UserOrgMembership
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -119,4 +120,10 @@ interface ServiceUserClient {
     @Operation(summary = "获取admin用户")
     @GetMapping("/admin/users")
     fun listAdminUsers(): Response<List<String>>
+
+    @Operation(summary = "获取用户所属组织范围")
+    @GetMapping("/userdept/{uid}")
+    fun userDeptById(
+        @PathVariable uid: String
+    ): Response<UserOrgMembership>
 }

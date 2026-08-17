@@ -44,6 +44,11 @@ data class TemporaryTokenCreateRequest(
     val fullPathSet: Set<String>,
     @get:Schema(title = "授权用户")
     val authorizedUserSet: Set<String> = emptySet(),
+    /**
+     * 授权组织 ID 集合，与用户组织 scopeValue 做交集匹配。
+     */
+    @get:Schema(title = "授权组织 ID")
+    val authorizedOrgList: Set<String> = emptySet(),
     @get:Schema(title = "授权IP")
     val authorizedIpSet: Set<String> = emptySet(),
     @get:Schema(title = "有效时间，单位秒")
