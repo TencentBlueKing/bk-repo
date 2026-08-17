@@ -61,7 +61,22 @@ enum class PreviewMessageCode(private val key: String) : MessageCode {
     /**
      * 定向分享模式下访客未登录，需先跳转网关登录页。
      */
-    PREVIEW_LOGIN_REQUIRED("preview.login.required")
+    PREVIEW_LOGIN_REQUIRED("preview.login.required"),
+
+    /**
+     * 作品分享不存在。
+     */
+    PREVIEW_ARTIFACT_SHARE_NOT_FOUND("preview.artifact-share.not-found"),
+
+    /**
+     * 非分享创建者，禁止创建/修改/撤销分享。
+     */
+    PREVIEW_ARTIFACT_SHARE_FORBIDDEN("preview.artifact-share.forbidden"),
+
+    /**
+     * 当前用户不在作品分享可见范围内。
+     */
+    PREVIEW_ARTIFACT_SHARE_ACCESS_DENIED("preview.artifact-share.access-denied"),
     ;
 
     override fun getBusinessCode() = ordinal + 1

@@ -8,6 +8,7 @@ data class DriveTemporaryUrlCreateRequest(
     val repoName: String,
     val fullPathSet: Set<String>,
     val authorizedUserSet: Set<String> = emptySet(),
+    val authorizedOrgList: Set<String> = emptySet(),
     val authorizedIpSet: Set<String> = emptySet(),
     val expireSeconds: Long = Duration.ofDays(1).seconds,
     val permits: Int? = null,
