@@ -453,7 +453,7 @@ class ClusterReplicator(
                 projectId = remoteProjectId,
                 repoName = remoteRepoName,
                 fullPath = blockNode.nodeFullPath,
-                expireDate = blockNode.expireDate,
+                expireDate = BlockNodeUploadId.replicaBlockExpireDate(),
                 size = blockNode.size,
                 sha256 = blockNode.sha256,
                 crc64ecma = blockNode.crc64ecma,

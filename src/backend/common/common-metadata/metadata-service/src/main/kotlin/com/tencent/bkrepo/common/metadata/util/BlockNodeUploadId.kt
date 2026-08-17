@@ -2,10 +2,19 @@ package com.tencent.bkrepo.common.metadata.util
 
 import com.tencent.bkrepo.fs.server.constant.UPLOADID_KEY
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import java.time.LocalDateTime
 
 object BlockNodeUploadId {
 
     const val KEY = UPLOADID_KEY
+
+    /**
+     * 集群分发未 finish 块的过期天数。成功 finish 会清空 expireDate。
+     * ponytail: 7 天上限，分发超过此时长仍未 finish 会被 Job 清掉。
+     */
+    const val REPLICA_BLOCK_EXPIRE_DAYS = 7L
+
+    fun replicaBlockExpireDate(): LocalDateTime = LocalDateTime.now().plusDays(REPLICA_BLOCK_EXPIRE_DAYS)
 
     fun replaceMetadata(metadata: List<MetadataModel>?, uploadId: String): List<MetadataModel> {
         val others = metadata.orEmpty().filterNot { it.key == KEY }
