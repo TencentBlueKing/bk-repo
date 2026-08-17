@@ -453,7 +453,7 @@ class RemoteNodeServiceImpl(
             addProtocol(request.registry!!).toString()
         }
         val taskName = NAME.format(projectId, repoName, request.name)
-        buildExecuteClientWithHost(host, taskName)?.let {
+        buildExecuteClientWithHost(host, taskName, projectId, repoName)?.let {
             try{
                 it.createRunOnceTask(projectId, repoName, request)
                 return true
@@ -467,10 +467,12 @@ class RemoteNodeServiceImpl(
 
     private fun buildExecuteClientWithHost(
         host: String,
-        taskName: String
+        taskName: String,
+        projectId: String,
+        repoName: String
     ): ReplicaTaskOperationClient? {
         return replicaNodeDispatchService.findReplicaClientByHost(
-            host, ReplicaTaskOperationClient::class.java, taskName
+            host, ReplicaTaskOperationClient::class.java, taskName, projectId, repoName
         )
     }
 

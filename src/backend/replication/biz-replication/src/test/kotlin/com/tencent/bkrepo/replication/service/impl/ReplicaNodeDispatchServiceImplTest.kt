@@ -3,6 +3,7 @@ package com.tencent.bkrepo.replication.service.impl
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.matcher.RuleMatcher
 import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.dao.ReplicaNodeDispatchConfigDao
 import com.tencent.bkrepo.replication.enums.DispatchRuleIndex
@@ -11,6 +12,7 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.dispatch.ReplicaNodeDispatchConfigInfo
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
+import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
@@ -50,6 +52,7 @@ class ReplicaNodeDispatchServiceImplTest {
         assertEquals(PROJECT_ID, values[DispatchRuleIndex.RULE_WITH_PROJECT.value])
         assertEquals(TOTAL_BYTES, values[DispatchRuleIndex.RULE_WITH_SIZE.value])
         assertEquals(TASK_NAME, values[DispatchRuleIndex.RULE_WITH_TASK_NAME.value])
+        assertEquals(REPO_NAME, values[DispatchRuleIndex.RULE_WITH_REPO.value])
     }
 
     @Test
@@ -181,6 +184,51 @@ class ReplicaNodeDispatchServiceImplTest {
         assertFalse(RuleMatcher.match(nameRule, withoutKeyword))
     }
 
+    @Test
+    fun `project only matches all repos, repo rule is more specific`() {
+        val projectRule = Rule.NestedRule(
+            mutableListOf(
+                Rule.QueryRule(
+                    DispatchRuleIndex.RULE_WITH_HOST.value, listOf("dev.a.b.com"), OperationType.IN
+                ),
+                Rule.QueryRule(DispatchRuleIndex.RULE_WITH_PROJECT.value, PROJECT_ID, OperationType.EQ)
+            ),
+            Rule.NestedRule.RelationType.AND
+        )
+        val repoRule = Rule.NestedRule(
+            mutableListOf(
+                Rule.QueryRule(
+                    DispatchRuleIndex.RULE_WITH_HOST.value, listOf("dev.a.b.com"), OperationType.IN
+                ),
+                Rule.QueryRule(DispatchRuleIndex.RULE_WITH_PROJECT.value, PROJECT_ID, OperationType.EQ),
+                Rule.QueryRule(DispatchRuleIndex.RULE_WITH_REPO.value, REPO_NAME, OperationType.EQ)
+            ),
+            Rule.NestedRule.RelationType.AND
+        )
+        val sameRepo = mapOf(
+            DispatchRuleIndex.RULE_WITH_HOST.value to "dev.a.b.com",
+            DispatchRuleIndex.RULE_WITH_PROJECT.value to PROJECT_ID,
+            DispatchRuleIndex.RULE_WITH_REPO.value to REPO_NAME
+        )
+        val otherRepo = mapOf(
+            DispatchRuleIndex.RULE_WITH_HOST.value to "dev.a.b.com",
+            DispatchRuleIndex.RULE_WITH_PROJECT.value to PROJECT_ID,
+            DispatchRuleIndex.RULE_WITH_REPO.value to "other-repo"
+        )
+        assertTrue(RuleMatcher.match(projectRule, sameRepo))
+        assertTrue(RuleMatcher.match(repoRule, sameRepo))
+        assertTrue(RuleMatcher.match(projectRule, otherRepo))
+        assertFalse(RuleMatcher.match(repoRule, otherRepo))
+        val picked = ReplicaNodeDispatchServiceImpl.mostSpecific(
+            listOf(
+                config("project", "http://xxxx:25903", projectRule),
+                config("repo", "http://yyyy:25903", repoRule)
+            )
+        )
+        assertEquals(1, picked.size)
+        assertEquals("repo", picked[0].id)
+    }
+
     private fun config(id: String, nodeUrl: String, rule: Rule): ReplicaNodeDispatchConfigInfo {
         return ReplicaNodeDispatchConfigInfo(id = id, nodeUrl = nodeUrl, rule = rule, enable = true)
     }
@@ -203,7 +251,16 @@ class ReplicaNodeDispatchServiceImplTest {
                 lastModifiedDate = "2026-01-01T00:00:00",
                 totalBytes = TOTAL_BYTES
             ),
-            objects = emptyList()
+            objects = listOf(
+                ReplicaObjectInfo(
+                    localRepoName = REPO_NAME,
+                    remoteProjectId = null,
+                    remoteRepoName = null,
+                    repoType = RepositoryType.GENERIC,
+                    packageConstraints = null,
+                    pathConstraints = null
+                )
+            )
         )
     }
 
@@ -212,6 +269,7 @@ class ReplicaNodeDispatchServiceImplTest {
         private const val CLUSTER_URL = "https://remote.example.com"
         private const val CLUSTER_HOST = "remote.example.com"
         private const val PROJECT_ID = "p1"
+        private const val REPO_NAME = "generic"
         private const val TASK_NAME = "p1/generic/special-task-001"
         private const val TOTAL_BYTES = 1024L
     }

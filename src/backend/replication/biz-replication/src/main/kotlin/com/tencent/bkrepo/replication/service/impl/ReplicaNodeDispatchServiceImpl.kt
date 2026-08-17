@@ -102,14 +102,20 @@ class ReplicaNodeDispatchServiceImpl(
         val valuesToMatch = buildValuesToMatch(taskDetail)
         return findReplicaClientByRule(valuesToMatch, target)
     }
-    override fun <T> findReplicaClientByHost(host: String, target: Class<T>, taskName: String?): T? {
+    override fun <T> findReplicaClientByHost(
+        host: String,
+        target: Class<T>,
+        taskName: String?,
+        projectId: String?,
+        repoName: String?
+    ): T? {
         if (!checkProperties()) return null
         val valuesToMatch = mutableMapOf<String, Any>(
             DispatchRuleIndex.RULE_WITH_HOST.value to URL(host).host
         )
-        if (!taskName.isNullOrEmpty()) {
-            valuesToMatch[DispatchRuleIndex.RULE_WITH_TASK_NAME.value] = taskName
-        }
+        putIfNotEmpty(valuesToMatch, DispatchRuleIndex.RULE_WITH_TASK_NAME.value, taskName)
+        putIfNotEmpty(valuesToMatch, DispatchRuleIndex.RULE_WITH_PROJECT.value, projectId)
+        putIfNotEmpty(valuesToMatch, DispatchRuleIndex.RULE_WITH_REPO.value, repoName)
         return findReplicaClientByRule(valuesToMatch, target)
     }
 
@@ -126,6 +132,12 @@ class ReplicaNodeDispatchServiceImpl(
                 }
                 DispatchRuleIndex.RULE_WITH_PROJECT -> {
                     valuesToMatch[DispatchRuleIndex.RULE_WITH_PROJECT.value] = taskDetail.task.projectId
+                }
+                DispatchRuleIndex.RULE_WITH_REPO -> {
+                    val repo = taskDetail.objects.firstOrNull()?.localRepoName
+                    if (!repo.isNullOrEmpty()) {
+                        valuesToMatch[DispatchRuleIndex.RULE_WITH_REPO.value] = repo
+                    }
                 }
                 DispatchRuleIndex.RULE_WITH_SIZE -> {
                     valuesToMatch[DispatchRuleIndex.RULE_WITH_SIZE.value] = taskDetail.task.totalBytes ?: 0
@@ -232,6 +244,12 @@ class ReplicaNodeDispatchServiceImpl(
     private fun selfNode(nodeUrl: String): Boolean {
         val host = URL(nodeUrl).host
         return listOf(LOCAL_HOST, LOCAL_HOST_IP, serverIp).contains(host)
+    }
+
+    private fun putIfNotEmpty(values: MutableMap<String, Any>, key: String, value: String?) {
+        if (!value.isNullOrEmpty()) {
+            values[key] = value
+        }
     }
 
 
