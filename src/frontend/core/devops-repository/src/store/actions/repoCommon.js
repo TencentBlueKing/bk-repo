@@ -1,6 +1,14 @@
 import Vue from 'vue'
 
 const prefix = 'repository/api'
+const MATCH_MODE = {
+    PREFIX: 'PREFIX',
+    FUZZY: 'FUZZY'
+}
+
+const getMatchValue = (packageName, matchMode) => {
+    return matchMode === MATCH_MODE.PREFIX ? `${packageName}*` : `*${packageName}*`
+}
 
 export default {
     // 分页查询包列表
@@ -81,7 +89,7 @@ export default {
         )
     },
     // 包搜索-仓库数量
-    searchRepoList (_, { projectId, repoType, packageName }) {
+    searchRepoList (_, { projectId, repoType, packageName, matchMode = MATCH_MODE.PREFIX }) {
         const isGeneric = repoType === 'generic'
         return Vue.prototype.$ajax.get(
             `${prefix}/${isGeneric ? 'node' : 'package'}/search/overview`,
@@ -89,7 +97,7 @@ export default {
                 params: {
                     projectId,
                     repoType: repoType.toUpperCase(),
-                    [isGeneric ? 'name' : 'packageName']: `*${packageName}*`,
+                    [isGeneric ? 'name' : 'packageName']: getMatchValue(packageName, matchMode),
                     ...(MODE_CONFIG === 'ci' && isGeneric
                         ? {
                             exRepo: 'report,log'
@@ -100,7 +108,7 @@ export default {
         )
     },
     // 跨仓库搜索
-    searchPackageList (_, { projectId, repoType, repoName, repoNames = [], packageName, property = 'name', direction = 'ASC', current = 1, limit = 20, extRules = [] }) {
+    searchPackageList (_, { projectId, repoType, repoName, repoNames = [], packageName, matchMode = MATCH_MODE.PREFIX, property = 'name', direction = 'ASC', current = 1, limit = 20, extRules = [] }) {
         const isGeneric = repoType === 'generic'
         return Vue.prototype.$ajax.post(
             `${prefix}/${isGeneric ? 'node/queryWithoutCount' : 'package/search'}`,
@@ -147,7 +155,7 @@ export default {
                         ...(packageName
                             ? [{
                                 field: 'name',
-                                value: `*${packageName}*`,
+                                value: getMatchValue(packageName, matchMode),
                                 operation: 'MATCH_I'
                             }]
                             : []),
