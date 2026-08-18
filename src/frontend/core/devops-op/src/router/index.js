@@ -35,6 +35,9 @@ export const ROUTER_NAME_MIGRATE_PROJECT_GRAYSCALE_CONFIG = 'ProjectGrayscaleCon
 export const ROUTER_NAME_SERVER_LOG = 'ServerLog'
 export const ROUTER_NAME_SIGN_CONFIG = 'SignConfig'
 export const ROUTER_NAME_CLIENT_VERSION_CONFIG = 'ClientVersionConfig'
+export const ROUTER_NAME_CLUSTER_TOPOLOGY = 'ClusterTopology'
+export const ROUTER_NAME_REMOTE_NODES = 'RemoteNodes'
+export const ROUTER_NAME_CLUSTER_NODE_METADATA = 'ClusterNodeMetadata'
 
 Vue.use(Router)
 
@@ -374,6 +377,34 @@ export const asyncRoutes = [
         name: ROUTER_NAME_CLIENT_VERSION_CONFIG,
         meta: { title: '客户端版本配置', icon: 'service-config' },
         component: () => import('@/views/clientVersionConfig/index')
+      }
+    ]
+  },
+  // 集群拓扑
+  {
+    path: '/topology',
+    component: Layout,
+    alwaysShow: true,
+    redirect: '/topology/graph',
+    meta: { title: '集群拓扑', icon: 'service' },
+    children: [
+      {
+        path: 'graph',
+        name: ROUTER_NAME_CLUSTER_TOPOLOGY,
+        meta: { title: '拓扑图', icon: 'service' },
+        component: () => import('@/views/topology/Topology')
+      },
+      {
+        path: 'remote-nodes',
+        name: ROUTER_NAME_REMOTE_NODES,
+        meta: { title: 'REMOTE 节点', icon: 'file' },
+        component: () => import('@/views/topology/RemoteNodes')
+      },
+      {
+        path: 'metadata',
+        name: ROUTER_NAME_CLUSTER_NODE_METADATA,
+        meta: { title: '节点元数据', icon: 'setting' },
+        component: () => import('@/views/topology/ClusterNodeMetadata')
       }
     ]
   },

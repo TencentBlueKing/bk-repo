@@ -34,6 +34,8 @@ import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
@@ -43,6 +45,13 @@ import java.time.LocalDateTime
  * 记录-详情：1 to N
  */
 @Document("replica_record_detail")
+@CompoundIndexes(
+    CompoundIndex(
+        name = "cluster_channel_time_idx",
+        def = "{'localCluster': 1, 'remoteCluster': 1, 'startTime': 1}",
+        background = true
+    )
+)
 data class TReplicaRecordDetail(
     var id: String? = null,
     /**
