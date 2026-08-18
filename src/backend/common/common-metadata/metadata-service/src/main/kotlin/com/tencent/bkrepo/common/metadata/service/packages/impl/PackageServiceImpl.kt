@@ -216,13 +216,23 @@ class PackageServiceImpl(
                     and(TPackage::key).isEqualTo(packageKey)
                 }
             )
-            val update = Update().set(TPackage::lastModifiedBy.name, request.createdBy)
-                .set(TPackage::lastModifiedDate.name, LocalDateTime.now())
+            val update = Update()
+                .set(
+                    TPackage::lastModifiedBy.name,
+                    request.packageLastModifiedBy ?: request.lastModifiedBy ?: request.createdBy
+                )
+                .set(
+                    TPackage::lastModifiedDate.name,
+                    request.packageLastModifiedDate ?: request.lastModifiedDate ?: LocalDateTime.now()
+                )
                 .set(TPackage::description.name, packageDescription)
                 .set(TPackage::extension.name, packageExtension)
                 .set(TPackage::latest.name, versionName)
                 .set(TPackage::versionTag.name, mergeVersionTag(tPackage.versionTag, versionTag))
                 .set(TPackage::historyVersion.name, tPackage.historyVersion.toMutableSet().apply { add(versionName) })
+                .apply {
+                    request.packageDownloads?.let { set(TPackage::downloads.name, it) }
+                }
             // 检查本次上传是创建还是覆盖。
             if (oldVersion != null) {
                 updateExistVersion(
@@ -532,8 +542,10 @@ class PackageServiceImpl(
             checkPackageVersionOverwrite(overwrite, packageName, oldVersion)
             // overwrite
             oldVersion.apply {
-                lastModifiedBy = request.createdBy
-                lastModifiedDate = LocalDateTime.now()
+                request.createdDate?.let { createdDate = it }
+                lastModifiedBy = request.lastModifiedBy ?: request.createdBy
+                lastModifiedDate = request.lastModifiedDate ?: LocalDateTime.now()
+                request.downloads?.let { downloads = it }
                 size = request.size
                 manifestPath = request.manifestPath
                 artifactPath = request.artifactPath

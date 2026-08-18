@@ -681,7 +681,16 @@ abstract class AbstractReplicaService(
                 packageMetadata = latestVersion.packageMetadata,
                 extension = latestVersion.extension,
                 overwrite = true,
-                createdBy = latestVersion.createdBy
+                createdBy = latestVersion.createdBy,
+                createdDate = latestVersion.createdDate,
+                lastModifiedBy = latestVersion.lastModifiedBy,
+                lastModifiedDate = latestVersion.lastModifiedDate,
+                downloads = latestVersion.downloads,
+                packageCreatedBy = packageSummary.createdBy,
+                packageCreatedDate = packageSummary.createdDate,
+                packageLastModifiedBy = packageSummary.lastModifiedBy,
+                packageLastModifiedDate = packageSummary.lastModifiedDate,
+                packageDownloads = packageSummary.downloads,
             )
             client.replicaPackageVersionCreatedRequest(request)
             logger.info(

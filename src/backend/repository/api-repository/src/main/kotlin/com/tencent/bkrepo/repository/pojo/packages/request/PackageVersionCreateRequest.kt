@@ -34,6 +34,7 @@ package com.tencent.bkrepo.repository.pojo.packages.request
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import io.swagger.v3.oas.annotations.media.Schema
+import java.time.LocalDateTime
 
 
 data class PackageVersionCreateRequest(
@@ -76,6 +77,24 @@ data class PackageVersionCreateRequest(
     val overwrite: Boolean = false,
     @get:Schema(title = "创建人")
     val createdBy: String,
+    @get:Schema(title = "创建时间")
+    val createdDate: LocalDateTime? = null,
+    @get:Schema(title = "修改者")
+    val lastModifiedBy: String? = null,
+    @get:Schema(title = "修改时间")
+    val lastModifiedDate: LocalDateTime? = null,
+    @get:Schema(title = "下载次数")
+    val downloads: Long? = null,
+    @get:Schema(title = "包创建者")
+    val packageCreatedBy: String? = null,
+    @get:Schema(title = "包创建时间")
+    val packageCreatedDate: LocalDateTime? = null,
+    @get:Schema(title = "包修改者")
+    val packageLastModifiedBy: String? = null,
+    @get:Schema(title = "包修改时间")
+    val packageLastModifiedDate: LocalDateTime? = null,
+    @get:Schema(title = "包下载次数")
+    val packageDownloads: Long? = null,
     @get:Schema(title = "同版本是否包含多个制品")
     val multiArtifact: Boolean = false,
     @get:Schema(title = "操作来源,联邦仓库同步时源集群name", required = false)

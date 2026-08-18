@@ -65,6 +65,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.test.context.bean.override.mockito.MockitoBean
+import java.time.LocalDateTime
 
 @DisplayName("包服务测试")
 @DataMongoTest
@@ -122,6 +123,59 @@ class PackageServiceTest @Autowired constructor(
         val request = buildCreateRequest(version = "0.0.1-SNAPSHOT", overwrite = false)
         packageService.createPackageVersion(request)
         assertThrows<ErrorCodeException> { packageService.createPackageVersion(request) }
+    }
+
+    @Test
+    @DisplayName("测试同步场景保留源集群审计元数据")
+    fun `should preserve audit metadata when provided`() {
+        val sourceCreatedDate = LocalDateTime.of(2024, 1, 1, 10, 0, 0)
+        val sourceModifiedDate = LocalDateTime.of(2024, 6, 15, 14, 30, 0)
+        val packageCreatedDate = LocalDateTime.of(2023, 12, 1, 8, 0, 0)
+        val packageModifiedDate = LocalDateTime.of(2024, 6, 10, 9, 0, 0)
+        val request = buildCreateRequest(version = "1.0.0", overwrite = true).copy(
+            createdDate = sourceCreatedDate,
+            lastModifiedBy = "source-modifier",
+            lastModifiedDate = sourceModifiedDate,
+            downloads = 42,
+            packageCreatedBy = "package-creator",
+            packageCreatedDate = packageCreatedDate,
+            packageLastModifiedBy = "package-modifier",
+            packageLastModifiedDate = packageModifiedDate,
+            packageDownloads = 100,
+        )
+        packageService.createPackageVersion(request)
+
+        val packageSummary = packageService.findPackageByKey(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY)!!
+        Assertions.assertEquals("package-creator", packageSummary.createdBy)
+        Assertions.assertEquals(packageCreatedDate, packageSummary.createdDate)
+        Assertions.assertEquals("package-modifier", packageSummary.lastModifiedBy)
+        Assertions.assertEquals(packageModifiedDate, packageSummary.lastModifiedDate)
+        Assertions.assertEquals(100, packageSummary.downloads)
+
+        val version = packageService.findVersionByName(
+            UT_PROJECT_ID,
+            UT_REPO_NAME,
+            UT_PACKAGE_KEY,
+            "1.0.0"
+        )!!
+        Assertions.assertEquals(sourceCreatedDate, version.createdDate)
+        Assertions.assertEquals("source-modifier", version.lastModifiedBy)
+        Assertions.assertEquals(sourceModifiedDate, version.lastModifiedDate)
+        Assertions.assertEquals(42, version.downloads)
+
+        val overwriteRequest = request.copy(size = 2048)
+        packageService.createPackageVersion(overwriteRequest)
+        val updatedVersion = packageService.findVersionByName(
+            UT_PROJECT_ID,
+            UT_REPO_NAME,
+            UT_PACKAGE_KEY,
+            "1.0.0"
+        )!!
+        Assertions.assertEquals(sourceCreatedDate, updatedVersion.createdDate)
+        Assertions.assertEquals("source-modifier", updatedVersion.lastModifiedBy)
+        Assertions.assertEquals(sourceModifiedDate, updatedVersion.lastModifiedDate)
+        Assertions.assertEquals(42, updatedVersion.downloads)
+        Assertions.assertEquals(2048, updatedVersion.size)
     }
 
     @Test

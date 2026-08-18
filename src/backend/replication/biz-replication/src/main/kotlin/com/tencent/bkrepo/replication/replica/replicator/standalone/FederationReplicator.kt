@@ -212,6 +212,15 @@ class FederationReplicator(
                 extension = packageVersion.extension,
                 overwrite = true,
                 createdBy = packageVersion.createdBy,
+                createdDate = packageVersion.createdDate,
+                lastModifiedBy = packageVersion.lastModifiedBy,
+                lastModifiedDate = packageVersion.lastModifiedDate,
+                downloads = packageVersion.downloads,
+                packageCreatedBy = packageSummary.createdBy,
+                packageCreatedDate = packageSummary.createdDate,
+                packageLastModifiedBy = packageSummary.lastModifiedBy,
+                packageLastModifiedDate = packageSummary.lastModifiedDate,
+                packageDownloads = packageSummary.downloads,
                 source = getCurrentClusterName(localProjectId, localRepoName, task.name)
             )
             artifactReplicaClient!!.replicaPackageVersionCreatedRequest(request)
@@ -809,6 +818,9 @@ class FederationReplicator(
                 createdDate = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = node.lastModifiedBy,
                 lastModifiedDate = LocalDateTime.parse(node.lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME),
+                lastAccessDate = node.lastAccessDate?.let {
+                    LocalDateTime.parse(it, DateTimeFormatter.ISO_DATE_TIME)
+                },
                 source = getCurrentClusterName(localProjectId, localRepoName, task.name)
             )
         }
