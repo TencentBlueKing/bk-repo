@@ -132,7 +132,8 @@ object BlockNodeQueryHelper {
         fullPath: String,
         sha256: String,
         startPos: Long,
-        deleted: LocalDateTime?
+        deleted: LocalDateTime?,
+        uploadId: String?,
     ): Criteria {
         return where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
             .and(TBlockNode::projectId).isEqualTo(projectId)
@@ -140,5 +141,6 @@ object BlockNodeQueryHelper {
             .and(TBlockNode::sha256).isEqualTo(sha256)
             .and(TBlockNode::startPos).isEqualTo(startPos)
             .and(TBlockNode::deleted).isEqualTo(deleted)
+            .and(TBlockNode::uploadId).isEqualTo(uploadId)
     }
 }

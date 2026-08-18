@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -81,6 +82,22 @@ class BlockNodeServiceImpl(
             .set(TBlockNode::expireDate.name, null)
         blockNodeDao.updateMulti(Query(criteria), update)
         logger.info("Update block node[$projectId/$repoName/$fullPath--/uploadId: $uploadId] success.")
+    }
+
+    override fun completeLatestUnexpiredSession(
+        projectId: String,
+        repoName: String,
+        fullPath: String
+    ) {
+        // 本地进行中上传带 expireDate；分发复制的已完成块 expireDate=null 且仍带 uploadId
+        val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath, false)
+            .and(TBlockNode::uploadId.name).ne(null)
+            .and(TBlockNode::expireDate.name).isEqualTo(null)
+        val query = Query(criteria)
+            .with(Sort.by(Sort.Direction.DESC, TBlockNode::createdDate.name))
+            .limit(1)
+        val uploadId = blockNodeDao.findOne(query)?.uploadId ?: return
+        updateBlockUploadId(projectId, repoName, fullPath, uploadId)
     }
 
     override fun listBlocks(
@@ -210,7 +227,8 @@ class BlockNodeServiceImpl(
                 fullPath = nodeFullPath,
                 startPos = startPos,
                 sha256 = sha256,
-                deleted = deleted
+                deleted = deleted,
+                uploadId = uploadId,
             )
             return blockNodeDao.exists(Query(criteria))
         }
