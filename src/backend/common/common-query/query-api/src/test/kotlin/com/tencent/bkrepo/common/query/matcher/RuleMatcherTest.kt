@@ -133,6 +133,11 @@ internal class RuleMatcherTest {
         assertTrue(RuleMatcher.match(rule, valuesToMatch))
         assertFalse(RuleMatcher.match(rule.copy(value = "-est"), valuesToMatch))
 
+        // CONTAINS
+        rule = Rule.QueryRule(FIELD_PROJECT_ID, "dev", OperationType.CONTAINS)
+        assertTrue(RuleMatcher.match(rule, valuesToMatch))
+        assertFalse(RuleMatcher.match(rule.copy(value = "prod"), valuesToMatch))
+
         // MATCH
         rule = Rule.QueryRule(FIELD_PROJECT_ID, "repo-*-test", OperationType.MATCH)
         assertTrue(RuleMatcher.match(rule, valuesToMatch))

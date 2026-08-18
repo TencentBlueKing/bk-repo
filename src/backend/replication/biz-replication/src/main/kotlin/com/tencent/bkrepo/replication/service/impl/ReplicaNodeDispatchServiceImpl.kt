@@ -102,13 +102,24 @@ class ReplicaNodeDispatchServiceImpl(
         val valuesToMatch = buildValuesToMatch(taskDetail)
         return findReplicaClientByRule(valuesToMatch, target)
     }
-    override fun <T> findReplicaClientByHost(host: String, target: Class<T>): T? {
+    override fun <T> findReplicaClientByHost(
+        host: String,
+        target: Class<T>,
+        taskName: String?,
+        projectId: String?,
+        repoName: String?
+    ): T? {
         if (!checkProperties()) return null
-        val baseUrl = URL(host)
-        return findReplicaClientByRule(mapOf(DispatchRuleIndex.RULE_WITH_HOST.value to baseUrl.host), target)
+        val valuesToMatch = mutableMapOf<String, Any>(
+            DispatchRuleIndex.RULE_WITH_HOST.value to URL(host).host
+        )
+        putIfNotEmpty(valuesToMatch, DispatchRuleIndex.RULE_WITH_TASK_NAME.value, taskName)
+        putIfNotEmpty(valuesToMatch, DispatchRuleIndex.RULE_WITH_PROJECT.value, projectId)
+        putIfNotEmpty(valuesToMatch, DispatchRuleIndex.RULE_WITH_REPO.value, repoName)
+        return findReplicaClientByRule(valuesToMatch, target)
     }
 
-    private fun buildValuesToMatch(taskDetail: ReplicaTaskDetail): Map<String, Any> {
+    internal fun buildValuesToMatch(taskDetail: ReplicaTaskDetail): Map<String, Any> {
         val valuesToMatch = mutableMapOf<String, Any>()
         DispatchRuleIndex.values().forEach {
             when (it) {
@@ -122,10 +133,18 @@ class ReplicaNodeDispatchServiceImpl(
                 DispatchRuleIndex.RULE_WITH_PROJECT -> {
                     valuesToMatch[DispatchRuleIndex.RULE_WITH_PROJECT.value] = taskDetail.task.projectId
                 }
+                DispatchRuleIndex.RULE_WITH_REPO -> {
+                    val repo = taskDetail.objects.firstOrNull()?.localRepoName
+                    if (!repo.isNullOrEmpty()) {
+                        valuesToMatch[DispatchRuleIndex.RULE_WITH_REPO.value] = repo
+                    }
+                }
                 DispatchRuleIndex.RULE_WITH_SIZE -> {
                     valuesToMatch[DispatchRuleIndex.RULE_WITH_SIZE.value] = taskDetail.task.totalBytes ?: 0
                 }
-                else -> throw UnsupportedOperationException()
+                DispatchRuleIndex.RULE_WITH_TASK_NAME -> {
+                    valuesToMatch[DispatchRuleIndex.RULE_WITH_TASK_NAME.value] = taskDetail.task.name
+                }
             }
         }
         return valuesToMatch
@@ -145,9 +164,11 @@ class ReplicaNodeDispatchServiceImpl(
 
     private fun <T> findReplicaClientByRule(valuesToMatch: Map<String, Any>, target: Class<T>): T? {
         if (valuesToMatch.isEmpty()) return null
-        val configNodes = listEnableReplicaNodeDispatchConfig().filter {
-            RuleMatcher.match(it.rule, valuesToMatch)
-        }
+        val configNodes = mostSpecific(
+            listEnableReplicaNodeDispatchConfig().filter {
+                RuleMatcher.match(it.rule, valuesToMatch)
+            }
+        )
         val filterNode = filterNodes(configNodes) ?: return null
         logger.info("task will be executed with node ${filterNode.nodeUrl}")
         val clusterInfo = ClusterInfo(
@@ -225,6 +246,12 @@ class ReplicaNodeDispatchServiceImpl(
         return listOf(LOCAL_HOST, LOCAL_HOST_IP, serverIp).contains(host)
     }
 
+    private fun putIfNotEmpty(values: MutableMap<String, Any>, key: String, value: String?) {
+        if (!value.isNullOrEmpty()) {
+            values[key] = value
+        }
+    }
+
 
     companion object {
         private val logger = LoggerFactory.getLogger(ReplicaNodeDispatchServiceImpl::class.java)
@@ -240,6 +267,22 @@ class ReplicaNodeDispatchServiceImpl(
                 rule = request.rule.toJsonString(),
                 enable = request.enable
             )
+        }
+
+        internal fun ruleSpecificity(rule: Rule): Int {
+            return when (rule) {
+                is Rule.QueryRule -> 1
+                is Rule.FixedRule -> ruleSpecificity(rule.wrapperRule)
+                is Rule.NestedRule -> rule.rules.sumOf { ruleSpecificity(it) }
+            }
+        }
+
+        internal fun mostSpecific(
+            configs: List<ReplicaNodeDispatchConfigInfo>
+        ): List<ReplicaNodeDispatchConfigInfo> {
+            if (configs.size <= 1) return configs
+            val max = configs.maxOf { ruleSpecificity(it.rule) }
+            return configs.filter { ruleSpecificity(it.rule) == max }
         }
 
         fun convertTo(config: TReplicaNodeDispatchConfig): ReplicaNodeDispatchConfigInfo {

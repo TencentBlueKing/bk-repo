@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.exception.QueryModelException
 import com.tencent.bkrepo.common.query.matcher.impl.AfterMatcher
 import com.tencent.bkrepo.common.query.matcher.impl.BeforeMatcher
+import com.tencent.bkrepo.common.query.matcher.impl.ContainsMatcher
 import com.tencent.bkrepo.common.query.matcher.impl.EqualMatcher
 import com.tencent.bkrepo.common.query.matcher.impl.GreaterThanMatcher
 import com.tencent.bkrepo.common.query.matcher.impl.GreaterThanOrEqualMatcher
@@ -120,6 +121,7 @@ abstract class RuleMatcher {
             OperationType.NIN to NinMatcher(),
             OperationType.PREFIX to PrefixMatcher(),
             OperationType.SUFFIX to SuffixMatcher(),
+            OperationType.CONTAINS to ContainsMatcher(),
             OperationType.MATCH to MatchMatcher(),
             OperationType.MATCH_I to MatchIMatcher(),
             OperationType.REGEX to RegexMatcher(),

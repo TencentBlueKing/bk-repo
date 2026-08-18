@@ -50,6 +50,7 @@ enum class OperationType(val valueType: KClass<*>) {
     NIN(List::class),
     PREFIX(String::class),
     SUFFIX(String::class),
+    CONTAINS(String::class),
     MATCH(String::class),
     MATCH_I(String::class),
     REGEX(String::class),

@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.query.exception.QueryModelException
 import com.tencent.bkrepo.common.query.handler.MongoQueryRuleHandler
 import com.tencent.bkrepo.common.query.handler.impl.AfterHandler
 import com.tencent.bkrepo.common.query.handler.impl.BeforeHandler
+import com.tencent.bkrepo.common.query.handler.impl.ContainsHandler
 import com.tencent.bkrepo.common.query.handler.impl.DefaultMongoNestedRuleHandler
 import com.tencent.bkrepo.common.query.handler.impl.EqualHandler
 import com.tencent.bkrepo.common.query.handler.impl.GreaterThanHandler
@@ -87,6 +88,7 @@ open class MongoQueryInterpreter {
         defaultQueryRuleHandlerMap[OperationType.NIN] = NinHandler()
         defaultQueryRuleHandlerMap[OperationType.PREFIX] = PrefixHandler()
         defaultQueryRuleHandlerMap[OperationType.SUFFIX] = SuffixHandler()
+        defaultQueryRuleHandlerMap[OperationType.CONTAINS] = ContainsHandler()
         defaultQueryRuleHandlerMap[OperationType.MATCH] = MatchHandler()
         defaultQueryRuleHandlerMap[OperationType.MATCH_I] = MatchIHandler()
         defaultQueryRuleHandlerMap[OperationType.REGEX] = RegexHandler()
