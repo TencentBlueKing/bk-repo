@@ -21,6 +21,7 @@ export const ROUTER_NAME_FILTER_RULE = 'FilterRule'
 export const ROUTER_NAME_JOB = 'Job'
 export const ROUTER_NAME_SHED_LOCK = 'Shedlock'
 export const ROUTER_NAME_PROJECT_METRICS = 'ProjectMetrics'
+export const ROUTER_NAME_PACKAGE_REPAIR = 'PackageRepair'
 export const ROUTER_NAME_FILE_SYSTEM = 'FileSystem'
 export const ROUTER_NAME_FILE_CACHE = 'FileCache'
 export const ROUTER_NAME_FILE_SYSTEM_RECORD = 'FileSystemRecord'
@@ -217,6 +218,12 @@ export const asyncRoutes = [
         name: ROUTER_NAME_PROJECT_METRICS,
         meta: { title: '仓库大小统计', icon: 'file-blue' },
         component: () => import('@/views/node/ProjectMetrics')
+      },
+      {
+        path: 'packageRepair',
+        name: ROUTER_NAME_PACKAGE_REPAIR,
+        meta: { title: 'Package 元数据修复', icon: 'service-config' },
+        component: () => import('@/views/packageRepair/index')
       }
     ]
   },
