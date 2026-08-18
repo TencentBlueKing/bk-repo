@@ -1,5 +1,13 @@
 ﻿<template>
   <div class="app-container client-version-page">
+    <el-tabs v-model="activeModule" type="card" class="module-tabs">
+      <el-tab-pane label="版本配置" name="versionConfig" />
+      <el-tab-pane label="更新日志" name="changelog" />
+    </el-tabs>
+
+    <client-changelog-panel v-if="activeModule === 'changelog'" />
+
+    <div v-show="activeModule === 'versionConfig'">
     <el-tabs v-model="activeProductKey" type="card" class="product-tabs" @tab-click="handlePageContextChange">
       <el-tab-pane
         v-for="p in productPresets"
@@ -299,6 +307,7 @@
       :default-source-user-id="copyDefaultSourceUserId"
       @copied="reloadPage"
     />
+    </div>
   </div>
 </template>
 
@@ -320,13 +329,15 @@ import {
 import ClientVersionConfigDialog from './components/ClientVersionConfigDialog'
 import ClientVersionConfigUserBatchDialog from './components/ClientVersionConfigUserBatchDialog'
 import ClientVersionConfigCopyUserDialog from './components/ClientVersionConfigCopyUserDialog'
+import ClientChangelogPanel from './components/ClientChangelogPanel'
 
 export default {
   name: 'ClientVersionConfig',
   components: {
     ClientVersionConfigDialog,
     ClientVersionConfigUserBatchDialog,
-    ClientVersionConfigCopyUserDialog
+    ClientVersionConfigCopyUserDialog,
+    ClientChangelogPanel
   },
   filters: {
     parseTime(time) {
@@ -335,6 +346,7 @@ export default {
   },
   data() {
     return {
+      activeModule: 'versionConfig',
       productPresets: PRODUCT_PRESETS,
       platformPresets: PLATFORM_PRESETS,
       archPresets: ARCH_PRESETS,
@@ -689,6 +701,17 @@ export default {
 </script>
 
 <style scoped>
+.module-tabs {
+  margin-bottom: 12px;
+}
+.module-tabs >>> .el-tabs__header {
+  margin-bottom: 0;
+}
+.module-tabs >>> .el-tabs__item {
+  height: 38px;
+  line-height: 38px;
+  font-size: 14px;
+}
 .product-tabs,
 .platform-tabs {
   background: #f0f2f5;
