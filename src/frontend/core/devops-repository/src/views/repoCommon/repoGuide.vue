@@ -66,9 +66,17 @@
                             这三种情况下需要显示下面具体指引
                     -->
                     <template v-if="(constructType === block.constructType) || !block.constructType || (block.constructType === 'common') ">
-                        <span v-if="block.title" class="section-header pt10">{{ block.title }}</span>
-                        <span v-if="block.subTitle" class="sub-title pt10" :style="block.subTitleStyle">{{ block.subTitle }}</span>
-                        <code-area class="mt15" v-if="block.codeList && block.codeList.length" :code-list="block.codeList"></code-area>
+                        <skill-chat-install-card
+                            v-if="block.ui === 'skillChat'"
+                            class="mt15"
+                            :prompt="block.codeList[0]"
+                            :skill-name="block.skillName">
+                        </skill-chat-install-card>
+                        <template v-else>
+                            <span v-if="block.title" class="section-header pt10">{{ block.title }}</span>
+                            <span v-if="block.subTitle" class="sub-title pt10" :style="block.subTitleStyle">{{ block.subTitle }}</span>
+                            <code-area class="mt15" v-if="block.codeList && block.codeList.length" :code-list="block.codeList"></code-area>
+                        </template>
                     </template>
                 </div>
             </div>
@@ -78,10 +86,11 @@
 <script>
     import CodeArea from '@repository/components/CodeArea'
     import createTokenDialog from '@repository/views/repoToken/createTokenDialog'
+    import skillChatInstallCard from '@repository/views/repoCommon/skillChatInstallCard'
     import { mapState, mapMutations } from 'vuex'
     export default {
         name: 'RepoGuide',
-        components: { CodeArea, createTokenDialog },
+        components: { CodeArea, createTokenDialog, skillChatInstallCard },
         props: {
             article: {
                 type: Array,
@@ -152,18 +161,20 @@
 .repo-guide-container {
     position: relative;
     .section-header {
+        position: relative;
         padding-left: 10px;
         color: var(--fontPrimaryColor);
         font-weight: bold;
         font-size: 14px;
         &:before {
             position: absolute;
-            left: 20px;
+            left: 0;
+            top: 50%;
+            margin-top: -6px;
             content: "";
             width: 3px;
             height: 12px;
             background-color: var(--primaryColor);
-            margin-top: 5px;
         }
     }
 }
