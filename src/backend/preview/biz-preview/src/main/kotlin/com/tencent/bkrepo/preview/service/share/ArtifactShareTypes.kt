@@ -26,6 +26,8 @@ object ArtifactShareTypes {
             ext in TABLE_EXTS -> "table"
             ext in SLIDES_EXTS -> "slides"
             ext in CODE_EXTS -> "code"
+            ext in VIDEO_EXTS -> "video"
+            ext in AUDIO_EXTS -> "audio"
             else -> null
         }
     }
@@ -35,6 +37,8 @@ object ArtifactShareTypes {
     private val MARKDOWN_EXTS = setOf("md", "markdown")
     private val TABLE_EXTS = setOf("xls", "xlsx", "csv")
     private val SLIDES_EXTS = setOf("ppt", "pptx", "key")
+    private val VIDEO_EXTS = setOf("mp4", "webm")
+    private val AUDIO_EXTS = setOf("mp3", "wav", "ogg", "oga", "m4a")
     private val CODE_EXTS = setOf(
         "ts", "tsx", "js", "jsx", "py", "go", "rs", "java", "kt", "json", "yaml", "yml", "sh", "sql",
     )

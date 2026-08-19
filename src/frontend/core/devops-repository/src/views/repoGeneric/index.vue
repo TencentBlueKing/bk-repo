@@ -394,7 +394,7 @@
     import compressedFileTable from './compressedFileTable'
     import previewBasicFileDialog from './previewBasicFileDialog'
     import { Base64 } from 'js-base64'
-    import { isCode, isOutDisplayType, isText } from '@repository/utils/file'
+    import { isCode, isMedia, isOutDisplayType, isText } from '@repository/utils/file'
     import {
         CLIENT_DOWNLOAD_CANCELLED,
         CLIENT_DOWNLOAD_FAILED,
@@ -1056,7 +1056,7 @@
                 })
             },
             previewFile (row) {
-                if (isOutDisplayType(row.fullPath)) {
+                if (this.canOpenFilePreview(row.fullPath)) {
                     const isLocal = this.localRepo
                     const typeParam = isLocal ? 'local/' : 'remote/'
                     let extraParam = 0
@@ -1909,9 +1909,12 @@
                 this.$refs.previewBasicFileDialog.setData(typeof (res) === 'string' ? res : JSON.stringify(res))
             },
 
+            canOpenFilePreview (path) {
+                return Boolean(isOutDisplayType(path) || (this.localRepo && isMedia(path)))
+            },
             getBtnDisabled (name) {
                 if (this.enableMultipleTypeFilePreview) {
-                    return isOutDisplayType(name)
+                    return this.canOpenFilePreview(name)
                 }
                 const codeSuffix = isCode(name)
                 return Boolean(isText(name) || codeSuffix === 'ini' || codeSuffix === 'toml')

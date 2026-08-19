@@ -39,7 +39,7 @@
 - `CUSTOM` 必须至少指定一个用户或部门。同一 `projectId + repoName + shareKind + resourceType + resourceId` 仅允许一条记录。
 - 更新已有分享时保留当前作品名；新建时从节点元数据读取。
 - `featured` 是独立于 `visibility` 的平台精选标记，用户分享接口不写入；更新时保留已有值。
-- 作品类型 `type` 来自节点元数据 `IMATE_ARTIFACT_TYPE`；缺失时按 `fullPath` 扩展名回退。取值与搜索接口一致：`image` / `pdf` / `html` / `code` / `table` / `slides` / `markdown`。
+- 作品类型 `type` 来自节点元数据 `IMATE_ARTIFACT_TYPE`；缺失时按 `fullPath` 扩展名回退。取值与搜索接口一致：`image` / `pdf` / `html` / `code` / `table` / `slides` / `markdown` / `video` / `audio`。
 
 ## 重命名作品分享
 

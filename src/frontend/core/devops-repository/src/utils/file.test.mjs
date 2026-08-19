@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { isCode, isHtmlFile, isOutDisplayType, isText } from './file.js'
+import { isCode, isHtmlFile, isMedia, isMediaAudio, isMediaVideo, isOutDisplayType, isText } from './file.js'
 
 test('isCode recognizes backend CODE suffixes', () => {
     assert.ok(isCode('src/Main.java'))
@@ -72,4 +72,23 @@ test('isOutDisplayType includes code and html files', () => {
 test('isText still recognizes overlapping suffixes for non-community fallback', () => {
     assert.ok(isText('data.json'))
     assert.ok(isText('script.sh'))
+})
+
+test('isMedia recognizes native preview whitelist and excludes flv', () => {
+    assert.equal(isMediaVideo('clip.mp4'), true)
+    assert.equal(isMediaVideo('clip.webm'), true)
+    assert.equal(isMediaAudio('track.mp3'), true)
+    assert.equal(isMediaAudio('track.wav'), true)
+    assert.equal(isMediaAudio('track.ogg'), true)
+    assert.equal(isMediaAudio('track.oga'), true)
+    assert.equal(isMediaAudio('track.m4a'), true)
+    assert.equal(isMedia('Demo.MP4'), true)
+    assert.equal(isMedia('demo.flv'), false)
+    assert.equal(isMedia('movie.mkv'), false)
+})
+
+test('isOutDisplayType does not treat media as generic preview types', () => {
+    assert.equal(Boolean(isOutDisplayType('clip.mp4')), false)
+    assert.equal(Boolean(isOutDisplayType('track.mp3')), false)
+    assert.equal(Boolean(isOutDisplayType('demo.flv')), false)
 })

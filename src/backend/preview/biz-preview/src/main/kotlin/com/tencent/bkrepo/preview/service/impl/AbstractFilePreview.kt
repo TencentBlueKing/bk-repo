@@ -283,10 +283,13 @@ abstract class AbstractFilePreview(
     }
 
     private fun isDrivePreview(fileAttribute: FileAttribute): Boolean {
-        return repositoryService.getRepoDetail(
-            fileAttribute.projectId!!,
-            fileAttribute.repoName!!,
-        )?.type == RepositoryType.DRIVE
+        // 远程预览没有仓库上下文，不能按 Drive 仓库处理
+        if (fileAttribute.storageType != 0) {
+            return false
+        }
+        val projectId = fileAttribute.projectId ?: return false
+        val repoName = fileAttribute.repoName ?: return false
+        return repositoryService.getRepoDetail(projectId, repoName)?.type == RepositoryType.DRIVE
     }
 
     companion object {

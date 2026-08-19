@@ -913,6 +913,11 @@
   "selectAllTip": "全量データ{0}件を選択済み、",
   "clearSelectTip":"選択をクリア",
   "previewErrorTip": "ファイルプレビュー失敗",
+  "previewMediaErrorTip": "現在のブラウザではこのファイルを再生できません",
+  "previewMediaPlay": "再生",
+  "previewMediaPause": "一時停止",
+  "previewMediaProgress": "再生位置",
+  "previewMediaScrub": "シーク",
   "helps": {
     "documentation": "製品ドキュメント",
     "releaseNote": "リリースノート",

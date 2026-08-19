@@ -31,4 +31,18 @@ class ArtifactShareTypesTest {
         assertNull(ArtifactShareTypes.fromPath("/tmp/file.unknown"))
         assertNull(ArtifactShareTypes.resolve(null, "/sites/BKCI介绍"))
     }
+
+    @Test
+    fun `media extensions map to video and audio`() {
+        assertEquals("video", ArtifactShareTypes.fromPath("/clips/demo.mp4"))
+        assertEquals("video", ArtifactShareTypes.fromPath("/clips/demo.WEBM"))
+        assertEquals("audio", ArtifactShareTypes.fromPath("/sound/demo.mp3"))
+        assertEquals("audio", ArtifactShareTypes.fromPath("/sound/demo.wav"))
+        assertEquals("audio", ArtifactShareTypes.fromPath("/sound/demo.ogg"))
+        assertEquals("audio", ArtifactShareTypes.fromPath("/sound/demo.oga"))
+        assertEquals("audio", ArtifactShareTypes.fromPath("/sound/demo.m4a"))
+        assertNull(ArtifactShareTypes.fromPath("/clips/demo.mov"))
+        assertNull(ArtifactShareTypes.fromPath("/clips/demo.avi"))
+        assertNull(ArtifactShareTypes.fromPath("/clips/demo.mkv"))
+    }
 }
