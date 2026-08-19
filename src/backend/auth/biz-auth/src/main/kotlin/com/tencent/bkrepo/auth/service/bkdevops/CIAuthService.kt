@@ -242,6 +242,10 @@ class CIAuthService @Autowired constructor(
             }
 
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, HTTP_RETRY_COUNT, allowHttpStatusSet)
+            if (!apiResponse.success) {
+                logger.warn("$logPrefix url is $url, response code: ${apiResponse.code}")
+                return null
+            }
             logger.debug("$logPrefix, requestUrl: [$url], result: [${apiResponse.content}]")
 
             objectMapper.readValue<T>(apiResponse.content)
