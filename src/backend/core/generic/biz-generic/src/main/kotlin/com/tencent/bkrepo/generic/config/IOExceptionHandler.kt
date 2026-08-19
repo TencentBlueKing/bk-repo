@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.generic.config
 
+import com.fasterxml.jackson.core.JsonProcessingException
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -41,10 +42,15 @@ import java.io.IOException
 class IOExceptionHandler : AbstractExceptionHandler() {
 
     /**
-     * 处理IOException
-     * */
+     * 处理IOException。
+     * Jackson 的 JsonProcessingException 继承 IOException，非法枚举等反序列化失败会落到这里，
+     * 不能当系统 IO 错误返回 500。
+     */
     @ExceptionHandler(IOException::class)
     fun handler(ex: IOException): Response<Void> {
+        if (ex is JsonProcessingException) {
+            return response(ErrorCodeException(CommonMessageCode.REQUEST_CONTENT_INVALID))
+        }
         return if (IOExceptionUtils.isClientBroken(ex)) {
             val exception = ErrorCodeException(
                 messageCode = CommonMessageCode.CLIENT_BROKEN,
