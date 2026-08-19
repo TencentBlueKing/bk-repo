@@ -42,6 +42,13 @@ import java.time.LocalDateTime
         def = "{'featured': 1, 'shareKind': 1, 'resourceType': 1, 'lastModifiedDate': -1, '_id': -1}",
         background = true,
     ),
+    CompoundIndex(
+        name = "short_share_id_uk",
+        def = "{'shortShareId': 1}",
+        unique = true,
+        sparse = true,
+        background = true,
+    ),
 )
 data class TArtifactShare(
     /**
@@ -49,6 +56,10 @@ data class TArtifactShare(
      */
     @Id
     var id: String? = null,
+    /**
+     * 浏览器短链码，8 位 Base62（0-9A-Za-z）。生成后不变。
+     */
+    var shortShareId: String? = null,
     var shareKind: ArtifactShareKind = ArtifactShareKind.MATERIAL,
     /**
      * 资源体系：本期固定 [ArtifactShareResourceType.DRIVE_NODE]。

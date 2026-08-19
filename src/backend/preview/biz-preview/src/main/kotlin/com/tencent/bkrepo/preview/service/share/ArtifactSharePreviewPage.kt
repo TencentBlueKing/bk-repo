@@ -3,7 +3,7 @@ package com.tencent.bkrepo.preview.service.share
 import org.springframework.web.util.HtmlUtils
 
 /**
- * 短链 `/a/{shareId}` 返回的内嵌预览页，避免 302 把地址栏换成带 token 的预览 URL。
+ * 短链 `/a/{shareId}` 与 `/share/{shortShareId}` 返回的内嵌预览页，避免 302 把地址栏换成带 token 的预览 URL。
  */
 object ArtifactSharePreviewPage {
 

@@ -25,12 +25,14 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.springframework.dao.DuplicateKeyException
 import java.time.LocalDateTime
 
 @DisplayName("作品分享列表与权限")
@@ -59,6 +61,9 @@ class ArtifactShareServiceQueryTest {
         every { orgScopeIdMappingService.toDisplayIds(any()) } answers {
             firstArg<Collection<String>>().associateWith { it }
         }
+        every { artifactShareDao.findByShortShareId(any()) } returns null
+        every { artifactShareDao.assignShortShareIdIfAbsent(any(), any()) } returns true
+        every { artifactShareDao.save(any()) } answers { firstArg() }
         every { serviceUserClient.userDeptById(any()) } returns Response(
             0,
             null,
@@ -83,6 +88,53 @@ class ArtifactShareServiceQueryTest {
         assertEquals(ArtifactShareListCursor(TIME_2, "id-1").encode(), page.nextCursor)
         assertEquals(1, page.limit)
         assertTrue(page.records[0].userIds.isEmpty())
+        assertTrue(page.records[0].sharePath.startsWith("/share/"))
+        assertTrue(ArtifactShareShortIds.isValid(page.records[0].sharePath.removePrefix("/share/")))
+    }
+
+    @Test
+    fun `listMine backfills missing short share id once`() {
+        val first = record(id = "id-1", createdBy = "alice", lastModifiedDate = TIME_2)
+        every { artifactShareDao.listMine("alice", null, null, DEFAULT_PAGE_LIMIT) } returns listOf(first)
+        val allocated = slot<String>()
+        every { artifactShareDao.assignShortShareIdIfAbsent("id-1", capture(allocated)) } returns true
+
+        val page = service.listMine("alice", null, null, null)
+
+        assertTrue(ArtifactShareShortIds.isValid(allocated.captured))
+        assertEquals("/share/${allocated.captured}", page.records[0].sharePath)
+        assertEquals("id-1", page.records[0].shareId)
+        verify(exactly = 0) { artifactShareDao.save(any()) }
+    }
+
+    @Test
+    fun `listMine uses existing short share id when lazy fill loses race`() {
+        val first = record(id = "id-1", createdBy = "alice", lastModifiedDate = TIME_2)
+        every { artifactShareDao.listMine("alice", null, null, DEFAULT_PAGE_LIMIT) } returns listOf(first)
+        every { artifactShareDao.assignShortShareIdIfAbsent("id-1", any()) } returns false
+        every { artifactShareDao.findByShareId("id-1") } returns first.copy(shortShareId = "Ab12Cd34")
+
+        val page = service.listMine("alice", null, null, null)
+
+        assertEquals("/share/Ab12Cd34", page.records[0].sharePath)
+        verify(exactly = 0) { artifactShareDao.save(any()) }
+    }
+
+    @Test
+    fun `listMine keeps existing short share id`() {
+        val first = record(
+            id = "id-1",
+            createdBy = "alice",
+            lastModifiedDate = TIME_2,
+            shortShareId = "Ab12Cd34",
+        )
+        every { artifactShareDao.listMine("alice", null, null, DEFAULT_PAGE_LIMIT) } returns listOf(first)
+
+        val page = service.listMine("alice", null, null, null)
+
+        assertEquals("/share/Ab12Cd34", page.records[0].sharePath)
+        verify(exactly = 0) { artifactShareDao.save(any()) }
+        verify(exactly = 0) { artifactShareDao.assignShortShareIdIfAbsent(any(), any()) }
     }
 
     @Test
@@ -309,6 +361,61 @@ class ArtifactShareServiceQueryTest {
 
         assertEquals("table", saved.captured.artifactType)
         assertEquals("table", result.type)
+        val shortShareId = saved.captured.shortShareId
+        assertNotNull(shortShareId)
+        assertTrue(ArtifactShareShortIds.isValid(shortShareId.orEmpty()))
+        assertEquals("/share/$shortShareId", result.sharePath)
+        assertEquals(32, result.shareId.length)
+    }
+
+    @Test
+    fun `upsert update keeps existing short share id`() {
+        stubUpsertNode()
+        every { artifactShareDao.findActiveByProjectRepoResourceId("p", "r", 9L) } returns record(
+            id = "id-1",
+            createdBy = "alice",
+            shortShareId = "Ab12Cd34",
+            previewToken = "old-preview",
+            downloadToken = "old-download",
+        )
+        val saved = slot<TArtifactShare>()
+        every { artifactShareDao.save(capture(saved)) } answers { saved.captured }
+
+        val result = service.upsert(
+            "alice",
+            ArtifactShareUpsertRequest(
+                projectId = "p",
+                repoName = "r",
+                resourceId = 9L,
+                visibility = ShareVisibility.PUBLIC,
+            ),
+        )
+
+        assertEquals("Ab12Cd34", saved.captured.shortShareId)
+        assertEquals("/share/Ab12Cd34", result.sharePath)
+        assertEquals("id-1", result.shareId)
+    }
+
+    @Test
+    fun `upsert retries short share id on unique conflict`() {
+        stubUpsertNode()
+        every { artifactShareDao.findActiveByProjectRepoResourceId("p", "r", 9L) } returns null
+        every { artifactShareDao.save(any()) } throws
+            DuplicateKeyException("index: short_share_id_uk") andThenAnswer { firstArg() }
+
+        val result = service.upsert(
+            "alice",
+            ArtifactShareUpsertRequest(
+                projectId = "p",
+                repoName = "r",
+                resourceId = 9L,
+                visibility = ShareVisibility.PUBLIC,
+            ),
+        )
+
+        assertTrue(result.sharePath.startsWith("/share/"))
+        assertTrue(ArtifactShareShortIds.isValid(result.sharePath.removePrefix("/share/")))
+        verify(exactly = 2) { artifactShareDao.save(any()) }
     }
 
     @Test
@@ -420,6 +527,7 @@ class ArtifactShareServiceQueryTest {
             visibility = ShareVisibility.CUSTOM,
             userIds = listOf("bob", "carol"),
             orgIds = listOf("dept-1"),
+            shortShareId = "Ab12Cd34",
             previewToken = "preview-token",
             downloadToken = "download-token",
         )
@@ -439,6 +547,82 @@ class ArtifactShareServiceQueryTest {
             "/web/fs-server/drive/temporary/download/p/r/a.html?token=download-token",
             result.downloadUrl,
         )
+        assertEquals("/share/Ab12Cd34", result.share.sharePath)
+    }
+
+    @Test
+    fun `open by uuid does not look up short share id as key`() {
+        every { artifactShareDao.findByShareId("id-1") } returns record(
+            id = "id-1",
+            createdBy = "alice",
+            shortShareId = "Ab12Cd34",
+            previewToken = "preview-token",
+            downloadToken = "download-token",
+        )
+        val node = mockk<TDriveNode>()
+        every { driveShareNodeResolver.resolveFileByIno("p", "r", 9L) } returns DriveShareNodeInfo(
+            node = node,
+            fullPath = "/a.html",
+        )
+
+        service.open("alice", "id-1")
+
+        verify(exactly = 0) { artifactShareDao.findByShortShareId("id-1") }
+        verify { artifactShareDao.findByShareId("id-1") }
+    }
+
+    @Test
+    fun `open by short share id returns preview`() {
+        every { artifactShareDao.findByShortShareId("Ab12Cd34") } returns record(
+            id = "id-1",
+            createdBy = "alice",
+            visibility = ShareVisibility.CUSTOM,
+            userIds = listOf("bob"),
+            shortShareId = "Ab12Cd34",
+            previewToken = "preview-token",
+            downloadToken = "download-token",
+        )
+        val node = mockk<TDriveNode>()
+        every { driveShareNodeResolver.resolveFileByIno("p", "r", 9L) } returns DriveShareNodeInfo(
+            node = node,
+            fullPath = "/a.html",
+        )
+
+        val result = service.openByShortShareId("bob", "Ab12Cd34")
+
+        assertEquals("id-1", result.share.shareId)
+        assertEquals("/share/Ab12Cd34", result.share.sharePath)
+        verify(exactly = 0) { artifactShareDao.findByShareId(any()) }
+    }
+
+    @Test
+    fun `open by invalid short share id is not found`() {
+        val exception = assertThrows(ErrorCodeException::class.java) {
+            service.openByShortShareId("bob", "short")
+        }
+        assertEquals(PreviewMessageCode.PREVIEW_ARTIFACT_SHARE_NOT_FOUND, exception.messageCode)
+        verify(exactly = 0) { artifactShareDao.findByShortShareId(any()) }
+        verify(exactly = 0) { artifactShareDao.findByShareId(any()) }
+    }
+
+    @Test
+    fun `open by uuid-length id as short share id is not found`() {
+        val uuid = "a".repeat(32)
+        val exception = assertThrows(ErrorCodeException::class.java) {
+            service.openByShortShareId("bob", uuid)
+        }
+        assertEquals(PreviewMessageCode.PREVIEW_ARTIFACT_SHARE_NOT_FOUND, exception.messageCode)
+        verify(exactly = 0) { artifactShareDao.findByShortShareId(any()) }
+    }
+
+    @Test
+    fun `rename by short share id does not resolve short code`() {
+        every { artifactShareDao.findByShareId("Ab12Cd34") } returns null
+        val exception = assertThrows(ErrorCodeException::class.java) {
+            service.rename("alice", "Ab12Cd34", "新站点")
+        }
+        assertEquals(PreviewMessageCode.PREVIEW_ARTIFACT_SHARE_NOT_FOUND, exception.messageCode)
+        verify(exactly = 0) { artifactShareDao.findByShortShareId(any()) }
     }
 
     @Test
@@ -503,6 +687,7 @@ class ArtifactShareServiceQueryTest {
         previewToken: String? = null,
         downloadToken: String? = null,
         agentId: String? = null,
+        shortShareId: String? = null,
     ): TArtifactShare {
         return TArtifactShare(
             id = id,
@@ -524,6 +709,7 @@ class ArtifactShareServiceQueryTest {
             artifactName = artifactName,
             previewToken = previewToken,
             downloadToken = downloadToken,
+            shortShareId = shortShareId,
         )
     }
 

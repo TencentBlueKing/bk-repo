@@ -42,6 +42,8 @@ class ArtifactShareServiceScopeMappingTest {
             serviceUserClient = serviceUserClient,
             artifactShareProperties = ArtifactShareProperties(),
         )
+        every { artifactShareDao.findByShortShareId(any()) } returns null
+        every { artifactShareDao.assignShortShareIdIfAbsent(any(), any()) } returns true
     }
 
     @Test

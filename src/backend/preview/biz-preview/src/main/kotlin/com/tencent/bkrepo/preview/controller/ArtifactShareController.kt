@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 作品分享接口，当前实现为素材分享，站点分享后续扩展。
  *
- * `/mine`、`/accessible`、`/{shareId}/open` 以分享权限为独立访问域，不校验仓库 READ。
+ * `/mine`、`/accessible`、`/{shareId}/open`、`/a/{shareId}`、`/share/{shortShareId}` 以分享权限为独立访问域，不校验仓库 READ。
  */
 @Tag(name = "作品分享")
 @RestController
@@ -132,7 +132,19 @@ class ArtifactShareController(
         @PathVariable shareId: String,
         response: HttpServletResponse,
     ) {
-        val openInfo = artifactShareService.open(SecurityUtils.getUserId(), shareId)
+        writePreviewPage(artifactShareService.open(SecurityUtils.getUserId(), shareId), response)
+    }
+
+    @Operation(summary = "短码打开：校验权限后返回内嵌预览页，地址栏保持 /share/{shortShareId}")
+    @GetMapping("/share/{shortShareId}", produces = [MediaType.TEXT_HTML_VALUE])
+    fun openByShortShareId(
+        @PathVariable shortShareId: String,
+        response: HttpServletResponse,
+    ) {
+        writePreviewPage(artifactShareService.openByShortShareId(SecurityUtils.getUserId(), shortShareId), response)
+    }
+
+    private fun writePreviewPage(openInfo: ArtifactShareOpenInfo, response: HttpServletResponse) {
         response.contentType = "${MediaType.TEXT_HTML_VALUE};charset=UTF-8"
         response.setHeader(HttpHeaders.CACHE_CONTROL, "no-store")
         val title = openInfo.share.artifactName?.trim().orEmpty()

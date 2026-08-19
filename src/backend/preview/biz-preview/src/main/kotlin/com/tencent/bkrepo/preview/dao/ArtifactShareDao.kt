@@ -10,6 +10,7 @@ import org.bson.types.ObjectId
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 
@@ -62,6 +63,31 @@ class ArtifactShareDao : PreviewSimpleMongoDao<TArtifactShare>() {
             return null
         }
         return findOne(Query.query(Criteria.where(ID).isEqualTo(ObjectId(id))))
+    }
+
+    fun findByShortShareId(shortShareId: String): TArtifactShare? {
+        val id = shortShareId.trim()
+        if (id.isEmpty()) {
+            return null
+        }
+        return findOne(Query.query(Criteria.where(TArtifactShare::shortShareId.name).isEqualTo(id)))
+    }
+
+    /**
+     * 仅当短码仍缺失时写入，避免并发惰性补齐互相覆盖。
+     */
+    fun assignShortShareIdIfAbsent(shareId: String, shortShareId: String): Boolean {
+        val query = Query(
+            Criteria.where(ID).isEqualTo(shareId).andOperator(
+                Criteria().orOperator(
+                    Criteria.where(TArtifactShare::shortShareId.name).exists(false),
+                    Criteria.where(TArtifactShare::shortShareId.name).isEqualTo(null),
+                    Criteria.where(TArtifactShare::shortShareId.name).isEqualTo(""),
+                ),
+            ),
+        )
+        val update = Update().set(TArtifactShare::shortShareId.name, shortShareId)
+        return updateFirst(query, update).modifiedCount > 0
     }
 
     fun removeByProjectRepoResourceId(projectId: String, repoName: String, resourceId: Long) {

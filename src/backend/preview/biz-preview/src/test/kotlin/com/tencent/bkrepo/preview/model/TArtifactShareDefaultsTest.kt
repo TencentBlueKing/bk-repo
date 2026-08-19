@@ -28,5 +28,6 @@ class TArtifactShareDefaultsTest {
         assertEquals(1L, record.resourceId)
         assertEquals(false, record.featured)
         assertEquals(null, record.artifactType)
+        assertEquals(null, record.shortShareId)
     }
 }
