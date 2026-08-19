@@ -63,22 +63,37 @@ abstract class CosRequest(
     private val requestUri: String = StringBuilder().append(PATH_DELIMITER).append(uri.trim(PATH_DELIMITER)).toString()
 
     /**
+     * path-style 访问时的路径前缀，如 /bucket
+     */
+    private var pathPrefix: String = StringPool.EMPTY
+
+    /**
      * 构造请求体
      */
     abstract fun buildRequestBody(): RequestBody?
 
     open fun sign(credentials: InnerCosCredentials, config: ClientConfig): String {
-        return headers[AUTHORIZATION] ?: run {
-            encodeToLower = !credentials.public
-            val endpoint = config.endpointBuilder.buildEndpoint(credentials.region, credentials.bucket)
-            val resolvedHost = config.endpointResolver.resolveEndpoint(endpoint)
+        headers[AUTHORIZATION]?.let { return it }
+        encodeToLower = !credentials.public
+        val endpoint = config.endpointBuilder.buildEndpoint(credentials.region, credentials.bucket)
+        val resolvedHost = config.endpointResolver.resolveEndpoint(endpoint)
+        if (config.pathStyle) {
+            // path-style：客户端访问 IP，Host/URL 必须一致；默认 80 端口不写入 Host
+            pathPrefix = "$PATH_DELIMITER${credentials.bucket}"
+            val host = resolvedHost.removeSuffix(HTTP_DEFAULT_PORT_SUFFIX)
+            headers[HOST] = host
+            url = buildUrl(config.httpProtocol.getScheme(), host, getFormatUri())
+        } else {
+            // virtual-hosted：Host 用域名参与签名，URL 可用解析后的地址
             headers[HOST] = endpoint
-            url = config.httpProtocol.getScheme() + resolvedHost + requestUri
-            if (parameters.isNotEmpty()) {
-                url += "?" + getFormatParameters()
-            }
-            return CosSigner.sign(this, credentials, config.signExpired).apply { headers[AUTHORIZATION] = this }
+            url = buildUrl(config.httpProtocol.getScheme(), resolvedHost, getFormatUri())
         }
+        return CosSigner.sign(this, credentials, config.signExpired).also { headers[AUTHORIZATION] = it }
+    }
+
+    private fun buildUrl(scheme: String, host: String, uri: String): String {
+        val base = scheme + host + uri
+        return if (parameters.isEmpty()) base else "$base?${getFormatParameters()}"
     }
 
     /**
@@ -87,9 +102,9 @@ abstract class CosRequest(
     fun getFormatMethod(): String = method.name.toLowerCase()
 
     /**
-     * 返工格式化后的请求uri，如/test
+     * 返工格式化后的请求uri，如/test；path-style 时为 /bucket/test
      */
-    fun getFormatUri(): String = requestUri
+    fun getFormatUri(): String = pathPrefix + requestUri
 
     /**
      * 返回格式化之后的参数key列表
@@ -138,5 +153,7 @@ abstract class CosRequest(
     companion object {
         @JvmStatic
         protected val xmlMapper = XmlMapper()
+
+        private const val HTTP_DEFAULT_PORT_SUFFIX = ":80"
     }
 }
