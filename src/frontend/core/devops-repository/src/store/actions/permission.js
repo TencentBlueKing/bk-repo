@@ -4,12 +4,17 @@ const authPrefix = 'auth/api'
 
 export default {
     // 查询用户信息
-    ajaxUserInfo ({ dispatch, commit }) {
+    // forceRefresh 通过请求头传递：nginx auth_request 子请求 (/auth/web) 默认继承父请求的请求头，
+    // 但不会带上原请求的 query，因此不能用 ?forceRefresh=1，必须用自定义 header 才能到达 auth_web.lua
+    ajaxUserInfo ({ dispatch, commit }, { forceRefresh = false } = {}) {
         return Vue.prototype.$ajax.get(
-            `${authPrefix}/user/info`
+            `${authPrefix}/user/info`,
+            forceRefresh ? { headers: { 'X-BKREPO-FORCE-REFRESH': '1' } } : undefined
         ).then(res => {
             commit('SET_USER_INFO', {
-                displayName: res.displayName ? res.displayName : ''
+                displayName: res.displayName ? res.displayName : '',
+                tenantId: res.tenantId ? res.tenantId : '',
+                timeZone: res.timeZone ? res.timeZone : ''
             })
             return dispatch('getUserInfo', res.userId)
         })

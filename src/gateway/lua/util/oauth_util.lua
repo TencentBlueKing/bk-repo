@@ -157,9 +157,13 @@ function _M:verify_ticket(bk_ticket, input_type)
     return user_cache_value
 end
 
-function _M:verify_bk_token(auth_url, token)
+function _M:verify_bk_token(auth_url, token, force_refresh)
     local user_cache = ngx.shared.user_info_store
-    local user_cache_value = user_cache:get(token)
+    --- force_refresh 为 true 时跳过本地缓存，直接向远端拉取最新用户信息（用于时区等信息变更后主动刷新）
+    local user_cache_value = nil
+    if not force_refresh then
+        user_cache_value = user_cache:get(token)
+    end
     if user_cache_value == nil then
         local http_cli = http.new()
         local oauth = config.oauth
@@ -210,15 +214,28 @@ function _M:verify_bk_token(auth_url, token)
             ngx.exit(401)
             return
         end
-        user_cache_value = result.data.bk_username
-        user_cache:set(token, user_cache_value, 180)
+        local cache_data = {
+            ["bk_username"] = result.data.bk_username,
+            ["time_zone"] = result.data.time_zone
+        }
+        user_cache:set(token, json.encode(cache_data), 180)
+        return result.data.bk_username, result.data.time_zone
     end
-    return user_cache_value
+    --- 兼容旧缓存（仅字符串 bk_username 未做 json 序列化），此时无 time_zone
+    local ok, user_data = pcall(json.decode, user_cache_value)
+    if not ok or type(user_data) ~= "table" then
+        return user_cache_value, nil
+    end
+    return user_data.bk_username, user_data.time_zone
 end
 
-function _M:verify_bk_token_muti_tenant(auth_url, token)
+function _M:verify_bk_token_muti_tenant(auth_url, token, force_refresh)
     local user_cache = ngx.shared.user_info_store
-    local user_cache_value = user_cache:get(token)
+    --- force_refresh 为 true 时跳过本地缓存，直接向远端拉取最新用户信息（用于租户切换后主动刷新）
+    local user_cache_value = nil
+    if not force_refresh then
+        user_cache_value = user_cache:get(token)
+    end
     if user_cache_value == nil then
         local http_cli = http.new()
         local oauth = config.oauth
