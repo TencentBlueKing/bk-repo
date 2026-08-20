@@ -35,7 +35,7 @@ data class ArtifactShareInfo(
     val artifactName: String? = null,
     @get:Schema(title = "作品类型（IMATE_ARTIFACT_TYPE，如 html/image/pdf/video/audio）")
     val type: String? = null,
-    @get:Schema(title = "短链路径，如 /a/{shareId}")
+    @get:Schema(title = "短链路径，如 /share/{shortShareId}")
     val sharePath: String,
     @get:Schema(title = "创建人")
     val createdBy: String,
