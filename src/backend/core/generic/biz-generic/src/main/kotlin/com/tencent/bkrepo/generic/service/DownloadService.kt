@@ -142,7 +142,14 @@ class DownloadService(
 
     fun search(queryModel: QueryModel): List<Any> {
         val nodes = LinkedHashMap<String, Any>()
-        repository.search(GenericArtifactSearchContext(model = queryModel)).forEach {
+        // composite 去重依赖 fullPath；select 非空时 Mongo 只投影列出的字段，需补上
+        val select = queryModel.select
+        val model = if (!select.isNullOrEmpty() && NodeInfo::fullPath.name !in select) {
+            queryModel.copy(select = select + NodeInfo::fullPath.name)
+        } else {
+            queryModel
+        }
+        repository.search(GenericArtifactSearchContext(model = model)).forEach {
             require(it is Map<*, *>)
             if (it[RepositoryInfo::category.name] == RepositoryCategory.LOCAL.name) {
                 // composite仓库的local node优先展示
