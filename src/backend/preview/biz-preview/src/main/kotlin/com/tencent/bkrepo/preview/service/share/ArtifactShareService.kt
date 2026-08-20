@@ -24,6 +24,7 @@ import com.tencent.bkrepo.preview.pojo.share.ArtifactShareSummary
 import com.tencent.bkrepo.preview.pojo.share.ArtifactShareUpsertRequest
 import com.tencent.bkrepo.preview.pojo.share.ShareVisibility
 import org.slf4j.LoggerFactory
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 import org.springframework.web.util.UriUtils
 import java.time.LocalDateTime
@@ -90,9 +91,13 @@ class ArtifactShareService(
             userIds,
             orgIds,
         )
+        val shortShareId = existing?.let { ensureShortShareId(it) }?.shortShareId
+            ?.takeIf { ArtifactShareShortIds.isValid(it) }
+            ?: allocateShortShareId()
         val draft = if (existing == null) {
             TArtifactShare(
                 id = generateShareId(),
+                shortShareId = shortShareId,
                 shareKind = ArtifactShareKind.MATERIAL,
                 resourceType = ArtifactShareResourceType.DRIVE_NODE,
                 createdBy = userId,
@@ -127,10 +132,11 @@ class ArtifactShareService(
                 artifactType = artifactType,
                 previewToken = null,
                 downloadToken = null,
+                shortShareId = shortShareId,
             )
         }
         val withTokens = issueAndAttachTokens(draft, authorizedUserSet, authorizedOrgList)
-        return convert(artifactShareDao.save(withTokens))
+        return convert(persistShare(withTokens))
     }
 
     fun getByResourceId(
@@ -210,17 +216,18 @@ class ArtifactShareService(
         if (record.createdBy != userId) {
             throw ErrorCodeException(PreviewMessageCode.PREVIEW_ARTIFACT_SHARE_FORBIDDEN)
         }
-        if (record.artifactName == name) {
-            return convert(record)
+        val filled = ensureShortShareId(record)
+        if (filled.artifactName == name) {
+            return convert(filled)
         }
-        val updated = record.copy(
+        val updated = filled.copy(
             artifactName = name,
             lastModifiedBy = userId,
             lastModifiedDate = LocalDateTime.now(),
         )
         logger.info(
             "artifact share renamed: user=[$userId], shareId=[$shareId], " +
-                "projectId=[${record.projectId}], repoName=[${record.repoName}]",
+                "projectId=[${filled.projectId}], repoName=[${filled.repoName}]",
         )
         return convert(artifactShareDao.save(updated))
     }
@@ -233,17 +240,31 @@ class ArtifactShareService(
     fun open(userId: String, shareId: String): ArtifactShareOpenInfo {
         val record = artifactShareDao.findByShareId(shareId)
             ?: throw ErrorCodeException(PreviewMessageCode.PREVIEW_ARTIFACT_SHARE_NOT_FOUND, shareId)
+        return openRecord(userId, record, shareId)
+    }
+
+    fun openByShortShareId(userId: String, shortShareId: String): ArtifactShareOpenInfo {
+        if (!ArtifactShareShortIds.isValid(shortShareId)) {
+            throw ErrorCodeException(PreviewMessageCode.PREVIEW_ARTIFACT_SHARE_NOT_FOUND, shortShareId)
+        }
+        val record = artifactShareDao.findByShortShareId(shortShareId)
+            ?: throw ErrorCodeException(PreviewMessageCode.PREVIEW_ARTIFACT_SHARE_NOT_FOUND, shortShareId)
+        return openRecord(userId, record, shortShareId)
+    }
+
+    private fun openRecord(userId: String, record: TArtifactShare, requestedId: String): ArtifactShareOpenInfo {
         if (!canAccess(record, userId)) {
-            logger.info(
-                "artifact share access denied: user=[$userId], shareId=[$shareId], " +
-                    "visibility=[${record.visibility}], projectId=[${record.projectId}], " +
-                    "repoName=[${record.repoName}]",
-            )
-            throw ErrorCodeException(PreviewMessageCode.PREVIEW_ARTIFACT_SHARE_ACCESS_DENIED, shareId)
+        logger.info(
+            "artifact share access denied: user=[$userId], shareId=[${record.id}], requestedId=[$requestedId], " +
+                "visibility=[${record.visibility}], projectId=[${record.projectId}], " +
+                "repoName=[${record.repoName}]",
+        )
+            throw ErrorCodeException(PreviewMessageCode.PREVIEW_ARTIFACT_SHARE_ACCESS_DENIED, requestedId)
         }
         logger.info(
-            "artifact share access: user=[$userId], shareId=[$shareId], visibility=[${record.visibility}], " +
-                "projectId=[${record.projectId}], repoName=[${record.repoName}]",
+            "artifact share access: user=[$userId], shareId=[${record.id}], requestedId=[$requestedId], " +
+                "visibility=[${record.visibility}], projectId=[${record.projectId}], " +
+                "repoName=[${record.repoName}]",
         )
         val liveRecord = ensureTokensForCurrentPath(record)
         val previewToken = liveRecord.previewToken
@@ -261,22 +282,23 @@ class ArtifactShareService(
      * path 漂移时废旧重签并回写；缺失 token 时同样自愈。
      */
     private fun ensureTokensForCurrentPath(record: TArtifactShare): TArtifactShare {
-        val nodeInfo = driveShareNodeResolver.resolveFileByIno(record.projectId, record.repoName, record.resourceId)
-            ?: throw ErrorCodeException(PreviewMessageCode.PREVIEW_NODE_NOT_FOUND, record.resourceId)
-        val pathChanged = nodeInfo.fullPath != record.fullPath
-        val missingToken = record.previewToken.isNullOrBlank() || record.downloadToken.isNullOrBlank()
+        val filled = ensureShortShareId(record)
+        val nodeInfo = driveShareNodeResolver.resolveFileByIno(filled.projectId, filled.repoName, filled.resourceId)
+            ?: throw ErrorCodeException(PreviewMessageCode.PREVIEW_NODE_NOT_FOUND, filled.resourceId)
+        val pathChanged = nodeInfo.fullPath != filled.fullPath
+        val missingToken = filled.previewToken.isNullOrBlank() || filled.downloadToken.isNullOrBlank()
         if (!pathChanged && !missingToken) {
-            return record
+            return filled
         }
-        revokeStoredTokens(record)
+        revokeStoredTokens(filled)
         val (authorizedUserSet, authorizedOrgList) = buildTokenAuthorization(
-            creator = record.createdBy,
-            visibility = record.visibility,
-            userIds = record.userIds,
-            orgIds = record.orgIds,
+            creator = filled.createdBy,
+            visibility = filled.visibility,
+            userIds = filled.userIds,
+            orgIds = filled.orgIds,
         )
         val refreshed = issueAndAttachTokens(
-            record.copy(
+            filled.copy(
                 fullPath = nodeInfo.fullPath,
                 lastModifiedDate = LocalDateTime.now(),
                 previewToken = null,
@@ -285,7 +307,7 @@ class ArtifactShareService(
             authorizedUserSet,
             authorizedOrgList,
         )
-        return artifactShareDao.save(refreshed)
+        return persistShare(refreshed)
     }
 
     private fun issueAndAttachTokens(
@@ -445,31 +467,34 @@ class ArtifactShareService(
     }
 
     private fun convert(record: TArtifactShare, includePermissionIds: Boolean = true): ArtifactShareInfo {
-        val shareId = record.id ?: throw ErrorCodeException(PreviewMessageCode.PREVIEW_ARTIFACT_SHARE_NOT_FOUND)
+        val live = ensureShortShareId(record)
+        val shareId = live.id ?: throw ErrorCodeException(PreviewMessageCode.PREVIEW_ARTIFACT_SHARE_NOT_FOUND)
+        val shortShareId = live.shortShareId?.takeIf { ArtifactShareShortIds.isValid(it) }
+            ?: throw ErrorCodeException(CommonMessageCode.SYSTEM_ERROR)
         return ArtifactShareInfo(
             shareId = shareId,
-            shareKind = record.shareKind,
-            resourceType = record.resourceType,
-            projectId = record.projectId,
-            repoName = record.repoName,
-            resourceId = record.resourceId,
-            fullPath = record.fullPath,
-            visibility = record.visibility,
-            userIds = if (includePermissionIds) record.userIds else emptyList(),
+            shareKind = live.shareKind,
+            resourceType = live.resourceType,
+            projectId = live.projectId,
+            repoName = live.repoName,
+            resourceId = live.resourceId,
+            fullPath = live.fullPath,
+            visibility = live.visibility,
+            userIds = if (includePermissionIds) live.userIds else emptyList(),
             orgIds = if (includePermissionIds) {
-                translateOrgIdsToDisplay(record.orgIds)
+                translateOrgIdsToDisplay(live.orgIds)
             } else {
                 emptyList()
             },
-            featured = record.featured,
-            agentId = record.agentId,
-            conversationId = record.conversationId,
-            artifactName = record.artifactName,
-            type = ArtifactShareTypes.resolve(record.artifactType, record.fullPath),
-            sharePath = "/a/$shareId",
-            createdBy = record.createdBy,
-            createdDate = record.createdDate,
-            lastModifiedDate = record.lastModifiedDate,
+            featured = live.featured,
+            agentId = live.agentId,
+            conversationId = live.conversationId,
+            artifactName = live.artifactName,
+            type = ArtifactShareTypes.resolve(live.artifactType, live.fullPath),
+            sharePath = "/share/$shortShareId",
+            createdBy = live.createdBy,
+            createdDate = live.createdDate,
+            lastModifiedDate = live.lastModifiedDate,
         )
     }
 
@@ -567,6 +592,63 @@ class ArtifactShareService(
 
     private fun generateShareId(): String = UUID.randomUUID().toString().replace("-", "").lowercase()
 
+    private fun allocateShortShareId(): String {
+        repeat(MAX_SHORT_SHARE_ID_ATTEMPTS) {
+            val candidate = ArtifactShareShortIds.generate()
+            if (artifactShareDao.findByShortShareId(candidate) == null) {
+                return candidate
+            }
+        }
+        throw ErrorCodeException(CommonMessageCode.SYSTEM_ERROR)
+    }
+
+    private fun ensureShortShareId(record: TArtifactShare): TArtifactShare {
+        val current = record.shortShareId.orEmpty()
+        if (ArtifactShareShortIds.isValid(current)) {
+            return record
+        }
+        val shareId = record.id ?: throw ErrorCodeException(PreviewMessageCode.PREVIEW_ARTIFACT_SHARE_NOT_FOUND)
+        repeat(MAX_SHORT_SHARE_ID_ATTEMPTS) {
+            val allocated = allocateShortShareId()
+            try {
+                if (artifactShareDao.assignShortShareIdIfAbsent(shareId, allocated)) {
+                    return record.copy(shortShareId = allocated)
+                }
+                val latest = artifactShareDao.findByShareId(shareId)
+                    ?: throw ErrorCodeException(PreviewMessageCode.PREVIEW_ARTIFACT_SHARE_NOT_FOUND, shareId)
+                if (ArtifactShareShortIds.isValid(latest.shortShareId.orEmpty())) {
+                    return latest
+                }
+            } catch (ex: DuplicateKeyException) {
+                if (ex.message?.contains(SHORT_SHARE_ID_INDEX) != true) {
+                    throw ex
+                }
+                logger.warn(
+                    "artifact share shortShareId conflict, retry allocate, shareId=[$shareId]",
+                )
+            }
+        }
+        throw ErrorCodeException(CommonMessageCode.SYSTEM_ERROR)
+    }
+
+    private fun persistShare(record: TArtifactShare): TArtifactShare {
+        var candidate = record
+        repeat(MAX_SHORT_SHARE_ID_ATTEMPTS) {
+            try {
+                return artifactShareDao.save(candidate)
+            } catch (ex: DuplicateKeyException) {
+                if (ex.message?.contains(SHORT_SHARE_ID_INDEX) != true) {
+                    throw ex
+                }
+                logger.warn(
+                    "artifact share shortShareId conflict, retry allocate, shareId=[${candidate.id}]",
+                )
+                candidate = candidate.copy(shortShareId = allocateShortShareId())
+            }
+        }
+        throw ErrorCodeException(CommonMessageCode.SYSTEM_ERROR)
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(ArtifactShareService::class.java)
         private const val MAX_BATCH_RESOURCE_IDS = 500
@@ -574,5 +656,7 @@ class ArtifactShareService(
         private const val DEFAULT_PAGE_LIMIT = 100
         private const val MAX_PAGE_LIMIT = 500
         private const val MAX_SCOPE_IDS = 500
+        private const val MAX_SHORT_SHARE_ID_ATTEMPTS = 8
+        private const val SHORT_SHARE_ID_INDEX = "short_share_id_uk"
     }
 }
