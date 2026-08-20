@@ -40,6 +40,8 @@ import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.client.ClientConfig
 import com.tencent.bkrepo.common.storage.innercos.endpoint.DefaultEndpointResolver
+import com.tencent.bkrepo.common.storage.innercos.endpoint.EndpointResolver
+import com.tencent.bkrepo.common.storage.innercos.endpoint.PolarisEndpointResolver
 import com.tencent.bkrepo.common.storage.innercos.http.Headers
 import com.tencent.bkrepo.common.storage.innercos.http.HttpProtocol
 import com.tencent.bkrepo.common.storage.innercos.request.CosRequest
@@ -50,6 +52,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
+import org.springframework.util.AntPathMatcher
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -82,7 +85,7 @@ class CosRedirectService(
         }
         val redirectSettings = DownloadRedirectSettings.from(context.repositoryDetail.configuration)
         val repoSupportRedirectTo = redirectSettings?.redirectTo == RedirectTo.INNERCOS.name
-        val redirectTo = HttpContextHolder.getRequest().getHeader("X-BKREPO-DOWNLOAD-REDIRECT-TO")
+        val redirectTo = HttpContextHolder.getRequest().getHeader(HEADER_REDIRECT_TO)
         return repoSupportRedirectTo ||
             redirectTo == RedirectTo.INNERCOS.name ||
             storageProperties.redirect.redirectAllDownload
@@ -124,7 +127,7 @@ class CosRedirectService(
             repoSupportRedirectTo = regex.matches(node.fullPath)
         }
 
-        val redirectTo = HttpContextHolder.getRequest().getHeader("X-BKREPO-DOWNLOAD-REDIRECT-TO")
+        val redirectTo = HttpContextHolder.getRequest().getHeader(HEADER_REDIRECT_TO)
         val needToRedirect = repoSupportRedirectTo ||
             redirectTo == RedirectTo.INNERCOS.name ||
             storageProperties.redirect.redirectAllDownload
@@ -138,13 +141,10 @@ class CosRedirectService(
         require(credentials is InnerCosCredentials)
         val node = ArtifactContextHolder.getNodeDetail(context.artifactInfo)!!
 
-        // 创建请求并签名
         val clientConfig = ClientConfig(credentials).apply {
             signExpired = storageProperties.redirect.redirectUrlExpireTime
-            // 重定向请求不使用北极星解析，直接使用域名
-            endpointResolver = DefaultEndpointResolver()
-            httpProtocol = HttpProtocol.HTTPS
         }
+        configureRedirectTarget(credentials, clientConfig, context)
         val request = GetObjectRequest(node.sha256!!)
         val range = HttpContextHolder.getRequest().getHeader(Headers.RANGE)
         if (!range.isNullOrEmpty()) {
@@ -158,9 +158,53 @@ class CosRedirectService(
             request.url += "&sign=$urlencodedSign"
         }
 
-        // 重定向
-        logger.info("Redirect request of download node[${node.sha256}] to cos[${credentials.key}]")
+        logger.info(
+            "Redirect request of download node[${node.sha256}] to cos[${credentials.key}], " +
+                "pathStyle[${clientConfig.pathStyle}]"
+        )
         context.response.sendRedirect(request.url)
+    }
+
+    /**
+     * 默认重定向到域名；命中白名单或请求头指定，且 Polaris 解析出 IP 时走 path-style HTTP 直连
+     */
+    private fun configureRedirectTarget(
+        credentials: InnerCosCredentials,
+        clientConfig: ClientConfig,
+        context: ArtifactDownloadContext
+    ) {
+        if (shouldRedirectToIp(context, clientConfig)) {
+            val endpoint = clientConfig.endpointBuilder.buildEndpoint(credentials.region, credentials.bucket)
+            val resolvedHost = clientConfig.endpointResolver.resolveEndpoint(endpoint)
+            if (resolvedHost != endpoint) {
+                clientConfig.pathStyle = true
+                clientConfig.httpProtocol = HttpProtocol.HTTP
+                clientConfig.endpointResolver = object : EndpointResolver {
+                    override fun resolveEndpoint(endpoint: String) = resolvedHost
+                }
+                return
+            }
+            logger.warn("Polaris resolve endpoint [$endpoint] unchanged, fallback to domain redirect")
+        }
+        clientConfig.endpointResolver = DefaultEndpointResolver()
+        clientConfig.httpProtocol = HttpProtocol.HTTPS
+    }
+
+    private fun shouldRedirectToIp(context: ArtifactDownloadContext, clientConfig: ClientConfig): Boolean {
+        if (clientConfig.endpointResolver !is PolarisEndpointResolver) {
+            return false
+        }
+        val header = HttpContextHolder.getRequest().getHeader(HEADER_REDIRECT_IP)
+        return header.equals(TRUE, ignoreCase = true) || isIpDirectRepo(context.projectId, context.repoName)
+    }
+
+    private fun isIpDirectRepo(projectId: String, repoName: String): Boolean {
+        val patterns = storageProperties.redirect.ipDirectRepos
+        if (patterns.isEmpty()) {
+            return false
+        }
+        val repo = "$projectId/$repoName"
+        return patterns.any { antPathMatcher.match(it, repo) }
     }
 
     private fun addCosResponseHeaders(context: ArtifactDownloadContext, request: CosRequest, node: NodeDetail) {
@@ -202,6 +246,11 @@ class CosRedirectService(
 
     companion object {
         private val logger = LoggerFactory.getLogger(CosRedirectService::class.java)
+        private val antPathMatcher = AntPathMatcher()
+
+        private const val HEADER_REDIRECT_TO = "X-BKREPO-DOWNLOAD-REDIRECT-TO"
+        private const val HEADER_REDIRECT_IP = "X-BKREPO-DOWNLOAD-REDIRECT-IP"
+        private const val TRUE = "true"
 
         /** 依赖源协议要求的 Content-Type（如 OCI mediaType），优先于按文件名推断 */
         const val ATTR_RESPONSE_CONTENT_TYPE = "cos.redirect.responseContentType"

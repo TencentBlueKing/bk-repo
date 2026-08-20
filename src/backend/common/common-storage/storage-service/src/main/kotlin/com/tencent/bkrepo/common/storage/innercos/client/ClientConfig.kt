@@ -68,6 +68,11 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
     var httpProtocol: HttpProtocol = HttpProtocol.HTTP
 
     /**
+     * 使用 path-style 访问，URL 形如 http://host/{bucket}/{key}，Host 使用实际访问地址
+     */
+    var pathStyle: Boolean = false
+
+    /**
      * 分片阈值，大于此值将采用分片上传/下载
      */
     val multipartThreshold: Long = DataSize.ofMegabytes(credentials.multipartThreshold).toBytes()

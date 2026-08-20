@@ -69,5 +69,10 @@ data class RedirectProperties(
     /**
      * 重定向项目黑名单
      */
-    var projectBlackList: Set<String> = emptySet()
+    var projectBlackList: Set<String> = emptySet(),
+
+    /**
+     * 允许重定向到 COS IP 的仓库列表，格式为 projectId/repoName，支持 Ant 风格通配符
+     */
+    var ipDirectRepos: Set<String> = emptySet()
 )
