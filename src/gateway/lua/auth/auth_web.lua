@@ -37,11 +37,7 @@ if config.mode == "standalone" or config.mode == "" or config.mode == nil then
         ngx.exit(401)
         return
     end
-    username, time_zone = oauthUtil:verify_bkrepo_token(bkrepo_login_token, force_refresh)
-    --- 单租户模式下，若后端返回了 time_zone，则透传给下游服务 --
-    if time_zone ~= nil and time_zone ~= "" then
-        ngx.header["x-bkrepo-time-zone"] = time_zone
-    end
+    username = oauthUtil:verify_bkrepo_token(bkrepo_login_token)
     token = bkrepo_login_token
 elseif config.auth_mode == "" or config.auth_mode == "token" then
     local bk_token = cookieUtil:get_cookie("bk_token")
@@ -56,7 +52,11 @@ elseif config.auth_mode == "" or config.auth_mode == "token" then
         ngx.header["x-bkrepo-tenant-id"] = tenant_id
         ngx.header["x-bkrepo-time-zone"] = time_zone
     else
-        username = oauthUtil:verify_bk_token(config.oauth.apigw_url, bk_token)
+        username, time_zone = oauthUtil:verify_bk_token(config.oauth.apigw_url, bk_token, force_refresh)
+        --- 单租户模式下，若后端返回了 time_zone，则透传给下游服务 --
+        if time_zone ~= nil and time_zone ~= "" then
+            ngx.header["x-bkrepo-time-zone"] = time_zone
+        end
     end
     token = bk_token
 elseif config.auth_mode == "ticket" then
