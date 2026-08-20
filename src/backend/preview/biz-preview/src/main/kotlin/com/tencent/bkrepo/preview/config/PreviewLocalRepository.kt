@@ -37,7 +37,9 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.preview.constant.PREVIEW_NODE_DETAIL
+import com.tencent.bkrepo.preview.constant.PREVIEW_RESPONSE_CONTENT_TYPE
 import com.tencent.bkrepo.preview.constant.PreviewMessageCode
 import com.tencent.bkrepo.preview.exception.PreviewNotFoundException
 import com.tencent.bkrepo.preview.service.DrivePreviewDownloadService
@@ -75,6 +77,15 @@ class PreviewLocalRepository(
                 "${context.artifactInfo.projectId}|${context.artifactInfo.repoName}" +
                         "|${context.artifactInfo.getArtifactFullPath()}"
             )
+        return applyMediaPreviewHeaders(resource)
+    }
+
+    private fun applyMediaPreviewHeaders(resource: ArtifactResource): ArtifactResource {
+        val contentType = HttpContextHolder.getRequestOrNull()
+            ?.getAttribute(PREVIEW_RESPONSE_CONTENT_TYPE) as? String
+            ?: return resource
+        resource.contentType = contentType
+        resource.useDisposition = false
         return resource
     }
 
@@ -87,12 +98,14 @@ class PreviewLocalRepository(
                 fullPath = fullPath,
                 storageCredentials = storageCredentials,
             )
-            return ArtifactResource(
-                inputStream,
-                artifactInfo.getResponseName(),
-                null,
-                ArtifactChannel.LOCAL,
-                useDisposition,
+            return applyMediaPreviewHeaders(
+                ArtifactResource(
+                    inputStream,
+                    artifactInfo.getResponseName(),
+                    null,
+                    ArtifactChannel.LOCAL,
+                    useDisposition,
+                )
             )
         }
     }

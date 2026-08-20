@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div :class="{ 'preview-media-page': mediaShow }">
         <vue-office-excel
             v-if="previewExcel"
             :src="dataSource"
@@ -26,6 +26,13 @@
             />
         </div>
         <div v-if="xmindShow" ref="container" class="xmind-preview-container"></div>
+        <media-preview
+            v-if="mediaShow"
+            :src="mediaUrl"
+            :kind="mediaKind"
+            :seed="filePath"
+            @error="showMediaDecodeError"
+        />
         <div v-if="previewBasic" class="flex-column flex-center">
             <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
             <div style="height: 700px; width: 100%">
@@ -35,7 +42,7 @@
         <div v-if="hasError" class="empty-data-container flex-center" style="background-color: white; height: 100%">
             <div class="flex-column flex-center">
                 <img width="480" height="240" style="float: left;margin-right: 3px" :src="window.BK_SUBPATH + 'ui/440.svg'" />
-                <span class="mt5 error-data-title">{{ $t('previewErrorTip') }}</span>
+                <span class="mt5 error-data-title">{{ mediaDecodeError ? $t('previewMediaErrorTip') : $t('previewErrorTip') }}</span>
             </div>
         </div>
         <div v-if="loading" class="mainBody">
@@ -52,14 +59,16 @@
         capturePreviewTokenFromUrl,
         customizePreviewLocalOfficeFile,
         customizePreviewRemoteOfficeFile,
-        getPreviewLocalOfficeFileInfo, getPreviewRemoteOfficeFileInfo
+        getPreviewLocalOfficeFileInfo, getPreviewRemoteOfficeFileInfo,
+        buildLocalOnlinePreviewUrl
     } from '@repository/utils/previewOfficeFile'
     import { Base64 } from 'js-base64'
-    import { isCode, isExcel, isFormatType, isHtmlFile, isHtmlType, isJsx, isMarkdown, isPic, isText, isXmind } from '@repository/utils/file'
+    import { isCode, isExcel, isFormatType, isHtmlFile, isHtmlType, isJsx, isMarkdown, isMedia, isMediaVideo, isPic, isText, isXmind } from '@repository/utils/file'
     import { createAssetResolver, parsePreviewContext, resolvePreviewViewMode } from '@repository/utils/markdownJsxPreview'
     import { buildImageViewerOptions, isPurePreviewEnabled } from '@repository/utils/imagePreview'
     import { createOrUpdateXmindViewer, destroyXmindViewer } from '@repository/utils/xmindPreview'
     import SourcePreviewTabs from '@repository/components/FilePreview/SourcePreviewTabs'
+    import MediaPreview from '@repository/components/FilePreview/MediaPreview'
     import Viewer from 'viewerjs'
 
     const PDFJS = require('pdfjs-dist')
@@ -89,7 +98,7 @@
 
     export default {
         name: 'FilePreview',
-        components: { VueOfficeExcel, SourcePreviewTabs },
+        components: { VueOfficeExcel, SourcePreviewTabs, MediaPreview },
         props: {
             repoType: String,
             extraParam: String,
@@ -132,6 +141,10 @@
                 richTextSource: '',
                 richTextFilePath: '',
                 xmindShow: false,
+                mediaShow: false,
+                mediaUrl: '',
+                mediaKind: 'video',
+                mediaDecodeError: false,
                 imgUrl: '',
                 pdfPages: [], // 页数
                 pdfWidth: '', // 宽度
@@ -189,6 +202,28 @@
             } else {
                 this.dealWaterMark()
             }
+            if (isMedia(this.filePath)) {
+                if (this.repoType !== 'local') {
+                    this.showError()
+                    return
+                }
+                const mediaUrl = buildLocalOnlinePreviewUrl(this.projectId, this.repoName, '/' + this.filePath)
+                fetch(mediaUrl, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: { Range: 'bytes=0-0' }
+                }).then(res => {
+                    if (!res.ok && res.status !== 206) {
+                        this.showError()
+                        return
+                    }
+                    this.loading = false
+                    this.mediaShow = true
+                    this.mediaKind = isMediaVideo(this.filePath) ? 'video' : 'audio'
+                    this.mediaUrl = mediaUrl
+                }).catch(() => this.showError())
+                return
+            }
             if (isCode(this.filePath) || isHtmlFile(this.filePath)) {
                 this.previewViaOnlinePreview(res => this.dealDate(res))
             } else if (isExcel(this.filePath)) {
@@ -242,6 +277,15 @@
             showError () {
                 this.loading = false
                 this.previewBasic = false
+                this.mediaShow = false
+                this.mediaDecodeError = false
+                this.hasError = true
+            },
+            showMediaDecodeError () {
+                this.loading = false
+                this.previewBasic = false
+                this.mediaShow = false
+                this.mediaDecodeError = true
                 this.hasError = true
             },
             cancel () {
@@ -255,6 +299,10 @@
                 this.imgShow = false
                 this.imgUrl = ''
                 this.xmindShow = false
+                this.mediaShow = false
+                this.mediaUrl = ''
+                this.mediaKind = 'video'
+                this.mediaDecodeError = false
                 destroyXmindViewer(this.xmindViewer)
                 this.xmindViewer = null
                 this.pdfShow = false
@@ -424,6 +472,15 @@ canvas {
     background: #fff;
     /* above watermark overlay so pan/zoom gestures hit the embed iframe */
     z-index: 10000000;
+}
+.preview-media-page {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
 }
 .preview-file-tips {
     margin-bottom: 10px;

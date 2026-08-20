@@ -34,4 +34,6 @@ package com.tencent.bkrepo.auth.pojo
 data class ApiResponse(
     val code: Int,
     val content: String
-)
+) {
+    val success: Boolean get() = code in 200..299
+}

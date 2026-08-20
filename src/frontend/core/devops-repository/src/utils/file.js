@@ -83,6 +83,19 @@ const xmindType = [
     'xmind'
 ]
 
+const mediaVideoType = [
+    'mp4',
+    'webm'
+]
+
+const mediaAudioType = [
+    'mp3',
+    'wav',
+    'ogg',
+    'oga',
+    'm4a'
+]
+
 // 与 preview 服务 FileType.CODES 对齐（html 已拆到 isHtmlFile 做渲染预览）
 // 含原文本类后缀：统一走 onlinePreview + Monaco
 const codeType = [
@@ -180,6 +193,20 @@ export function isHtmlFile (param) {
 
 export function isXmind (param) {
     return xmindType.find(type => param.endsWith(type))
+}
+
+export function isMediaVideo (param) {
+    const suffix = getFileSuffix(param)
+    return Boolean(mediaVideoType.find(type => type === suffix))
+}
+
+export function isMediaAudio (param) {
+    const suffix = getFileSuffix(param)
+    return Boolean(mediaAudioType.find(type => type === suffix))
+}
+
+export function isMedia (param) {
+    return isMediaVideo(param) || isMediaAudio(param)
 }
 
 // 判断可预览的类型(不包括pic)

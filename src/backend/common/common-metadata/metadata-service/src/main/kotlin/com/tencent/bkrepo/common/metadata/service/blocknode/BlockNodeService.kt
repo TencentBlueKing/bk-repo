@@ -88,6 +88,16 @@ interface BlockNodeService {
     )
 
     /**
+     * 完成该路径上最新一次未过期会话（uploadId != null 且 expireDate == null）。
+     * 用于旧源端 finish-before-node：覆盖创建后再 finish，避免 listener 误删。
+     */
+    fun completeLatestUnexpiredSession(
+        projectId: String,
+        repoName: String,
+        fullPath: String
+    )
+
+    /**
      * 删除旧分块，即删除非指定的nodeCurrentSha256的分块。
      * 如果未指定nodeCurrentSha256，则删除节点所有分块
      * 如果指定uploadId，则删除该uploadId对应的分块，未指定则删除uploadId为null的所有分块

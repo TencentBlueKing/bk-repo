@@ -1,8 +1,12 @@
 package com.tencent.bkrepo.preview.config.security
 
 import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
+import com.tencent.bkrepo.auth.api.ServiceUserClient
+import com.tencent.bkrepo.auth.pojo.token.OrgScope
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.token.TokenType
+import com.tencent.bkrepo.auth.pojo.token.matchesAuthorizedOrgIds
+import com.tencent.bkrepo.auth.pojo.token.normalizeOrgIds
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.TEMPORARY_TOKEN_AUTH_PREFIX
@@ -26,10 +30,10 @@ import java.time.format.DateTimeFormatter
  * 在 [PreviewTokenPostAuthInterceptor] 中于阶段一 [com.tencent.bkrepo.common.security.http.core.HttpAuthInterceptor]
  * 之后调用：只要请求携带 preview token，即强制执行范围校验与身份绑定，不再注册为链内 [com.tencent.bkrepo.common.security.http.core.HttpAuthHandler]。
  *
- * 承载 4 项核心能力：
+ * 承载核心能力：
  *  1. 双传递方式（Header `Authorization: Temporary` + query `?token=`）；
  *  2. 范围校验：projectId/repoName/fullPath/expireDate/permits/IP；
- *  3. 匿名/定向双模式：根据 `tokenInfo.authorizedUserList` 是否为空走不同的身份绑定逻辑；
+ *  3. 身份授权：匿名分享（用户与组织皆空）绑定 createdBy；定向为用户列表或组织 OR；
  *  4. 紧急关停：`preview.temporary-token.enabled = false` 时短路跳过。
  *
  * 仅 `type=PREVIEW` 的 token 才会被接受；其它类型的 token 直接拒绝认证。
@@ -37,6 +41,7 @@ import java.time.format.DateTimeFormatter
 class PreviewTokenAuthService(
     private val authenticationManager: AuthenticationManager,
     private val temporaryTokenClient: ServiceTemporaryTokenClient,
+    private val serviceUserClient: ServiceUserClient,
     private val config: PreviewTokenAuthConfig = PreviewTokenAuthConfig(),
 ) {
 
@@ -146,9 +151,8 @@ class PreviewTokenAuthService(
     }
 
     /**
-     * 匿名/定向双模式身份绑定：
-     *  - authorizedUserList 为空 → 匿名分享：`USER_KEY` 取 `tokenInfo.createdBy`；
-     *  - 非空 → 定向分享：要求阶段一 AuthHandler 已写入真实 `USER_KEY`；未登录抛 401，uid 不在 list 抛 403。
+     *  - authorizedUserList 与 authorizedOrgList 皆空 → 匿名分享：`USER_KEY` 取 `tokenInfo.createdBy`；
+     *  - 否则为定向分享：须已登录；uid 命中用户列表，或组织 ID 命中用户任一 scopeValue。
      */
     private fun bindUserAndAudit(
         tokenInfo: TemporaryTokenInfo,
@@ -158,13 +162,17 @@ class PreviewTokenAuthService(
             ?.trim()
             ?.takeIf { it.isNotBlank() }
             ?: ANONYMOUS_USER
-        val effectiveUid: String = if (tokenInfo.authorizedUserList.isEmpty()) {
+        val effectiveUid: String = if (tokenInfo.authorizedUserList.isEmpty() &&
+            tokenInfo.authorizedOrgList.isEmpty()
+        ) {
             tokenInfo.createdBy
         } else {
             if (phaseOneUid == ANONYMOUS_USER) {
                 throw AuthenticationException(PreviewMessageCode.PREVIEW_LOGIN_REQUIRED.name)
             }
-            if (phaseOneUid !in tokenInfo.authorizedUserList) {
+            if (phaseOneUid !in tokenInfo.authorizedUserList &&
+                !matchesAuthorizedOrg(phaseOneUid, tokenInfo.authorizedOrgList)
+            ) {
                 throw PermissionException(PreviewMessageCode.PREVIEW_TEMPORARY_TOKEN_USER_FORBIDDEN.name)
             }
             phaseOneUid
@@ -173,14 +181,33 @@ class PreviewTokenAuthService(
             logger.info(
                 "TemporaryToken auth ok: " +
                     "tokenId=${maskToken(tokenInfo.token)}, " +
-                    "createdBy=${tokenInfo.createdBy}, visitor=$effectiveUid, " +
-                    "projectId=${tokenInfo.projectId}, repoName=${tokenInfo.repoName}, " +
-                    "fullPath=${tokenInfo.fullPath}, " +
-                    "uri=${request.requestURI}, ip=${resolveClientIp(request)}, " +
-                    "ua=${request.getHeader(HttpHeaders.USER_AGENT)?.take(120) ?: "-"}"
+                    "createdBy=[${tokenInfo.createdBy}], visitor=[$effectiveUid], " +
+                    "projectId=[${tokenInfo.projectId}], repoName=[${tokenInfo.repoName}], " +
+                    "fullPath=[${tokenInfo.fullPath}], " +
+                    "uri=[${request.requestURI}], ip=[${resolveClientIp(request)}], " +
+                    "ua=[${request.getHeader(HttpHeaders.USER_AGENT)?.take(120) ?: "-"}]"
             )
         }
         return effectiveUid
+    }
+
+    private fun matchesAuthorizedOrg(userId: String, authorizedOrgIds: Set<String>): Boolean {
+        if (userId == ANONYMOUS_USER || authorizedOrgIds.normalizeOrgIds().isEmpty()) {
+            return false
+        }
+        return loadUserOrgScopesOrThrow(userId).matchesAuthorizedOrgIds(authorizedOrgIds)
+    }
+
+    private fun loadUserOrgScopesOrThrow(userId: String): List<OrgScope> {
+        return try {
+            serviceUserClient.userDeptById(userId).data?.scopes
+                ?: throw PermissionException(PreviewMessageCode.PREVIEW_TEMPORARY_TOKEN_USER_FORBIDDEN.name)
+        } catch (ex: PermissionException) {
+            throw ex
+        } catch (ex: Exception) {
+            logger.warn("Failed to resolve user org for temporary token auth, user=[$userId]", ex)
+            throw PermissionException(PreviewMessageCode.PREVIEW_TEMPORARY_TOKEN_USER_FORBIDDEN.name)
+        }
     }
 
     private fun locateRequestFullPath(request: HttpServletRequest, tokenInfo: TemporaryTokenInfo): String? {

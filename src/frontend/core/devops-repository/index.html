@@ -176,7 +176,20 @@
 
         const search = new URL(location.href).searchParams // redirect/token/download/?preview
         const redirect = search.get('redirect')
-        if (redirect) {
+        const shareShortLink = /\/a\/[^/]+$/.test(location.pathname.replace(/\/+$/, ''))
+        if (shareShortLink) {
+            // 网关对未登录 /a/{shareId} 回落本页；整页跳转企业登录，c_url 为短链
+            if (MODE_CONFIG === 'ci' || MODE_CONFIG === 'saas') {
+                window.postMessage({
+                    action: 'toggleLoginDialog'
+                }, '*')
+                location.href = window.getLoginUrl()
+            } else {
+                sessionStorage.setItem('afterLogin', location.href)
+                window.login = true
+                mountApp()
+            }
+        } else if (redirect) {
             search.delete('redirect')
 
             const redirectUrl = new URL(/^https?/.test(redirect) ? redirect : location.origin + redirect)

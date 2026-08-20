@@ -65,8 +65,15 @@ interface ReplicaNodeDispatchService {
 
 
     /**
-     * 根据host读取对应配置的执行client信息
+     * 根据host读取对应配置的执行client信息。
+     * create 路径传入 [taskName]/[projectId]/[repoName]，与 execute 使用同一套规则。
      */
-    fun <T> findReplicaClientByHost(host: String, target: Class<T>): T?
+    fun <T> findReplicaClientByHost(
+        host: String,
+        target: Class<T>,
+        taskName: String? = null,
+        projectId: String? = null,
+        repoName: String? = null
+    ): T?
 }
 

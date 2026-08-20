@@ -17,6 +17,7 @@
     "repoName": "drive-local",
     "fullPathSet": ["/a.txt"],
     "authorizedUserSet": [],
+    "authorizedOrgList": ["id1", "id2"],
     "authorizedIpSet": [],
     "expireSeconds": 86400,
     "permits": 10,
@@ -31,7 +32,8 @@
   | projectId | string | 是 | 无 | 项目名称 | project name |
   | repoName | string | 是 | 无 | Drive 仓库名称 | drive repo name |
   | fullPathSet | list | 是 | 无 | 授权路径列表 | authorized path set |
-  | authorizedUserSet | list | 否 | [] | 授权用户（本期不校验） | authorized user set |
+  | authorizedUserSet | list | 否 | [] | 授权用户；与 authorizedOrgList 皆空时须登录且任意已登录用户可访问 | authorized user set |
+  | authorizedOrgList | list | 否 | [] | 授权组织 ID 列表；与用户列表为 OR，按用户组织 scopeValue 交集匹配 | authorized org ids |
   | authorizedIpSet | list | 否 | [] | 授权 IP | authorized ip set |
   | expireSeconds | long | 否 | 86400 | 有效时间（秒） | expire seconds |
   | permits | int | 否 | 无限制 | 允许访问次数 | access permits |

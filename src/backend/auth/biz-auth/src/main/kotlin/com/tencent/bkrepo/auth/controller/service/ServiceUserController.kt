@@ -36,7 +36,9 @@ import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
+import com.tencent.bkrepo.auth.pojo.user.UserOrgMembership
 import com.tencent.bkrepo.auth.service.RoleService
+import com.tencent.bkrepo.auth.service.UserDeptService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.RequestUtil
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -49,7 +51,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class ServiceUserController @Autowired constructor(
     private val userService: UserService,
-    private val roleService: RoleService
+    private val roleService: RoleService,
+    private val userDeptService: UserDeptService,
 ) : ServiceUserClient {
 
     override fun createUser(request: CreateUserRequest): Response<Boolean> {
@@ -100,5 +103,9 @@ class ServiceUserController @Autowired constructor(
 
     override fun listAdminUsers(): Response<List<String>> {
         return ResponseBuilder.success(userService.listAdminUsers())
+    }
+
+    override fun userDeptById(uid: String): Response<UserOrgMembership> {
+        return ResponseBuilder.success(userDeptService.getUserOrgMembership(uid))
     }
 }

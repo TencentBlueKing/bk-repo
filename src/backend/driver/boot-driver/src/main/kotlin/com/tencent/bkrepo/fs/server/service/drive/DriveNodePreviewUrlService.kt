@@ -68,7 +68,7 @@ class DriveNodePreviewUrlService(
         private const val TYPE_OTHER = "other"
         private const val FILE_PREVIEW_PATH_PREFIX = "/filePreview/local/0/"
         private val KNOWN_ARTIFACT_TYPES = setOf(
-            "image", "pdf", "html", "code", "table", "slides", "markdown", "other",
+            "image", "pdf", "html", "code", "table", "slides", "markdown", "video", "audio", "other",
         )
     }
 }

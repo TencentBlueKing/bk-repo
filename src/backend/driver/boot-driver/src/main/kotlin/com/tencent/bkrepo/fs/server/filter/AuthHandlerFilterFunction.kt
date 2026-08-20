@@ -60,9 +60,6 @@ class AuthHandlerFilterFunction(
         if (uncheckedUrlPrefixList.any { request.path().startsWith(it) }) {
             return next(request)
         }
-        if (temporaryAccessUrlPrefixList.any { request.path().startsWith(it) }) {
-            return next(request)
-        }
         var user = ANONYMOUS_USER
 
         val basicCredentials = request.basicCredentials()
@@ -91,7 +88,13 @@ class AuthHandlerFilterFunction(
             request.headers().header("X-BKREPO-SECURITY-TOKEN").firstOrNull()
         } else {
             request.bearerToken()
-        } ?: throw AuthenticationException("missing token.")
+        }
+        if (token == null) {
+            if (optionalAuthUrlPrefixList.any { request.path().startsWith(it) }) {
+                return next(request)
+            }
+            throw AuthenticationException("missing token.")
+        }
 
         try {
             val jws = securityManager.validateToken(token)
@@ -110,8 +113,16 @@ class AuthHandlerFilterFunction(
     }
 
     companion object {
-        private val uncheckedUrlPrefixList = listOf("/login", "/devx/login", "/ioa", "/client/metrics/push")
-        private val temporaryAccessUrlPrefixList = listOf(
+        private val uncheckedUrlPrefixList = listOf(
+            "/login",
+            "/devx/login",
+            "/ioa",
+            "/client/metrics/push",
+        )
+        /**
+         * 允许匿名访问，但仍解析已有 Basic / Platform / JWT 凭据
+         */
+        private val optionalAuthUrlPrefixList = listOf(
             "/drive/temporary/upload/",
             "/drive/temporary/download/",
         )

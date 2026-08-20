@@ -128,7 +128,7 @@ enum class FileType(val instanceName: String) {
             "brep"
         )
         private val EML_TYPES = arrayOf("eml")
-        private val MEDIA_TYPES = arrayOf("mp3", "wav", "mp4", "flv")
+        private val MEDIA_TYPES = arrayOf("mp3", "wav", "mp4", "webm", "ogg", "oga", "m4a")
         private val XMIND_TYPES = arrayOf("xmind")
         private val EPUB_TYPES = arrayOf("epub")
         private val DCM_TYPES = arrayOf("dcm")

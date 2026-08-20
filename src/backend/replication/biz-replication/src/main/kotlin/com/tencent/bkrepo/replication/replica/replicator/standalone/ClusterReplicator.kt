@@ -30,7 +30,6 @@ package com.tencent.bkrepo.replication.replica.replicator.standalone
 import com.google.common.base.Throwables
 import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
@@ -38,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.util.BlockNodeUploadId
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
@@ -219,22 +219,29 @@ class ClusterReplicator(
 
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
         var fileReplicaStatus = true
+        var blockUploadId: String? = null
         if (unNormalNode(node)) {
-            fileReplicaStatus = handleBlockNodeReplication(context, node)
+            val result = handleBlockNodeReplication(context, node)
+            fileReplicaStatus = result.first
+            blockUploadId = result.second
         }
         if (fileReplicaStatus) {
-            fileReplicaStatus = handleNormalNodeReplication(context, node)
+            fileReplicaStatus = handleNormalNodeReplication(context, node, blockUploadId)
+        }
+        // finish 必须在覆盖创建 node 之后，与本地 completeSeparateBlockUpload 顺序一致。
+        if (fileReplicaStatus && !blockUploadId.isNullOrEmpty()) {
+            replicaBlockNodeFinish(context, node.fullPath, blockUploadId)
         }
         return fileReplicaStatus
     }
 
-    private fun handleBlockNodeReplication(context: ReplicaContext, node: NodeInfo): Boolean {
+    private fun handleBlockNodeReplication(context: ReplicaContext, node: NodeInfo): Pair<Boolean, String?> {
         with(context) {
-            val blockNodeList = validateAndGetBlockNodeList(context, node) ?: return false
-            if (blockNodeList.isEmpty()) return true
-            val uploadId = "${StringPool.uniqueId()}/${node.id}"
+            val blockNodeList = validateAndGetBlockNodeList(context, node) ?: return false to null
+            if (blockNodeList.isEmpty()) return true to null
+            val uploadId = BlockNodeUploadId.replicaSession(node.id)
 
-            // 并发传输文件，每个文件传输完成后创建对应的blocknode
+            // 并发传输文件，每个文件传输完成后创建对应的blocknode（此时仍带 uploadId）
             val success = executeBlockFileTransfer(
                 blockNodeExecutor = blockNodeExecutor,
                 context = context,
@@ -245,20 +252,20 @@ class ClusterReplicator(
                 },
                 handleError = { ctx, nodeInfo, throwable -> handleBlockFileTransferError(ctx, nodeInfo, throwable) }
             )
+            return if (success) true to uploadId else false to null
+        }
+    }
 
-            // 所有文件传输完成并创建blocknode后，调用finish请求
-            if (success) {
-                artifactReplicaClient!!.replicaBlockNodeCreateFinishRequest(
-                    BlockNodeCreateFinishRequest(
-                        projectId = remoteProjectId!!,
-                        repoName = remoteRepoName!!,
-                        uploadId = uploadId,
-                        fullPath = node.fullPath
-                    )
+    private fun replicaBlockNodeFinish(context: ReplicaContext, fullPath: String, uploadId: String) {
+        with(context) {
+            artifactReplicaClient!!.replicaBlockNodeCreateFinishRequest(
+                BlockNodeCreateFinishRequest(
+                    projectId = remoteProjectId!!,
+                    repoName = remoteRepoName!!,
+                    uploadId = uploadId,
+                    fullPath = fullPath
                 )
-            }
-
-            return success
+            )
         }
     }
 
@@ -293,8 +300,12 @@ class ClusterReplicator(
         )
     }
 
-    private fun handleNormalNodeReplication(context: ReplicaContext, node: NodeInfo): Boolean {
-        val nodeCreateRequest = buildNodeCreateRequest(context, node) ?: return false
+    private fun handleNormalNodeReplication(
+        context: ReplicaContext,
+        node: NodeInfo,
+        blockUploadId: String? = null,
+    ): Boolean {
+        val nodeCreateRequest = buildNodeCreateRequest(context, node, blockUploadId) ?: return false
         executeNormalNodePush(context, node, nodeCreateRequest)
         return true
     }
@@ -395,12 +406,21 @@ class ClusterReplicator(
         return true
     }
 
-    private fun buildNodeCreateRequest(context: ReplicaContext, node: NodeInfo): NodeCreateRequest? {
+    private fun buildNodeCreateRequest(
+        context: ReplicaContext,
+        node: NodeInfo,
+        blockUploadId: String? = null,
+    ): NodeCreateRequest? {
         with(context) {
             // 外部集群仓库没有project/repoName
             if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return null
             // 查询元数据
             val metadata = if (task.setting.includeMetadata) node.nodeMetadata else emptyList()
+            val nodeMetadata = if (blockUploadId.isNullOrEmpty()) {
+                metadata
+            } else {
+                BlockNodeUploadId.replaceMetadata(metadata, blockUploadId)
+            }
             return NodeCreateRequest(
                 projectId = remoteProjectId,
                 repoName = remoteRepoName,
@@ -411,7 +431,7 @@ class ClusterReplicator(
                 sha256 = node.sha256!!,
                 md5 = node.md5!!,
                 crc64ecma = node.crc64ecma,
-                nodeMetadata = metadata,
+                nodeMetadata = nodeMetadata,
                 operator = node.createdBy,
                 createdBy = node.createdBy,
                 createdDate = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME),
@@ -433,7 +453,7 @@ class ClusterReplicator(
                 projectId = remoteProjectId,
                 repoName = remoteRepoName,
                 fullPath = blockNode.nodeFullPath,
-                expireDate = blockNode.expireDate,
+                expireDate = BlockNodeUploadId.replicaBlockExpireDate(),
                 size = blockNode.size,
                 sha256 = blockNode.sha256,
                 crc64ecma = blockNode.crc64ecma,

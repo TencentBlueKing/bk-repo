@@ -916,6 +916,11 @@
     "selectAllTip": "已选择全量数据{0}条，",
     "clearSelectTip":"清除选择",
     "previewErrorTip": "文件预览失败",
+    "previewMediaErrorTip": "当前浏览器无法播放该文件",
+    "previewMediaPlay": "播放",
+    "previewMediaPause": "暂停",
+    "previewMediaProgress": "播放进度",
+    "previewMediaScrub": "进度条",
     "helps": {
         "documentation": "产品文档",
         "releaseNote": "版本日志",
