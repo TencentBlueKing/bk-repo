@@ -209,6 +209,21 @@ const val FLAG_QUERY_CACHE = "queryCacheFlag"
 const val HEADER_CRYPT_KEY = "X-BKREPO-CRYPT-KEY"
 
 /**
+ * 下载重定向目标，值为 INNERCOS 时强制 COS 302（任意调用方）
+ */
+const val HEADER_DOWNLOAD_REDIRECT_TO = "X-BKREPO-DOWNLOAD-REDIRECT-TO"
+
+/**
+ * 制品库桌面客户端标识
+ */
+const val HEADER_BKREPO_CLIENT = "X-BKREPO-CLIENT"
+
+/**
+ * [HEADER_BKREPO_CLIENT] 取值：与客户端 User-Agent 的产品名一致（不含版本）
+ */
+const val BKREPO_CLIENT_NAME = "BKArtifacts"
+
+/**
  * 单条元数据请求头前缀，完整格式为 X-BKREPO-META-&lt;key&gt;
  */
 const val BKREPO_META_PREFIX = "X-BKREPO-META-"

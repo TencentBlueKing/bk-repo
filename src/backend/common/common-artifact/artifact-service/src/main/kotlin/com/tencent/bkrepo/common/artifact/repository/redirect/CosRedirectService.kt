@@ -28,6 +28,9 @@
 package com.tencent.bkrepo.common.artifact.repository.redirect
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.constant.BKREPO_CLIENT_NAME
+import com.tencent.bkrepo.common.artifact.constant.HEADER_BKREPO_CLIENT
+import com.tencent.bkrepo.common.artifact.constant.HEADER_DOWNLOAD_REDIRECT_TO
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.determineMediaType
@@ -40,7 +43,6 @@ import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.client.ClientConfig
 import com.tencent.bkrepo.common.storage.innercos.endpoint.DefaultEndpointResolver
-import com.tencent.bkrepo.common.storage.innercos.http.Headers
 import com.tencent.bkrepo.common.storage.innercos.http.HttpProtocol
 import com.tencent.bkrepo.common.storage.innercos.request.CosRequest
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
@@ -82,10 +84,7 @@ class CosRedirectService(
         }
         val redirectSettings = DownloadRedirectSettings.from(context.repositoryDetail.configuration)
         val repoSupportRedirectTo = redirectSettings?.redirectTo == RedirectTo.INNERCOS.name
-        val redirectTo = HttpContextHolder.getRequest().getHeader("X-BKREPO-DOWNLOAD-REDIRECT-TO")
-        return repoSupportRedirectTo ||
-            redirectTo == RedirectTo.INNERCOS.name ||
-            storageProperties.redirect.redirectAllDownload
+        return policyAllowsRedirect(context, repoSupportRedirectTo)
     }
 
     override fun doShouldRedirect(context: ArtifactDownloadContext): Boolean {
@@ -124,10 +123,7 @@ class CosRedirectService(
             repoSupportRedirectTo = regex.matches(node.fullPath)
         }
 
-        val redirectTo = HttpContextHolder.getRequest().getHeader("X-BKREPO-DOWNLOAD-REDIRECT-TO")
-        val needToRedirect = repoSupportRedirectTo ||
-            redirectTo == RedirectTo.INNERCOS.name ||
-            storageProperties.redirect.redirectAllDownload
+        val needToRedirect = policyAllowsRedirect(context, repoSupportRedirectTo)
 
         // 文件存在于COS上时才会被重定向
         return needToRedirect && isProjectAllowed(context.projectId) && guessFileExists(node, storageCredentials)
@@ -145,11 +141,8 @@ class CosRedirectService(
             endpointResolver = DefaultEndpointResolver()
             httpProtocol = HttpProtocol.HTTPS
         }
+        // Range 不进签名，由客户端在 302 之后自行带 Range，否则分片/续传会 403
         val request = GetObjectRequest(node.sha256!!)
-        val range = HttpContextHolder.getRequest().getHeader(Headers.RANGE)
-        if (!range.isNullOrEmpty()) {
-            request.headers[Headers.RANGE] = range
-        }
         addCosResponseHeaders(context, request, node)
         val urlencodedSign = request.sign(credentials, clientConfig).urlEncode(true)
         if (request.parameters.isEmpty()) {
@@ -193,6 +186,24 @@ class CosRedirectService(
         // 判断文件是否已经上传到COS
         logger.info("Checking node[${node.sha256}] exist in cos, createdDateTime[${node.createdDate}]")
         return storageService.exist(node.sha256!!, storageCredentials)
+    }
+
+    private fun policyAllowsRedirect(
+        context: ArtifactDownloadContext,
+        repoSupportRedirectTo: Boolean,
+    ): Boolean {
+        val request = HttpContextHolder.getRequest()
+        val forceByHeader = request.getHeader(HEADER_DOWNLOAD_REDIRECT_TO) == RedirectTo.INNERCOS.name
+        if (repoSupportRedirectTo || forceByHeader || storageProperties.redirect.redirectAllDownload) {
+            return true
+        }
+        val client = request.getHeader(HEADER_BKREPO_CLIENT)
+            ?.substringBefore('/')
+            ?.trim()
+            .orEmpty()
+        val isArtifactClient = client.equals(BKREPO_CLIENT_NAME, ignoreCase = true)
+        return isArtifactClient &&
+            storageProperties.redirect.clientDirect.matches(context.projectId, context.repoName)
     }
 
     private fun isProjectAllowed(projectId: String ): Boolean {
