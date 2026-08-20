@@ -53,8 +53,19 @@
             </div>
             <div class="version-base-info base-info-guide display-block" :data-title="$t('useTips')">
                 <div class="sub-section" v-for="block in articleInstall[0].main" :key="block.subTitle">
-                    <div class="mb10">{{ block.subTitle }}</div>
-                    <code-area class="mb20" v-if="block.codeList && block.codeList.length" :code-list="block.codeList"></code-area>
+                    <skill-chat-install-card
+                        v-if="block.ui === 'skillChat'"
+                        :prompt="block.codeList[0]"
+                        :skill-name="block.skillName">
+                    </skill-chat-install-card>
+                    <template v-else>
+                        <div class="mb10">{{ block.subTitle }}</div>
+                        <code-area
+                            class="mb20"
+                            v-if="block.codeList && block.codeList.length"
+                            :code-list="block.codeList">
+                        </code-area>
+                    </template>
                 </div>
             </div>
             <div class="version-base-info base-info-checksums display-block" data-title="Checksums">
@@ -170,6 +181,7 @@
 <script>
     import DOMPurify from 'dompurify'
     import CodeArea from '@repository/components/CodeArea'
+    import skillChatInstallCard from '@repository/views/repoCommon/skillChatInstallCard'
     import OperationList from '@repository/components/OperationList'
     import ScanTag from '@repository/views/repoScan/scanTag'
     import forbidTag from '@repository/components/ForbidTag'
@@ -181,6 +193,7 @@
         name: 'CommonVersionDetail',
         components: {
             CodeArea,
+            skillChatInstallCard,
             OperationList,
             ScanTag,
             forbidTag,
@@ -373,9 +386,16 @@
             }
         }
         &.base-info-guide {
-            padding: 20px 20px 0;
+            padding: 20px;
             border: 1px dashed var(--borderWeightColor);
             border-radius: 4px;
+            .sub-section {
+                & + .sub-section {
+                    margin-top: 8px;
+                    padding-top: 16px;
+                    border-top: 1px dashed var(--borderWeightColor);
+                }
+            }
         }
         &.base-info-checksums {
             padding: 20px 10px;
