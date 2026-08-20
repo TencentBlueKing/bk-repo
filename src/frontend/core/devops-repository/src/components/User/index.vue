@@ -99,7 +99,7 @@
                 })
             },
             // 用户点开下拉面板时惰性刷新一次用户信息（含 tenantId / timeZone）
-            // 1s 防抖，避免用户反复点击；带 forceRefresh=1 击穿网关侧 180s 缓存；失败静默
+            // 1s 防抖，避免用户反复点击；通过 X-BKREPO-FORCE-REFRESH: 1 请求头击穿网关侧 180s 缓存；失败静默
             onPopoverShow () {
                 const now = Date.now()
                 if (now - this.lastRefreshAt < 1000) return

@@ -25,7 +25,7 @@ config = {
   allow_hosts = {
     "__BK_REPO_GATEWAY_CORS_ALLOW_LIST__"
   },
-  allow_headers = "Authorization,Content-Type,withcredentials,credentials,Accept,Origin,User-Agent,Cache-Control,Keep-Alive,X-Requested-With,If-Modified-Since,X-CSRFToken,X-DEVOPS-PROJECT-ID,X-DEVOPS-TASK-ID,X-BKREPO-UID,X-BKREPO-API-TYPE",
+  allow_headers = "Authorization,Content-Type,withcredentials,credentials,Accept,Origin,User-Agent,Cache-Control,Keep-Alive,X-Requested-With,If-Modified-Since,X-CSRFToken,X-DEVOPS-PROJECT-ID,X-DEVOPS-TASK-ID,X-BKREPO-UID,X-BKREPO-API-TYPE,X-BKREPO-FORCE-REFRESH",
   ns = {
     ip = {
       "__BK_REPO_CONSUL_DNS_HOST__"

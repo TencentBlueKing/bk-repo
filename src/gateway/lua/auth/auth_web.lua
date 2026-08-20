@@ -21,8 +21,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 --- 获取Cookie中bk_token 和 bk_ticket
 local token, username, display_name, tenant_id
 
---- 是否强制刷新用户信息缓存（前端在需要感知最新租户/时区时通过 ?forceRefresh=1 触发）
-local force_refresh = ngx.var.arg_forceRefresh == "1" or ngx.var.arg_forceRefresh == "true"
+--- 是否强制刷新用户信息缓存
+--- 走请求头 X-BKREPO-FORCE-REFRESH：nginx auth_request 子请求默认继承父请求 header，
+--- 但不会继承原请求的 query，所以不能用 ?forceRefresh=1（在子请求里 ngx.var.arg_forceRefresh 恒为 nil）。
+local force_refresh_header = ngx.var.http_x_bkrepo_force_refresh
+local force_refresh = force_refresh_header == "1" or force_refresh_header == "true"
 
 --- standalone模式下校验bkrepo_ticket
 if config.mode == "standalone" or config.mode == "" or config.mode == nil then
