@@ -219,6 +219,11 @@ const val HEADER_DOWNLOAD_REDIRECT_TO = "X-BKREPO-DOWNLOAD-REDIRECT-TO"
 const val HEADER_BKREPO_CLIENT = "X-BKREPO-CLIENT"
 
 /**
+ * 分块 COS 回源清单。值为 1 时响应体为 JSON，不是文件流。
+ */
+const val HEADER_BLOCK_MANIFEST = "X-BKREPO-BLOCK-MANIFEST"
+
+/**
  * [HEADER_BKREPO_CLIENT] 取值：与客户端 User-Agent 的产品名一致（不含版本）
  */
 const val BKREPO_CLIENT_NAME = "BKArtifacts"
