@@ -36,16 +36,18 @@ class TokenService(
      * @param token 待校验token
      * @param artifactInfo 访问构件信息
      * @param type 访问类型
+     * @param checkNodePermission 是否校验节点权限。COS 归档上传时仓库可能刚创建，仅校验 token 资源绑定。
      */
     fun validateToken(
         token: String,
         artifactInfo: ArtifactInfo,
         type: TokenType,
+        checkNodePermission: Boolean = true,
     ): TemporaryTokenInfo {
         val temporaryToken = checkToken(token)
         checkExpireTime(temporaryToken.expireDate)
         checkAccessType(temporaryToken.type, type)
-        checkAccessResource(temporaryToken, artifactInfo)
+        checkAccessResource(temporaryToken, artifactInfo, checkNodePermission)
         checkAuthorization(temporaryToken)
         checkAccessPermits(temporaryToken.permits)
         return temporaryToken
@@ -59,7 +61,7 @@ class TokenService(
         val temporaryToken = checkToken(token)
         checkExpireTime(temporaryToken.expireDate)
         checkAccessType(temporaryToken.type, type)
-        checkAccessResource(temporaryToken, artifactInfo)
+        checkAccessResource(temporaryToken, artifactInfo, checkNodePermission = true)
         checkAccessPermits(temporaryToken.permits)
         return temporaryToken
     }
@@ -104,7 +106,11 @@ class TokenService(
     /**
      * 检查访问资源
      */
-    private fun checkAccessResource(tokenInfo: TemporaryTokenInfo, artifactInfo: ArtifactInfo) {
+    private fun checkAccessResource(
+        tokenInfo: TemporaryTokenInfo,
+        artifactInfo: ArtifactInfo,
+        checkNodePermission: Boolean = true,
+    ) {
         // 校验项目/仓库
         if (tokenInfo.projectId != artifactInfo.projectId || tokenInfo.repoName != artifactInfo.repoName) {
             throw ErrorCodeException(
@@ -115,6 +121,9 @@ class TokenService(
         // 校验路径
         if (!PathUtils.isSubPath(artifactInfo.getArtifactFullPath(), tokenInfo.fullPath)) {
             throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, artifactInfo.getArtifactFullPath())
+        }
+        if (!checkNodePermission) {
+            return
         }
         // 校验创建人权限
         permissionManager.checkNodePermission(

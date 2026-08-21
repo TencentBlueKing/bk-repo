@@ -13,11 +13,33 @@ class MediaProperties {
     var transcodeConfig: Map<String, TranscodeConfig> = mutableMapOf()
     var repoHost: String = ""
     var storageCredentialsKey: String? = null
+    /**
+     * 项目 COS 归档存储映射：projectId -> storageCredentialsKey。
+     * 命中项目的转码成品会上传到对应 COS 凭证的归档仓库。
+     * 通过环境配置注入（如 devnet bkrepo-media.yaml），未配置则不启用。
+     */
+    var cosStorageCredentials: MutableMap<String, String> = mutableMapOf()
+    /**
+     * COS 归档仓库名称
+     */
+    var cosRepoName: String = "recording"
     var enabledLiveProjects: List<String> = mutableListOf()
     var reconnectByRepoProjects: MutableSet<String> = mutableSetOf()
     var rtcSecret: String = "rtc-stream-pull-secret-2m98cx37yr21"
     var remoteDevHost: String = ""
     var plugin: PluginProperties = PluginProperties()
+
+    fun getCosStorageCredentialsKey(projectId: String): String? {
+        return cosStorageCredentials[projectId]?.takeIf { it.isNotBlank() }
+    }
+
+    fun getStorageCredentialsKey(projectId: String): String? {
+        return getCosStorageCredentialsKey(projectId) ?: storageCredentialsKey
+    }
+
+    fun isCosArchiveProject(projectId: String): Boolean {
+        return getCosStorageCredentialsKey(projectId) != null
+    }
 }
 
 class PluginProperties {

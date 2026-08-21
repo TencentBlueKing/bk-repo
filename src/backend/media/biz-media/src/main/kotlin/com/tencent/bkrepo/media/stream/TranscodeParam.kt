@@ -14,4 +14,5 @@ data class TranscodeParam(
     var author: String?, // 云桌面使用人
     var videoStartTime: Long?, // 录屏开始时间
     var videoEndTime: Long?, // 录屏结束时间
+    var cosUploadUrl: String? = null, // COS 加密归档上传地址，带 token
 )
