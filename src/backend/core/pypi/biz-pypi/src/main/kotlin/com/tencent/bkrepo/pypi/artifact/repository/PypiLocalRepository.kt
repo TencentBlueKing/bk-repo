@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.artifact.audit.NODE_DELETE_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -161,7 +162,7 @@ class PypiLocalRepository(
             HttpContextHolder.getClientAddress()
         )
         store(nodeCreateRequest, artifactFile, context.storageCredentials)
-        invalidateSimpleIndexCache(context.projectId, context.repoName, name)
+        invalidateSimpleIndexCache(context, name)
     }
 
     override fun onDownloadBefore(context: ArtifactDownloadContext) {
@@ -299,7 +300,7 @@ class PypiLocalRepository(
                 contentPath,
             )
         }
-        invalidateSimpleIndexCache(context.projectId, context.repoName, name)
+        invalidateSimpleIndexCache(context, name)
     }
 
     /**
@@ -314,34 +315,33 @@ class PypiLocalRepository(
     }
 
     private fun querySimpleHtml(context: ArtifactQueryContext, artifactInfo: PypiSimpleArtifactInfo): String? {
-        val packageName = artifactInfo.packageName
-        if (packageName != null && pypiProperties.enableSimpleIndexCache) {
-            simpleIndexCacheService.load(
-                projectId = artifactInfo.projectId,
-                repoName = artifactInfo.repoName,
-                packageName = packageName,
-                storageCredentials = context.storageCredentials,
-            )?.let { return it }
+        if (!pypiProperties.enableSimpleIndexCache) {
+            return getSimpleHtml(artifactInfo)
         }
-        val html = getSimpleHtml(artifactInfo)
-        if (packageName != null && html != null && pypiProperties.enableSimpleIndexCache) {
-            simpleIndexCacheService.tryStore(
-                projectId = artifactInfo.projectId,
-                repoName = artifactInfo.repoName,
-                packageName = packageName,
-                html = html,
-                userId = context.userId,
-                storageCredentials = context.storageCredentials,
-            )
+        return simpleIndexCacheService.getOrCompute(
+            projectId = artifactInfo.projectId,
+            repoName = artifactInfo.repoName,
+            packageName = artifactInfo.packageName,
+            userId = context.userId,
+            storageCredentials = context.storageCredentials,
+        ) {
+            getSimpleHtml(artifactInfo)
         }
-        return html
     }
 
-    private fun invalidateSimpleIndexCache(projectId: String, repoName: String, packageName: String) {
+    private fun invalidateSimpleIndexCache(context: ArtifactContext, packageName: String) {
         if (!pypiProperties.enableSimpleIndexCache) {
             return
         }
-        simpleIndexCacheService.invalidate(projectId, repoName, packageName)
+        simpleIndexCacheService.invalidate(
+            projectId = context.projectId,
+            repoName = context.repoName,
+            packageName = packageName,
+            userId = context.userId,
+            storageCredentials = context.storageCredentials,
+        ) {
+            getSimpleHtml(PypiSimpleArtifactInfo(context.projectId, context.repoName, packageName))
+        }
     }
 
     // TODO 产品页面需要重新设计，支持同个版本包含多个制品

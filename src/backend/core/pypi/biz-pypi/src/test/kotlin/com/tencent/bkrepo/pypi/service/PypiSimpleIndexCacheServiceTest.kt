@@ -26,12 +26,16 @@
 
 package com.tencent.bkrepo.pypi.service
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.pypi.artifact.PypiProperties
+import com.tencent.bkrepo.pypi.exception.PypiSimpleNotFoundException
 import com.tencent.bkrepo.pypi.util.PypiSimpleIndexUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -43,15 +47,15 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.time.Duration
 import java.time.LocalDateTime
 
-@DisplayName("PyPI simple 单包索引文件缓存")
+@DisplayName("PyPI simple 索引文件缓存")
 class PypiSimpleIndexCacheServiceTest {
 
     private val nodeService: NodeService = mockk(relaxed = true)
@@ -68,74 +72,104 @@ class PypiSimpleIndexCacheServiceTest {
         clearMocks(nodeService, storageManager, lockOperation)
         pypiProperties.enableSimpleIndexCache = true
         pypiProperties.simpleIndexCacheTtl = Duration.ofMinutes(1)
+        stubLocks()
+        every { storageManager.storeArtifactFile(any(), any(), any()) } answers {
+            val request = invocation.args[0] as NodeCreateRequest
+            nodeDetail(request.fullPath)
+        }
+        every { nodeService.deleteNode(any()) } returns mockk(relaxed = true)
         service = PypiSimpleIndexCacheService(nodeService, storageManager, lockOperation, pypiProperties)
     }
 
     @Test
-    @DisplayName("命中缓存时返回 HTML，不写存储")
-    fun loadReturnsCachedHtml() {
+    @DisplayName("未过期时读已有文件，不重建")
+    fun hitReturnsCachedHtmlWithoutCompute() {
         val html = "<html>cached</html>"
-        val fullPath = PypiSimpleIndexUtils.packageCacheFullPath("My_Package")
-        val node = nodeDetail(fullPath)
-        every { nodeService.getNodeDetail(any(), any()) } returns node
-        every {
-            storageManager.loadFullArtifactInputStream(node, null)
-        } returns ArtifactInputStream(html.byteInputStream(), Range.full(html.length.toLong()))
+        stubCachedFile(PypiSimpleIndexUtils.packageCacheFullPath("My_Package"), html)
 
-        val result = service.load(PROJECT, REPO, "My_Package", null)
+        val result = getHtml("My_Package") { error("compute") }
 
         assertEquals(html, result)
+        verify(exactly = 0) { storageManager.storeArtifactFile(any(), any(), any()) }
+        verify(exactly = 0) { lockOperation.acquireLock(any(), any()) }
+    }
+
+    @Test
+    @DisplayName("TTL 到期未抢到锁时仍返回旧文件，不扫库")
+    fun expiredWithoutLockReturnsStaleHtml() {
+        val html = "<html>stale</html>"
+        val fullPath = PypiSimpleIndexUtils.packageCacheFullPath("demo")
+        stubCachedFile(fullPath, html, lastModifiedDate = LocalDateTime.now().minusMinutes(2))
+        stubLocks(tryLock = false)
+
+        var computes = 0
+        val result = getHtml("demo") {
+            computes++
+            "<html>new</html>"
+        }
+
+        assertEquals(html, result)
+        assertEquals(0, computes)
         verify(exactly = 0) { storageManager.storeArtifactFile(any(), any(), any()) }
     }
 
     @Test
-    @DisplayName("未命中缓存返回 null")
-    fun loadReturnsNullWhenMissing() {
-        every { nodeService.getNodeDetail(any(), any()) } returns null
-
-        assertNull(service.load(PROJECT, REPO, "demo", null))
-        verify(exactly = 0) { storageManager.loadFullArtifactInputStream(any(), any()) }
-    }
-
-    @Test
-    @DisplayName("缓存超过 TTL 时按 miss 处理")
-    fun loadReturnsNullWhenExpired() {
+    @DisplayName("TTL 到期抢到锁时覆盖重建并返回新 HTML")
+    fun expiredWithLockRebuildsOnce() {
+        val stale = "<html>stale</html>"
+        val fresh = "<html>fresh</html>"
         val fullPath = PypiSimpleIndexUtils.packageCacheFullPath("demo")
-        val node = nodeDetail(fullPath, lastModifiedDate = LocalDateTime.now().minusMinutes(2))
-        every { nodeService.getNodeDetail(any(), any()) } returns node
+        stubCachedFile(fullPath, stale, lastModifiedDate = LocalDateTime.now().minusMinutes(2))
+        stubLocks(tryLock = true)
 
-        assertNull(service.load(PROJECT, REPO, "demo", null))
-        verify(exactly = 0) { storageManager.loadFullArtifactInputStream(any(), any()) }
+        var computes = 0
+        val result = getHtml("demo") {
+            computes++
+            fresh
+        }
+
+        assertEquals(fresh, result)
+        assertEquals(1, computes)
+        verify {
+            storageManager.storeArtifactFile(
+                match<NodeCreateRequest> { it.fullPath == fullPath && it.overwrite },
+                any(),
+                null
+            )
+        }
     }
 
     @Test
-    @DisplayName("TTL 小于等于 0 时不过期")
-    fun loadIgnoresTtlWhenDisabled() {
+    @DisplayName("TTL 小于等于 0 时不过期、不重建")
+    fun ttlDisabledNeverExpires() {
         pypiProperties.simpleIndexCacheTtl = Duration.ZERO
         val html = "<html>cached</html>"
         val fullPath = PypiSimpleIndexUtils.packageCacheFullPath("demo")
-        val node = nodeDetail(fullPath, lastModifiedDate = LocalDateTime.now().minusDays(30))
-        every { nodeService.getNodeDetail(any(), any()) } returns node
-        every {
-            storageManager.loadFullArtifactInputStream(node, null)
-        } returns ArtifactInputStream(html.byteInputStream(), Range.full(html.length.toLong()))
+        stubCachedFile(fullPath, html, lastModifiedDate = LocalDateTime.now().minusDays(30))
 
-        assertEquals(html, service.load(PROJECT, REPO, "demo", null))
+        var computes = 0
+        assertEquals(html, getHtml("demo") {
+            computes++
+            "<html>new</html>"
+        })
+        assertEquals(0, computes)
     }
 
     @Test
-    @DisplayName("获锁后按原始包名写入缓存")
-    fun tryStoreWritesWhenLockAcquired() {
-        val lock = Any()
+    @DisplayName("miss 时锁内生成并写入热缓存文件")
+    fun missComputesUnderLockAndStores() {
+        every { nodeService.getNodeDetail(any(), any()) } returns null
+        stubLocks(spin = true)
         val fullPath = PypiSimpleIndexUtils.packageCacheFullPath("My.Package")
-        every { lockOperation.getLock(any()) } returns lock
-        every { lockOperation.acquireLock(any(), lock) } returns true
-        every { lockOperation.close(any(), lock) } returns Unit
-        every { storageManager.storeArtifactFile(any(), any(), any()) } returns nodeDetail(fullPath)
 
-        val stored = service.tryStore(PROJECT, REPO, "My.Package", "<html>new</html>", "user", null)
+        var computes = 0
+        val result = getHtml("My.Package") {
+            computes++
+            "<html>new</html>"
+        }
 
-        assertTrue(stored)
+        assertEquals("<html>new</html>", result)
+        assertEquals(1, computes)
         verify {
             storageManager.storeArtifactFile(
                 match<NodeCreateRequest> {
@@ -145,120 +179,251 @@ class PypiSimpleIndexCacheServiceTest {
                 null
             )
         }
-        verify { lockOperation.close(any(), lock) }
+        verify { lockOperation.acquireLock(any(), any()) }
+        verify(exactly = 0) { lockOperation.getSpinLock(any(), any()) }
+        verify(exactly = 0) { lockOperation.getSpinLock(any(), any(), any(), any()) }
     }
 
     @Test
-    @DisplayName("未获锁时不写缓存")
-    fun tryStoreSkipsWriteWhenLockNotAcquired() {
-        val lock = Any()
-        every { lockOperation.getLock(any()) } returns lock
-        every { lockOperation.acquireLock(any(), lock) } returns false
+    @DisplayName("miss 未抢到锁时若文件已写出则直接返回，不扫库")
+    fun missWithoutLockReturnsFileIfPresent() {
+        val html = "<html>new</html>"
+        val fullPath = PypiSimpleIndexUtils.packageCacheFullPath("demo")
+        val node = nodeDetail(fullPath)
+        every { nodeService.getNodeDetail(any(), any()) } returnsMany listOf(null, node)
+        every { storageManager.loadFullArtifactInputStream(any(), null) } answers { htmlStream(html) }
+        stubLocks(tryLock = false)
 
-        val stored = service.tryStore(PROJECT, REPO, "demo", "<html>x</html>", "user", null)
+        var computes = 0
+        val result = getHtml("demo") {
+            computes++
+            "<html>other</html>"
+        }
 
-        assertFalse(stored)
-        verify(exactly = 0) { storageManager.storeArtifactFile(any(), any(), any()) }
-        verify(exactly = 0) { lockOperation.close(any(), any()) }
-    }
-
-    @Test
-    @DisplayName("锁异常时不写缓存")
-    fun tryStoreSkipsWriteWhenLockFails() {
-        every { lockOperation.getLock(any()) } throws RuntimeException("redis down")
-
-        val stored = service.tryStore(PROJECT, REPO, "demo", "<html>x</html>", "user", null)
-
-        assertFalse(stored)
+        assertEquals(html, result)
+        assertEquals(0, computes)
         verify(exactly = 0) { storageManager.storeArtifactFile(any(), any(), any()) }
     }
 
     @Test
-    @DisplayName("invalidate 按原始包名删除缓存")
-    fun invalidateDeletesCachePath() {
-        val fullPath = PypiSimpleIndexUtils.packageCacheFullPath("My_Package")
-        every { nodeService.deleteNode(any()) } returns mockk(relaxed = true)
+    @DisplayName("miss 未抢到锁且无文件时 503，不编 429、不扫库")
+    fun missWithoutLockAndNoFileFailsFast() {
+        every { nodeService.getNodeDetail(any(), any()) } returns null
+        stubLocks(tryLock = false)
+        var computes = 0
 
-        service.invalidate(PROJECT, REPO, "My_Package")
+        val error = assertThrows<ErrorCodeException> {
+            getHtml("demo") {
+                computes++
+                "<html>new</html>"
+            }
+        }
 
+        assertEquals(0, computes)
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, error.status)
+        assertEquals(CommonMessageCode.SYSTEM_ERROR, error.messageCode)
+        verify(exactly = 0) { storageManager.storeArtifactFile(any(), any(), any()) }
+        verify(exactly = 0) { lockOperation.getSpinLock(any(), any()) }
+        verify(exactly = 0) { lockOperation.getSpinLock(any(), any(), any(), any()) }
+    }
+
+    @Test
+    @DisplayName("节点存在但读不到内容时回源重建并返回 HTML")
+    fun nodeExistsButBlobUnreadableRebuildsAndReturnsHtml() {
+        val fullPath = PypiSimpleIndexUtils.packageCacheFullPath("demo")
+        every { nodeService.getNodeDetail(any(), any()) } returns nodeDetail(fullPath)
+        every { storageManager.loadFullArtifactInputStream(any(), null) } returns null
+        stubLocks(tryLock = true)
+        var computes = 0
+
+        val result = getHtml("demo") {
+            computes++
+            "<html>restored</html>"
+        }
+
+        assertEquals("<html>restored</html>", result)
+        assertEquals(1, computes)
         verify {
-            nodeService.deleteNode(
-                match<NodeDeleteRequest> { it.fullPath == fullPath && it.projectId == PROJECT && it.repoName == REPO }
+            storageManager.storeArtifactFile(
+                match<NodeCreateRequest> { it.fullPath == fullPath && it.overwrite },
+                any(),
+                null
             )
         }
+    }
+
+    @Test
+    @DisplayName("锁失败且已有文件时只返回旧文件")
+    fun lockFailureWithExistingFileDoesNotCompute() {
+        val html = "<html>cached</html>"
+        stubCachedFile(
+            PypiSimpleIndexUtils.packageCacheFullPath("demo"),
+            html,
+            lastModifiedDate = LocalDateTime.now().minusMinutes(2),
+        )
+        every { lockOperation.getLock(any()) } throws RuntimeException("redis down")
+
+        var computes = 0
+        assertEquals(html, getHtml("demo") {
+            computes++
+            "<html>new</html>"
+        })
+        assertEquals(0, computes)
+        verify(exactly = 0) { storageManager.storeArtifactFile(any(), any(), any()) }
+    }
+
+    @Test
+    @DisplayName("TTL 到期重建失败时保留并返回旧文件，不删除")
+    fun expiredRebuildFailureKeepsStaleFile() {
+        val html = "<html>stale</html>"
+        val fullPath = PypiSimpleIndexUtils.packageCacheFullPath("demo")
+        stubCachedFile(fullPath, html, lastModifiedDate = LocalDateTime.now().minusMinutes(2))
+        stubLocks(tryLock = true)
+
+        val result = getHtml("demo") { throw PypiSimpleNotFoundException("demo") }
+
+        assertEquals(html, result)
+        verify(exactly = 0) { nodeService.deleteNode(any()) }
+        verify(exactly = 0) { storageManager.storeArtifactFile(any(), any(), any()) }
+    }
+
+    @Test
+    @DisplayName("miss 时 compute 异常原样抛出，不写文件")
+    fun missPropagatesComputeExceptionWithoutStoring() {
+        every { nodeService.getNodeDetail(any(), any()) } returns null
+        stubLocks(spin = true)
+        var computes = 0
+        val compute = {
+            computes++
+            throw PypiSimpleNotFoundException("demo")
+        }
+
+        assertThrows<PypiSimpleNotFoundException> { getHtml("demo", compute) }
+        assertThrows<PypiSimpleNotFoundException> { getHtml("demo", compute) }
+
+        assertEquals(2, computes)
+        verify(exactly = 0) { storageManager.storeArtifactFile(any(), any(), any()) }
+    }
+
+    @Test
+    @DisplayName("invalidate 只覆盖单包索引，不删文件、不扫根目录")
+    fun invalidateOverwritesPackageOnly() {
+        stubLocks(spin = true)
+        val packagePath = PypiSimpleIndexUtils.packageCacheFullPath("My_Package")
+        val rootPath = PypiSimpleIndexUtils.rootCacheFullPath()
+
+        service.invalidate(PROJECT, REPO, "My_Package", "user", null) { "<html>pkg</html>" }
+
+        verify {
+            storageManager.storeArtifactFile(
+                match<NodeCreateRequest> { it.fullPath == packagePath && it.overwrite },
+                any(),
+                null
+            )
+        }
+        verify(exactly = 0) {
+            storageManager.storeArtifactFile(
+                match<NodeCreateRequest> { it.fullPath == rootPath },
+                any(),
+                null
+            )
+        }
+        verify(exactly = 0) { nodeService.deleteNode(any()) }
+    }
+
+    @Test
+    @DisplayName("invalidate 在制品不存在时才删除对应索引文件")
+    fun invalidateDeletesWhenComputeNotFound() {
+        stubLocks(spin = true)
+        val packagePath = PypiSimpleIndexUtils.packageCacheFullPath("demo")
+
+        service.invalidate(PROJECT, REPO, "demo", "user", null) {
+            throw PypiSimpleNotFoundException("demo")
+        }
+
+        verify {
+            nodeService.deleteNode(match<NodeDeleteRequest> { it.fullPath == packagePath })
+        }
+        verify(exactly = 0) { storageManager.storeArtifactFile(any(), any(), any()) }
     }
 
     @Test
     @DisplayName("invalidate 失败不抛异常")
     fun invalidateSwallowsErrors() {
-        every { nodeService.deleteNode(any()) } throws RuntimeException("storage error")
+        stubLocks(spin = true)
+        every { storageManager.storeArtifactFile(any(), any(), any()) } throws RuntimeException("storage error")
 
-        service.invalidate(PROJECT, REPO, "demo")
+        service.invalidate(PROJECT, REPO, "demo", "user", null) { "<html>p</html>" }
     }
 
     @Test
-    @DisplayName("load/store/invalidate 对同一原始包名使用相同路径")
-    fun loadStoreInvalidateShareSameRawPackagePath() {
-        val packageName = "My_Package"
-        val fullPath = PypiSimpleIndexUtils.packageCacheFullPath(packageName)
-        val lock = Any()
+    @DisplayName("根目录 miss 写入 index.html")
+    fun rootMissStoresRootIndexFile() {
         every { nodeService.getNodeDetail(any(), any()) } returns null
-        every { lockOperation.getLock(any()) } returns lock
-        every { lockOperation.acquireLock(any(), lock) } returns true
-        every { lockOperation.close(any(), lock) } returns Unit
-        every { storageManager.storeArtifactFile(any(), any(), any()) } returns nodeDetail(fullPath)
-        every { nodeService.deleteNode(any()) } returns mockk(relaxed = true)
+        stubLocks(spin = true)
+        val rootPath = PypiSimpleIndexUtils.rootCacheFullPath()
 
-        assertNull(service.load(PROJECT, REPO, packageName, null))
-        assertTrue(service.tryStore(PROJECT, REPO, packageName, "<html>old</html>", "user", null))
-        service.invalidate(PROJECT, REPO, packageName)
+        val result = getHtml(null) { "<html>root</html>" }
 
+        assertEquals("<html>root</html>", result)
         verify {
-            nodeService.getNodeDetail(match { it.getArtifactFullPath() == fullPath }, any())
             storageManager.storeArtifactFile(
-                match<NodeCreateRequest> { it.fullPath == fullPath },
+                match<NodeCreateRequest> { it.fullPath == rootPath && it.overwrite },
                 any(),
                 null
             )
-            nodeService.deleteNode(match<NodeDeleteRequest> { it.fullPath == fullPath })
         }
     }
 
     @Test
-    @DisplayName("invalidate 后旧 HTML 仍可被 tryStore 写回，但过期后 load 按 miss")
-    fun staleStoreAfterInvalidateExpiresByTtl() {
-        val packageName = "demo"
-        val fullPath = PypiSimpleIndexUtils.packageCacheFullPath(packageName)
-        val lock = Any()
-        every { lockOperation.getLock(any()) } returns lock
-        every { lockOperation.acquireLock(any(), lock) } returns true
-        every { lockOperation.close(any(), lock) } returns Unit
-        every { storageManager.storeArtifactFile(any(), any(), any()) } returns nodeDetail(fullPath)
-        every { nodeService.deleteNode(any()) } returns mockk(relaxed = true)
-
-        service.invalidate(PROJECT, REPO, packageName)
-        assertTrue(service.tryStore(PROJECT, REPO, packageName, "<html>stale</html>", "user", null))
-
-        val expiredNode = nodeDetail(fullPath, lastModifiedDate = LocalDateTime.now().minusMinutes(2))
-        every { nodeService.getNodeDetail(any(), any()) } returns expiredNode
-
-        assertNull(service.load(PROJECT, REPO, packageName, null))
-        verify(exactly = 0) { storageManager.loadFullArtifactInputStream(any(), any()) }
-    }
-
-    @Test
-    @DisplayName("缓存路径使用原始包名")
-    fun packageCacheFullPathUsesRawName() {
+    @DisplayName("缓存路径按 PEP 503 规范化，与 pip simple URL 对齐")
+    fun packageCacheFullPathNormalizesPep503Name() {
         assertEquals(
-            "/.pypi-simple-index/packages/My_Package.html",
+            "/.pypi-simple-index/packages/my-package.html",
             PypiSimpleIndexUtils.packageCacheFullPath("My_Package")
         )
         assertEquals(
-            "/.pypi-simple-index/packages/My.Package.html",
+            "/.pypi-simple-index/packages/my-package.html",
             PypiSimpleIndexUtils.packageCacheFullPath("My.Package")
+        )
+        assertEquals(
+            "/.pypi-simple-index/packages/my-package.html",
+            PypiSimpleIndexUtils.packageCacheFullPath("my-package")
+        )
+        assertEquals("/.pypi-simple-index/index.html", PypiSimpleIndexUtils.rootCacheFullPath())
+        assertEquals(
+            "/.pypi-simple-index/index.html",
+            PypiSimpleIndexUtils.cacheFullPath(null)
         )
         assertTrue(PypiSimpleIndexUtils.isSimpleIndexCacheFolder(".pypi-simple-index"))
         assertFalse(PypiSimpleIndexUtils.isSimpleIndexCacheFolder("requests"))
+    }
+
+    private fun getHtml(packageName: String?, compute: () -> String): String {
+        return service.getOrCompute(PROJECT, REPO, packageName, "user", null, compute)!!
+    }
+
+    private fun stubLocks(tryLock: Boolean = true, spin: Boolean = true) {
+        val lock = Any()
+        every { lockOperation.getLock(any()) } returns lock
+        every { lockOperation.acquireLock(any(), any()) } returns tryLock
+        every { lockOperation.getSpinLock(any(), any()) } returns spin
+        every { lockOperation.getSpinLock(any(), any(), any(), any()) } returns spin
+        every { lockOperation.close(any(), any()) } returns Unit
+    }
+
+    private fun stubCachedFile(
+        fullPath: String,
+        html: String,
+        lastModifiedDate: LocalDateTime = LocalDateTime.now(),
+    ) {
+        val node = nodeDetail(fullPath, lastModifiedDate)
+        every { nodeService.getNodeDetail(any(), any()) } returns node
+        every { storageManager.loadFullArtifactInputStream(any(), null) } answers { htmlStream(html) }
+    }
+
+    private fun htmlStream(html: String): ArtifactInputStream {
+        return ArtifactInputStream(html.byteInputStream(), Range.full(html.length.toLong()))
     }
 
     private fun nodeDetail(

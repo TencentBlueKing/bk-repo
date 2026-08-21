@@ -26,13 +26,28 @@
 
 package com.tencent.bkrepo.pypi.util
 
+import com.tencent.bkrepo.pypi.constants.NON_ALPHANUMERIC_SEQ_REGEX
 import com.tencent.bkrepo.pypi.constants.SIMPLE_INDEX_CACHE_DIR
 import com.tencent.bkrepo.pypi.constants.SIMPLE_INDEX_CACHE_PACKAGES_PREFIX
+import com.tencent.bkrepo.pypi.constants.SIMPLE_INDEX_CACHE_ROOT_FILE
 
 object PypiSimpleIndexUtils {
 
+    private val nonAlphanumericSeq = Regex(NON_ALPHANUMERIC_SEQ_REGEX)
+
+    fun cacheFullPath(packageName: String?): String {
+        return if (packageName == null) {
+            rootCacheFullPath()
+        } else {
+            packageCacheFullPath(packageName)
+        }
+    }
+
+    fun rootCacheFullPath(): String = SIMPLE_INDEX_CACHE_ROOT_FILE
+
     fun packageCacheFullPath(packageName: String): String {
-        return "$SIMPLE_INDEX_CACHE_PACKAGES_PREFIX$packageName.html"
+        val normalized = packageName.replace(nonAlphanumericSeq, "-").lowercase()
+        return "$SIMPLE_INDEX_CACHE_PACKAGES_PREFIX$normalized.html"
     }
 
     fun isSimpleIndexCacheFolder(name: String): Boolean {

@@ -8,12 +8,12 @@ class PypiProperties {
     var domain: String = "localhost"
     var enableRegexQuery: Boolean = true
     /**
-     * 是否启用 LOCAL PyPI `/simple/{package}/` HTML 文件缓存（默认关闭）
+     * 是否启用 LOCAL PyPI `/simple/` 与 `/simple/{package}/` HTML 文件缓存（默认关闭）
      */
     var enableSimpleIndexCache: Boolean = false
     /**
-     * 单包 simple HTML 缓存 TTL。按缓存节点 lastModifiedDate 判断过期；
-     * 过期后按 miss 处理并允许重建。小于等于 0 表示不过期。
+     * 索引文件 TTL。到期后仍返回已有文件，并由单飞请求覆盖重建。
+     * 小于等于 0 表示不按时间刷新，仅上传/删除 invalidate。
      */
     var simpleIndexCacheTtl: Duration = Duration.ofMinutes(1)
 }
