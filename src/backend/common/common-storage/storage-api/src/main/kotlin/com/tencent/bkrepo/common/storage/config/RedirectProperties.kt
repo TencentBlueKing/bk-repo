@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.storage.config
 
+import org.springframework.boot.context.properties.NestedConfigurationProperty
 import org.springframework.util.unit.DataSize
 import java.time.Duration
 
@@ -69,5 +70,11 @@ data class RedirectProperties(
     /**
      * 重定向项目黑名单
      */
-    var projectBlackList: Set<String> = emptySet()
+    var projectBlackList: Set<String> = emptySet(),
+
+    /**
+     * 制品库客户端 COS 回源。Web/其他客户端不看此项，只看仓库 downloadRedirect。
+     */
+    @NestedConfigurationProperty
+    var clientDirect: ClientDirectProperties = ClientDirectProperties(),
 )

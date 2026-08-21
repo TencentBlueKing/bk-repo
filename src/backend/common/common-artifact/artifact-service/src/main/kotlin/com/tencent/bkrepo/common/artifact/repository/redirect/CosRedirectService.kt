@@ -28,11 +28,18 @@
 package com.tencent.bkrepo.common.artifact.repository.redirect
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.constant.BKREPO_CLIENT_NAME
+import com.tencent.bkrepo.common.artifact.constant.HEADER_BKREPO_CLIENT
+import com.tencent.bkrepo.common.artifact.constant.HEADER_BLOCK_MANIFEST
+import com.tencent.bkrepo.common.artifact.constant.HEADER_DOWNLOAD_REDIRECT_TO
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.determineMediaType
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.encodeDisposition
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -40,7 +47,6 @@ import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.client.ClientConfig
 import com.tencent.bkrepo.common.storage.innercos.endpoint.DefaultEndpointResolver
-import com.tencent.bkrepo.common.storage.innercos.http.Headers
 import com.tencent.bkrepo.common.storage.innercos.http.HttpProtocol
 import com.tencent.bkrepo.common.storage.innercos.request.CosRequest
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
@@ -49,6 +55,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.slf4j.LoggerFactory
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.LocalDateTime
@@ -63,6 +70,7 @@ import java.util.Locale
 class CosRedirectService(
     private val storageProperties: StorageProperties,
     private val storageService: StorageService,
+    private val blockNodeService: BlockNodeService,
 ) : DownloadRedirectService {
 
     /**
@@ -82,10 +90,7 @@ class CosRedirectService(
         }
         val redirectSettings = DownloadRedirectSettings.from(context.repositoryDetail.configuration)
         val repoSupportRedirectTo = redirectSettings?.redirectTo == RedirectTo.INNERCOS.name
-        val redirectTo = HttpContextHolder.getRequest().getHeader("X-BKREPO-DOWNLOAD-REDIRECT-TO")
-        return repoSupportRedirectTo ||
-            redirectTo == RedirectTo.INNERCOS.name ||
-            storageProperties.redirect.redirectAllDownload
+        return policyAllowsRedirect(context, repoSupportRedirectTo)
     }
 
     override fun doShouldRedirect(context: ArtifactDownloadContext): Boolean {
@@ -100,10 +105,13 @@ class CosRedirectService(
         if (node == null ||
             node.folder ||
             artifact == null ||
-            node.compressed == true || // 压缩文件不支持重定向
-            node.archived == true || // 归档文件不支持重定向
-            node.sha256 == FAKE_SHA256 // block-node或link-node不支持重定向
+            node.compressed == true ||
+            node.archived == true
         ) {
+            return false
+        }
+        val isFake = node.sha256 == FAKE_SHA256
+        if (isFake && !isArtifactClient()) {
             return false
         }
 
@@ -124,43 +132,33 @@ class CosRedirectService(
             repoSupportRedirectTo = regex.matches(node.fullPath)
         }
 
-        val redirectTo = HttpContextHolder.getRequest().getHeader("X-BKREPO-DOWNLOAD-REDIRECT-TO")
-        val needToRedirect = repoSupportRedirectTo ||
-            redirectTo == RedirectTo.INNERCOS.name ||
-            storageProperties.redirect.redirectAllDownload
-
-        // 文件存在于COS上时才会被重定向
-        return needToRedirect && isProjectAllowed(context.projectId) && guessFileExists(node, storageCredentials)
+        val needToRedirect = policyAllowsRedirect(context, repoSupportRedirectTo)
+        if (!needToRedirect || !isProjectAllowed(context.projectId)) {
+            return false
+        }
+        if (isFake) {
+            return loadContiguousBlocks(node) != null
+        }
+        return guessFileExists(node, storageCredentials)
     }
 
     override fun redirect(context: ArtifactDownloadContext) {
         val credentials = context.repositoryDetail.storageCredentials ?: storageProperties.defaultStorageCredentials()
         require(credentials is InnerCosCredentials)
         val node = ArtifactContextHolder.getNodeDetail(context.artifactInfo)!!
-
-        // 创建请求并签名
         val clientConfig = ClientConfig(credentials).apply {
             signExpired = storageProperties.redirect.redirectUrlExpireTime
-            // 重定向请求不使用北极星解析，直接使用域名
             endpointResolver = DefaultEndpointResolver()
             httpProtocol = HttpProtocol.HTTPS
         }
+        if (node.sha256 == FAKE_SHA256) {
+            writeBlockManifest(context, node, credentials, clientConfig)
+            return
+        }
         val request = GetObjectRequest(node.sha256!!)
-        val range = HttpContextHolder.getRequest().getHeader(Headers.RANGE)
-        if (!range.isNullOrEmpty()) {
-            request.headers[Headers.RANGE] = range
-        }
         addCosResponseHeaders(context, request, node)
-        val urlencodedSign = request.sign(credentials, clientConfig).urlEncode(true)
-        if (request.parameters.isEmpty()) {
-            request.url += "?sign=$urlencodedSign"
-        } else {
-            request.url += "&sign=$urlencodedSign"
-        }
-
-        // 重定向
+        context.response.sendRedirect(signCosUrl(request, credentials, clientConfig))
         logger.info("Redirect request of download node[${node.sha256}] to cos[${credentials.key}]")
-        context.response.sendRedirect(request.url)
     }
 
     private fun addCosResponseHeaders(context: ArtifactDownloadContext, request: CosRequest, node: NodeDetail) {
@@ -176,6 +174,77 @@ class CosRedirectService(
         if (context.useDisposition) {
             request.parameters["response-content-disposition"] = encodeDisposition(filename)
         }
+    }
+
+    private fun writeBlockManifest(
+        context: ArtifactDownloadContext,
+        node: NodeDetail,
+        credentials: InnerCosCredentials,
+        clientConfig: ClientConfig,
+    ) {
+        val blocks = loadContiguousBlocks(node)
+            ?: error("contiguous blocks missing for ${node.fullPath}")
+        val parts = blocks.map { block ->
+            CosBlockPart(
+                startPos = block.startPos,
+                size = block.size,
+                sha256 = block.sha256,
+                url = signBlockUrl(block.sha256, credentials, clientConfig),
+            )
+        }
+        val body = CosBlockManifest(size = node.size, blocks = parts).toJsonString()
+        val response = context.response
+        response.status = 200
+        response.setHeader(HEADER_BLOCK_MANIFEST, "1")
+        response.contentType = MediaType.APPLICATION_JSON_VALUE
+        response.characterEncoding = "UTF-8"
+        response.writer.use { it.write(body) }
+        logger.info(
+            "Write block manifest of ${parts.size} blocks for node[${node.fullPath}] " +
+                "to cos[${credentials.key}]",
+        )
+    }
+
+    private fun loadContiguousBlocks(node: NodeDetail): List<TBlockNode>? {
+        val blocks = blockNodeService.listAllBlocks(
+            node.projectId,
+            node.repoName,
+            node.fullPath,
+            node.createdDate,
+        ).sortedBy { it.startPos }
+        if (blocks.isEmpty()) {
+            return null
+        }
+        var cursor = 0L
+        for (block in blocks) {
+            if (block.startPos != cursor || block.size <= 0L) {
+                return null
+            }
+            cursor += block.size
+        }
+        return if (cursor == node.size) blocks else null
+    }
+
+    private fun signBlockUrl(
+        sha256: String,
+        credentials: InnerCosCredentials,
+        clientConfig: ClientConfig,
+    ): String {
+        return signCosUrl(GetObjectRequest(sha256), credentials, clientConfig)
+    }
+
+    private fun signCosUrl(
+        request: GetObjectRequest,
+        credentials: InnerCosCredentials,
+        clientConfig: ClientConfig,
+    ): String {
+        val urlencodedSign = request.sign(credentials, clientConfig).urlEncode(true)
+        request.url += if (request.parameters.isEmpty()) {
+            "?sign=$urlencodedSign"
+        } else {
+            "&sign=$urlencodedSign"
+        }
+        return request.url
     }
 
     /**
@@ -195,6 +264,27 @@ class CosRedirectService(
         return storageService.exist(node.sha256!!, storageCredentials)
     }
 
+    private fun policyAllowsRedirect(
+        context: ArtifactDownloadContext,
+        repoSupportRedirectTo: Boolean,
+    ): Boolean {
+        val request = HttpContextHolder.getRequest()
+        val forceByHeader = request.getHeader(HEADER_DOWNLOAD_REDIRECT_TO) == RedirectTo.INNERCOS.name
+        if (repoSupportRedirectTo || forceByHeader || storageProperties.redirect.redirectAllDownload) {
+            return true
+        }
+        return isArtifactClient() &&
+            storageProperties.redirect.clientDirect.matches(context.projectId, context.repoName)
+    }
+
+    private fun isArtifactClient(): Boolean {
+        val client = HttpContextHolder.getRequest().getHeader(HEADER_BKREPO_CLIENT)
+            ?.substringBefore('/')
+            ?.trim()
+            .orEmpty()
+        return client.equals(BKREPO_CLIENT_NAME, ignoreCase = true)
+    }
+
     private fun isProjectAllowed(projectId: String ): Boolean {
         val blackProjectList = storageProperties.redirect.projectBlackList
         return !blackProjectList.contains(projectId)
@@ -207,3 +297,15 @@ class CosRedirectService(
         const val ATTR_RESPONSE_CONTENT_TYPE = "cos.redirect.responseContentType"
     }
 }
+
+private data class CosBlockManifest(
+    val size: Long,
+    val blocks: List<CosBlockPart>,
+)
+
+private data class CosBlockPart(
+    val startPos: Long,
+    val size: Long,
+    val sha256: String,
+    val url: String,
+)
