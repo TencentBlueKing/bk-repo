@@ -15,8 +15,6 @@ class MediaProperties {
     var storageCredentialsKey: String? = null
     /**
      * 项目 COS 归档存储映射：projectId -> storageCredentialsKey。
-     * 命中项目的转码成品会上传到对应 COS 凭证的归档仓库。
-     * 通过环境配置注入（如 devnet bkrepo-media.yaml），未配置则不启用。
      */
     var cosStorageCredentials: MutableMap<String, String> = mutableMapOf()
     /**
