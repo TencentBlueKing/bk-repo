@@ -6,3 +6,5 @@ const val TYPE_VIDEO_DATA: Byte = 0x09
 const val TYPE_AV_MERGE_DATA: Byte = 0x0A
 const val TYPE_MIC_AUDIO_DATA: Byte = 0x0B
 const val STREAM_PATH = "/streams"
+
+const val REMOTEDEV_REPO_PREFIX = "REMOTEDEV_"

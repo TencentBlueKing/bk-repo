@@ -54,6 +54,7 @@ import java.util.Base64
 @Service
 class StreamService(
     private val mediaProperties: MediaProperties,
+    private val mediaRepoService: MediaRepoService,
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService,
     private val tokenService: TokenService,
@@ -106,7 +107,7 @@ class StreamService(
                 category = RepositoryCategory.LOCAL,
                 public = false,
                 display = display,
-                storageCredentialsKey = mediaProperties.storageCredentialsKey
+                storageCredentialsKey = mediaRepoService.resolveStorageCredentialsKey(projectId)
             )
             repositoryService.createRepo(createRepoRequest)
             val nodeCreateRequest = NodeCreateRequest(

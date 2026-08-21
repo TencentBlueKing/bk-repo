@@ -29,6 +29,7 @@ import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.MeterRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.net.URLEncoder
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -42,6 +43,7 @@ class TranscodeService(
     private val metadataService: MetadataService,
     private val mediaTranscodeJobDao: MediaTranscodeJobDao,
     private val meterRegistry: MeterRegistry,
+    private val cosArchiveService: CosArchiveService,
 ) :
     ArtifactService() {
 
@@ -66,6 +68,9 @@ class TranscodeService(
                 "inputUrl" to p.inputUrl
             )
         }
+        transcodeParam.cosUploadUrl = generateCosUploadUrl(
+            artifactInfo, userId, author, videoStartTime, videoEndTime
+        )
         logger.info(
             "add transcode task for artifact[$artifactInfo][$extraFiles],param[${transcodeParam.toJsonString()}]"
         )
@@ -204,6 +209,32 @@ class TranscodeService(
             )
             return tokenService.createToken(tokenRequest).firstOrNull().orEmpty()
         }
+    }
+
+    private fun generateCosUploadUrl(
+        artifactInfo: ArtifactInfo,
+        userId: String,
+        author: String?,
+        videoStartTime: Long?,
+        videoEndTime: Long?,
+    ): String? {
+        val archiveInfo = cosArchiveService.buildArchiveArtifactInfo(
+            source = artifactInfo,
+            author = author,
+            videoStartTime = videoStartTime,
+            videoEndTime = videoEndTime,
+        ) ?: return null
+        val token = createAccessToken(archiveInfo, userId)
+        // 携带录屏元数据，上传时写入归档节点
+        val queryParams = buildString {
+            append("token=$token")
+            author?.takeIf { it.isNotBlank() }?.let {
+                append("&author=${URLEncoder.encode(it, Charsets.UTF_8.name())}")
+            }
+            videoStartTime?.let { append("&startTime=$it") }
+            videoEndTime?.let { append("&endTime=$it") }
+        }
+        return "${mediaProperties.repoHost}/media/user/cos/upload$archiveInfo?$queryParams"
     }
 
     companion object {
