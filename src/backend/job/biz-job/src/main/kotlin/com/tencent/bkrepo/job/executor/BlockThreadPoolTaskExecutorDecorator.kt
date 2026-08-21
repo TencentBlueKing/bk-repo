@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.executor
 
+import com.tencent.bkrepo.common.api.thread.TransmitterRunnableWrapper
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.job.CONCURRENT_THREAD_LIMIT
 import org.slf4j.LoggerFactory
@@ -69,13 +70,13 @@ class BlockThreadPoolTaskExecutorDecorator(
      * */
     fun execute(command: () -> Unit) {
         semaphore.acquire()
-        workerGroup.execute {
+        workerGroup.execute(TransmitterRunnableWrapper(Runnable {
             try {
                 command.invoke()
             } finally {
                 semaphore.release()
             }
-        }
+        }))
     }
 
     /**
@@ -110,7 +111,7 @@ class BlockThreadPoolTaskExecutorDecorator(
         }
         taskInfo.count.incrementAndGet()
         val enterTime = System.currentTimeMillis()
-        val task = {
+        val task = TransmitterRunnableWrapper(Runnable {
             try {
                 taskInfo.acquire()
                 val beginTime = System.currentTimeMillis()
@@ -127,11 +128,11 @@ class BlockThreadPoolTaskExecutorDecorator(
                     }
                 }
             }
-        }
+        })
         if (produce) {
-            this.executeProduce(task)
+            this.executeProduce { task.run() }
         } else {
-            this.execute(task)
+            this.execute { task.run() }
         }
     }
 

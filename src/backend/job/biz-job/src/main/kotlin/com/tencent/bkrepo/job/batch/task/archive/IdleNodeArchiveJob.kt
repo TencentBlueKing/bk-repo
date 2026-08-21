@@ -34,18 +34,22 @@ import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
 import com.tencent.bkrepo.archive.request.CreateArchiveFileRequest
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.metadata.routing.NodeScatterQueryService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.context.NodeContext
+import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.IdleNodeArchiveJobProperties
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.inValues
@@ -71,6 +75,8 @@ class IdleNodeArchiveJob(
     private val fileReferenceService: FileReferenceService,
     private val migrateRepoStorageService: MigrateRepoStorageService,
     private val storageService: StorageService,
+    @Autowired(required = false)
+    private val nodeScatterQueryService: NodeScatterQueryService? = null,
 ) : MongoDbBatchJob<IdleNodeArchiveJob.Node, NodeContext>(properties) {
     private var lastCutoffTime: LocalDateTime? = null
     private var tempCutoffTime: LocalDateTime? = null
@@ -266,20 +272,21 @@ class IdleNodeArchiveJob(
         * 满足以下条件之一，则不进行归档
         * 1. 其他项目存在相同sha256的节点。（跨项目的文件会无法归档）
         * */
-        for (i in 0 until SHARDING_COUNT) {
-            val collectionName = COLLECTION_NAME_PREFIX.plus(i)
-            val query = Query.query(
-                Criteria.where("sha256").isEqualTo(sha256)
-                    .and("deleted").isEqualTo(null)
-                    .and("projectId").ne(projectId)
-            )
-            val existNode = mongoTemplate.findOne(query, Node::class.java, collectionName)
-            if (existNode != null) {
-                logger.info("Find in use $existNode.")
+        val query = Query.query(
+            Criteria.where("sha256").isEqualTo(sha256)
+                .and("deleted").isEqualTo(null)
+                .and("projectId").ne(projectId)
+        )
+        val scatter = nodeScatterQueryService
+        if (scatter != null) {
+            val collections = (0 until SHARDING_COUNT).map { "$COLLECTION_NAME_PREFIX$it" }
+            if (scatter.scatterExists(query, TNode::class.java, collections)) {
+                logger.info("Find in use sha256=$sha256 outside project $projectId.")
                 return true
             }
+            return false
         }
-        return false
+        return NodeCommonUtils.crossInstanceNodeExist(query, SHARDING_COUNT)
     }
 
     companion object {

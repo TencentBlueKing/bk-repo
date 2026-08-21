@@ -30,8 +30,7 @@ package com.tencent.bkrepo.job.batch.task.clean
 import com.tencent.bkrepo.common.metadata.properties.BlockNodeProperties
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.job.COLLECTION_NAME_BLOCK_NODE
-import com.tencent.bkrepo.job.SHARDING_COUNT
+import com.tencent.bkrepo.common.metadata.util.BlockNodeCollectionNaming
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
@@ -70,10 +69,8 @@ class DeletedBlockNodeCleanupJob(
     )
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
 
-    override fun collectionNames(): List<String> {
-        val collectionNamePrefix = blockNodeProperties.collectionName.ifEmpty { COLLECTION_NAME_BLOCK_NODE }
-        return (0 until SHARDING_COUNT).map { "${collectionNamePrefix}_$it" }
-    }
+    override fun collectionNames(): List<String> =
+        BlockNodeCollectionNaming.allShardCollections(blockNodeProperties)
 
     override fun buildQuery(): Query {
         val expireDate = LocalDateTime.now().minusDays(properties.deletedNodeReserveDays)
@@ -105,7 +102,7 @@ class DeletedBlockNodeCleanupJob(
                 return
             }
             val nodeQuery = Query.query(Criteria.where(ID).isEqualTo(row.id))
-            mongoTemplate.remove(nodeQuery, collectionName)
+            routedMongoTemplate(row.projectId, collectionName).remove(nodeQuery, collectionName)
             decrementFileReference(row)
         } catch (ignored: Exception) {
             logger.error("Clean up deleted block node[$row] failed in collection[$collectionName].", ignored)

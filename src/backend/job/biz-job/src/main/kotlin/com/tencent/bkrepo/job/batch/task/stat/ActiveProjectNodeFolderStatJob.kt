@@ -54,7 +54,9 @@ class ActiveProjectNodeFolderStatJob(
     private val mongoTemplate: MongoTemplate,
     private val nodeFolderStat: NodeFolderStat,
     private val separationTaskService: SeparationTaskService,
-) : StatBaseJob(mongoTemplate, properties, executor, separationTaskService) {
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    nodeShardReadSupport: com.tencent.bkrepo.common.metadata.routing.NodeShardReadSupport? = null,
+) : StatBaseJob(mongoTemplate, properties, executor, separationTaskService, nodeShardReadSupport) {
 
     override fun doStart0(jobContext: JobContext) {
         logger.info("start to do folder stat job for active projects")

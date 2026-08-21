@@ -39,21 +39,30 @@ abstract class MonthRangeShardingMongoReactiveDao<E> : RangeShardingMongoReactiv
         return super.save(entity)
     }
 
-    private fun getIndexCacheKey(collectionName: String, indexDefinition: IndexDefinition): String {
-        return collectionName + indexDefinition.indexKeys.keys
+    private fun getIndexCacheKey(
+        template: org.springframework.data.mongodb.core.ReactiveMongoTemplate,
+        collectionName: String,
+        indexDefinition: IndexDefinition,
+    ): String {
+        return "${System.identityHashCode(template)}:$collectionName:${indexDefinition.indexKeys.keys}"
     }
 
     private fun ensureIndex(entity: E) {
         val collectionName = determineCollectionName(entity)
         val indexDefinitions = MongoIndexResolver.resolveIndexFor(classType)
-        indexDefinitions.forEach {
-            val indexCacheKey = getIndexCacheKey(collectionName, it)
-            if (indexCache.getIfPresent(indexCacheKey) != true) {
-                determineReactiveMongoOperations().indexOps(collectionName).ensureIndex(it)
-                    .subscribe { indexName ->
+        val templates = writeReactiveTemplates(collectionName, entity)
+        indexDefinitions.forEach { indexDefinition ->
+            templates.forEach { template ->
+                val indexCacheKey = getIndexCacheKey(template, collectionName, indexDefinition)
+                if (indexCache.getIfPresent(indexCacheKey) == true) {
+                    return@forEach
+                }
+                template.indexOps(collectionName).ensureIndex(indexDefinition)
+                    .doOnSuccess { indexName ->
+                        indexCache.put(indexCacheKey, true)
                         logger.info("$collectionName create Index: $indexName")
                     }
-                indexCache.put(indexCacheKey, true)
+                    .subscribe()
             }
         }
     }

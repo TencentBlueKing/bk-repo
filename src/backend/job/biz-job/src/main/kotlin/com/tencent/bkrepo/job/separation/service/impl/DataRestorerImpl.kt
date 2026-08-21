@@ -316,7 +316,9 @@ class DataRestorerImpl(
                     .and(NodeDetailInfo::deleted.name).isEqualTo(null)
             )
             // 插入前判断热表中 node 是否存在，如存在根据配置是否覆盖
-            val hotNode = mongoTemplate.findOne(existNodeQuery, NodeDetailInfo::class.java, nodeCollectionName)
+            val hotNode = routedReadTemplate(projectId, nodeCollectionName).findOne(
+                existNodeQuery, NodeDetailInfo::class.java, nodeCollectionName
+            )
             // 如果存在而且不需要覆盖，则直接返回
             if (hotNode != null && !overwrite) return
             try {
@@ -325,7 +327,7 @@ class DataRestorerImpl(
                     removeExistNode(hotNode, nodeCollectionName)
                 }
                 val codeNode = buildNodeDetailInfo(nodeRecord)
-                mongoTemplate.save(codeNode, nodeCollectionName)
+                saveNode(projectId, nodeCollectionName, codeNode)
                 logger.info(
                     "restore create hot node ${nodeRecord.id}" +
                         " with ${nodeRecord.fullPath} success in $projectId|$repoName"
@@ -352,7 +354,9 @@ class DataRestorerImpl(
         val update = Update()
             .set(NodeDetailInfo::lastModifiedBy.name, SYSTEM_USER)
             .set(NodeDetailInfo::deleted.name, LocalDateTime.now())
-        val updateResult = mongoTemplate.updateFirst(nodeQuery, update, nodeCollectionName)
+        val updateResult = updateNodeFirst(
+            hotNode.projectId, nodeCollectionName, nodeQuery, update,
+        )
         if (updateResult.modifiedCount != 1L) {
             logger.error(
                 "delete exist hot node failed with id ${hotNode.id} " +

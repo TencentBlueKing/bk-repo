@@ -127,7 +127,7 @@ open class ProjectRepoMetricsStatJob(
                     .and(PATH).isEqualTo(PathUtils.ROOT)
                     .and(DELETED_DATE).isEqualTo(null)
             )
-            mongoTemplate.find<StatNode>(query, collection).forEach {
+            routedMongoTemplate(row.projectId, collection).find<StatNode>(query, collection).forEach {
                 runRepoMetrics(metric, row, it)
             }
         }

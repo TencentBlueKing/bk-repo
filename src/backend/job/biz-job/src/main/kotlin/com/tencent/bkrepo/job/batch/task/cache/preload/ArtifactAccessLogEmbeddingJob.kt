@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.metadata.model.TOperateLog
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
+import com.tencent.bkrepo.common.mongo.api.routing.MongoRoutingRegistry
 import com.tencent.bkrepo.common.mongo.api.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
@@ -70,9 +71,16 @@ class ArtifactAccessLogEmbeddingJob(
     private val mongoTemplate: MongoTemplate,
     private val milvusClient: MilvusClient,
     private val embeddingModel: EmbeddingModel,
+    private val routingRegistry: MongoRoutingRegistry? = null,
 ) : DefaultContextJob(properties) {
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7L)
+
+    /**
+     * 获取 artifact_oplog_* 集合的读取模板，优先走路由，未配置时回退到默认实例。
+     */
+    private fun routedReadTemplate(collectionName: String): MongoTemplate =
+        routingRegistry?.routeRead(collectionName, null) ?: mongoTemplate
 
     override fun doStart0(jobContext: JobContext) {
         val deprecatedVectorStore = createVectorStore(2L)
@@ -244,13 +252,14 @@ class ArtifactAccessLogEmbeddingJob(
             logger.warn("mongo collection[$collectionName] not exists")
             return
         }
+        val template = routedReadTemplate(collectionName)
         var progress = 0
         var records: List<OperateLog>
         var lastId = startId
         do {
             val query = buildQuery(lastId)
             val start = System.currentTimeMillis()
-            records = mongoTemplate.find(query, OperateLog::class.java, collectionName)
+            records = template.find(query, OperateLog::class.java, collectionName)
 
             progress += records.size
             if (progress % 1000000 == 0) {
@@ -275,6 +284,7 @@ class ArtifactAccessLogEmbeddingJob(
             logger.warn("mongo collection[$collectionName] not exists")
             return
         }
+        val template = routedReadTemplate(collectionName)
         val pageSize = properties.batchSize
         var offset = 0L
         var resultSize: Int
@@ -295,7 +305,7 @@ class ArtifactAccessLogEmbeddingJob(
             )
 
             val start = System.currentTimeMillis()
-            val records = mongoTemplate.find(query, OperateLog::class.java, collectionName)
+            val records = template.find(query, OperateLog::class.java, collectionName)
             progress += records.size
             if (progress % 10000 == 0) {
                 val end = System.currentTimeMillis()
@@ -343,7 +353,8 @@ class ArtifactAccessLogEmbeddingJob(
         val startDateTime = after.minusHours(1L)
         val query = Query(TOperateLog::createdDate.gte(startDateTime).lt(after))
         query.fields().include(ID)
-        val id = mongoTemplate.findOne<Map<String, Any?>>(query, collectionName)?.let { it[ID] as ObjectId }
+        val id = routedReadTemplate(collectionName)
+            .findOne<Map<String, Any?>>(query, collectionName)?.let { it[ID] as ObjectId }
         return id ?: ObjectId(MIN_OBJECT_ID)
     }
 

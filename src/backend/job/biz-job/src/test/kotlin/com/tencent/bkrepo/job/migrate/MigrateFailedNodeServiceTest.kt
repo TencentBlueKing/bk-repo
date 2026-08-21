@@ -32,7 +32,6 @@ import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import com.tencent.bkrepo.job.service.MigrateArchivedFileService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -68,6 +67,7 @@ import java.time.LocalDateTime
     NodeDao::class,
     StorageProperties::class,
     RepositoryCommonUtils::class,
+    NodeCommonUtils::class,
 )
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
 class MigrateFailedNodeServiceTest @Autowired constructor(
@@ -104,12 +104,8 @@ class MigrateFailedNodeServiceTest @Autowired constructor(
     @Autowired
     private lateinit var repositoryCommonUtils: RepositoryCommonUtils
 
-    @BeforeAll
-    fun beforeAll() {
-        NodeCommonUtils.mongoTemplate = mongoTemplate
-        NodeCommonUtils.migrateRepoStorageService = migrateRepoStorageService
-        NodeCommonUtils.separationTaskService = separationTaskService
-    }
+    @Autowired
+    private lateinit var nodeCommonUtils: NodeCommonUtils
 
     @BeforeEach
     fun beforeEach() {
