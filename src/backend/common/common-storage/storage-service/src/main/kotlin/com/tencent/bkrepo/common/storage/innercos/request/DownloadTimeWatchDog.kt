@@ -43,9 +43,10 @@ class DownloadTimeWatchDog(
     private fun checkHealthy() {
         var maxSessionLatencyTime = 0L
         var removed = 0
-        val size = sessions.size
-        val it = sessions.iterator()
+        val size: Int
         synchronized(lock) {
+            size = sessions.size
+            val it = sessions.iterator()
             while (it.hasNext()) {
                 val session = it.next()
                 if (session.latencyTime > maxSessionLatencyTime) {
